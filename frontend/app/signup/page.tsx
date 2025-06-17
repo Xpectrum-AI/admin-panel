@@ -27,7 +27,8 @@ export default function SignUp() {
       // TODO: Implement signup API call
       console.log('Signup data:', formData);
       router.push('/login');
-    } catch (err) {
+    } catch (error) {
+      console.error('Signup error:', error);
       setError('Failed to sign up. Please try again.');
     }
   };

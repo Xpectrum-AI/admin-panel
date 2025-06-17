@@ -11,12 +11,27 @@ app.use(cors());
 app.use(express.json());
 
 // Database connection
-// mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/admin-panel', {
-//     useNewUrlParser: true,
-//     useUnifiedTopology: true
-// })
-// .then(() => console.log('MongoDB connected'))
-// .catch(err => console.error('MongoDB connection error:', err));
+const MONGODB_URI = 'mongodb+srv://Xpectrum-AI:Xpectrum%402025@cluster0.s7dgcgb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+
+mongoose.connect(MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    retryWrites: true,
+    w: 'majority',
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+})
+.then(() => console.log('MongoDB connected successfully'))
+.catch(err => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1); // Exit if cannot connect to database
+});
+
+// Import routes
+const stripeRoutes = require('./routes/stripeRoutes');
+
+// Use routes
+app.use('/api/stripe', stripeRoutes);
 
 app.get('/', (req, res) => {
     res.send('Hello World');

@@ -20,7 +20,8 @@ export default function Login() {
       // TODO: Implement login API call
       console.log('Login data:', formData);
       router.push('/');
-    } catch (err) {
+    } catch (error) {
+      console.error('Login error:', error);
       setError('Failed to log in. Please check your credentials.');
     }
   };
