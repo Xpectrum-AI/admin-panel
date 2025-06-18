@@ -1,11 +1,23 @@
-import { AuthProvider } from "@propelauth/nextjs/client";
+// app/layout.tsx
+import { AuthProviderWrapper } from "./auth/AuthProviderWrapper";
+import { ProtectedRoute } from "./auth/ProtectedRoute";
+import "./globals.css"; // if you're importing styles
 
-export default async function RootLayout({children}: {children: React.ReactNode}) {
-    return (
-        <html lang="en">
-            <AuthProvider authUrl={process.env.NEXT_PUBLIC_AUTH_URL!}>
-                <body>{children}</body>
-            </AuthProvider>
-        </html>
-    )
+export const metadata = {
+  title: "Your App",
+  description: "My description",
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <AuthProviderWrapper>
+          <ProtectedRoute>
+            {children}
+          </ProtectedRoute>
+        </AuthProviderWrapper>
+      </body>
+    </html>
+  );
 }

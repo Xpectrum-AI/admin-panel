@@ -1,75 +1,29 @@
+// middleware.ts
+import { authMiddleware } from "@propelauth/nextjs/server/app-router";
+import { NextResponse, type NextRequest } from "next/server";
 
-import type { NextRequest } from 'next/server'
-import { NextResponse } from 'next/server'
-//import { withAuth } from '@propelauth/nextjs'
+// Custom middleware wrapper to skip auth on public pages
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-const NECESSARY_DOMAIN = '*.sentry.io http://localhost:* http://127.0.0.1:* https://analytics.google.com googletagmanager.com *.googletagmanager.com https://www.google-analytics.com https://api.github.com'
+  // If user is accessing public pages, allow without auth
+  if (
+    pathname === "/login" ||
+    pathname === "/signup" ||
+    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/_next/") ||
+    pathname === "/favicon.ico"
+  ) {
+    return NextResponse.next();
+  }
 
-export function middleware(request: NextRequest) {
-  const isWhiteListEnabled = !!process.env.NEXT_PUBLIC_CSP_WHITELIST && process.env.NODE_ENV === 'production'
-  if (!isWhiteListEnabled)
-    return NextResponse.next()
-
-  const whiteList = `${process.env.NEXT_PUBLIC_CSP_WHITELIST} ${NECESSARY_DOMAIN}`
-  const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
-  const csp = `'nonce-${nonce}'`
-
-  const scheme_source = 'data: mediastream: blob: filesystem:'
-
-  const cspHeader = `
-    default-src 'self' ${scheme_source} ${csp} ${whiteList};
-    connect-src 'self' ${scheme_source} ${csp} ${whiteList};
-    script-src 'self' ${scheme_source} ${csp} ${whiteList};
-    style-src 'self' 'unsafe-inline' ${scheme_source} ${whiteList};
-    worker-src 'self' ${scheme_source} ${csp} ${whiteList};
-    media-src 'self' ${scheme_source} ${csp} ${whiteList};
-    img-src 'self' ${scheme_source} ${csp} ${whiteList};
-    font-src 'self';
-    object-src 'none';
-    base-uri 'self';
-    form-action 'self';
-    upgrade-insecure-requests;
-`
-  // Replace newline characters and spaces
-  const contentSecurityPolicyHeaderValue = cspHeader
-    .replace(/\s{2,}/g, ' ')
-    .trim()
-
-  const requestHeaders = new Headers(request.headers)
-  requestHeaders.set('x-nonce', nonce)
-
-  requestHeaders.set(
-    'Content-Security-Policy',
-    contentSecurityPolicyHeaderValue,
-  )
-
-  const response = NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  })
-  response.headers.set(
-    'Content-Security-Policy',
-    contentSecurityPolicyHeaderValue,
-  )
-
-  return response
+  // Otherwise enforce PropelAuth authentication
+  return authMiddleware(req);
 }
-
-  // export default withAuth({
-  //   // Optional: Add paths that should be public
-  //   publicPaths: ['/signin', '/signup', '/forgot-password'],
-  // })
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    // Match everything except static assets
+    "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
-}
+};
