@@ -1,6 +1,5 @@
 // app/layout.tsx
 import { AuthProviderWrapper } from "./auth/AuthProviderWrapper";
-import { ProtectedRoute } from "./auth/ProtectedRoute";
 import "./globals.css"; // if you're importing styles
 
 export const metadata = {
@@ -13,9 +12,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <AuthProviderWrapper>
-          <ProtectedRoute>
-            {children}
-          </ProtectedRoute>
+          {children}
         </AuthProviderWrapper>
       </body>
     </html>
