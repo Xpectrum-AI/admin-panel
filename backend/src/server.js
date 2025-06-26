@@ -1,4 +1,6 @@
-require('dotenv').config();
+require('dotenv').config({
+    path: '../.env'
+});
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
@@ -27,11 +29,16 @@ mongoose.connect(MONGODB_URI, {
     process.exit(1); // Exit if cannot connect to database
 });
 
-// Import routes
+//Import routes
 const stripeRoutes = require('./routes/stripeRoutes');
 
-// Use routes
+//Use routes
 app.use('/api/stripe', stripeRoutes);
+
+const orgRoutes = require('./routes/orgRoutes'); 
+
+app.use('/api/org', orgRoutes);
+
 
 app.get('/', (req, res) => {
     res.send('Hello World');

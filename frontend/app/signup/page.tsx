@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthFrontendApis } from '@propelauth/frontend-apis-react'
+import { createOrg } from '../services/orgService';
 
 export default function SignUp() {
   const router = useRouter();
@@ -63,9 +64,16 @@ export default function SignUp() {
         last_name: formData.lastName,
       })
       response.handle({
-        success(data) {
-          setLoading(false);
-          router.push("/login")
+        async success(data) {
+          try {
+            const orgName = `${formData.firstName}s workspace`;
+            await createOrg(orgName);
+            setLoading(false);
+            router.push('/login');
+          } catch (err: any) {
+            setLoading(false);
+            setError('Account created, but failed to create organization.');
+          }
         },
         signupDisabled(error) {
           console.error('Signups are disabled', error)

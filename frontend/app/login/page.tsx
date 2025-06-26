@@ -17,6 +17,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const { emailPasswordLogin, fetchLoginState } = useAuthFrontendApis();
   const { user } = useAuthInfo();
+  const [loginSuccess, setLoginSuccess] = useState(false);
 
   // useEffect(() => {
   //   const checkLoginState = async () => {
@@ -40,6 +41,12 @@ export default function Login() {
   //   checkLoginState();
   // }, [router]);
 
+  useEffect(() => {
+    if (loginSuccess) {
+      router.push("/dashboard");
+    }
+  }, [loginSuccess]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -50,10 +57,9 @@ export default function Login() {
         email: formData.email,
         password: formData.password
     })
-    response.handle({
+    await response.handle({
         success(data) {
-            setLoading(false);
-            router.push("/dashboard");
+            setLoginSuccess(true);
         },
         passwordLoginDisabled(error) {
             console.error('Password login disabled', error)
@@ -80,6 +86,8 @@ export default function Login() {
     } catch (error) {
       setLoading(false);
       setError('Failed to log in. Please check your credentials.');
+    } finally {
+      setLoading(false); // always stop loading
     }
   };
 
