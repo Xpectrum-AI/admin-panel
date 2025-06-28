@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Search, Bell, UserCircle, Settings, LogOut, User as UserIcon, Building2 } from 'lucide-react';
+import { Search, Bell, UserCircle, Settings, LogOut, User as UserIcon, Building2, Bot, CreditCard } from 'lucide-react';
 import { useAuthInfo, useLogoutFunction } from '@propelauth/react';
 
 export default function Header() {
@@ -75,6 +75,20 @@ export default function Header() {
                 >
                   <Building2 className="h-5 w-5 mr-3" />
                   Workspace
+                </Link>
+                <Link
+                  href="/agents"
+                  className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
+                >
+                  <Bot className="h-5 w-5 mr-3" />
+                  Agent Management
+                </Link>
+                <Link
+                  href="/billing"
+                  className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
+                >
+                  <CreditCard className="h-5 w-5 mr-3" />
+                  Billing & Payments
                 </Link>
                 <Link
                   href="/settings"

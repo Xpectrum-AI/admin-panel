@@ -1,182 +1,91 @@
 const express = require('express');
 const router = express.Router();
-const stripeService = require('../services/stripeService');
-const { body, validationResult } = require('express-validator');
+const authenticateApiKey = require('../middleware/auth');
+const {
+  // Customer Management
+  createCustomer,
+  getCustomer,
+  getCustomers,
+  deleteCustomer,
+  
+  // Payment Method Management
+  createPaymentMethod,
+  attachPaymentMethod,
+  getCustomerPaymentMethods,
+  
+  // Checkout Sessions
+  createCheckoutSession,
+  getCheckoutSession,
+  getCustomerCheckoutSessions,
+  
+  // Payment Intents
+  getPaymentIntent,
+  
+  // Invoices
+  getCustomerInvoices,
+  
+  // Products & Prices
+  createProduct,
+  createPrice,
+  getProducts,
+  getProductPrices,
+  
+  // Subscriptions
+  createSubscription,
+  createSubscriptionItem,
+  reportUsage,
+  getUsageSummary,
+  
+  // Customer Balance
+  createBalanceTransaction,
+  getCustomerBalanceTransactions,
+  
+  // Events
+  getEvents
+} = require('../controllers/stripeController');
 
-// Create a new customer
-router.post('/customers',
-    [
-        body('email').isEmail(),
-        body('name').notEmpty()
-    ],
-    async (req, res) => {
-        try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                return res.status(400).json({ errors: errors.array() });
-            }
+// Apply authentication middleware to all routes
+router.use(authenticateApiKey);
 
-            const { email, name } = req.body;
-            const customer = await stripeService.createCustomer(email, name);
-            res.json(customer);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    }
-);
+// Customer Management
+router.post('/v1/customers', createCustomer);
+router.get('/v1/customers', getCustomers);
+router.get('/v1/customers/:id', getCustomer);
+router.delete('/v1/customers/:id', deleteCustomer);
 
-// Create a usage-based subscription
-router.post('/subscriptions',
-    [
-        body('customerId').notEmpty(),
-        body('priceId').notEmpty()
-    ],
-    async (req, res) => {
-        try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                return res.status(400).json({ errors: errors.array() });
-            }
+// Payment Method Management
+router.post('/v1/payment_methods', createPaymentMethod);
+router.post('/v1/payment_methods/:id/attach', attachPaymentMethod);
+router.get('/v1/payment_methods', getCustomerPaymentMethods);
 
-            const { customerId, priceId } = req.body;
-            const subscription = await stripeService.createUsageBasedSubscription(customerId, priceId);
-            res.json(subscription);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    }
-);
+// Checkout Sessions
+router.post('/v1/checkout/sessions', createCheckoutSession);
+router.get('/v1/checkout/sessions/:id', getCheckoutSession);
+router.get('/v1/checkout/sessions', getCustomerCheckoutSessions);
 
-// Report usage for a subscription (updated method)
-router.post('/usage',
-    [
-        body('subscriptionId').notEmpty(),
-        body('quantity').isNumeric(),
-        body('eventName').optional().isString()
-    ],
-    async (req, res) => {
-        try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                return res.status(400).json({ errors: errors.array() });
-            }
+// Payment Intents
+router.get('/v1/payment_intents/:id', getPaymentIntent);
 
-            const { subscriptionId, quantity, eventName } = req.body;
-            const usageRecord = await stripeService.reportUsage(subscriptionId, parseInt(quantity), eventName);
-            res.json(usageRecord);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    }
-);
+// Invoices
+router.get('/v1/invoices', getCustomerInvoices);
 
-// Report usage by subscription item (alternative method)
-router.post('/usage-by-item',
-    [
-        body('subscriptionItemId').notEmpty(),
-        body('quantity').isNumeric(),
-        body('eventName').optional().isString()
-    ],
-    async (req, res) => {
-        try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                return res.status(400).json({ errors: errors.array() });
-            }
+// Products & Prices
+router.post('/v1/products', createProduct);
+router.post('/v1/prices', createPrice);
+router.get('/v1/products', getProducts);
+router.get('/v1/prices', getProductPrices);
 
-            const { subscriptionItemId, quantity, eventName } = req.body;
-            const usageRecord = await stripeService.reportUsageByItem(subscriptionItemId, parseInt(quantity), eventName);
-            res.json(usageRecord);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    }
-);
+// Subscriptions
+router.post('/v1/subscriptions', createSubscription);
+router.post('/v1/subscription_items', createSubscriptionItem);
+router.post('/v1/subscription_items/:id/usage_records', reportUsage);
+router.get('/v1/subscription_items/:id/usage_record_summaries', getUsageSummary);
 
-// Get usage summary for a subscription
-router.post('/usage-summary',
-    [
-        body('subscriptionId').notEmpty(),
-        body('startTime').optional().isNumeric(),
-        body('endTime').optional().isNumeric()
-    ],
-    async (req, res) => {
-        try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                return res.status(400).json({ errors: errors.array() });
-            }
+// Customer Balance
+router.post('/v1/customers/:customer_id/balance_transactions', createBalanceTransaction);
+router.get('/v1/customers/:customer_id/balance_transactions', getCustomerBalanceTransactions);
 
-            const { subscriptionId, startTime, endTime } = req.body;
-            const summary = await stripeService.getUsageSummary(
-                subscriptionId, 
-                startTime ? parseInt(startTime) : undefined,
-                endTime ? parseInt(endTime) : undefined
-            );
-            res.json(summary);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    }
-);
-
-// Create a meter event
-router.post('/meter-events',
-    [
-        body('customerId').notEmpty(),
-        body('value').isNumeric(),
-        body('eventName').optional().isString()
-    ],
-    async (req, res) => {
-        try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                return res.status(400).json({ errors: errors.array() });
-            }
-
-            const { customerId, value, eventName } = req.body;
-            const meterEvent = await stripeService.createMeterEvent(customerId, parseInt(value), eventName);
-            res.json(meterEvent);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    }
-);
-
-// Get meter events for a customer
-router.get('/meter-events/:customerId',
-    async (req, res) => {
-        try {
-            const { customerId } = req.params;
-            const { limit } = req.query;
-            const meterEvents = await stripeService.getMeterEvents(customerId, limit ? parseInt(limit) : undefined);
-            res.json(meterEvents);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    }
-);
-
-// Get subscription details
-router.get('/subscriptions/:subscriptionId', async (req, res) => {
-    try {
-        const { subscriptionId } = req.params;
-        const subscription = await stripeService.getSubscription(subscriptionId);
-        res.json(subscription);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Cancel subscription
-router.delete('/subscriptions/:subscriptionId', async (req, res) => {
-    try {
-        const { subscriptionId } = req.params;
-        const subscription = await stripeService.cancelSubscription(subscriptionId);
-        res.json(subscription);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+// Events
+router.get('/v1/events', getEvents);
 
 module.exports = router;
