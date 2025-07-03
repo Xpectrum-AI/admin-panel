@@ -53,7 +53,11 @@ export default function Header() {
             onClick={() => setDropdownOpen(!dropdownOpen)}
             className="text-gray-500 hover:text-gray-800"
           >
-            <UserCircle className="h-8 w-8" />
+            <div className="h-8 w-8 rounded-full bg-gray-900 flex items-center justify-center">
+              <span className="text-white text-lg font-bold">
+                {user?.firstName?.[0]}{user?.lastName?.[0]}
+              </span>
+            </div>
           </button>
           {dropdownOpen && (
             <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-100 z-10 animate-fade-in-down">

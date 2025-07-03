@@ -4,6 +4,8 @@ import { useState } from 'react';
 import WorkspaceProfileTab from './WorkspaceProfileTab';
 import WorkspaceTeamTab from './WorkspaceTeamTab';
 import WorkspaceRolesTab from './WorkspaceRolesTab';
+import { ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 const tabs = [
   'Profile',
@@ -17,26 +19,40 @@ const tabs = [
 
 export default function WorkspaceTabs({ workspace }: { workspace: any }) {
   const [activeTab, setActiveTab] = useState('Profile');
+  const router = useRouter();
 
   return (
-    <div className="max-w-4xl mx-auto mt-8">
-      <h1 className="text-2xl font-semibold mb-6 text-gray-800">Workspace Management</h1>
-      <div className="flex space-x-2 mb-6">
+    <div className="min-h-screen bg-[#f8fafc]">
+      {/* Header with back button and title, border bottom only */}
+      <div className="flex items-center px-8 py-6 border-b border-gray-200 mb-10">
+          <button
+            onClick={() => router.back()}
+            className="group mr-3"
+            aria-label="Back"
+          >
+            <span className="inline-flex items-center justify-center rounded-lg transition bg-transparent group-hover:bg-gray-100 h-9 w-9">
+              <ArrowLeft className="h-5 w-5 text-gray-600 group-hover:text-gray-900" />
+            </span>
+          </button>
+          <h1 className="text-2xl md:text-2xl font-bold text-gray-900">Workspace Settings</h1>
+        </div>
+      {/* Tabs */}
+      <div className="flex bg-gray-100 rounded-xl p-1 mb-8 border border-gray-200 gap-2 w-full max-w-6xl mx-auto">
         {tabs.map(tab => (
           <button
             key={tab}
-            className={`px-4 py-2 rounded-t-lg font-medium focus:outline-none transition border-b-2 ${
-              activeTab === tab
-                ? 'bg-white border-indigo-500 text-gray-900'
-                : 'bg-gray-50 border-transparent text-gray-500 hover:text-gray-700'
-            }`}
+            className={`flex-1 py-1 rounded-lg font-medium transition text-base focus:outline-none
+              ${activeTab === tab
+                ? 'bg-white shadow text-gray-900 font-semibold border border-gray-200'
+                : 'bg-gray-100 text-gray-500 hover:text-gray-700'}`}
             onClick={() => setActiveTab(tab)}
           >
             {tab}
           </button>
         ))}
       </div>
-      <div className="bg-white rounded-b-lg shadow-sm border border-t-0 border-gray-100 p-6">
+      {/* Content Card */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-10 max-w-6xl mx-auto">
         {activeTab === 'Profile' && <WorkspaceProfileTab workspace={workspace} />}
         {activeTab === 'Team' && <WorkspaceTeamTab />}
         {activeTab === 'Roles' && <WorkspaceRolesTab />}

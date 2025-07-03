@@ -1,5 +1,5 @@
 export async function createOrg(orgName: string) {
-  const response = await fetch('http://localhost:5000/api/org/create-org', {
+  const response = await fetch('http://localhost:8000/api/org/create-org', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orgName }),
