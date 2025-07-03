@@ -1,15 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useRedirectFunctions } from '@propelauth/react';
 import Link from 'next/link';
-import { ArrowLeft, Mail, Eye, EyeOff, User, Phone, MapPin, User2, Lock } from 'lucide-react';
+import { Mail, Eye, EyeOff, User, Lock } from 'lucide-react';
 import { useAuthFrontendApis } from '@propelauth/frontend-apis-react'
 import { createUser } from "../services/userService";
 import { useErrorHandler } from '../hooks/useErrorHandler';
 
 export default function SignUp() {
-  const router = useRouter();
+  const { redirectToLoginPage } = useRedirectFunctions();
   const [formData, setFormData] = useState({
     username: '',
     firstName: '',
@@ -51,7 +51,9 @@ export default function SignUp() {
       if (response.success) {
         setLoading(false);
         showSuccess('Signup successful! You will be redirected to login.');
-        router.push('/login');
+        redirectToLoginPage({
+	postLoginRedirectUrl: 'http://localhost:3000/dashboard'
+});
       } else {
         setLoading(false);
         showError(response.error || 'Failed to sign up. Please try again.');
@@ -256,7 +258,17 @@ export default function SignUp() {
         </div>
         <div className="text-center text-gray-500 text-base mt-6">
           Already have an account?{' '}
-          <Link href="/login" className="text-gray-900 font-semibold hover:underline">Sign in</Link>
+          <button
+            type="button"
+            className="text-gray-900 font-semibold hover:underline bg-transparent border-none p-0 m-0 cursor-pointer"
+            onClick={() => {
+              redirectToLoginPage({
+                postLoginRedirectUrl: 'http://localhost:3000/dashboard'
+              });
+            }}
+          >
+            Sign in
+          </button>
         </div>
       </div>
     </div>

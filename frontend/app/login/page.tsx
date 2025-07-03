@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { useRedirectFunctions } from '@propelauth/react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Mail, Eye, EyeOff, Lock, X } from 'lucide-react';
 import { useAuthFrontendApis } from '@propelauth/frontend-apis-react';
 import { useAuthInfo } from "@propelauth/react";
@@ -91,6 +91,7 @@ function ResetPasswordModal({ open, email, loading, error, success, onEmailChang
 }
 
 export default function Login() {
+  const { redirectToSignupPage } = useRedirectFunctions();
   const router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
@@ -100,17 +101,16 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const { emailPasswordLogin, sendForgotPasswordEmail, resendEmailConfirmation } = useAuthFrontendApis();
   const { user } = useAuthInfo();
-  const [loginSuccess, setLoginSuccess] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
   const { showError, showSuccess } = useErrorHandler();
 
   useEffect(() => {
-    if (loginSuccess) {
-      router.push("/dashboard");
+    if (user) {
+      window.location.href = "/dashboard";
     }
-  }, [loginSuccess]);
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,7 +133,7 @@ export default function Login() {
             return;
           }
           showSuccess('Login successful! You will be redirected to dashboard.');
-          setLoginSuccess(true);
+          window.location.reload();
         },
         passwordLoginDisabled(error) {
           showError('Password login is disabled.');
@@ -295,7 +295,15 @@ export default function Login() {
         </div>
         <div className="text-center text-gray-500 text-base mt-6">
           Don&apos;t have an account?{' '}
-          <Link href="/signup" className="text-gray-900 font-semibold hover:underline">Sign up</Link>
+          <button
+            type="button"
+            className="text-gray-900 font-semibold hover:underline bg-transparent border-none p-0 m-0 cursor-pointer"
+            onClick={() => {
+              redirectToSignupPage();
+            }}
+          >
+            Sign up
+          </button>
         </div>
       </div>
       <ResetPasswordModal

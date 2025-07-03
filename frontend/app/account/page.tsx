@@ -1,17 +1,17 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ArrowLeft, Mail, Eye, EyeOff, User, Phone, MapPin, User2, Save } from 'lucide-react';
 import { useAuthInfo } from '@propelauth/react';
 import { ProtectedRoute } from '../auth/ProtectedRoute';
 import { useAuthFrontendApis } from '@propelauth/frontend-apis-react';
 import { useErrorHandler } from '../hooks/useErrorHandler';
+import { useRouter } from 'next/navigation';
 
 export default function AccountSettings() {
-  const router = useRouter();
   const { user } = useAuthInfo();
   const { showError, showSuccess } = useErrorHandler();
+  const router = useRouter();
 
   // Mock data for phone and location
   const phone = '+1 (555) 123-4567';

@@ -2,10 +2,12 @@
 
 import { useEffect } from "react";
 import { useAuthInfo } from "@propelauth/react";
+import { useRedirectFunctions } from "@propelauth/react";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
   const { user, loading } = useAuthInfo();
+  const { redirectToLoginPage } = useRedirectFunctions();
   const router = useRouter();
 
   useEffect(() => {
@@ -13,10 +15,12 @@ export default function Home() {
     if (user) {
       router.push("/dashboard");
     } else {
-      router.push("/login");
-      //redirectToLoginPage();
+      redirectToLoginPage({
+	postLoginRedirectUrl: 'http://localhost:3000/dashboard'
+});
     }
-  }, [user, loading, router]);
+  }, [user, loading, redirectToLoginPage, router]);
 
   return <div>Loading…</div>;
 }
+

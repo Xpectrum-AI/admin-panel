@@ -3,18 +3,19 @@
 
 import { useAuthInfo } from "@propelauth/react";
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRedirectFunctions } from "@propelauth/react";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { loading, user } = useAuthInfo();
-  const router = useRouter();
+  const { redirectToLoginPage } = useRedirectFunctions();
 
   useEffect(() => {
     if (!loading && !user) {
-      //redirectToLoginPage(); // redirects to PropelAuth login page
-      router.push("/login");
+      redirectToLoginPage({
+        postLoginRedirectUrl: "http://localhost:3000/dashboard"
+      });
     }
-  }, [loading, user, router]);
+  }, [loading, user, redirectToLoginPage]);
 
   if (loading || !user) {
     return null; // or a spinner if you prefer
