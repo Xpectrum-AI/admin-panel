@@ -9,6 +9,10 @@ RUN npm config set registry https://registry.npmjs.org/ && \
 
 COPY package*.json ./
 RUN npm ci
+
+# Add timestamp to force cache invalidation for source files
+RUN echo "Build timestamp: $(date)" > .build-timestamp
+
 COPY . .
 RUN npm run build
 
