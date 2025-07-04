@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRedirectFunctions } from '@propelauth/react';
-import { useRouter } from 'next/navigation';
 import { Mail, Eye, EyeOff, Lock, X } from 'lucide-react';
 import { useAuthFrontendApis } from '@propelauth/frontend-apis-react';
 import { useAuthInfo } from "@propelauth/react";
@@ -43,7 +42,7 @@ function ResetPasswordModal({ open, email, loading, error, success, onEmailChang
           <X className="h-5 w-5" />
         </button>
         <h2 className="text-xl font-bold text-gray-900 mb-1">Reset your password</h2>
-        <p className="text-gray-500 mb-6 text-sm">Enter your email address and we'll send you a link to reset your password.</p>
+        <p className="text-gray-500 mb-6 text-sm">Enter your email address and we&apos;ll send you a link to reset your password.</p>
         <form onSubmit={onSubmit}>
           <label htmlFor="reset-email" className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
           <div className="relative mb-6">
@@ -92,7 +91,6 @@ function ResetPasswordModal({ open, email, loading, error, success, onEmailChang
 
 export default function Login() {
   const { redirectToSignupPage } = useRedirectFunctions();
-  const router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -126,7 +124,7 @@ export default function Login() {
             try {
               await resendEmailConfirmation();
               showError('Email confirmation required. We have sent the confirmation email to your inbox.');
-            } catch (err) {
+            } catch {
               showError('Email confirmation required, but failed to send confirmation email.');
             } 
             setLoading(false);
@@ -135,30 +133,28 @@ export default function Login() {
           showSuccess('Login successful! You will be redirected to dashboard.');
           window.location.reload();
         },
-        passwordLoginDisabled(error) {
+        passwordLoginDisabled() {
           showError('Password login is disabled.');
         },
-        userAccountDisabled(error) {
+        userAccountDisabled() {
           showError('User account is disabled.');
         },
-        userAccountLocked(error) {
+        userAccountLocked() {
           showError('User account is locked.');
         },
-        invalidCredentials(error) {
+        invalidCredentials() {
           showError('Invalid email or password.');
         },
-        badRequest(error) {
+        badRequest() {
           showError('Bad request. Please check your input.');
         },
-        unexpectedOrUnhandled(error) {
+        unexpectedOrUnhandled() {
           showError('An unexpected error occurred. Please try again.');
         },
       });
-    } catch (error) {
+    } catch {
       setLoading(false);
       showError('Failed to log in. Please check your credentials.');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -178,14 +174,14 @@ export default function Login() {
         success() {
           showSuccess('Reset link sent! Check your email.');
         },
-        badRequest(error) {
+        badRequest() {
           showError('Invalid email address.');
         },
-        unexpectedOrUnhandled(error) {
+        unexpectedOrUnhandled() {
           showError('An error occurred. Please try again.');
         },
       });
-    } catch (error) {
+    } catch {
       showError('Failed to send reset link.');
     } finally {
       setResetLoading(false);

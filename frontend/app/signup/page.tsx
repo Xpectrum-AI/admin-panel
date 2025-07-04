@@ -2,9 +2,7 @@
 
 import { useState } from 'react';
 import { useRedirectFunctions } from '@propelauth/react';
-import Link from 'next/link';
 import { Mail, Eye, EyeOff, User, Lock } from 'lucide-react';
-import { useAuthFrontendApis } from '@propelauth/frontend-apis-react'
 import { createUser } from "../services/userService";
 import { useErrorHandler } from '../hooks/useErrorHandler';
 
@@ -22,7 +20,6 @@ export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agree, setAgree] = useState(false);
-  const { signup } = useAuthFrontendApis();
   const { showError, showSuccess } = useErrorHandler();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,9 +55,9 @@ export default function SignUp() {
         setLoading(false);
         showError(response.error || 'Failed to sign up. Please try again.');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setLoading(false);
-      showError(error.message || 'Failed to sign up. Please try again.');
+      showError(error instanceof Error ? error.message : 'Failed to sign up. Please try again.');
     }
   };
 

@@ -1,6 +1,13 @@
 import { Building2, SquarePen } from 'lucide-react';
 
-export default function WorkspaceProfileTab({ workspace }: { workspace: any }) {
+interface WorkspaceProfileTabProps {
+  workspace: {
+    name?: string;
+    description?: string;
+  };
+}
+
+export default function WorkspaceProfileTab({ workspace }: WorkspaceProfileTabProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-8">

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from 'react';
-import { useRedirectFunctions } from '@propelauth/react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { ProtectedRoute } from '../auth/ProtectedRoute';

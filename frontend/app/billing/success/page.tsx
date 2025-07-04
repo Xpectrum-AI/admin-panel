@@ -31,35 +31,32 @@ const SuccessPage = () => {
     const sessionIdParam = urlParams.get('session_id');
     setSessionId(sessionIdParam);
 
+    const fetchPaymentDetails = async (sessionId: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`${API_BASE}/stripe/v1/checkout/sessions/${sessionId}`, {
+          headers: {
+            'X-API-Key': API_KEY
+          }
+        });
+        const data = await response.json();
+        if (data.success) {
+          setPaymentDetails(data.session);
+        } else {
+          setError('Failed to fetch payment details');
+        }
+      } catch {
+        // handle error
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (sessionIdParam) {
       fetchPaymentDetails(sessionIdParam);
     }
-  }, []);
-
-  const fetchPaymentDetails = async (sessionId: string) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const response = await fetch(`${API_BASE}/stripe/v1/checkout/sessions/${sessionId}`, {
-        headers: {
-          'X-API-Key': API_KEY
-        }
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setPaymentDetails(data.session);
-      } else {
-        setError('Failed to fetch payment details');
-      }
-    } catch (err) {
-      setError('Failed to fetch payment details');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [API_BASE]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">

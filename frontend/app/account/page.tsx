@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Mail, Eye, EyeOff, User, Phone, MapPin, User2, Save } from 'lucide-react';
+import { ArrowLeft, Mail, Eye, EyeOff, Phone, MapPin, User2, Save } from 'lucide-react';
 import { useAuthInfo } from '@propelauth/react';
 import { ProtectedRoute } from '../auth/ProtectedRoute';
 import { useAuthFrontendApis } from '@propelauth/frontend-apis-react';
@@ -110,14 +110,14 @@ export default function AccountSettings() {
           setSavedData(formData);
           setEditing(false);
         },
-        badRequest(error) {
+        badRequest: () => {
           showError('Error updating account information.');
         },
-        unexpectedOrUnhandled(error) {
+        unexpectedOrUnhandled: () => {
           showError('An unexpected error occurred. Please try again.');
         },
       });
-    } catch (error) {
+    } catch {
       showError('Failed to update account information. Please try again.');
     }
   };
@@ -154,14 +154,14 @@ export default function AccountSettings() {
           setShowConfirm(false);
           setPasswordEditing(false);
         },
-        badRequest(error) {
+        badRequest: () => {
           showError('Error updating password.');
         },
-        unexpectedOrUnhandled(error) {
+        unexpectedOrUnhandled: () => {
           showError('An unexpected error occurred. Please try again.');
         },
       });
-    } catch (error) {
+    } catch {
       showError('Failed to update password. Please try again.');
     }
   };

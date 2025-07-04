@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 interface Agent {
   agentId: string;
@@ -33,7 +33,6 @@ interface HealthStatus {
 const AgentsPage = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [health, setHealth] = useState<HealthStatus | null>(null);
-  const [activeCalls, setActiveCalls] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -92,7 +91,7 @@ const AgentsPage = () => {
   };
 
   // Fetch all agents
-  const fetchAgents = async () => {
+  const fetchAgents = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE}/agents/all`, { headers });
       const data = await response.json();
@@ -101,36 +100,23 @@ const AgentsPage = () => {
       } else {
         setError(data.error || 'Failed to fetch agents');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to connect to server');
     }
-  };
+  }, []);
 
   // Fetch health status
-  const fetchHealth = async () => {
+  const fetchHealth = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE}/agents/health`, { headers });
       const data = await response.json();
       if (data.success) {
         setHealth(data.health);
       }
-    } catch (err) {
-      console.error('Failed to fetch health status:', err);
+    } catch {
+      console.error('Failed to fetch health status');
     }
-  };
-
-  // Fetch active calls
-  const fetchActiveCalls = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/agents/active-calls`, { headers });
-      const data = await response.json();
-      if (data.success) {
-        setActiveCalls(data.active_calls);
-      }
-    } catch (err) {
-      console.error('Failed to fetch active calls:', err);
-    }
-  };
+  }, []);
 
   // Add new agent
   const handleAddAgent = async () => {
@@ -170,7 +156,7 @@ const AgentsPage = () => {
       } else {
         alert(data.error || 'Failed to add agent');
       }
-    } catch (err) {
+    } catch {
       alert('Failed to add agent');
     }
   };
@@ -192,7 +178,7 @@ const AgentsPage = () => {
       } else {
         alert(data.error || 'Failed to set phone number');
       }
-    } catch (err) {
+    } catch {
       alert('Failed to set phone number');
     }
   };
@@ -209,7 +195,7 @@ const AgentsPage = () => {
         setSearchResult(null);
         alert(data.error || 'No agent found');
       }
-    } catch (err) {
+    } catch {
       alert('Failed to search agent');
     }
   };
@@ -235,7 +221,7 @@ const AgentsPage = () => {
       } else {
         alert(data.error || 'Failed to update agent');
       }
-    } catch (err) {
+    } catch {
       alert('Failed to update agent');
     }
   };
@@ -243,11 +229,11 @@ const AgentsPage = () => {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([fetchAgents(), fetchHealth(), fetchActiveCalls()]);
+      await Promise.all([fetchAgents(), fetchHealth()]);
       setLoading(false);
     };
     loadData();
-  }, []);
+  }, [fetchAgents, fetchHealth]);
 
   if (loading) {
     return (

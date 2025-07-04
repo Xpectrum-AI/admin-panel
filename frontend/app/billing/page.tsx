@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 interface Customer {
   id: string;
@@ -23,7 +23,10 @@ interface Price {
   product: string;
   unit_amount: number;
   currency: string;
-  recurring?: any;
+  recurring?: {
+    interval: string;
+    interval_count: number;
+  };
 }
 
 interface PaymentMethod {
@@ -59,16 +62,7 @@ const BillingPage = () => {
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
-  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
-  const [showUsageModal, setShowUsageModal] = useState(false);
-  const [showUsageSummaryModal, setShowUsageSummaryModal] = useState(false);
-  const [showInvoicesModal, setShowInvoicesModal] = useState(false);
-  const [showPaymentIntentModal, setShowPaymentIntentModal] = useState(false);
-  const [showEventsModal, setShowEventsModal] = useState(false);
-  const [showBalanceModal, setShowBalanceModal] = useState(false);
-  const [showBalanceTransactionsModal, setShowBalanceTransactionsModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<string>('');
-  const [paymentIntentId, setPaymentIntentId] = useState<string>('');
   
   const [customerForm, setCustomerForm] = useState({
     email: '',
@@ -88,31 +82,6 @@ const BillingPage = () => {
     cancel_url: 'http://localhost:3000/billing/cancel'
   });
 
-  const [subscriptionForm, setSubscriptionForm] = useState({
-    customer: '',
-    price_id: '',
-    metadata: {}
-  });
-
-  const [usageForm, setUsageForm] = useState({
-    subscription_item_id: '',
-    quantity: 1,
-    timestamp: Math.floor(Date.now() / 1000)
-  });
-
-  const [usageSummaryForm, setUsageSummaryForm] = useState({
-    subscription_item_id: '',
-    start: Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60), // 30 days ago
-    end: Math.floor(Date.now() / 1000)
-  });
-
-  const [balanceForm, setBalanceForm] = useState({
-    customer_id: '',
-    amount: 0,
-    currency: 'inr',
-    description: ''
-  });
-
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   const API_KEY = 'xpectrum-ai@123';
 
@@ -122,7 +91,7 @@ const BillingPage = () => {
   };
 
   // Fetch data functions
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE}/stripe/v1/customers`, { headers });
       const data = await response.json();
@@ -131,36 +100,36 @@ const BillingPage = () => {
       } else {
         setCustomers([]);
       }
-    } catch (err) {
+    } catch {
       setCustomers([]);
     }
-  };
+  }, []);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE}/stripe/v1/products`, { headers });
       const data = await response.json();
       if (data.success) {
         setProducts(data.products.data || []);
       }
-    } catch (err) {
-      console.error('Failed to fetch products:', err);
+    } catch {
+      console.error('Failed to fetch products');
     }
-  };
+  }, []);
 
-  const fetchPrices = async () => {
+  const fetchPrices = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE}/stripe/v1/prices`, { headers });
       const data = await response.json();
       if (data.success) {
         setPrices(data.prices.data || []);
       }
-    } catch (err) {
-      console.error('Failed to fetch prices:', err);
+    } catch {
+      console.error('Failed to fetch prices');
     }
-  };
+  }, []);
 
-  const fetchPaymentMethods = async (customerId: string) => {
+  const fetchPaymentMethods = useCallback(async (customerId: string) => {
     try {
       const response = await fetch(`${API_BASE}/stripe/v1/payment_methods?customer=${customerId}`, { headers });
       const data = await response.json();
@@ -170,13 +139,13 @@ const BillingPage = () => {
         // If customer doesn't exist, set empty array
         setPaymentMethods([]);
       }
-    } catch (err) {
-      console.error('Failed to fetch payment methods:', err);
+    } catch {
+      console.error('Failed to fetch payment methods');
       setPaymentMethods([]);
     }
-  };
+  }, []);
 
-  const fetchCheckoutSessions = async (customerId: string) => {
+  const fetchCheckoutSessions = useCallback(async (customerId: string) => {
     try {
       const response = await fetch(`${API_BASE}/stripe/v1/checkout/sessions?customer=${customerId}`, { headers });
       const data = await response.json();
@@ -186,11 +155,11 @@ const BillingPage = () => {
         // If customer doesn't exist, set empty array
         setCheckoutSessions([]);
       }
-    } catch (err) {
-      console.error('Failed to fetch checkout sessions:', err);
+    } catch {
+      console.error('Failed to fetch checkout sessions');
       setCheckoutSessions([]);
     }
-  };
+  }, []);
 
   // Action functions
   const handleCreateCustomer = async () => {
@@ -209,7 +178,7 @@ const BillingPage = () => {
       } else {
         alert(data.error || 'Failed to create customer');
       }
-    } catch (err) {
+    } catch {
       alert('Failed to create customer');
     }
   };
@@ -230,7 +199,7 @@ const BillingPage = () => {
       } else {
         alert(data.error || 'Failed to create product');
       }
-    } catch (err) {
+    } catch {
       alert('Failed to create product');
     }
   };
@@ -256,7 +225,7 @@ const BillingPage = () => {
       } else {
         alert(data.error || 'Failed to create checkout session');
       }
-    } catch (err) {
+    } catch {
       alert('Failed to create checkout session');
     }
   };
@@ -281,75 +250,8 @@ const BillingPage = () => {
       } else {
         alert(data.error || 'Failed to delete customer');
       }
-    } catch (err) {
+    } catch {
       alert('Failed to delete customer');
-    }
-  };
-
-  const handleCreateSubscription = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/stripe/v1/subscriptions`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(subscriptionForm)
-      });
-      const data = await response.json();
-      if (data.success) {
-        setShowSubscriptionModal(false);
-        setSubscriptionForm({ customer: '', price_id: '', metadata: {} });
-        alert('Subscription created successfully!');
-      } else {
-        alert(data.error || 'Failed to create subscription');
-      }
-    } catch (err) {
-      alert('Failed to create subscription');
-    }
-  };
-
-  const handleReportUsage = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/stripe/v1/subscription_items/${usageForm.subscription_item_id}/usage_records`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          quantity: usageForm.quantity,
-          timestamp: usageForm.timestamp
-        })
-      });
-      const data = await response.json();
-      if (data.success) {
-        setShowUsageModal(false);
-        setUsageForm({ subscription_item_id: '', quantity: 1, timestamp: Math.floor(Date.now() / 1000) });
-        alert('Usage reported successfully!');
-      } else {
-        alert(data.error || 'Failed to report usage');
-      }
-    } catch (err) {
-      alert('Failed to report usage');
-    }
-  };
-
-  const handleCreateBalanceTransaction = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/stripe/v1/customers/${balanceForm.customer_id}/balance_transactions`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          amount: balanceForm.amount,
-          currency: balanceForm.currency,
-          description: balanceForm.description
-        })
-      });
-      const data = await response.json();
-      if (data.success) {
-        setShowBalanceModal(false);
-        setBalanceForm({ customer_id: '', amount: 0, currency: 'inr', description: '' });
-        alert('Balance transaction created successfully!');
-      } else {
-        alert(data.error || 'Failed to create balance transaction');
-      }
-    } catch (err) {
-      alert('Failed to create balance transaction');
     }
   };
 
@@ -364,14 +266,14 @@ const BillingPage = () => {
       setLoading(false);
     };
     loadData();
-  }, []);
+  }, [fetchCustomers, fetchPrices, fetchProducts]);
 
   useEffect(() => {
     if (selectedCustomer) {
       fetchPaymentMethods(selectedCustomer);
       fetchCheckoutSessions(selectedCustomer);
     }
-  }, [selectedCustomer]);
+  }, [selectedCustomer, fetchPaymentMethods, fetchCheckoutSessions]);
 
   if (loading) {
     return (
@@ -590,155 +492,6 @@ const BillingPage = () => {
             </div>
           </div>
         )}
-
-        {/* Subscriptions Section */}
-        <div className="bg-gray-800 rounded-lg shadow-md mb-8">
-          <div className="px-6 py-4 border-b border-gray-700 flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Subscriptions</h2>
-            <button 
-              onClick={() => setShowSubscriptionModal(true)}
-              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              Create Subscription
-            </button>
-          </div>
-          <div className="p-6">
-            <p className="text-gray-300">Manage customer subscriptions and usage-based billing.</p>
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="border border-gray-700 rounded p-4">
-                <h4 className="font-medium text-gray-300 mb-2">Create Subscription</h4>
-                <p className="text-sm text-gray-400 mb-3">Create a new subscription for a customer</p>
-                <button 
-                  onClick={() => setShowSubscriptionModal(true)}
-                  className="text-purple-400 hover:text-purple-300 text-sm"
-                >
-                  Create →
-                </button>
-              </div>
-              <div className="border border-gray-700 rounded p-4">
-                <h4 className="font-medium text-gray-300 mb-2">Report Usage</h4>
-                <p className="text-sm text-gray-400 mb-3">Report usage for metered billing</p>
-                <button 
-                  onClick={() => setShowUsageModal(true)}
-                  className="text-purple-400 hover:text-purple-300 text-sm"
-                >
-                  Report →
-                </button>
-              </div>
-              <div className="border border-gray-700 rounded p-4">
-                <h4 className="font-medium text-gray-300 mb-2">Usage Summary</h4>
-                <p className="text-sm text-gray-400 mb-3">View usage summaries and analytics</p>
-                <button 
-                  onClick={() => setShowUsageSummaryModal(true)}
-                  className="text-purple-400 hover:text-purple-300 text-sm"
-                >
-                  View →
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Invoices Section */}
-        <div className="bg-gray-800 rounded-lg shadow-md mb-8">
-          <div className="px-6 py-4 border-b border-gray-700">
-            <h2 className="text-xl font-semibold">Invoices</h2>
-          </div>
-          <div className="p-6">
-            <p className="text-gray-300">View and manage customer invoices.</p>
-            <div className="mt-4">
-              <button 
-                onClick={() => setShowInvoicesModal(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                View All Invoices
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Payment Intents Section */}
-        <div className="bg-gray-800 rounded-lg shadow-md mb-8">
-          <div className="px-6 py-4 border-b border-gray-700">
-            <h2 className="text-xl font-semibold">Payment Intents</h2>
-          </div>
-          <div className="p-6">
-            <p className="text-gray-300">View payment intent details and status.</p>
-            <div className="mt-4">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Payment Intent ID (pi_xxx)"
-                  className="flex-1 px-3 py-2 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={paymentIntentId}
-                  onChange={(e) => setPaymentIntentId(e.target.value)}
-                />
-                <button 
-                  onClick={() => setShowPaymentIntentModal(true)}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                >
-                  View Details
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Events Section */}
-        <div className="bg-gray-800 rounded-lg shadow-md mb-8">
-          <div className="px-6 py-4 border-b border-gray-700">
-            <h2 className="text-xl font-semibold">Events</h2>
-          </div>
-          <div className="p-6">
-            <p className="text-gray-300">View Stripe events and webhook history.</p>
-            <div className="mt-4">
-              <button 
-                onClick={() => setShowEventsModal(true)}
-                className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                View Events
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Customer Balance Section */}
-        <div className="bg-gray-800 rounded-lg shadow-md mb-8">
-          <div className="px-6 py-4 border-b border-gray-700 flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Customer Balance</h2>
-            <button 
-              onClick={() => setShowBalanceModal(true)}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              Add Balance Transaction
-            </button>
-          </div>
-          <div className="p-6">
-            <p className="text-gray-300">Manage customer account balances and transactions.</p>
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="border border-gray-700 rounded p-4">
-                <h4 className="font-medium text-gray-300 mb-2">Add Balance</h4>
-                <p className="text-sm text-gray-400 mb-3">Add credit or debit to customer balance</p>
-                <button 
-                  onClick={() => setShowBalanceModal(true)}
-                  className="text-indigo-400 hover:text-indigo-300 text-sm"
-                >
-                  Add →
-                </button>
-              </div>
-              <div className="border border-gray-700 rounded p-4">
-                <h4 className="font-medium text-gray-300 mb-2">View Transactions</h4>
-                <p className="text-sm text-gray-400 mb-3">View balance transaction history</p>
-                <button 
-                  onClick={() => setShowBalanceTransactionsModal(true)}
-                  className="text-indigo-400 hover:text-indigo-300 text-sm"
-                >
-                  View →
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Create Customer Modal */}
         {showCustomerModal && (

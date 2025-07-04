@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Search, Bell, UserCircle, Settings, LogOut, User as UserIcon, Building2, Bot, CreditCard } from 'lucide-react';
+import { Search, Bell, User as UserIcon, Settings, LogOut, Building2, Bot, CreditCard } from 'lucide-react';
 import { useAuthInfo, useLogoutFunction } from '@propelauth/react';
 
 export default function Header() {

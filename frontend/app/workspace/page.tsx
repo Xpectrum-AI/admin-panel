@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from 'react';
 import WorkspaceTabs from '../components/workspace/WorkspaceTabs';
 
 export default function WorkspacePage() {
