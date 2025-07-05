@@ -21,6 +21,14 @@ JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here
 ```
 
+### PropelAuth Configuration
+```
+PROPELAUTH_API_KEY=a6507ff709be44c345d989e6e3222608b9c4ec1117473c6b265f98e29dcc6ce25bdb6fad9523abcbf96a379c5a8cf72d
+PROPELAUTH_AUTH_URL=http://auth.admin-test.xpectrum-ai.com
+```
+
+**Note**: For production, use HTTPS: `PROPELAUTH_AUTH_URL=https://auth.admin-test.xpectrum-ai.com`
+
 ## API Endpoints
 
 The backend provides the following endpoints:
