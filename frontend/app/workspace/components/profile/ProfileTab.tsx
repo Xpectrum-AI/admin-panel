@@ -1,6 +1,35 @@
 import { Building2, SquarePen } from 'lucide-react';
+import { useState } from 'react';
 
-export default function WorkspaceProfileTab({ workspace }: { workspace: any }) {
+export default function ProfileTab({ workspace }: { workspace: any }) {
+  const [editMode, setEditMode] = useState(false);
+  const [form, setForm] = useState({
+    name: workspace?.name || 'Acme Corporation',
+    description: workspace?.description || 'Leading innovation in technology solutions',
+    // Add more fields as needed
+  });
+  const [originalForm, setOriginalForm] = useState(form);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleEdit = () => {
+    setOriginalForm(form);
+    setEditMode(true);
+  };
+
+  const handleCancel = () => {
+    setForm(originalForm);
+    setEditMode(false);
+  };
+
+  const handleSave = () => {
+    // TODO: Replace with actual save logic (API call, etc.)
+    console.log('Saving workspace profile:', form);
+    setEditMode(false);
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -12,17 +41,49 @@ export default function WorkspaceProfileTab({ workspace }: { workspace: any }) {
             <h2 className="text-2xl font-bold text-gray-900">Workspace Profile</h2>
           </div>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-gray-100">
-          <SquarePen className='h-4 w-4' />
-          Edit Profile
-        </button>
+        {editMode ? (
+          <div className="flex gap-2">
+            <button
+              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-semibold bg-gray-100 hover:bg-gray-200"
+              onClick={handleSave}
+            >
+              Save
+            </button>
+            <button
+              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50"
+              onClick={handleCancel}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-gray-100"
+            onClick={handleEdit}
+          >
+            <SquarePen className='h-4 w-4' />
+            Edit Profile
+          </button>
+        )}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
         <div>
           <label className="block text-gray-700 text-sm mb-1">Workspace Name</label>
-          <input className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 mb-4" value={workspace?.name || 'Acme Corporation'} disabled />
+          <input
+            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 mb-4"
+            name="name"
+            value={form.name}
+            onChange={handleChange}
+            disabled={!editMode}
+          />
           <label className="block text-gray-700 text-sm mb-1">Description</label>
-          <textarea className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2" value={workspace?.description || 'Leading innovation in technology solutions'} disabled />
+          <textarea
+            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2"
+            name="description"
+            value={form.description}
+            onChange={handleChange}
+            disabled={!editMode}
+          />
         </div>
         <div>
           <label className="block text-gray-700 text-sm mb-1">Branding Color</label>
