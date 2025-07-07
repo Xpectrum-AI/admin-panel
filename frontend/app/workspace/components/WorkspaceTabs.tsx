@@ -17,7 +17,14 @@ const tabs = [
   'Integrations',
 ];
 
-export default function WorkspaceTabs({ workspace }: { workspace: any }) {
+interface WorkspaceTabsProps {
+  workspace: {
+    name?: string;
+    description?: string;
+  };
+}
+
+export default function WorkspaceTabs({ workspace }: WorkspaceTabsProps) {
   const [activeTab, setActiveTab] = useState('Profile');
   const router = useRouter();
 
