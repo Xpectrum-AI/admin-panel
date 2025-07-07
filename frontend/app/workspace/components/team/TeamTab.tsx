@@ -88,8 +88,8 @@ export default function TeamTab({ workspace }: { workspace: any }) {
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
           <span className="ml-2 text-gray-500">Loading members...</span>
-        </div>
-      )}
+                    </div>
+                  )}
 
       {/* Error State */}
       {hasError && !isLoading && (
@@ -101,7 +101,7 @@ export default function TeamTab({ workspace }: { workspace: any }) {
             <div className="ml-3">
               <h3 className="text-sm font-medium text-red-800">Error loading data</h3>
               <p className="text-sm text-red-700 mt-1">{membersError || invitesError}</p>
-            </div>
+      </div>
             <div className="ml-auto pl-3">
               <button
                 onClick={refreshData}

@@ -10,7 +10,7 @@ import { Users, DollarSign, BarChart, Zap } from 'lucide-react';
 export default function Dashboard() {
   return (
     <ProtectedRoute>
-      <div className="flex flex-col min-h-screen bg-gray-50">
+      <div className="flex flex-col min-h-screen ">
         <Header />
         <main className="flex-1 p-8">
           <div className="max-w-7xl mx-auto">

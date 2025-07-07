@@ -21,9 +21,9 @@ export function useTeamData(orgId: string) {
     setLoadingMembers(true);
     setMembersError(null);
     try {
-      const response: OrgMembersResponse = await fetchUsersInOrg(orgId);
-      if (response.success) {
-        const sortedMembers = sortMembersByName(response.data.users);
+      const response: any = await fetchUsersInOrg(orgId);
+      if (response && response.users) {
+        const sortedMembers = sortMembersByName(response.users);
         setMembers(sortedMembers);
       } else {
         throw new Error('Failed to fetch members');
@@ -41,9 +41,9 @@ export function useTeamData(orgId: string) {
     setLoadingInvites(true);
     setInvitesError(null);
     try {
-      const response: PendingInvitesResponse = await fetchPendingInvites(orgId);
-      if (response.success) {
-        setPendingInvites(response.data.invites);
+      const response: any = await fetchPendingInvites(orgId);
+      if (response && response.invites) {
+        setPendingInvites(response.invites);
       } else {
         throw new Error('Failed to fetch pending invites');
       }

@@ -19,6 +19,7 @@ const tabs = [
 
 interface WorkspaceTabsProps {
   workspace: {
+    orgId: string;
     name?: string;
     description?: string;
   };

@@ -1,7 +1,7 @@
 const {initAuth} = require('@propelauth/express');
 
 const PROPELAUTH_API_KEY = process.env.PROPELAUTH_API_KEY || 'a6507ff709be44c345d989e6e3222608b9c4ec1117473c6b265f98e29dcc6ce25bdb6fad9523abcbf96a379c5a8cf72d';
-const PROPELAUTH_AUTH_URL = process.env.PROPELAUTH_AUTH_URL || 'https://auth.admin-test.xpectrum-ai.com';
+const PROPELAUTH_AUTH_URL = process.env.PROPELAUTH_AUTH_URL || 'https://181249979.propelauthtest.com';
 
 const auth = initAuth({
   authUrl: PROPELAUTH_AUTH_URL,
@@ -88,6 +88,81 @@ async function changeUserRoleInOrgService(orgId, userId, role) {
   }
 }
 
+async function updateOrgService(orgId, updates) {
+  if (!orgId) throw new Error('Missing orgId');
+  if (!updates || Object.keys(updates).length === 0) {
+    throw new Error('No updates provided');
+  }
+
+  // ✅ Define allowed fields
+  const ALLOWED_SETTINGS = [
+    'domain',
+    'extraDomains',
+    'enableAutoJoiningByDomain',
+    'membersMustHaveMatchingDomain',
+    'maxUsers',
+    'canSetupSaml',
+    'legacyOrgId',
+  ];
+  const ALLOWED_METADATA = ['displayName', 'description'];
+
+  const payload = { orgId };
+  const metadata = {};
+
+  ALLOWED_METADATA.forEach((key) => {
+    if (updates[key] !== undefined) {
+      metadata[key] = updates[key];
+    }
+  });
+  if (Object.keys(metadata).length > 0) {
+    payload.metadata = metadata;
+  }
+
+  ALLOWED_SETTINGS.forEach((key) => {
+    if (updates[key] !== undefined) {
+      payload[key] = updates[key];
+    }
+  });
+
+  const invalidFields = Object.keys(updates).filter(
+    (k) =>
+      !ALLOWED_SETTINGS.includes(k) && !ALLOWED_METADATA.includes(k)
+  );
+  if (invalidFields.length > 0) {
+    throw new Error(
+      `Invalid update keys: ${invalidFields.join(', ')}`
+    );
+  }
+
+  try {
+    const data = await auth.updateOrg(payload);
+    return data;
+  } catch (err) {
+    throw new Error(err.message || 'Update org failed');
+  }
+}
+
+
+async function fetchOrgDetailsService(orgId) {
+  if (!orgId) throw new Error('Missing orgId');
+
+  const res = await fetch(`${PROPELAUTH_AUTH_URL}/api/backend/v1/org/${orgId}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${PROPELAUTH_API_KEY}`,
+    },
+  });
+
+  const json = await res.json();
+  if (!res.ok) {
+    console.error('API error:', json);
+    throw new Error(json.error || json.user_facing_error || 'Fetch org details failed');
+  }
+  
+  return json;
+
+}
+
 module.exports = {
   createOrgService,
   addUserToOrgService,
@@ -97,4 +172,6 @@ module.exports = {
   fetchPendingInvitesService,
   removeUserFromOrgService,
   changeUserRoleInOrgService,
+  updateOrgService,
+  fetchOrgDetailsService,
 }; 

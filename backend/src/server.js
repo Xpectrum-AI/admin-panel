@@ -5,7 +5,7 @@ require('dotenv').config({ path: '../.env' });
 // Now add CORS, express.json, and all other middleware/routes below
 const cors = require('cors');
 const mongoose = require('mongoose');
-const port = process.env.PORT || 8005;
+const port = process.env.PORT || 8000;
 
 app.use(cors());
 app.use(express.json());
