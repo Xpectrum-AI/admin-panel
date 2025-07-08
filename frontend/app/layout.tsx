@@ -1,7 +1,7 @@
 // app/layout.tsx
 import { AuthProviderWrapper } from "./auth/AuthProviderWrapper";
 import { ErrorProvider } from "./contexts/ErrorContext";
-import "./globals.css"; // if you're importing styles
+import "./globals.css";
 
 export const metadata = {
   title: "Your App",
@@ -9,14 +9,15 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+
   return (
     <html lang="en">
       <body>
-        <AuthProviderWrapper>
-          <ErrorProvider>
-            {children}
-          </ErrorProvider>
-        </AuthProviderWrapper>
+          <AuthProviderWrapper>
+            <ErrorProvider>
+              {children}
+            </ErrorProvider>
+          </AuthProviderWrapper>
       </body>
     </html>
   );

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useAuthInfo } from "@propelauth/react";
 import { useRedirectFunctions } from "@propelauth/react";
 import { useRouter } from "next/navigation";
+import {SyncLoader} from "react-spinners";
 
 export default function Home() {
   const { user, loading } = useAuthInfo();
@@ -21,6 +22,10 @@ export default function Home() {
     }
   }, [user, loading, redirectToLoginPage, router]);
 
-  return <div>Loading…</div>;
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+      <SyncLoader size={15} color="#000000" />
+    </div>
+  );
 }
 

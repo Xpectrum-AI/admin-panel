@@ -1,28 +1,37 @@
+import {Shield, SquarePen, Trash2, Plus } from 'lucide-react';
+
 const roles = [
   {
-    name: 'Admin',
+    name: 'Owner',
     description: 'Full access to all features',
     permissions: ['Create Bots', 'View Analytics', 'Billing Access', 'Manage Team', 'Manage Roles'],
   },
   {
-    name: 'Developer',
+    name: 'Admin',
     description: 'Can create and manage bots',
     permissions: ['Create Bots', 'View Analytics'],
   },
   {
-    name: 'Viewer',
+    name: 'Member',
     description: 'Read-only access',
     permissions: ['View Analytics'],
   },
 ];
 
-export default function WorkspaceRolesTab() {
+export default function RolesTab({ workspace }: { workspace: any }) {
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">Roles & Permissions</h2>
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center">
+          <div className="h-12 w-12 flex items-center justify-center rounded-xl bg-gray-900 mr-4">
+            <Shield className="h-7 w-7 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Roles & Permissions</h2>
+          </div>
+        </div>
         <button className="bg-gray-900 hover:bg-gray-800 text-white font-medium px-4 py-2 rounded-lg flex items-center space-x-2">
-          <span className="text-lg font-bold">+</span>
+          <Plus className='h-4 w-4' />
           <span>Create Role</span>
         </button>
       </div>
@@ -41,8 +50,12 @@ export default function WorkspaceRolesTab() {
               </div>
             </div>
             <div className="flex space-x-2 mt-4 md:mt-0">
-              <button className="px-3 py-1 rounded bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100">✏️</button>
-              <button className="px-3 py-1 rounded bg-gray-50 border border-gray-200 text-red-500 hover:bg-red-50">🗑️</button>
+              <button className="px-3 py-1 rounded bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100">
+                <SquarePen className="h-4 w-4" />
+              </button>
+              <button className="px-3 py-1 rounded bg-gray-50 border border-gray-200 text-red-500 hover:bg-red-50">
+                <Trash2 className="h-4 w-4" />
+              </button>
             </div>
           </div>
         ))}

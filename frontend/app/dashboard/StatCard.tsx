@@ -12,7 +12,7 @@ export default function StatCard({ title, value, percentage, Icon, trend }: Stat
   const trendColor = trend === 'up' ? 'text-green-500' : 'text-red-500';
 
   return (
-    <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col">
+    <div className="bg-white p-6 rounded-xl border border-gray-200 flex flex-col">
       <div className="flex justify-between items-start">
         <span className="text-gray-600 font-medium">{title}</span>
         <Icon className="h-6 w-6 text-gray-400" />

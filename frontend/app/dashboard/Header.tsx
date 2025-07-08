@@ -4,9 +4,11 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Search, Bell, User as UserIcon, Settings, LogOut, Building2, Bot, CreditCard, Calendar } from 'lucide-react';
 import { useAuthInfo, useLogoutFunction } from '@propelauth/react';
+import { SyncLoader } from 'react-spinners';
 
 export default function Header() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuthInfo();
   const logout = useLogoutFunction();
@@ -23,6 +25,14 @@ export default function Header() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [dropdownRef]);
+
+  if (loggingOut) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', width: '100vw', background: 'white', zIndex: 9999, position: 'fixed', top: 0, left: 0 }}>
+        <SyncLoader size={15} color="#000000" />
+      </div>
+    );
+  }
 
   return (
     <header className="flex items-center justify-between bg-white p-4 border-b border-gray-200">
@@ -112,7 +122,10 @@ export default function Header() {
                   <button className="btn">Calendar Service</button>
                 </Link>
                 <button
-                  onClick={() => logout(true)}
+                  onClick={() => {
+                    setLoggingOut(true);
+                    logout(true);
+                  }}
                   className="w-full flex items-center px-4 py-2 text-red-500 rounded-md hover:bg-red-50"
                 >
                   <LogOut className="h-5 w-5 mr-3" />
