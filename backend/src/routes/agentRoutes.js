@@ -7,7 +7,7 @@ const {
   getAllAgents,
   setAgentPhone,
   getAgentByPhone,
-  getAgentHealth,
+  deleteAgentPhone,
   getActiveCalls
 } = require('../controllers/agentController');
 
@@ -19,8 +19,8 @@ router.post('/update/:agentId', updateAgent);
 router.get('/info/:agentId', getAgentInfo);
 router.get('/all', getAllAgents);
 router.post('/set_phone/:agentId', setAgentPhone);
+router.delete('/delete_phone/:agentId', deleteAgentPhone);
 router.get('/by_phone/:phone_number', getAgentByPhone);
-router.get('/health', getAgentHealth);
 
 // Active calls route
 router.get('/active-calls', getActiveCalls);

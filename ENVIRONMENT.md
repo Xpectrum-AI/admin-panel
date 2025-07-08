@@ -23,24 +23,27 @@ STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here
 
 ### PropelAuth Configuration
 ```
-PROPELAUTH_API_KEY=a6507ff709be44c345d989e6e3222608b9c4ec1117473c6b265f98e29dcc6ce25bdb6fad9523abcbf96a379c5a8cf72d
-PROPELAUTH_AUTH_URL=http://auth.admin-test.xpectrum-ai.com
+PROPELAUTH_API_KEY=5c1b57840f4d4ec7265d0622cf68dd63e028b78d8482b21b8fb00395bb6ee3c59a1fde5f9288d373b1a315e591bd8723
+PROPELAUTH_AUTH_URL=https://181249979.propelauthtest.com
 ```
 
-**Note**: For production, use HTTPS: `PROPELAUTH_AUTH_URL=https://auth.admin-test.xpectrum-ai.com`
+**Note**: This is the test environment configuration. For production, update with your production PropelAuth credentials.
 
 ## API Endpoints
 
 The backend provides the following endpoints:
 
 ### Agent Management
-- `POST /agents/update/:agentId` - Update agent configuration
-- `GET /agents/info/:agentId` - Get agent information
-- `GET /agents/all` - Get all agents
-- `POST /agents/set_phone/:agentId` - Set phone number for agent
-- `GET /agents/by_phone/:phone_number` - Get agent by phone number
-- `GET /agents/health` - Get system health status
-- `GET /agents/active-calls` - Get active calls
+- `POST /agents/update/:agentId` - Update agent configuration (forwards to live API)
+- `GET /agents/info/:agentId` - Get agent information (placeholder)
+- `GET /agents/all` - Get all agents (placeholder)
+- `POST /agents/set_phone/:agentId` - Set phone number for agent (forwards to live API)
+- `DELETE /agents/delete_phone/:agentId` - Delete phone number for agent (forwards to live API)
+- `GET /agents/by_phone/:phone_number` - Get agent by phone number (placeholder)
+- `GET /agents/health` - Get system health status (placeholder)
+- `GET /agents/active-calls` - Get active calls (placeholder)
+
+**Note**: Agent management endpoints now forward requests to the live API at `https://live.xpectrum-ai.com` with API key `xpectrum-ai@123`.
 
 ### Stripe Payment Management
 - `POST /stripe/v1/customers` - Create Stripe customer
@@ -126,6 +129,43 @@ curl -X POST "http://localhost:8000/stripe/v1/products" \
        "name": "1000 AI Credits",
        "description": "1000 AI processing credits"
      }'
+```
+
+### Update Agent Configuration
+```bash
+curl -X POST "http://localhost:8000/agents/update/agent3" \
+     -H "X-API-Key: xpectrum-ai@123" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "chatbot_api": "https://demo.xpectrum-ai.com/v1/chat-messages",
+       "chatbot_key": "app-myZn5J4sZPO4lOXpFYLd9rij",
+       "tts_config": {
+         "voice_id": "e8e5fffb-252c-436d-b842-8879b84445b6",
+         "tts_api_key": "sk_car_gvwnAWPUG2hyRoRXYVroEH",
+         "model": "sonic-2",
+         "speed": 0.5
+       },
+       "stt_config": {
+         "api_key": "05df4b7e4f1ce81d5e9fdfb4b0cadd02b317c373",
+         "model": "nova-2",
+         "language": "en-US"
+       }
+     }'
+```
+
+### Add Phone Number to Agent
+```bash
+curl -X POST "http://localhost:8000/agents/set_phone/agent3" \
+     -H "X-API-Key: xpectrum-ai@123" \
+     -H "Content-Type: application/json" \
+     -d '{"phone_number": "+19147684789"}'
+```
+
+### Delete Phone Number from Agent
+```bash
+curl -X DELETE "http://localhost:8000/agents/delete_phone/agent3" \
+     -H "X-API-Key: xpectrum-ai@123" \
+     -H "Content-Type: application/json"
 ```
 
 ## Troubleshooting

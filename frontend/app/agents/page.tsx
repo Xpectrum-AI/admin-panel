@@ -22,21 +22,15 @@ interface Agent {
   updated_at: string;
 }
 
-interface HealthStatus {
-  status: string;
-  total_agents: number;
-  agents_with_phone: number;
-  agents_without_phone: number;
-  timestamp: string;
-}
+
 
 const AgentsPage = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [health, setHealth] = useState<HealthStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [showDeletePhoneModal, setShowDeletePhoneModal] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<string>('');
   const [searchPhone, setSearchPhone] = useState('');
   const [searchResult, setSearchResult] = useState<Agent | null>(null);
@@ -95,28 +89,24 @@ const AgentsPage = () => {
     try {
       const response = await fetch(`${API_BASE}/agents/all`, { headers });
       const data = await response.json();
+      console.log('Agents response:', data); // Debug log
       if (data.success) {
-        setAgents(data.agents);
+        // Ensure agents is always an array
+        const agentsArray = Array.isArray(data.agents) ? data.agents : [];
+        setAgents(agentsArray);
+        setError(null); // Clear any previous errors
       } else {
         setError(data.error || 'Failed to fetch agents');
+        setAgents([]); // Set empty array on error
       }
-    } catch {
+    } catch (error) {
+      console.error('Error fetching agents:', error);
       setError('Failed to connect to server');
+      setAgents([]); // Set empty array on error
     }
   }, []);
 
-  // Fetch health status
-  const fetchHealth = useCallback(async () => {
-    try {
-      const response = await fetch(`${API_BASE}/agents/health`, { headers });
-      const data = await response.json();
-      if (data.success) {
-        setHealth(data.health);
-      }
-    } catch {
-      console.error('Failed to fetch health status');
-    }
-  }, []);
+
 
   // Add new agent
   const handleAddAgent = async () => {
@@ -151,13 +141,12 @@ const AgentsPage = () => {
           }
         });
         fetchAgents();
-        fetchHealth();
-        alert('Agent added successfully!');
+        alert('Agent added successfully to live system!');
       } else {
-        alert(data.error || 'Failed to add agent');
+        alert(data.error || 'Failed to add agent to live system');
       }
     } catch {
-      alert('Failed to add agent');
+      alert('Failed to add agent to live system');
     }
   };
 
@@ -173,13 +162,12 @@ const AgentsPage = () => {
       if (data.success) {
         setShowPhoneModal(false);
         fetchAgents();
-        fetchHealth();
-        alert('Phone number set successfully!');
+        alert('Phone number set successfully in live system!');
       } else {
-        alert(data.error || 'Failed to set phone number');
+        alert(data.error || 'Failed to set phone number in live system');
       }
     } catch {
-      alert('Failed to set phone number');
+      alert('Failed to set phone number in live system');
     }
   };
 
@@ -200,6 +188,26 @@ const AgentsPage = () => {
     }
   };
 
+  // Delete phone number
+  const handleDeletePhone = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/agents/delete_phone/${selectedAgent}`, {
+        method: 'DELETE',
+        headers
+      });
+      const data = await response.json();
+      if (data.success) {
+        setShowDeletePhoneModal(false);
+        fetchAgents();
+        alert('Phone number deleted successfully from live system!');
+      } else {
+        alert(data.error || 'Failed to delete phone number from live system');
+      }
+    } catch {
+      alert('Failed to delete phone number from live system');
+    }
+  };
+
   const handleUpdateAgent = async () => {
     if (!updateForm.agentId.trim()) {
       alert('Agent ID is required');
@@ -216,24 +224,23 @@ const AgentsPage = () => {
       if (data.success) {
         setShowUpdateModal(false);
         fetchAgents();
-        fetchHealth();
-        alert('Agent updated successfully!');
+        alert('Agent updated successfully in live system!');
       } else {
-        alert(data.error || 'Failed to update agent');
+        alert(data.error || 'Failed to update agent in live system');
       }
     } catch {
-      alert('Failed to update agent');
+      alert('Failed to update agent in live system');
     }
   };
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([fetchAgents(), fetchHealth()]);
+      await fetchAgents();
       setLoading(false);
     };
     loadData();
-  }, [fetchAgents, fetchHealth]);
+  }, [fetchAgents]);
 
   if (loading) {
     return (
@@ -250,6 +257,17 @@ const AgentsPage = () => {
           <h1 className="text-4xl font-bold text-white mb-2">Agent Management</h1>
           <p className="text-gray-400">Manage your AI agents and monitor system health</p>
         </div>
+
+        {/* Live API Integration Notice */}
+        <div className="bg-blue-900/20 border border-blue-500/50 text-blue-300 px-4 py-3 rounded-lg mb-6" role="alert">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="font-medium">Live API Integration:</span>
+            <span className="ml-2">Agent configurations are now saved to the live system at live.xpectrum-ai.com</span>
+          </div>
+        </div>
         
         {error && (
           <div className="bg-red-900/20 border border-red-500/50 text-red-300 px-4 py-3 rounded-lg mb-6" role="alert">
@@ -257,76 +275,9 @@ const AgentsPage = () => {
           </div>
         )}
 
-        {/* Health Status Cards */}
-        {health && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm font-medium">Total Agents</p>
-                  <p className="text-3xl font-bold text-white">{health.total_agents}</p>
-                </div>
-                <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
 
-            <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm font-medium">With Phone</p>
-                  <p className="text-3xl font-bold text-green-400">{health.agents_with_phone}</p>
-                </div>
-                <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
 
-            <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm font-medium">Without Phone</p>
-                  <p className="text-3xl font-bold text-yellow-400">{health.agents_without_phone}</p>
-                </div>
-                <div className="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
 
-            <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm font-medium">Status</p>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                    health.status === 'healthy' 
-                      ? 'bg-green-500/20 text-green-400' 
-                      : 'bg-red-500/20 text-red-400'
-                  }`}>
-                    {health.status}
-                  </span>
-                </div>
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                  health.status === 'healthy' ? 'bg-green-500/20' : 'bg-red-500/20'
-                }`}>
-                  <svg className={`w-6 h-6 ${
-                    health.status === 'healthy' ? 'text-green-400' : 'text-red-400'
-                  }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Search Section */}
         <div className="bg-gray-800 rounded-xl border border-gray-700 mb-8">
@@ -374,7 +325,7 @@ const AgentsPage = () => {
             </button>
           </div>
           <div className="p-6">
-            {agents.length === 0 ? (
+            {!Array.isArray(agents) || agents.length === 0 ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -404,7 +355,7 @@ const AgentsPage = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-700">
-                    {agents.map((agent) => (
+                    {Array.isArray(agents) && agents.map((agent) => (
                       <tr key={agent.agentId} className="hover:bg-gray-700/50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm font-medium text-white">{agent.agentId}</span>
@@ -420,10 +371,10 @@ const AgentsPage = () => {
                             </span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{agent.tts_config.model}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{agent.stt_config.model}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{agent.tts_config?.model || 'N/A'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{agent.stt_config?.model || 'N/A'}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          {new Date(agent.updated_at).toLocaleDateString()}
+                          {agent.updated_at ? new Date(agent.updated_at).toLocaleDateString() : 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                           <button
@@ -436,6 +387,17 @@ const AgentsPage = () => {
                           >
                             Set Phone
                           </button>
+                          {agent.phone_number && (
+                            <button
+                              onClick={() => {
+                                setSelectedAgent(agent.agentId);
+                                setShowDeletePhoneModal(true);
+                              }}
+                              className="text-red-400 hover:text-red-300 border border-red-500/50 hover:border-red-400 px-3 py-1 rounded text-xs transition-colors"
+                            >
+                              Delete Phone
+                            </button>
+                          )}
                           <button
                             onClick={() => {
                               setUpdateForm({
@@ -491,7 +453,7 @@ const AgentsPage = () => {
                           className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder-gray-400"
                           value={addForm.chatbot_api}
                           onChange={(e) => setAddForm({...addForm, chatbot_api: e.target.value})}
-                          placeholder=""
+                          placeholder="https://demo.xpectrum-ai.com/v1/chat-messages"
                         />
                       </div>
                       <div>
@@ -501,7 +463,7 @@ const AgentsPage = () => {
                           className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder-gray-400"
                           value={addForm.chatbot_key}
                           onChange={(e) => setAddForm({...addForm, chatbot_key: e.target.value})}
-                          placeholder=""
+                          placeholder="app-myZn5J4sZPO4lOXpFYLd9rij"
                         />
                       </div>
                     </div>
@@ -520,7 +482,7 @@ const AgentsPage = () => {
                             ...addForm, 
                             tts_config: {...addForm.tts_config, voice_id: e.target.value}
                           })}
-                          placeholder=""
+                          placeholder="e8e5fffb-252c-436d-b842-8879b84445b6"
                         />
                       </div>
                       <div>
@@ -533,7 +495,7 @@ const AgentsPage = () => {
                             ...addForm, 
                             tts_config: {...addForm.tts_config, tts_api_key: e.target.value}
                           })}
-                          placeholder=""
+                          placeholder="sk_car_gvwnAWPUG2hyRoRXYVroEH"
                         />
                       </div>
                       <div>
@@ -546,7 +508,7 @@ const AgentsPage = () => {
                             ...addForm, 
                             tts_config: {...addForm.tts_config, model: e.target.value}
                           })}
-                          placeholder=""
+                          placeholder="sonic-2"
                         />
                       </div>
                       <div>
@@ -580,7 +542,7 @@ const AgentsPage = () => {
                             ...addForm, 
                             stt_config: {...addForm.stt_config, api_key: e.target.value}
                           })}
-                          placeholder=""
+                          placeholder="05df4b7e4f1ce81d5e9fdfb4b0cadd02b317c373"
                         />
                       </div>
                       <div>
@@ -593,7 +555,7 @@ const AgentsPage = () => {
                             ...addForm, 
                             stt_config: {...addForm.stt_config, model: e.target.value}
                           })}
-                          placeholder=""
+                          placeholder="nova-2"
                         />
                       </div>
                       <div>
@@ -606,7 +568,7 @@ const AgentsPage = () => {
                             ...addForm, 
                             stt_config: {...addForm.stt_config, language: e.target.value}
                           })}
-                          placeholder=""
+                          placeholder="en-US"
                         />
                       </div>
                     </div>
@@ -828,6 +790,32 @@ const AgentsPage = () => {
                   className="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors"
                 >
                   Update Agent
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Phone Modal */}
+        {showDeletePhoneModal && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+            <div className="bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 border border-gray-700">
+              <div className="p-6 border-b border-gray-700">
+                <h3 className="text-xl font-semibold text-white">Delete Phone Number</h3>
+                <p className="text-gray-400 mt-2">Are you sure you want to delete the phone number for agent <strong>{selectedAgent}</strong>?</p>
+              </div>
+              <div className="p-6 border-t border-gray-700 flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowDeletePhoneModal(false)}
+                  className="px-6 py-3 text-gray-300 bg-gray-700 rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeletePhone}
+                  className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors"
+                >
+                  Delete Phone
                 </button>
               </div>
             </div>

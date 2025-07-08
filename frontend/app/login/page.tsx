@@ -90,7 +90,7 @@ function ResetPasswordModal({ open, email, loading, error, success, onEmailChang
 }
 
 export default function Login() {
-  const { redirectToSignupPage } = useRedirectFunctions();
+  const { redirectToLoginPage, redirectToSignupPage } = useRedirectFunctions();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -109,6 +109,20 @@ export default function Login() {
       window.location.href = "/dashboard";
     }
   }, [user]);
+
+  // Get the current URL for redirect
+  const getCurrentDomain = () => {
+    if (typeof window !== 'undefined') {
+      return window.location.origin;
+    }
+    return 'http://localhost:3000'; // fallback
+  };
+
+  const handleGoogleLogin = () => {
+    const redirectUrl = `${getCurrentDomain()}/dashboard`;
+    const authUrl = `https://181249979.propelauthtest.com/login?provider=google&redirect_url=${encodeURIComponent(redirectUrl)}`;
+    window.location.href = authUrl;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,7 +145,7 @@ export default function Login() {
             return;
           }
           showSuccess('Login successful! You will be redirected to dashboard.');
-          window.location.reload();
+          window.location.href = "/dashboard";
         },
         passwordLoginDisabled() {
           showError('Password login is disabled.');
@@ -153,8 +167,9 @@ export default function Login() {
         },
       });
     } catch {
-      setLoading(false);
       showError('Failed to log in. Please check your credentials.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -210,6 +225,16 @@ export default function Login() {
         <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center">
           <h2 className="text-2xl font-bold text-gray-900 text-center mb-1">Welcome back</h2>
           <p className="text-gray-500 text-center mb-6 text-base">Sign in to your account to continue</p>
+          {/* Google Sign-In Button */}
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="w-full py-2.5 rounded-lg bg-blue-600 text-white font-semibold text-base shadow-sm hover:bg-blue-700 transition-all duration-200 flex items-center justify-center mb-4"
+          >
+            <svg className="mr-2" width="20" height="20" viewBox="0 0 24 24"><g><path fill="#4285F4" d="M21.805 10.023h-9.765v3.977h5.617c-.242 1.242-1.469 3.648-5.617 3.648-3.375 0-6.125-2.789-6.125-6.25s2.75-6.25 6.125-6.25c1.922 0 3.211.82 3.953 1.523l2.703-2.633c-1.703-1.57-3.906-2.539-6.656-2.539-5.523 0-10 4.477-10 10s4.477 10 10 10c5.75 0 9.547-4.031 9.547-9.719 0-.656-.07-1.156-.164-1.656z"/><path fill="#34A853" d="M3.545 7.548l3.289 2.414c.891-1.781 2.578-2.914 4.466-2.914 1.094 0 2.125.391 2.922 1.031l2.703-2.633c-1.703-1.57-3.906-2.539-6.656-2.539-2.703 0-5.078 1.07-6.844 2.789z"/><path fill="#FBBC05" d="M12 22c2.672 0 4.922-.883 6.563-2.406l-3.047-2.492c-.844.57-1.922.914-3.516.914-2.844 0-5.25-1.914-6.109-4.477l-3.289 2.547c1.75 3.477 5.406 5.914 9.398 5.914z"/><path fill="#EA4335" d="M21.805 10.023h-9.765v3.977h5.617c-.242 1.242-1.469 3.648-5.617 3.648-3.375 0-6.125-2.789-6.125-6.25s2.75-6.25 6.125-6.25c1.922 0 3.211.82 3.953 1.523l2.703-2.633c-1.703-1.57-3.906-2.539-6.656-2.539-5.523 0-10 4.477-10 10s4.477 10 10 10c5.75 0 9.547-4.031 9.547-9.719 0-.656-.07-1.156-.164-1.656z" opacity=".1"/></g></svg>
+            Continue with Google
+          </button>
+          {/* Email/Password Form */}
           <form className="w-full" onSubmit={handleSubmit}>
             <div className="mb-4">
               <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
@@ -323,4 +348,4 @@ export default function Login() {
       `}</style>
     </div>
   );
-} 
+}
