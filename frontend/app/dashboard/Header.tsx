@@ -91,6 +91,13 @@ export default function Header() {
                   Workspace
                 </Link>
                 <Link
+                  href="/calendar"
+                  className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
+                >
+                  <Calendar className="h-5 w-5 mr-3" />
+                  Services
+                </Link>
+                <Link
                   href="/agents"
                   className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
                 >
@@ -104,22 +111,19 @@ export default function Header() {
                   <Calendar className="h-5 w-5 mr-3" />
                   Calendar Services
                 </Link> */}
-                <Link
+                {/* <Link
                   href="/billing"
                   className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
                 >
                   <CreditCard className="h-5 w-5 mr-3" />
                   Billing & Payments
-                </Link>
+                </Link> */}
                 <Link
                   href="/settings"
                   className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
                 >
                   <Settings className="h-5 w-5 mr-3" />
                   Settings
-                </Link>
-                <Link href="/calendar">
-                  <button className="btn">Calendar Service</button>
                 </Link>
                 <button
                   onClick={() => {

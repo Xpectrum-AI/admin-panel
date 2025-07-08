@@ -215,6 +215,7 @@ export const CalendarAuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
+      // Get user info
       const response = await axios.get(`${API_BASE_URL}/auth/user`, {
         headers: {
           Authorization: `Bearer ${storedToken}`
@@ -222,7 +223,13 @@ export const CalendarAuthProvider = ({ children }: { children: ReactNode }) => {
       })
       setUser(response.data.user)
       setToken(storedToken)
-      setHasCalendarAccess(response.data.has_calendar_access || false)
+      // Get calendar access status from new endpoint
+      const accessRes = await axios.get(`${API_BASE_URL}/calendar/access`, {
+        headers: {
+          Authorization: `Bearer ${storedToken}`
+        }
+      })
+      setHasCalendarAccess(accessRes.data.has_calendar_access || false)
     } catch (error) {
       console.error('Auth check failed:', error)
       localStorage.removeItem(AUTH_TOKEN_KEY)
