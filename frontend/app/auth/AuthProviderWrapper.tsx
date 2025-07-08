@@ -6,7 +6,7 @@ import { AuthProvider } from "@propelauth/react";
 export function AuthProviderWrapper({ children }: { children: React.ReactNode }) {
 
   return (
-    <AuthProvider authUrl="https://auth.admin-test.xpectrum-ai.com">
+    <AuthProvider authUrl="https://181249979.propelauthtest.com">
       {children}
     </AuthProvider>
   );
