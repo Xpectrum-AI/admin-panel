@@ -511,6 +511,22 @@ async def get_user_tokens(user_id: str):
         "updated_at": user_data["updated_at"]
     }
 
+@api_v1.get("/calendar/access")
+async def get_calendar_access(request: Request):
+    """Return whether the current user has calendar access"""
+    auth_header = request.headers.get("Authorization")
+    token = None
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+    else:
+        token = request.query_params.get("token")
+    if not token:
+        raise HTTPException(status_code=401, detail="No token provided")
+    user_data = await user_db.get_user_by_session_token(token)
+    if not user_data:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    return {"has_calendar_access": user_data.get("has_calendar_access", False)}
+
 @api_v1.get("/timezone/options")
 async def get_timezone_options():
     """Get available timezone options"""
