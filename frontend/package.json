@@ -14,6 +14,7 @@
     "@propelauth/react": "^2.0.29",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-label": "^2.1.7",
+    "axios": "^1.10.0",
     "class-variance-authority": "^0.7.1",
     "lucide-react": "^0.518.0",
     "next": "15.3.3",
