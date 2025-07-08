@@ -17,7 +17,7 @@ exports.signup = async (req, res) => {
   try {
     const { email, password, firstName, lastName, username } = req.body;
     user = await createUserService({ email, password, firstName, lastName, username });
-    const orgName = username + "workspace";
+    const orgName = username + " workspace";
     try {
       org = await createOrgService(orgName);
     } catch (orgErr) {

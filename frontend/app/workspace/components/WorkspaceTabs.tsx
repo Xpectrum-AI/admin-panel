@@ -1,9 +1,9 @@
 "use client"
 
 import { useState } from 'react';
-import WorkspaceProfileTab from './WorkspaceProfileTab';
-import WorkspaceTeamTab from './WorkspaceTeamTab';
-import WorkspaceRolesTab from './WorkspaceRolesTab';
+import ProfileTab from './profile/ProfileTab';
+import TeamTab from './team/TeamTab';
+import RolesTab from './roles/RolesTab';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -19,6 +19,7 @@ const tabs = [
 
 interface WorkspaceTabsProps {
   workspace: {
+    orgId: string;
     name?: string;
     description?: string;
   };
@@ -60,9 +61,9 @@ export default function WorkspaceTabs({ workspace }: WorkspaceTabsProps) {
       </div>
       {/* Content Card */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-10 max-w-6xl mx-auto">
-        {activeTab === 'Profile' && <WorkspaceProfileTab workspace={workspace} />}
-        {activeTab === 'Team' && <WorkspaceTeamTab />}
-        {activeTab === 'Roles' && <WorkspaceRolesTab />}
+        {activeTab === 'Profile' && <ProfileTab workspace={workspace} />}
+        {activeTab === 'Team' && <TeamTab workspace={workspace} />}
+        {activeTab === 'Roles' && <RolesTab workspace={workspace} />}
         {['Billing', 'Analytics', 'Audit Logs', 'Integrations'].includes(activeTab) && (
           <div className="text-gray-400 text-center py-12">Coming soon...</div>
         )}

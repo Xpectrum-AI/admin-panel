@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from 'react';
+import { useRedirectFunctions, useAuthInfo } from '@propelauth/react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { ProtectedRoute } from '../auth/ProtectedRoute';
+import WorkspaceProfileTab from '../workspace/components/WorkspaceProfileTab';
 
 const tabs = [
   { label: 'Account', icon: '👤' },
@@ -35,6 +37,7 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (val:
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { orgHelper } = useAuthInfo();
   const [activeTab, setActiveTab] = useState(0);
 
   // Account State
@@ -71,6 +74,10 @@ export default function SettingsPage() {
     loginAlerts: true,
   });
 
+  // Get the org where the user is an owner
+  const ownerOrgs = orgHelper?.getOrgs().filter(org => org.userAssignedRole === 'Owner');
+  const org = ownerOrgs?.[0];
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
@@ -94,36 +101,38 @@ export default function SettingsPage() {
           </div>
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
             {activeTab === 0 && (
-              <form className="space-y-6">
-                <h2 className="text-2xl font-bold mb-6">Account Settings</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                    <input type="text" className="w-full px-4 py-2 rounded-lg border border-gray-300" value={account.username} onChange={e => setAccount(a => ({ ...a, username: e.target.value }))} />
+              <>
+                <form className="space-y-6">
+                  <h2 className="text-2xl font-bold mb-6">Account Settings</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                      <input type="text" className="w-full px-4 py-2 rounded-lg border border-gray-300" value={account.username} onChange={e => setAccount(a => ({ ...a, username: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
+                      <input type="text" className="w-full px-4 py-2 rounded-lg border border-gray-300" value={account.displayName} onChange={e => setAccount(a => ({ ...a, displayName: e.target.value }))} />
+                    </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
-                    <input type="text" className="w-full px-4 py-2 rounded-lg border border-gray-300" value={account.displayName} onChange={e => setAccount(a => ({ ...a, displayName: e.target.value }))} />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                    <input type="email" className="w-full px-4 py-2 rounded-lg border border-gray-300" value={account.email} onChange={e => setAccount(a => ({ ...a, email: e.target.value }))} />
                   </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                  <input type="email" className="w-full px-4 py-2 rounded-lg border border-gray-300" value={account.email} onChange={e => setAccount(a => ({ ...a, email: e.target.value }))} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
-                  <input type="text" className="w-full px-4 py-2 rounded-lg border border-gray-300" value={account.timezone} onChange={e => setAccount(a => ({ ...a, timezone: e.target.value }))} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
-                  <input type="text" className="w-full px-4 py-2 rounded-lg border border-gray-300" value={account.language} onChange={e => setAccount(a => ({ ...a, language: e.target.value }))} />
-                </div>
-                <div className="flex justify-end">
-                  <button type="button" className="flex items-center gap-2 px-6 py-2 rounded-lg bg-gray-900 text-white font-semibold hover:bg-gray-800">
-                    <span className="material-icons">Save Changes</span>
-                  </button>
-                </div>
-              </form>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
+                    <input type="text" className="w-full px-4 py-2 rounded-lg border border-gray-300" value={account.timezone} onChange={e => setAccount(a => ({ ...a, timezone: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
+                    <input type="text" className="w-full px-4 py-2 rounded-lg border border-gray-300" value={account.language} onChange={e => setAccount(a => ({ ...a, language: e.target.value }))} />
+                  </div>
+                  <div className="flex justify-end">
+                    <button type="button" className="flex items-center gap-2 px-6 py-2 rounded-lg bg-gray-900 text-white font-semibold hover:bg-gray-800">
+                      <span className="material-icons">Save Changes</span>
+                    </button>
+                  </div>
+                </form>
+              </>
             )}
             {activeTab === 1 && (
               <form className="space-y-6">
