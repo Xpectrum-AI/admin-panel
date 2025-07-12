@@ -39,8 +39,18 @@ async function getUserByEmailService(email) {
   }
 }
 
+async function fetchUsersByQueryService(query) {
+  try {
+    const users = await auth.fetchUsersByQuery(query);
+    return users;
+  } catch (error) {
+    throw new Error(error.message || 'Fetch users by query failed');
+  }
+}
+
 module.exports = {
   createUserService,
   deleteUserService,
   getUserByEmailService,
+  fetchUsersByQueryService,
 }; 

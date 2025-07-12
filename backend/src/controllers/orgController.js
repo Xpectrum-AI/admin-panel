@@ -1,5 +1,5 @@
 const {initAuth} = require('@propelauth/express');
-const { createOrgService, addUserToOrgService, deleteOrgService, inviteUserToOrgService, fetchUsersInOrgService, fetchPendingInvitesService, removeUserFromOrgService, changeUserRoleInOrgService, updateOrgService, fetchOrgDetailsService } = require('../services/orgService');
+const { createOrgService, addUserToOrgService, deleteOrgService, inviteUserToOrgService, fetchUsersInOrgService, fetchPendingInvitesService, removeUserFromOrgService, changeUserRoleInOrgService, updateOrgService, fetchOrgDetailsService, fetchOrgByQueryService } = require('../services/orgService');
 
 exports.createOrg = async (req, res) => {
   const { orgName } = req.body;
@@ -108,6 +108,15 @@ exports.fetchOrgDetails = async (req, res) => {
   try {
     const data = await fetchOrgDetailsService(orgId);
     return res.status(200).json({ success: true, data });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.fetchOrgByQuery = async (req, res) => {
+  try {
+    const orgs = await fetchOrgByQueryService(req.body);
+    return res.status(200).json({ success: true, data: orgs });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
   }

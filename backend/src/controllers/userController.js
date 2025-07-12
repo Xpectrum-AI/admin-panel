@@ -1,4 +1,4 @@
-const { createUserService, deleteUserService, getUserByEmailService } = require('../services/userService');
+const { createUserService, deleteUserService, getUserByEmailService, fetchUsersByQueryService } = require('../services/userService');
 const { createOrgService, addUserToOrgService, deleteOrgService } = require('../services/orgService');
 
 exports.getUserByEmail = async (req, res) => {
@@ -53,5 +53,14 @@ exports.deleteUser = async (req, res) => {
     return res.status(200).json({ success: true, data });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message || 'Failed to delete user' });
+  }
+};
+
+exports.fetchUsersByQuery = async (req, res) => {
+  try {
+    const users = await fetchUsersByQueryService(req.body);
+    return res.status(200).json({ success: true, data: users });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
   }
 };
