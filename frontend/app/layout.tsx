@@ -1,6 +1,6 @@
 // app/layout.tsx
-import { AuthProviderWrapper } from "./auth/AuthProviderWrapper";
-import { ErrorProvider } from "./contexts/ErrorContext";
+import { AuthProviderWrapper } from "./(admin)/auth/AuthProviderWrapper";
+import { ErrorProvider } from "./(admin)/contexts/ErrorContext";
 import "./globals.css";
 
 export const metadata = {

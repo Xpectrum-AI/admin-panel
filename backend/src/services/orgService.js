@@ -146,21 +146,21 @@ async function updateOrgService(orgId, updates) {
 async function fetchOrgDetailsService(orgId) {
   if (!orgId) throw new Error('Missing orgId');
 
-  const res = await fetch(`${PROPELAUTH_AUTH_URL}/api/backend/v1/org/${orgId}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${PROPELAUTH_API_KEY}`,
-    },
-  });
-
-  const json = await res.json();
-  if (!res.ok) {
-    console.error('API error:', json);
-    throw new Error(json.error || json.user_facing_error || 'Fetch org details failed');
+  try {
+    const org = await auth.fetchOrg(orgId);
+    return org;
+  } catch (error) {
+    throw new Error(error.message || 'Fetch orgs by query failed');
   }
-  
-  return json;
+}
 
+async function fetchOrgByQueryService(query) {
+  try {
+    const orgs = await auth.fetchOrgByQuery(query);
+    return orgs;
+  } catch (error) {
+    throw new Error(error.message || 'Fetch orgs by query failed');
+  }
 }
 
 module.exports = {
@@ -174,4 +174,5 @@ module.exports = {
   changeUserRoleInOrgService,
   updateOrgService,
   fetchOrgDetailsService,
+  fetchOrgByQueryService,
 }; 
