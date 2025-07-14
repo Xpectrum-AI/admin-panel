@@ -2,20 +2,23 @@
 import { AuthProviderWrapper } from "./(admin)/auth/AuthProviderWrapper";
 import { ErrorProvider } from "./(admin)/contexts/ErrorContext";
 import "./globals.css";
+import React from "react";
 
 export const metadata = {
   title: "Your App",
   description: "My description",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
 
+
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
           <AuthProviderWrapper>
             <ErrorProvider>
-              {children}
+                {children}             
             </ErrorProvider>
           </AuthProviderWrapper>
       </body>
