@@ -8,15 +8,36 @@ const headers = {
   'X-API-Key': API_KEY,
 };
 
+// Helper function to handle API errors
+async function handleApiError(response: Response, defaultMessage: string) {
+  try {
+    const errorData = await response.json();
+    if (errorData.error) {
+      throw new Error(errorData.error);
+    } else if (errorData.details) {
+      throw new Error(`${defaultMessage}: ${errorData.details}`);
+    } else {
+      throw new Error(defaultMessage);
+    }
+  } catch (parseError) {
+    // If JSON parsing fails, use the default message
+    throw new Error(defaultMessage);
+  }
+}
+
 export async function getAllAgents() {
   const res = await fetch(`${API_BASE}/agents/all`, { headers });
-  if (!res.ok) throw new Error('Failed to fetch agents');
+  if (!res.ok) {
+    await handleApiError(res, 'Failed to fetch agents');
+  }
   return res.json();
 }
 
 export async function getAgentInfo(agentId: string) {
   const res = await fetch(`${API_BASE}/agents/info/${agentId}`, { headers });
-  if (!res.ok) throw new Error('Failed to fetch agent info');
+  if (!res.ok) {
+    await handleApiError(res, 'Failed to fetch agent info');
+  }
   return res.json();
 }
 
@@ -26,7 +47,9 @@ export async function updateAgent(agentId: string, data: any) {
     headers,
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Failed to update agent');
+  if (!res.ok) {
+    await handleApiError(res, 'Failed to update agent');
+  }
   return res.json();
 }
 
@@ -36,13 +59,17 @@ export async function setAgentPhone(agentId: string, phone_number: string) {
     headers,
     body: JSON.stringify({ phone_number }),
   });
-  if (!res.ok) throw new Error('Failed to set agent phone');
+  if (!res.ok) {
+    await handleApiError(res, 'Failed to set agent phone');
+  }
   return res.json();
 }
 
 export async function getAgentByPhone(phone_number: string) {
   const res = await fetch(`${API_BASE}/agents/by_phone/${phone_number}`, { headers });
-  if (!res.ok) throw new Error('Failed to fetch agent by phone');
+  if (!res.ok) {
+    await handleApiError(res, 'Failed to fetch agent by phone');
+  }
   return res.json();
 }
 
@@ -51,12 +78,16 @@ export async function deleteAgentPhone(agentId: string) {
     method: 'DELETE',
     headers,
   });
-  if (!res.ok) throw new Error('Failed to delete agent phone');
+  if (!res.ok) {
+    await handleApiError(res, 'Failed to delete agent phone');
+  }
   return res.json();
 }
 
 export async function getActiveCalls() {
   const res = await fetch(`${API_BASE}/agents/active-calls`, { headers });
-  if (!res.ok) throw new Error('Failed to fetch active calls');
+  if (!res.ok) {
+    await handleApiError(res, 'Failed to fetch active calls');
+  }
   return res.json();
 } 

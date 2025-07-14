@@ -1,19 +1,19 @@
 'use client';
 
 import React from 'react';
-import { CalendarAuthProvider, useCalendarAuth } from './CalendarAuthProvider';
+import { OAuthAuthProvider, useDashboardAuth } from '../dashboard/DashboardAuthProvider';
 import Home from './Home';
 import Profile from './Profile';
 
 const CalendarPageContent = () => {
-  const { isAuthenticated } = useCalendarAuth();
+  const { isAuthenticated } = useDashboardAuth();
   return isAuthenticated ? <Profile /> : <Home />;
 };
 
 const CalendarPage = () => (
-  <CalendarAuthProvider>
+  <OAuthAuthProvider>
     <CalendarPageContent />
-  </CalendarAuthProvider>
+  </OAuthAuthProvider>
 );
 
 export default CalendarPage; 

@@ -3,6 +3,7 @@ import { Search, Filter, Plus, UserRound, Settings, Ban } from 'lucide-react';
 import ActionMenu from './ActionMenu';
 import Pagination from './Pagination';
 import { updateAgent, setAgentPhone } from '@/service/agentService';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 interface AgentsTabProps {
   agents: any[];
@@ -15,6 +16,7 @@ interface AgentsTabProps {
 }
 
 export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, setPageNumber, loading, refreshAgents }: AgentsTabProps) {
+  const { showError, showSuccess } = useErrorHandler();
   const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -33,16 +35,35 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
 
   // Add loading and error state
   const [modalLoading, setModalLoading] = useState(false);
-  const [modalError, setModalError] = useState<string | null>(null);
+
+  // Validation function for agent form
+  function validateAgentForm(form: any) {
+    return (
+      form.agentId.trim() &&
+      form.chatbot_api.trim() &&
+      form.chatbot_key.trim() &&
+      form.tts_config.voice_id.trim() &&
+      form.tts_config.tts_api_key.trim() &&
+      form.tts_config.model.trim() &&
+      form.tts_config.speed !== undefined && form.tts_config.speed !== null &&
+      form.stt_config.api_key.trim() &&
+      form.stt_config.model.trim() &&
+      form.stt_config.language.trim()
+    );
+  }
 
   // Add Agent handler
   async function handleAddAgent(e: React.FormEvent) {
     e.preventDefault();
     setModalLoading(true);
-    setModalError(null);
+    if (!validateAgentForm(addForm)) {
+      showError('All fields are required.');
+      setModalLoading(false);
+      return;
+    }
     try {
       if (!addForm.agentId.trim()) {
-        setModalError('Agent ID is required');
+        showError('Agent ID is required');
         setModalLoading(false);
         return;
       }
@@ -51,12 +72,18 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
       if (data.success) {
         setShowAddModal(false);
         await refreshAgents();
-        // Optionally show a success toast here
+        showSuccess('Agent added successfully to live system!');
+        // Reset form
+        setAddForm({
+          agentId: '', chatbot_api: '', chatbot_key: '',
+          tts_config: { voice_id: '', tts_api_key: '', model: '', speed: 0.5 },
+          stt_config: { api_key: '', model: '', language: '' }
+        });
       } else {
-        setModalError(data.error || 'Failed to add agent');
+        showError(data.error || 'Failed to add agent');
       }
     } catch (e: any) {
-      setModalError(e.message || 'Failed to add agent');
+      showError(e.message || 'Failed to add agent to live system');
     } finally {
       setModalLoading(false);
     }
@@ -66,13 +93,22 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
   async function handleUpdateAgent(e: React.FormEvent) {
     e.preventDefault();
     setModalLoading(true);
-    setModalError(null);
+    if (!validateAgentForm(updateForm)) {
+      showError('All fields are required.');
+      setModalLoading(false);
+      return;
+    }
     try {
-      await updateAgent(updateForm.agentId, updateForm);
-      setShowUpdateModal(false);
-      await refreshAgents();
+      const data = await updateAgent(updateForm.agentId, updateForm);
+      if (data.success) {
+        setShowUpdateModal(false);
+        await refreshAgents();
+        showSuccess('Agent updated successfully in live system!');
+      } else {
+        showError(data.error || 'Failed to update agent');
+      }
     } catch (err: any) {
-      setModalError(err.message || 'Failed to update agent');
+      showError(err.message || 'Failed to update agent');
     } finally {
       setModalLoading(false);
     }
@@ -82,13 +118,19 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
   async function handleSetPhone(e: React.FormEvent) {
     e.preventDefault();
     setModalLoading(true);
-    setModalError(null);
     try {
-      await setAgentPhone(setPhoneForm.agentId, setPhoneForm.phone_number);
-      setShowSetPhoneModal(false);
-      await refreshAgents();
+      const data = await setAgentPhone(setPhoneForm.agentId, setPhoneForm.phone_number);
+      if (data.success) {
+        setShowSetPhoneModal(false);
+        await refreshAgents();
+        showSuccess('Phone number set successfully in live system!');
+        // Reset form
+        setSetPhoneForm({ agentId: '', phone_number: '' });
+      } else {
+        showError(data.error || 'Failed to set phone number');
+      }
     } catch (err: any) {
-      setModalError(err.message || 'Failed to set phone number');
+      showError(err.message || 'Failed to set phone number');
     } finally {
       setModalLoading(false);
     }
@@ -165,6 +207,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                       value={addForm.chatbot_api}
                       onChange={e => setAddForm({ ...addForm, chatbot_api: e.target.value })}
                       placeholder="https://demo.xpectrum-ai.com/v1/chat-messages"
+                      required
                     />
                   </div>
                   <div className="space-y-2">
@@ -176,6 +219,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                       value={addForm.chatbot_key}
                       onChange={e => setAddForm({ ...addForm, chatbot_key: e.target.value })}
                       placeholder="app-..."
+                      required
                     />
                   </div>
                 </div>
@@ -195,6 +239,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                         value={addForm.tts_config.voice_id}
                         onChange={e => setAddForm({ ...addForm, tts_config: { ...addForm.tts_config, voice_id: e.target.value } })}
                         placeholder="Voice ID"
+                        required
                       />
                     </div>
                     <div className="space-y-2">
@@ -206,6 +251,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                         value={addForm.tts_config.tts_api_key}
                         onChange={e => setAddForm({ ...addForm, tts_config: { ...addForm.tts_config, tts_api_key: e.target.value } })}
                         placeholder="sk_..."
+                        required
                       />
                     </div>
                   </div>
@@ -218,6 +264,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                         id="ttsModel"
                         value={addForm.tts_config.model}
                         onChange={e => setAddForm({ ...addForm, tts_config: { ...addForm.tts_config, model: e.target.value } })}
+                        required
                       >
                         <option value="">Select model</option>
                         <option value="sonic-2">sonic-2</option>
@@ -237,6 +284,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                         value={addForm.tts_config.speed}
                         onChange={e => setAddForm({ ...addForm, tts_config: { ...addForm.tts_config, speed: parseFloat(e.target.value) } })}
                         placeholder="0.5"
+                        required
                       />
                     </div>
                   </div>
@@ -257,6 +305,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                         value={addForm.stt_config.api_key}
                         onChange={e => setAddForm({ ...addForm, stt_config: { ...addForm.stt_config, api_key: e.target.value } })}
                         placeholder="API Key"
+                        required
                       />
                     </div>
                     <div className="space-y-2">
@@ -267,6 +316,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                         id="sttModel"
                         value={addForm.stt_config.model}
                         onChange={e => setAddForm({ ...addForm, stt_config: { ...addForm.stt_config, model: e.target.value } })}
+                        required
                       >
                         <option value="">Select model</option>
                         <option value="nova-2">nova-2</option>
@@ -281,6 +331,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                         id="sttLanguage"
                         value={addForm.stt_config.language}
                         onChange={e => setAddForm({ ...addForm, stt_config: { ...addForm.stt_config, language: e.target.value } })}
+                        required
                       >
                         <option value="">Select language</option>
                         <option value="en-US">en-US</option>
@@ -299,7 +350,6 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                 </button>
               </div>
             </form>
-            {modalError && <div className="text-red-600 text-sm mt-2">{modalError}</div>}
             <button type="button" className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2" onClick={() => setShowAddModal(false)}>
               <span className="sr-only">Close</span>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x h-4 w-4"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
@@ -339,6 +389,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                       id="updateChatbotApi"
                       value={updateForm.chatbot_api}
                       onChange={e => setUpdateForm({ ...updateForm, chatbot_api: e.target.value })}
+                      required
                     />
                   </div>
                   <div className="space-y-2">
@@ -349,6 +400,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                       id="updateChatbotKey"
                       value={updateForm.chatbot_key}
                       onChange={e => setUpdateForm({ ...updateForm, chatbot_key: e.target.value })}
+                      required
                     />
                   </div>
                 </div>
@@ -367,6 +419,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                         id="updateVoiceId"
                         value={updateForm.tts_config.voice_id}
                         onChange={e => setUpdateForm({ ...updateForm, tts_config: { ...updateForm.tts_config, voice_id: e.target.value } })}
+                        required
                       />
                     </div>
                     <div className="space-y-2">
@@ -377,6 +430,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                         id="updateTtsApiKey"
                         value={updateForm.tts_config.tts_api_key}
                         onChange={e => setUpdateForm({ ...updateForm, tts_config: { ...updateForm.tts_config, tts_api_key: e.target.value } })}
+                        required
                       />
                     </div>
                   </div>
@@ -389,6 +443,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                         id="updateTtsModel"
                         value={updateForm.tts_config.model}
                         onChange={e => setUpdateForm({ ...updateForm, tts_config: { ...updateForm.tts_config, model: e.target.value } })}
+                        required
                       >
                         <option value="">Select model</option>
                         <option value="sonic-2">sonic-2</option>
@@ -407,6 +462,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                         id="updateTtsSpeed"
                         value={updateForm.tts_config.speed}
                         onChange={e => setUpdateForm({ ...updateForm, tts_config: { ...updateForm.tts_config, speed: parseFloat(e.target.value) } })}
+                        required
                       />
                     </div>
                   </div>
@@ -426,6 +482,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                         id="updateSttApiKey"
                         value={updateForm.stt_config.api_key}
                         onChange={e => setUpdateForm({ ...updateForm, stt_config: { ...updateForm.stt_config, api_key: e.target.value } })}
+                        required
                       />
                     </div>
                     <div className="space-y-2">
@@ -436,6 +493,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                         id="updateSttModel"
                         value={updateForm.stt_config.model}
                         onChange={e => setUpdateForm({ ...updateForm, stt_config: { ...updateForm.stt_config, model: e.target.value } })}
+                        required
                       >
                         <option value="">Select model</option>
                         <option value="nova-2">nova-2</option>
@@ -450,6 +508,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                         id="updateSttLanguage"
                         value={updateForm.stt_config.language}
                         onChange={e => setUpdateForm({ ...updateForm, stt_config: { ...updateForm.stt_config, language: e.target.value } })}
+                        required
                       >
                         <option value="">Select language</option>
                         <option value="en-US">en-US</option>
@@ -468,7 +527,6 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                 </button>
               </div>
             </form>
-            {modalError && <div className="text-red-600 text-sm mt-2">{modalError}</div>}
             <button type="button" className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2" onClick={() => setShowUpdateModal(false)}>
               <span className="sr-only">Close</span>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x h-4 w-4"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
@@ -515,7 +573,6 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                 </button>
               </div>
             </form>
-            {modalError && <div className="text-red-600 text-sm mt-2">{modalError}</div>}
             <button type="button" className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2" onClick={() => setShowSetPhoneModal(false)}>
               <span className="sr-only">Close</span>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x h-4 w-4"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>

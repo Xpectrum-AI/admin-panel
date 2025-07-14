@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { SyncLoader } from "react-spinners";
 import { getAllAgents, setAgentPhone, getAgentByPhone, deleteAgentPhone, updateAgent } from '../../../service/agentService';
+import { useErrorHandler } from '../../../hooks/useErrorHandler';
 
 interface Agent {
   agentId: string;
@@ -27,6 +28,7 @@ interface Agent {
 
 
 const AgentsPage = () => {
+  const { showError, showSuccess } = useErrorHandler();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -87,7 +89,7 @@ const AgentsPage = () => {
   };
 
   // Fetch all agents
-  const fetchAgents = useCallback(async () => {
+  const fetchAgents = async () => {
     try {
       const data = await getAllAgents();
       // If API returns { agents: [...] }
@@ -97,15 +99,16 @@ const AgentsPage = () => {
     } catch (error: any) {
       setError(error.message || 'Failed to fetch agents');
       setAgents([]);
+      showError(error.message || 'Failed to fetch agents');
     }
-  }, []);
+  };
 
 
 
   // Add new agent
   const handleAddAgent = async () => {
     if (!addForm.agentId.trim()) {
-      alert('Agent ID is required');
+      showError('Agent ID is required');
       return;
     }
     try {
@@ -130,12 +133,12 @@ const AgentsPage = () => {
           }
         });
         fetchAgents();
-        alert('Agent added successfully to live system!');
+        showSuccess('Agent added successfully to live system!');
       } else {
-        alert(data.error || 'Failed to add agent to live system');
+        showError(data.error || 'Failed to add agent to live system');
       }
     } catch (e: any) {
-      alert(e.message || 'Failed to add agent to live system');
+      showError(e.message || 'Failed to add agent to live system');
     }
   };
 
@@ -146,12 +149,12 @@ const AgentsPage = () => {
       if (data.success) {
         setShowPhoneModal(false);
         fetchAgents();
-        alert('Phone number set successfully in live system!');
+        showSuccess('Phone number set successfully in live system!');
       } else {
-        alert(data.error || 'Failed to set phone number in live system');
+        showError(data.error || 'Failed to set phone number in live system');
       }
     } catch (e: any) {
-      alert(e.message || 'Failed to set phone number in live system');
+      showError(e.message || 'Failed to set phone number in live system');
     }
   };
 
@@ -164,10 +167,10 @@ const AgentsPage = () => {
         setSearchResult(data.agent);
       } else {
         setSearchResult(null);
-        alert(data.error || 'No agent found');
+        showError(data.error || 'No agent found');
       }
     } catch (e: any) {
-      alert(e.message || 'Failed to search agent');
+      showError(e.message || 'Failed to search agent');
     }
   };
 
@@ -178,18 +181,18 @@ const AgentsPage = () => {
       if (data.success) {
         setShowDeletePhoneModal(false);
         fetchAgents();
-        alert('Phone number deleted successfully from live system!');
+        showSuccess('Phone number deleted successfully from live system!');
       } else {
-        alert(data.error || 'Failed to delete phone number from live system');
+        showError(data.error || 'Failed to delete phone number from live system');
       }
     } catch (e: any) {
-      alert(e.message || 'Failed to delete phone number from live system');
+      showError(e.message || 'Failed to delete phone number from live system');
     }
   };
 
   const handleUpdateAgent = async () => {
     if (!updateForm.agentId.trim()) {
-      alert('Agent ID is required');
+      showError('Agent ID is required');
       return;
     }
     try {
@@ -198,12 +201,12 @@ const AgentsPage = () => {
       if (data.success) {
         setShowUpdateModal(false);
         fetchAgents();
-        alert('Agent updated successfully in live system!');
+        showSuccess('Agent updated successfully in live system!');
       } else {
-        alert(data.error || 'Failed to update agent in live system');
+        showError(data.error || 'Failed to update agent in live system');
       }
     } catch (e: any) {
-      alert(e.message || 'Failed to update agent in live system');
+      showError(e.message || 'Failed to update agent in live system');
     }
   };
 
@@ -214,7 +217,7 @@ const AgentsPage = () => {
       setLoading(false);
     };
     loadData();
-  }, [fetchAgents]);
+  }, []); // Only run on mount
 
   if (loading) {
     return (

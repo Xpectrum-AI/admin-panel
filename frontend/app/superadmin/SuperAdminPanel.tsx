@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import StatCards from './StatCards';
 import UsersTab from './UsersTab';
 import OrganizationsTab from './OrganizationsTab';
@@ -10,8 +10,12 @@ import SuperAdminTeamTab from './SuperAdminTeamTab';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { fetchUsersByQuery } from '@/service/userService';
-import { fetchOrgByQuery } from '@/service/orgService';
+import { fetchOrgByQuery, inviteUserToOrg, removeUserFromOrg, changeUserRoleInOrg } from '@/service/orgService';
 import { getAllAgents } from '@/service/agentService';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { fetchUsersInOrg } from '@/service/orgService';
+
+const SUPER_ADMIN_ORG_ID = "c53e8731-2ce7-4484-919c-0aba50c2f46a"; // Use your actual org ID
 
 const tabs = [
     'Users',
@@ -24,6 +28,7 @@ const tabs = [
 ];
 
 export default function SuperAdminPanel() {
+    const { showError, showSuccess } = useErrorHandler();
     const [activeTab, setActiveTab] = useState('Users');
     const [totalUsers, setTotalUsers] = useState<number | null>(null);
     const [totalOrgs, setTotalOrgs] = useState<number | null>(null);
@@ -40,6 +45,10 @@ export default function SuperAdminPanel() {
     const agentPageSize = 10;
     const [agentsLoading, setAgentsLoading] = useState(true);
     const [mounted, setMounted] = useState(false);
+    const [superAdminTeam, setSuperAdminTeam] = useState<any[]>([]);
+    const [loadingInvite, setLoadingInvite] = useState(false);
+    const [loadingRemove, setLoadingRemove] = useState(false);
+    const [loadingRoleChange, setLoadingRoleChange] = useState(false);
 
     // Set mounted flag after component mounts
     useEffect(() => {
@@ -103,10 +112,11 @@ export default function SuperAdminPanel() {
                     setAgents(agentsArray);
                     setTotalAgents(agentsArray.length);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 if (mounted) {
                     setAgents([]);
                     setTotalAgents(0);
+                    showError(error.message || 'Failed to fetch agents');
                 }
             } finally {
                 if (mounted) {
@@ -130,15 +140,79 @@ export default function SuperAdminPanel() {
                 setAgents(agentsArray);
                 setTotalAgents(agentsArray.length);
             }
-        } catch (error) {
+        } catch (error: any) {
             if (mounted) {
                 setAgents([]);
                 setTotalAgents(0);
+                showError(error.message || 'Failed to refresh agents');
             }
         } finally {
             if (mounted) {
                 setAgentsLoading(false);
             }
+        }
+    };
+
+    // Fetch super admin team - fixed to prevent infinite loops
+    const fetchTeam = useCallback(async () => {
+        try {
+            const team = await fetchUsersInOrg(SUPER_ADMIN_ORG_ID);
+            setSuperAdminTeam(Array.isArray(team) ? team : team?.users || []);
+        } catch (e: any) {
+            showError(e.message || "Failed to fetch super admin team");
+            setSuperAdminTeam([]);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (activeTab === "Team") {
+            fetchTeam();
+        }
+    }, [activeTab, fetchTeam]);
+
+    // Super Admin Team Handlers
+    const handleInviteMember = async (form: { email: string; role: string }) => {
+        setLoadingInvite(true);
+        try {
+            await inviteUserToOrg(SUPER_ADMIN_ORG_ID, form.email, form.role);
+            showSuccess('Invitation sent successfully!');
+            // Refresh team data
+            await fetchTeam();
+        } catch (error: any) {
+            showError(error.message || 'Failed to send invitation');
+            throw error;
+        } finally {
+            setLoadingInvite(false);
+        }
+    };
+
+    const handleRemoveUser = async (userId: string, userName: string) => {
+        setLoadingRemove(true);
+        try {
+            await removeUserFromOrg(SUPER_ADMIN_ORG_ID, userId);
+            showSuccess(`${userName} has been removed from the super admin team`);
+            // Refresh team data
+            await fetchTeam();
+        } catch (error: any) {
+            showError(error.message || 'Failed to remove user');
+            throw error;
+        } finally {
+            setLoadingRemove(false);
+        }
+    };
+
+    const handleChangeRole = async (userId: string, newRole: string, userName: string) => {
+        setLoadingRoleChange(true);
+        try {
+            await changeUserRoleInOrg(SUPER_ADMIN_ORG_ID, userId, newRole);
+            showSuccess(`${userName}'s role has been changed to ${newRole}`);
+            // Refresh team data
+            await fetchTeam();
+        } catch (error: any) {
+            showError(error.message || 'Failed to change user role');
+            throw error;
+        } finally {
+            setLoadingRoleChange(false);
         }
     };
 
@@ -209,7 +283,15 @@ export default function SuperAdminPanel() {
                                 />
                             )}
                             {activeTab === 'Team' && (
-                                <SuperAdminTeamTab />
+                                <SuperAdminTeamTab 
+                                    members={superAdminTeam}
+                                    onInviteMember={handleInviteMember}
+                                    onRemoveUser={handleRemoveUser}
+                                    onChangeRole={handleChangeRole}
+                                    loadingInvite={loadingInvite}
+                                    loadingRemove={loadingRemove}
+                                    loadingRoleChange={loadingRoleChange}
+                                />
                             )}
                             {activeTab === 'Roles & Permissions' && <RolesPermissionsTab />}
                             {activeTab === 'Audit Logs' && <AuditLogsTab />}

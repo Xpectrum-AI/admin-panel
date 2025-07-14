@@ -2,14 +2,14 @@
 
 import { useEffect, useState, ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import { useCalendarAuth } from './CalendarAuthProvider'
+import { useDashboardAuth } from '../dashboard/DashboardAuthProvider'
 import axios from 'axios'
 import React from 'react'
 
 type TimezoneOption = { value: string; label: string }
 
 const Profile = () => {
-  const { user, logout, isAuthenticated, loading, token, selectedTimezone, updateTimezone, timezoneOptions, hasCalendarAccess } = useCalendarAuth()
+  const { user, logout, isAuthenticated, loading, token, selectedTimezone, updateTimezone, timezoneOptions, hasCalendarAccess } = useDashboardAuth()
   const router = useRouter()
   const [calendarEvents, setCalendarEvents] = useState<any[]>([])
   const [loadingCalendar, setLoadingCalendar] = useState<boolean>(false)
