@@ -7,7 +7,7 @@ export default function WorkspacePage() {
   
   const { orgHelper } = useAuthInfo();
   // Get the org where the user is an owner
-  const ownerOrgs = orgHelper?.getOrgs().filter(org => org.userAssignedRole === 'Owner');
+  const ownerOrgs = orgHelper?.getOrgs();
   const org = ownerOrgs?.[0];
 
   if (!org) {

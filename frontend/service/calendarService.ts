@@ -1,10 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8086/api/v1';
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'xpectrum-ai@123';
-
-const headers = {
-  'Content-Type': 'application/json',
-  'X-API-Key': API_KEY
-};
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8001/api/v1';
 
 export interface CalendarService {
   id: string;
@@ -39,24 +33,38 @@ export interface UpdateServiceData {
 
 export const calendarServiceAPI = {
   // Fetch all calendar services
-  async getServices(): Promise<{ success: boolean; services?: CalendarService[]; stats?: ServiceStats; error?: string }> {
+  async getServices(token: string): Promise<{ success: boolean; calendars?: any[]; events?: any[]; timezone?: string; error?: string }> {
     try {
-      const response = await fetch(`${API_BASE}/services/calendar`, { headers });
-      return await response.json();
+      const response = await fetch(`${API_BASE}/calendar/events`, { headers : { Authorization: `Bearer ${token}` } });
+      if (!response.ok) {
+        return { success: false, error: 'Failed to fetch data from server' };
+      }
+      const data = await response.json();
+      return {
+        success: true,
+        calendars: data.calendars,
+        events: data.events,
+        timezone: data.timezone
+      };
     } catch (error) {
       return { success: false, error: 'Failed to connect to server' };
     }
   },
 
   // Create new calendar service
-  async createService(data: CreateServiceData): Promise<{ success: boolean; service?: CalendarService; error?: string }> {
+  async createService(token: string, data: any): Promise<{ success: boolean; event?: any; error?: string }> {
     try {
-      const response = await fetch(`${API_BASE}/services/calendar`, {
+      const response = await fetch(`${API_BASE}/calendar/events`, {
         method: 'POST',
-        headers,
+        headers : { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } ,
         body: JSON.stringify(data)
       });
-      return await response.json();
+      const result = await response.json();
+      if (response.ok && result.event) {
+        return { success: true, event: result.event };
+      } else {
+        return { success: false, error: result.error || result.message || 'Failed to create event' };
+      }
     } catch (error) {
       return { success: false, error: 'Failed to create service' };
     }
@@ -67,7 +75,7 @@ export const calendarServiceAPI = {
     try {
       const response = await fetch(`${API_BASE}/services/calendar/${id}`, {
         method: 'PUT',
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
       return await response.json();
@@ -81,7 +89,7 @@ export const calendarServiceAPI = {
     try {
       const response = await fetch(`${API_BASE}/services/calendar/${id}`, {
         method: 'DELETE',
-        headers
+        headers: { 'Content-Type': 'application/json' }
       });
       return await response.json();
     } catch (error) {
@@ -94,7 +102,7 @@ export const calendarServiceAPI = {
     try {
       const response = await fetch(`${API_BASE}/services/calendar/${id}/status`, {
         method: 'PATCH',
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
       });
       return await response.json();
@@ -106,10 +114,77 @@ export const calendarServiceAPI = {
   // Get service by ID
   async getService(id: string): Promise<{ success: boolean; service?: CalendarService; error?: string }> {
     try {
-      const response = await fetch(`${API_BASE}/services/calendar/${id}`, { headers });
+      const response = await fetch(`${API_BASE}/services/calendar/${id}`);
       return await response.json();
     } catch (error) {
       return { success: false, error: 'Failed to fetch service' };
+    }
+  },
+
+  // Get user info
+  async getUser(token: string): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE}/auth/user`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return await response.json();
+    } catch (error) {
+      return { user: null };
+    }
+  },
+
+  // Get calendar access
+  async getCalendarAccess(token: string): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE}/calendar/access`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return await response.json();
+    } catch (error) {
+      return { has_calendar_access: false };
+    }
+  },
+
+  // Buy service
+  async buyService(token: string): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE}/buy-service`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return await response.json();
+    } catch (error) {
+      return { redirect_url: '' };
+    }
+  },
+
+  // Update user timezone
+  async updateUserTimezone(token: string, timezone: string): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE}/update-user-timezone`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ timezone })
+      });
+      return await response.json();
+    } catch (error) {
+      return { success: false };
+    }
+  },
+
+  // Logout
+  async logout(token: string): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return await response.json();
+    } catch (error) {
+      return { success: false };
     }
   }
 }; 
