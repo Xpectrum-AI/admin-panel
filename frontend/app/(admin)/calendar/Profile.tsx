@@ -1,171 +1,182 @@
 'use client';
 
-import { useEffect, useState, ChangeEvent } from 'react'
-import { useRouter } from 'next/navigation'
-import { useDashboardAuth } from '../dashboard/DashboardAuthProvider'
-import axios from 'axios'
-import React from 'react'
+import { useEffect, useState, ChangeEvent } from 'react';
+import { useRouter } from 'next/navigation';
+import { SyncLoader } from 'react-spinners';
+import { Calendar, Globe, CalendarPlus, Clock, Lock } from 'lucide-react';
+import React from 'react';
+import { calendarServiceAPI } from '@/service/calendarService';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
-type TimezoneOption = { value: string; label: string }
+type TimezoneOption = { value: string; label: string };
 
-const Profile = () => {
-  const { user, logout, isAuthenticated, loading, token, selectedTimezone, updateTimezone, timezoneOptions, hasCalendarAccess } = useDashboardAuth()
-  const router = useRouter()
-  const [calendarEvents, setCalendarEvents] = useState<any[]>([])
-  const [loadingCalendar, setLoadingCalendar] = useState<boolean>(false)
-  const [showCalendar, setShowCalendar] = useState<boolean>(false)
-  const [editingName, setEditingName] = useState<boolean>(false)
-  const [newFirstName, setNewFirstName] = useState<string>('')
-  const [newLastName, setNewLastName] = useState<string>('')
-  const [nameErrors, setNameErrors] = useState<{ firstName?: string; lastName?: string }>({})
-  const [showDetails, setShowDetails] = useState(false)
-
-  // Environment variables - Next.js uses NEXT_PUBLIC_ prefix for client-side variables
-  const API_BASE_URL = process.env.NEXT_PUBLIC_CALENDAR_API_URL || 'http://localhost:8001/api/v1'
-
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push('/calendar')
-    }
-  }, [isAuthenticated, loading, router])
-
-  useEffect(() => {
-    if (user && token) {
-      // Set the current names for editing
-      setNewFirstName(user.first_name || user.given_name || '')
-      setNewLastName(user.last_name || user.family_name || '')
-    }
-  }, [user, token])
-
-  const validateNames = (): boolean => {
-    const errors: { firstName?: string; lastName?: string } = {}
-    
-    if (!newFirstName.trim()) {
-      errors.firstName = 'First name is required'
-    }
-    
-    if (!newLastName.trim()) {
-      errors.lastName = 'Last name is required'
-    }
-    
-    setNameErrors(errors)
-    return Object.keys(errors).length === 0
+function detectBrowserTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    return process.env.NEXT_PUBLIC_DEFAULT_TIMEZONE || 'America/New_York';
   }
+}
 
-  const updateUserNames = async (): Promise<void> => {
-    if (!validateNames()) {
-      return
-    }
+function getTimezoneOptions(): { label: string; value: string }[] {
+  const baseTimezoneOptions = (process.env.NEXT_PUBLIC_TIMEZONE_OPTIONS || 'IST:Asia/Kolkata,EST:America/New_York,PST:America/Los_Angeles')
+    .split(',')
+    .map(option => {
+      const [label, value] = option.split(':');
+      return { label, value };
+    });
+  const detectedTimezone = detectBrowserTimezone();
+  const timezoneOptions = baseTimezoneOptions.some(option => option.value === detectedTimezone)
+    ? baseTimezoneOptions
+    : [
+        { label: 'Auto-detected', value: detectedTimezone },
+        ...baseTimezoneOptions
+      ];
+  return timezoneOptions;
+}
 
+const Profile = ({ token }: { token: string }) => {
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [calendarServices, setCalendarServices] = useState<any[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<any[]>([]); // <-- Add this line
+  const [loadingCalendar, setLoadingCalendar] = useState<boolean>(false);
+  const [showCalendar, setShowCalendar] = useState<boolean>(false);
+  const [selectedTimezone, setSelectedTimezone] = useState<string | null>(null);
+  const [hasCalendarAccess, setHasCalendarAccess] = useState<boolean>(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const timezoneOptions = getTimezoneOptions();
+  const { showError, showSuccess, showWarning } = useErrorHandler();
+
+  // Fetch user info
+  const fetchUser = async () => {
     try {
-      await axios.post(`${API_BASE_URL}/update-user-names`, 
-        { 
-          first_name: newFirstName.trim(),
-          last_name: newLastName.trim()
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      )
-      setEditingName(false)
-      setNameErrors({})
-      // Refresh user data - in Next.js, you might want to use router.refresh() or update state
-      router.refresh()
-    } catch (error) {
-      console.error('Failed to update names:', error)
-      alert('Failed to update names')
+      const result = await calendarServiceAPI.getUser(token);
+      setUser(result.user);
+      setSelectedTimezone(result.timezone || detectBrowserTimezone());
+    } catch {
+      setUser(null);
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
-  const cancelEdit = (): void => {
-    setEditingName(false)
-    setNameErrors({})
-    // Reset to current values
-    setNewFirstName(user?.first_name || user?.given_name || '')
-    setNewLastName(user?.last_name || user?.family_name || '')
-  }
+  useEffect(() => {
+    if (!token) {
+      setLoading(false);
+      setUser(null);
+      return;
+    }
+    fetchUser();
+  }, [token]);
 
+  // Fetch calendar access
+  useEffect(() => {
+    if (!token) return;
+    const fetchAccess = async () => {
+      try {
+        const result = await calendarServiceAPI.getCalendarAccess(token);
+        setHasCalendarAccess(result.has_calendar_access || false);
+      } catch {
+        setHasCalendarAccess(false);
+      }
+    };
+    fetchAccess();
+  }, [token]);
+
+  // Buy service
   const buyService = async (): Promise<void> => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/buy-service`)
-      // Redirect to Google OAuth for calendar access
-      window.location.href = response.data.redirect_url
+      const result = await calendarServiceAPI.buyService(token);
+      window.location.href = result.redirect_url;
+      showSuccess('Redirecting to purchase calendar service...');
     } catch (error) {
-      console.error('Failed to initiate calendar service purchase:', error)
+      showError('Failed to initiate calendar service purchase');
     }
-  }
+  };
 
   const loadCalendarEvents = async (): Promise<void> => {
-    if (!hasCalendarAccess) return
-    
-    setLoadingCalendar(true)
+    if (!hasCalendarAccess) return;
+    setLoadingCalendar(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/calendar/events`, {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'X-Timezone': selectedTimezone || ''
-        }
-      })
-      setCalendarEvents(response.data.events || [])
-      setShowCalendar(true)
+      const result = await calendarServiceAPI.getServices(token);
+      setCalendarServices(result.calendars || []);
+      setCalendarEvents(result.events || []); // <-- Add this line
+      setShowCalendar(true);
+      showSuccess('Calendar services loaded successfully!');
     } catch (error) {
-      console.error('Failed to load calendar events:', error)
-      alert('Failed to load calendar events')
+      showError('Failed to load calendar services');
     } finally {
-      setLoadingCalendar(false)
+      setLoadingCalendar(false);
     }
-  }
+  };
 
   const createSampleEvent = async (): Promise<void> => {
-    if (!hasCalendarAccess) return
-
+    if (!hasCalendarAccess) return;
+    // Set start time to 1 hour from now, end time to 1 hour 5 minutes from now
+    const now = new Date();
+    const start = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+    const end = new Date(now.getTime() + 65 * 60 * 1000); // 1 hour 5 min from now
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const formatDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
     const eventData = {
-      summary: 'Sample Event Created by OAuth App',
-      description: 'This event was created through the Google Calendar API',
+      summary: 'Test event setup',
+      description: 'Test Event',
+      location: 'none',
       start: {
-        dateTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Tomorrow
-        timeZone: selectedTimezone || ''
+        dateTime: formatDate(start)
       },
       end: {
-        dateTime: new Date(Date.now() + 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(), // Tomorrow + 1 hour
-        timeZone: selectedTimezone || ''
+        dateTime: formatDate(end)
       }
-    }
-
+    };
     try {
-      await axios.post(`${API_BASE_URL}/calendar/events`, eventData, {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'X-Timezone': selectedTimezone || ''
-        }
-      })
-      alert('Event created successfully!')
-      loadCalendarEvents() // Refresh events
+      const result = await calendarServiceAPI.createService(token, eventData);
+      if (result.success) {
+        showSuccess('Event created successfully!');
+      } else {
+        showError(result.error || 'Failed to create event');
+      }
     } catch (error) {
-      console.error('Failed to create event:', error)
-      alert('Failed to create event')
+      showError('Failed to create event');
     }
-  }
+  };
 
-  const handleTimezoneChange = (e: ChangeEvent<HTMLSelectElement>): void => {
-    const newTimezone = e.target.value
-    updateTimezone(newTimezone)
-  }
+  // Update timezone
+  const handleTimezoneChange = async (e: ChangeEvent<HTMLSelectElement>): Promise<void> => {
+    const newTimezone = e.target.value;
+    setSelectedTimezone(newTimezone);
+    if (hasCalendarAccess) {
+      showWarning('⚠️ Timezone cannot be changed after calendar access is granted to prevent scheduling conflicts.');
+      return;
+    }
+    try {
+      await calendarServiceAPI.updateUserTimezone(token, newTimezone);
+      showSuccess('Timezone updated successfully!');
+    } catch {
+      showError('Failed to update timezone');
+    }
+  };
 
-  const getTimezoneLabel = (timezone: string | null): string => {
-    const option = timezoneOptions.find((opt: TimezoneOption) => opt.value === timezone)
-    return option ? option.label : (timezone || '')
-  }
+  // Logout
+  const handleLogout = async (): Promise<void> => {
+    try {
+      await calendarServiceAPI.logout(token);
+      showSuccess('Logged out successfully!');
+    } catch {
+      showError('Failed to log out');
+    }
+    setUser(null);
+    router.push('/calendar');
+  };
 
   if (loading) {
     return (
-      <div className="container">
-        <div className="card">
-          <div className="loading"></div>
-          <p>Loading...</p>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <SyncLoader size={15} color="#000000" />
       </div>
-    )
+    );
   }
 
   if (!user) {
@@ -179,13 +190,14 @@ const Profile = () => {
           </button>
         </div>
       </div>
-    )
+    );
   }
 
-  const handleLogout = async (): Promise<void> => {
-    await logout()
-    router.push('/calendar')
-  }
+  const displayTimezone = user?.timezone || selectedTimezone || '';
+  const getTimezoneLabel = (timezone: string | null): string => {
+    const option = timezoneOptions.find((opt: TimezoneOption) => opt.value === timezone);
+    return option ? option.label : (timezone || '');
+  };
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -211,11 +223,11 @@ const Profile = () => {
           </div>
           <div className="text-gray-600 text-sm mb-2">{user.email}</div>
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-blue-500 text-lg">🌐</span>
+            <Globe />
             <label className="font-medium text-gray-700">Timezone:</label>
             <select
               className="ml-2 px-3 py-1 rounded border border-gray-300 bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={selectedTimezone || ''}
+              value={displayTimezone}
               onChange={handleTimezoneChange}
               disabled={hasCalendarAccess}
               onClick={e => e.stopPropagation()}
@@ -227,7 +239,7 @@ const Profile = () => {
           </div>
           {hasCalendarAccess && (
             <div className="text-xs text-red-500 font-semibold mb-2 flex items-center gap-1">
-              <span>🔒</span> Timezone locked after calendar access is granted
+              <Lock /> Timezone locked after calendar access is granted
             </div>
           )}
           {/* Action Buttons Grid */}
@@ -250,7 +262,7 @@ const Profile = () => {
                   }}
                   className="flex-1 px-5 py-3 rounded-xl bg-green-100 text-green-800 font-semibold hover:bg-green-200 transition text-md flex items-center justify-center gap-2 whitespace-nowrap"
                 >
-                  <span className="text-xl">📅</span> View Calendar
+                  <Calendar /> View Calendar
                 </button>
               )}
               {!hasCalendarAccess && (
@@ -258,7 +270,7 @@ const Profile = () => {
                   onClick={e => { e.stopPropagation(); buyService(); }}
                   className="flex-1 px-5 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition text-md flex items-center justify-center gap-2 whitespace-nowrap"
                 >
-                  <span className="text-xl">📅</span> Buy Calendar Service
+                  <Calendar /> Buy Calendar Service
                 </button>
               )}
             </div>
@@ -268,7 +280,7 @@ const Profile = () => {
                   onClick={e => { e.stopPropagation(); createSampleEvent(); }}
                   className="px-8 py-3 rounded-xl bg-yellow-400 text-white font-semibold hover:bg-yellow-500 transition text-md flex items-center justify-center gap-2 whitespace-nowrap"
                 >
-                  <span className="text-xl">➕</span> Create Sample Event
+                  <CalendarPlus /> Create Sample Event
                 </button>
               </div>
             )}
@@ -277,7 +289,7 @@ const Profile = () => {
       )}
       {/* Calendar Events Modal */}
       {showCalendar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 bg-opacity-40">
           <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-2xl relative animate-fade-in max-h-[90vh] flex flex-col">
             <button
               className="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl font-bold focus:outline-none"
@@ -288,60 +300,30 @@ const Profile = () => {
             </button>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <span>📅</span> Your Calendar Events
+                <Calendar /> Your Calendar Services
               </h2>
             </div>
             <div className="flex-1 overflow-y-auto">
               {loadingCalendar ? (
                 <div className="flex justify-center items-center h-32 text-lg text-gray-500">Loading events...</div>
-              ) : calendarEvents.length > 0 ? (
+              ) : calendarServices.length > 0 ? (
                 <div className="grid gap-4">
-                  {calendarEvents.map((event, idx) => {
-                    const startDate = event.start?.dateTime ? new Date(event.start.dateTime) : new Date(event.start?.date);
-                    const endDate = event.end?.dateTime ? new Date(event.end.dateTime) : new Date(event.end?.date);
-                    const isAllDay = !event.start?.dateTime;
-                    const formatDate = (date: Date) => date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-                    const formatTime = (date: Date) => date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-                    return (
-                      <div key={idx} className="bg-white border border-gray-200 rounded-xl p-6   hover:shadow-md transition-shadow">
-                        <div className="flex items-start justify-between mb-3">
-                          <h3 className="text-lg font-semibold text-gray-900">{event.summary}</h3>
-                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {isAllDay ? 'All Day' : 'Timed'}
-                          </span>
+                    {calendarEvents.map((event, idx) => (
+                      <div key={idx} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-semibold text-gray-900">{event.summary}</span>
+                          <span className="text-xs text-gray-500">{event.status}</span>
                         </div>
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-gray-600">
-                            <span className="text-blue-500">📅</span>
-                            <span className="font-medium">Date:</span>
-                            <span>{formatDate(startDate)}</span>
-                          </div>
-                          {!isAllDay && (
-                            <>
-                              <div className="flex items-center gap-2 text-gray-600">
-                                <span className="text-green-500">🕐</span>
-                                <span className="font-medium">Start:</span>
-                                <span>{formatTime(startDate)}</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-gray-600">
-                                <span className="text-red-500">🕐</span>
-                                <span className="font-medium">End:</span>
-                                <span>{formatTime(endDate)}</span>
-                              </div>
-                            </>
-                          )}
-                          {isAllDay && (
-                            <div className="flex items-center gap-2 text-gray-600">
-                              <span className="text-purple-500">📅</span>
-                              <span className="font-medium">Duration:</span>
-                              <span>{formatDate(startDate)} - {formatDate(endDate)}</span>
-                            </div>
-                          )}
+                        <div className="text-gray-700 text-sm mb-1">{event.description}</div>
+                        <div className="flex flex-wrap gap-4 text-xs text-gray-600">
+                          <span>Start: {event.start?.dateTime || event.start?.date}</span>
+                          <span>End: {event.end?.dateTime || event.end?.date}</span>
+                          <span>Type: {event.eventType}</span>
                         </div>
+                        <a href={event.htmlLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-xs mt-2 inline-block">View in Google Calendar</a>
                       </div>
-                    );
-                  })}
-                </div>
+                    ))}
+                  </div>
               ) : (
                 <div className="flex justify-center items-center h-32 text-lg text-gray-500">No events found.</div>
               )}
@@ -382,7 +364,7 @@ const Profile = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default Profile
+export default Profile;

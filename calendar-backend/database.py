@@ -6,6 +6,7 @@ from typing import Optional
 import secrets
 from dotenv import load_dotenv
 from urllib.parse import unquote 
+import time
 
 
 # Load environment variables
@@ -22,7 +23,7 @@ DATABASE_NAME = os.getenv("DATABASE_NAME")
 USER_TOKENS_COLLECTION = os.getenv("USER_TOKENS_COLLECTION")
 SESSIONS_COLLECTION = os.getenv("SESSIONS_COLLECTION")
 SESSION_TIMEOUT_HOURS = int(os.getenv("SESSION_TIMEOUT_HOURS", "24"))
-PROPEL_TOKEN_URL = os.getenv("PROPEL_TOKEN_URL")
+GOOGLE_TOKEN_URL = os.getenv("GOOGLE_TOKEN_URL")
 
 # MongoDB connection
 def get_database():
@@ -37,21 +38,22 @@ class UserTokenDB:
         self.db = get_database()
         self.collection = self.db[USER_TOKENS_COLLECTION]
 
-    async def store_user_tokens(self, user_info: dict, tokens: dict, propelauth_tokens: dict, client_id: str, client_secret: str, has_calendar_access: bool = False, user_timezone: str = None):
+    async def store_user_tokens(self, user_info: dict, propelauth_tokens: dict, client_id: str, client_secret: str, has_calendar_access: bool = False, user_timezone: str = None):
         """Store or update user tokens in MongoDB including client credentials and timezone"""
+
         user_data = {
             "user_id": user_info["user_id"],
             "email": user_info["email"],
             "name": user_info["first_name"] + " " + user_info["last_name"],  # Add space between names
             "user_info": user_info,
-            "propels_access_token": tokens["access_token"],
             "access_token": propelauth_tokens["access_token"],
-            "refresh_token": tokens.get("refresh_token"),
-            "token_type": tokens.get("token_type", "Bearer"),
-            "expires_in": tokens.get("expires_in"),
+            "refresh_token": propelauth_tokens.get("refresh_token"),
+            "token_type": propelauth_tokens.get("token_type", "Bearer"),
+            "token_expiration": propelauth_tokens["token_expiration"],
             "client_id": client_id,
             "client_secret": client_secret,
             "has_calendar_access": has_calendar_access,
+            "scope" : propelauth_tokens["authorized_scopes"],
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc)
         }
@@ -125,7 +127,8 @@ class UserTokenDB:
         if "refresh_token" in new_tokens:
             update_data["refresh_token"] = new_tokens["refresh_token"]
         if "expires_in" in new_tokens:
-            update_data["expires_in"] = new_tokens["expires_in"]
+            import time
+            update_data["token_expiration"] = int(time.time()) + int(new_tokens["expires_in"])
             
         await self.collection.update_one(
             {"user_id": user_id},
@@ -144,6 +147,40 @@ class UserTokenDB:
                 "client_secret": user_data.get("client_secret")
             }
         return None
+    
+    async def update_welcome_form_data(self, user_id: str, welcome_data: dict):
+        """
+        Update user's welcome form data (can be deeply nested, including arrays for doctor profile).
+        """
+        await self.collection.update_one(
+            {"user_id": user_id},
+            {"$set": {
+                "welcome_form_completed": True,
+                "welcome_form_data": welcome_data,
+                "updated_at": datetime.now(timezone.utc)
+            }},
+            upsert=True
+        )
+
+    async def has_completed_welcome_form(self, user_id: str) -> bool:
+        """
+        Check if user has completed the welcome form.
+        """
+        user_data = await self.collection.find_one(
+            {"user_id": user_id},
+            {"welcome_form_completed": 1}
+        )
+        return user_data.get("welcome_form_completed", False) if user_data else False
+
+    async def get_welcome_form_data(self, user_id: str) -> dict:
+        """
+        Get user's welcome form data (for pre-filling/editing).
+        """
+        user_data = await self.collection.find_one(
+            {"user_id": user_id},
+            {"welcome_form_data": 1}
+        )
+        return user_data.get("welcome_form_data", {}) if user_data else {}
 
 # Token refresh utility
 async def refresh_google_token(refresh_token: str, client_id: str, client_secret: str):
@@ -157,10 +194,13 @@ async def refresh_google_token(refresh_token: str, client_id: str, client_secret
             "refresh_token": refresh_token,
             "grant_type": "refresh_token",
         }
+
+        print (GOOGLE_TOKEN_URL,token_data)
         
-        response = await client.post(PROPEL_TOKEN_URL, data=token_data)
+        response = await client.post(GOOGLE_TOKEN_URL, data=token_data)
         response.raise_for_status()
         return response.json()
+    
 
 
 # Exchange authorization code for tokens (your requested function)
@@ -221,11 +261,6 @@ async def get_user_oauth_tokens_from_propelauth(user_id: str):
     # Construct the API endpoint URL
     endpoint_url = f"{auth_url}/api/backend/v1/user/{user_id}/oauth_token"
     
-    print(f"DEBUG: Calling PropelAuth API with:")
-    print(f"  URL: {endpoint_url}")
-    print(f"  User ID: {user_id}")
-    print(f"  API Key (first 10 chars): {api_key[:10]}...")
-    
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(
@@ -236,17 +271,12 @@ async def get_user_oauth_tokens_from_propelauth(user_id: str):
                 }
             )
             
-            print(f"DEBUG: Response status: {response.status_code}")
-            print(f"DEBUG: Response headers: {dict(response.headers)}")
-            print(f"DEBUG: Response text: {response.text}")
-            
             if response.status_code != 200:
                 print(f"PropelAuth API failed with status {response.status_code}")
                 print(f"Response text: {response.text}")
                 response.raise_for_status()
             
             tokens_data = response.json()
-            print(f"PropelAuth API response: {tokens_data}")
             return tokens_data
             
         except httpx.HTTPStatusError as e:
@@ -257,3 +287,5 @@ async def get_user_oauth_tokens_from_propelauth(user_id: str):
         except Exception as e:
             print(f"Unexpected error in PropelAuth API call: {e}")
             raise 
+
+    

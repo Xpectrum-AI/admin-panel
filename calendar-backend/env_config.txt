@@ -21,8 +21,10 @@ API_PREFIX=/api/v1
 # Google OAuth URLs
 GOOGLE_AUTH_URL=https://accounts.google.com/o/oauth2/auth
 PROPEL_TOKEN_URL=https://181249979.propelauthtest.com/propelauth/oauth/token
+GOOGLE_TOKEN_URL=https://oauth2.googleapis.com/token
 PROPEL_USER_INFO_URL=https://181249979.propelauthtest.com/propelauth/oauth/userinfo
-PROPEL_GOOGLE_URL=https://181249979.propelauthtest.com/google/login
+PROPEL_GOOGLE_URL=https://181249979.propelauthtest.com/google/login?scope=openid%20https://www.googleapis.com/auth/userinfo.email%20https://www.googleapis.com/auth/userinfo.profile%20https://www.googleapis.com/auth/calendar%20https://www.googleapis.com/auth/calendar.events&external_param_access_type=offline&external_param_prompt=consent
+
 GOOGLE_CALENDAR_API_URL=https://www.googleapis.com/calendar/v3
 
 # OAuth Scopes

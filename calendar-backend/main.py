@@ -164,21 +164,8 @@ async def check_and_store_google_tokens(request: Request):
 
 @api_v1.get("/auth/google/calendar")
 async def google_calendar_auth():
-    """Get Google OAuth URL for calendar access (when user buys service)"""
-   
-    # Build authorization URL with calendar scopes
-    redirect_url = "http://localhost:8001/api/v1/oauth2callback"
-    string_bytes = redirect_url.encode("utf-8")
-    encoded_url = base64.b64encode(string_bytes).decode("utf-8")
-    
-    params = {
-        "scope": " ".join(CALENDAR_SCOPES),
-        "rt": encoded_url,
-    }
-    
-    auth_url = f"{PROPEL_GOOGLE_URL}?{urlencode(params)}"
-    print("Calendar URL:", auth_url)
-    return {"auth_url": auth_url, "message": "Calendar access OAuth URL"}
+    """Get Google OAuth URL for calendar access (when user buys service)""" 
+    return {"auth_url": PROPEL_GOOGLE_URL, "message": "Calendar access OAuth URL"}
 
 @api_v1.get("/auth/google/redirect")
 async def google_auth_redirect():
@@ -204,8 +191,6 @@ async def oauth2callback(request: Request, code: str = None, state: str = None, 
         except Exception as e:
             print(f"Main token exchange failed: {e}")
             print("Trying alternative token exchange method...")
-
-        print(f"Token exchange successful: {tokens}")
         
         # Get user information
         async with httpx.AsyncClient() as client:
@@ -213,14 +198,11 @@ async def oauth2callback(request: Request, code: str = None, state: str = None, 
             user_response = await client.get(PROPEL_USER_INFO_URL, headers=headers)
             user_response.raise_for_status()
             user_info = user_response.json()
-
-        print(f"User info retrieved: {user_info}")
         
         # Call PropelAuth API to get additional OAuth tokens
         propelauth_tokens = None
         try:
             propelauth_tokens = await get_user_oauth_tokens_from_propelauth(user_info["user_id"])
-            print(f"PropelAuth tokens retrieved: {propelauth_tokens}")
             
         except Exception as e:
             print(f"Failed to get PropelAuth tokens: {e}")
@@ -256,8 +238,6 @@ async def calendar_oauth2callback(request: Request, code: str = None, state: str
     if not code:
         return RedirectResponse(url=f"{FRONTEND_URL}/calendar?error=no_code")
     
-    print("Calender callback")
-    
     try:
         # Exchange authorization code for tokens
         tokens = await exchange_code_for_token(code, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, CALENDAR_REDIRECT_URI)
@@ -273,7 +253,6 @@ async def calendar_oauth2callback(request: Request, code: str = None, state: str
         propelauth_tokens = None
         try:
             propelauth_tokens = await get_user_oauth_tokens_from_propelauth(user_info["user_id"])
-            print(f"PropelAuth tokens retrieved: {propelauth_tokens}")
             
         except Exception as e:
             print(f"Failed to get PropelAuth tokens: {e}")
@@ -297,6 +276,36 @@ async def calendar_oauth2callback(request: Request, code: str = None, state: str
     except Exception as e:
         return RedirectResponse(url=f"{FRONTEND_URL}/calendar?error=calendar_server_error")
 
+@api_v1.post("/auth/callback")
+async def unified_oauth_callback(request: Request):
+    data = await request.json()
+    access_token = data.get("access_token")
+    service = data.get("service")
+    if not access_token:
+        return {"error": "no_access_token", "message": "No access token provided."}
+    try:
+        # Fetch user info
+        async with httpx.AsyncClient() as client:
+            headers = {"Authorization": f"Bearer {access_token}"}
+            user_response = await client.get(PROPEL_USER_INFO_URL, headers=headers)
+            user_response.raise_for_status()
+            user_info = user_response.json()
+
+        # Get additional tokens from PropelAuth if needed
+        propelauth_tokens = await get_user_oauth_tokens_from_propelauth(user_info["user_id"])
+        if not propelauth_tokens or "google" not in propelauth_tokens:
+            return {"error": "not_logged_in_with_google", "message": "User is not logged in with Google."}
+
+        # Store everything in DB
+        await user_db.store_user_tokens(user_info, propelauth_tokens.get("google"), GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, has_calendar_access=False)
+
+        # Return success message and user id
+        return {"success": True, "user_id": user_info["user_id"], "message": "User authenticated and tokens stored."}
+    except Exception as e:
+        print(f"OAuth callback error: {e}")
+        return {"error": "server_error", "message": "An error occurred during OAuth callback."}
+    
+    
 @api_v1.post("/buy-service")
 async def buy_service(request: Request):
     """Simulate user buying calendar service - redirect to calendar OAuth"""
@@ -403,12 +412,13 @@ async def get_current_user(request: Request):
         display_user["has_custom_name"] = True
     else:
         display_user["has_custom_name"] = False
-    
-    return {
-        "user": display_user,
+
+    data = {"user": display_user,
         "authenticated": True,
-        "has_calendar_access": user_data.get("has_calendar_access", False)
-    }
+        "has_calendar_access": user_data.get("has_calendar_access", False),
+        "timezone" : user_data.get("timezone","Asia/Kolkata")}
+    
+    return data
 
 @api_v1.get("/calendar/events")
 async def get_calendar_events(request: Request):
@@ -426,17 +436,41 @@ async def get_calendar_events(request: Request):
     if not user_data:
         raise HTTPException(status_code=401, detail="User not found")
     
-    if not user_data.get("has_calendar_access"):
+    scopes = user_data.get("scope") or user_data.get("scopes") or []
+    if not isinstance(scopes, list):
+        scopes = list(scopes) if scopes else []
+    required_scopes = [
+        "https://www.googleapis.com/auth/calendar",
+        "https://www.googleapis.com/auth/calendar.events"
+    ]
+    has_calendar_access = all(scope in scopes for scope in required_scopes)
+    
+    if not has_calendar_access:
         raise HTTPException(status_code=403, detail="Calendar access not granted")
     
     try:
-        # Check if token needs refresh
+        # Check if token needs refresh based on expiration
+        import time
+        now = int(time.time())
         access_token = user_data["access_token"]
-        
+        expiration = user_data.get("token_expiration")
+        refresh_token = user_data.get("refresh_token")
+        client_id = user_data.get("client_id")
+        client_secret = user_data.get("client_secret")
+
+        # If token is expired and we have a refresh token, refresh it first
+        if expiration and now >= expiration and refresh_token and client_id and client_secret:
+            new_tokens = await refresh_google_token(
+                refresh_token,
+                client_id,
+                client_secret
+            )
+            # Update tokens in database
+            await user_db.refresh_access_token(user_id, new_tokens)
+            access_token = new_tokens["access_token"]
+
         async with httpx.AsyncClient() as client:
             headers = {"Authorization": f"Bearer {access_token}"}
-            
-            # Try to get calendar data, refresh token if needed
             try:
                 # Get list of calendars
                 calendars_response = await client.get(
@@ -445,7 +479,6 @@ async def get_calendar_events(request: Request):
                 )
                 calendars_response.raise_for_status()
                 calendars = calendars_response.json()
-                
                 # Get events from primary calendar
                 events_response = await client.get(
                     f"{GOOGLE_CALENDAR_API_URL}/calendars/primary/events",
@@ -460,35 +493,28 @@ async def get_calendar_events(request: Request):
                 )
                 events_response.raise_for_status()
                 events = events_response.json()
-                
                 return {
                     "calendars": calendars.get("items", []),
                     "events": events.get("items", []),
                     "timezone": DEFAULT_TIMEZONE
                 }
-                
             except httpx.HTTPStatusError as e:
-                if e.response.status_code == 401 and user_data.get("refresh_token"):
-                    # Token expired, try to refresh using stored client credentials
+                # If we get a 401 and have a refresh token, try to refresh and retry once
+                if e.response.status_code == 401 and refresh_token and client_id and client_secret:
                     new_tokens = await refresh_google_token(
-                        user_data["refresh_token"], 
-                        user_data["client_id"], 
-                        user_data["client_secret"]
+                        refresh_token,
+                        client_id,
+                        client_secret
                     )
-                    
-                    # Update tokens in database
                     await user_db.refresh_access_token(user_id, new_tokens)
-                    
-                    # Retry with new token
-                    headers = {"Authorization": f"Bearer {new_tokens['access_token']}"}
-                    
+                    access_token = new_tokens["access_token"]
+                    headers = {"Authorization": f"Bearer {access_token}"}
                     calendars_response = await client.get(
                         f"{GOOGLE_CALENDAR_API_URL}/users/me/calendarList",
                         headers=headers
                     )
                     calendars_response.raise_for_status()
                     calendars = calendars_response.json()
-                    
                     events_response = await client.get(
                         f"{GOOGLE_CALENDAR_API_URL}/calendars/primary/events",
                         headers=headers,
@@ -497,12 +523,11 @@ async def get_calendar_events(request: Request):
                             "maxResults": MAX_CALENDAR_EVENTS,
                             "singleEvents": "true",
                             "orderBy": "startTime",
-                            "timeZone": DEFAULT_TIMEZONE  # Use default timezone for event times
+                            "timeZone": DEFAULT_TIMEZONE
                         }
                     )
                     events_response.raise_for_status()
                     events = events_response.json()
-                    
                     return {
                         "calendars": calendars.get("items", []),
                         "events": events.get("items", []),
@@ -510,7 +535,6 @@ async def get_calendar_events(request: Request):
                     }
                 else:
                     raise
-            
     except httpx.HTTPError as e:
         raise HTTPException(status_code=400, detail=f"Failed to fetch calendar data: {str(e)}")
 
@@ -530,7 +554,16 @@ async def create_calendar_event(request: Request, event_data: dict):
     if not user_data:
         raise HTTPException(status_code=401, detail="User not found")
     
-    if not user_data.get("has_calendar_access"):
+    scopes = user_data.get("scope") or user_data.get("scopes") or []
+    if not isinstance(scopes, list):
+        scopes = list(scopes) if scopes else []
+    required_scopes = [
+        "https://www.googleapis.com/auth/calendar",
+        "https://www.googleapis.com/auth/calendar.events"
+    ]
+    has_calendar_access = all(scope in scopes for scope in required_scopes)
+    
+    if not has_calendar_access:
         raise HTTPException(status_code=403, detail="Calendar access not granted")
     
     # Ensure timezone is set for the event if not already specified
@@ -627,7 +660,20 @@ async def get_calendar_access(request: Request):
     user_data = await user_db.get_user_by_id(user_id)
     if not user_data:
         raise HTTPException(status_code=401, detail="User not found")
-    return {"has_calendar_access": user_data.get("has_calendar_access", False)}
+
+    # Check for calendar access in scopes
+    scopes = user_data.get("scope") or user_data.get("scopes") or []
+    if not isinstance(scopes, list):
+        scopes = list(scopes) if scopes else []
+    required_scopes = [
+        "https://www.googleapis.com/auth/calendar",
+        "https://www.googleapis.com/auth/calendar.events"
+    ]
+    has_calendar_access = all(scope in scopes for scope in required_scopes)
+    # Optionally update the DB if needed
+    if has_calendar_access and not user_data.get("has_calendar_access", False):
+        await user_db.update_access_token_and_calendar_access(user_id, user_data.get("access_token"), True)
+    return {"has_calendar_access": has_calendar_access}
 
 @api_v1.get("/timezone/options")
 async def get_timezone_options():
@@ -638,6 +684,43 @@ async def get_timezone_options():
         {"label": "PST", "value": "America/Los_Angeles", "description": "Pacific Standard Time"}
     ]
     return {"timezones": timezone_options}
+
+@api_v1.get("/welcome-form/status")
+async def get_welcome_form_status(request: Request):
+    """Check if user has completed the welcome form"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No token provided")
+    jwt_token = auth_header.split(" ")[1]
+    try:
+        jwt_payload = verify_propelauth_jwt(jwt_token)
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e))
+    user_id = jwt_payload["user_id"]
+    
+    has_completed = await user_db.has_completed_welcome_form(user_id)
+    return {"has_completed_welcome_form": has_completed}
+
+@api_v1.post("/welcome-form/submit")
+async def submit_welcome_form(request: Request):
+    """Submit welcome form data"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No token provided")
+    jwt_token = auth_header.split(" ")[1]
+    try:
+        jwt_payload = verify_propelauth_jwt(jwt_token)
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e))
+    user_id = jwt_payload["user_id"]
+    
+    form_data = await request.json()
+    # You can add validation here if needed
+    await user_db.update_welcome_form_data(user_id, form_data)
+    return {
+        "message": "Welcome form submitted successfully",
+        "welcome_form_data": form_data
+    }
 
 # Include the API router
 app.include_router(api_v1)
