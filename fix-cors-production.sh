@@ -60,9 +60,8 @@ rm -rf .env.production
 # Copy production environment
 cp ../backend/env.production .env.production
 
-# Install and build
+# Install dependencies
 npm install
-NODE_ENV=production npm run build
 
 cd ..
 
