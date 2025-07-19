@@ -90,4 +90,26 @@ export async function getActiveCalls() {
     await handleApiError(res, 'Failed to fetch active calls');
   }
   return res.json();
+}
+
+export async function fetchLivekitAgentIds() {
+  const LIVEKIT_URL = 'https://multiagents.livekit.xpectrum-ai.com/agents/all';
+  const LIVEKIT_API_KEY = 'xpectrum-ai@123';
+  const res = await fetch(LIVEKIT_URL, {
+    headers: {
+      'X-API-Key': LIVEKIT_API_KEY,
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!res.ok) {
+    throw new Error('Failed to fetch agent IDs from LiveKit');
+  }
+  const data = await res.json();
+  // Support both { agents: [...] } and array response
+  if (Array.isArray(data)) {
+    return data.map((agent: any) => agent.agentId || agent.id);
+  } else if (Array.isArray(data.agents)) {
+    return data.agents.map((agent: any) => agent.agentId || agent.id);
+  }
+  return [];
 } 
