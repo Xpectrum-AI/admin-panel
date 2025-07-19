@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { SyncLoader } from "react-spinners";
-import { getAllAgents, setAgentPhone, getAgentByPhone, deleteAgentPhone, updateAgent } from '../../../service/agentService';
+import { getAllAgents, setAgentPhone, getAgentByPhone, deleteAgentPhone, updateAgent, fetchLivekitAgentIds, getAgentInfo } from '../../../service/agentService';
 import { useErrorHandler } from '../../../hooks/useErrorHandler';
 
 interface Agent {
@@ -38,6 +38,11 @@ const AgentsPage = () => {
   const [selectedAgent, setSelectedAgent] = useState<string>('');
   const [searchPhone, setSearchPhone] = useState('');
   const [searchResult, setSearchResult] = useState<Agent | null>(null);
+  const [agentIdOptions, setAgentIdOptions] = useState<string[]>([]);
+  const [voiceIdOptions, setVoiceIdOptions] = useState<string[]>([]);
+  const [ttsModelOptions, setTtsModelOptions] = useState<string[]>([]);
+  const [speedOptions, setSpeedOptions] = useState<number[]>([]);
+  const [languageOptions, setLanguageOptions] = useState<string[]>([]);
 
   // Form states
   const [addForm, setAddForm] = useState({
@@ -86,6 +91,54 @@ const AgentsPage = () => {
   const headers = {
     'Content-Type': 'application/json',
     'X-API-Key': API_KEY
+  };
+
+  // Add this helper to update form fields from agent data
+  function fillFormFromAgent(agent: any, setForm: any) {
+    setForm({
+      agentId: agent.agentId || '',
+      chatbot_api: agent.chatbot_api || '',
+      chatbot_key: agent.chatbot_key || '',
+      tts_config: {
+        voice_id: agent.tts_config?.voice_id || '',
+        tts_api_key: agent.tts_config?.tts_api_key || '',
+        model: agent.tts_config?.model || '',
+        speed: agent.tts_config?.speed ?? 0.5,
+      },
+      stt_config: {
+        api_key: agent.stt_config?.api_key || '',
+        model: agent.stt_config?.model || '',
+        language: agent.stt_config?.language || '',
+      },
+    });
+  }
+
+  // Fetch all agents and extract unique dropdown options
+  const fetchAgentsAndOptions = async () => {
+    setLoading(true);
+    try {
+      const data = await getAllAgents();
+      const agentsArray = Array.isArray(data.agents) ? data.agents : [];
+      setAgents(agentsArray);
+      setAgentIdOptions(agentsArray.map((a: Agent) => a.agentId));
+      // Extract unique options for dropdowns from all agents
+      setVoiceIdOptions(Array.from(new Set(agentsArray.map((a: Agent) => a.tts_config?.voice_id).filter((v: string | undefined): v is string => Boolean(v))) as Set<string>));
+      setTtsModelOptions(Array.from(new Set(agentsArray.map((a: Agent) => a.tts_config?.model).filter((v: string | undefined): v is string => Boolean(v))) as Set<string>));
+      setSpeedOptions(Array.from(new Set(agentsArray.map((a: Agent) => a.tts_config?.speed).filter((s: number | undefined | null): s is number => s !== undefined && s !== null)) as Set<number>));
+      setLanguageOptions(Array.from(new Set(agentsArray.map((a: Agent) => a.stt_config?.language).filter((v: string | undefined): v is string => Boolean(v))) as Set<string>));
+      setError(null);
+    } catch (error: any) {
+      setError(error.message || 'Failed to fetch agents');
+      setAgents([]);
+      setAgentIdOptions([]);
+      setVoiceIdOptions([]);
+      setTtsModelOptions([]);
+      setSpeedOptions([]);
+      setLanguageOptions([]);
+      showError(error.message || 'Failed to fetch agents');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Fetch all agents
@@ -210,14 +263,17 @@ const AgentsPage = () => {
     }
   };
 
+  // On mount, fetch all agents and options
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await fetchAgents();
-      setLoading(false);
-    };
-    loadData();
-  }, []); // Only run on mount
+    fetchAgentsAndOptions();
+  }, []);
+
+  // Fetch agent IDs when Add/Update modal is opened
+  useEffect(() => {
+    if (showAddModal || showUpdateModal) {
+      fetchLivekitAgentIds().then(setAgentIdOptions).catch(() => setAgentIdOptions([]));
+    }
+  }, [showAddModal, showUpdateModal]);
 
   if (loading) {
     return (
@@ -226,6 +282,11 @@ const AgentsPage = () => {
       </div>
     );
   }
+
+  // For phone number dropdown, get all phone numbers from agents except the current agent
+  const phoneNumberOptions = agents
+    .filter(a => a.agentId !== selectedAgent && a.phone_number)
+    .map(a => ({ value: a.phone_number!, label: a.phone_number! }));
 
   return (
     <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-lg p-8 mt-8 mb-8">
@@ -395,144 +456,64 @@ const AgentsPage = () => {
               <div className="space-y-8">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Agent ID <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
+                  <select
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     value={addForm.agentId}
-                    onChange={(e) => setAddForm({ ...addForm, agentId: e.target.value })}
-                    placeholder=""
+                    onChange={e => {
+                      const agentId = e.target.value;
+                      setAddForm(f => ({ ...f, agentId }));
+                      const agent = agents.find(a => a.agentId === agentId);
+                      if (agent) fillFormFromAgent(agent, setAddForm);
+                    }}
                     required
-                  />
+                  >
+                    <option value="">Select Agent ID</option>
+                    {agentIdOptions.map(id => <option key={id} value={id}>{id}</option>)}
+                  </select>
                 </div>
                 <div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Chatbot Configuration</h4>
-                  <div className="grid grid-cols-1 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Chatbot API</label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
-                        value={addForm.chatbot_api}
-                        onChange={(e) => setAddForm({...addForm, chatbot_api: e.target.value})}
-                        placeholder="https://demo.xpectrum-ai.com/v1/chat-messages"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Chatbot Key</label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
-                        value={addForm.chatbot_key}
-                        onChange={(e) => setAddForm({...addForm, chatbot_key: e.target.value})}
-                        placeholder="REDACTED"
-                      />
-                    </div>
-                  </div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Voice ID</label>
+                  <select
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    value={addForm.tts_config.voice_id}
+                    onChange={e => setAddForm({ ...addForm, tts_config: { ...addForm.tts_config, voice_id: e.target.value } })}
+                  >
+                    <option value="">Select Voice ID</option>
+                    {voiceIdOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
                 </div>
-
                 <div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">TTS Configuration</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Voice ID</label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
-                        value={addForm.tts_config.voice_id}
-                        onChange={(e) => setAddForm({
-                          ...addForm, 
-                          tts_config: {...addForm.tts_config, voice_id: e.target.value}
-                        })}
-                        placeholder="e8e5fffb-252c-436d-b842-8879b84445b6"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">TTS API Key</label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
-                        value={addForm.tts_config.tts_api_key}
-                        onChange={(e) => setAddForm({
-                          ...addForm, 
-                          tts_config: {...addForm.tts_config, tts_api_key: e.target.value}
-                        })}
-                        placeholder="REDACTED"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Model</label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
-                        value={addForm.tts_config.model}
-                        onChange={(e) => setAddForm({
-                          ...addForm, 
-                          tts_config: {...addForm.tts_config, model: e.target.value}
-                        })}
-                        placeholder="sonic-2"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Speed</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0.1"
-                        max="2.0"
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
-                        value={addForm.tts_config.speed}
-                        onChange={(e) => setAddForm({
-                          ...addForm, 
-                          tts_config: {...addForm.tts_config, speed: parseFloat(e.target.value)}
-                        })}
-                      />
-                    </div>
-                  </div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Model</label>
+                  <select
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    value={addForm.tts_config.model}
+                    onChange={e => setAddForm({ ...addForm, tts_config: { ...addForm.tts_config, model: e.target.value } })}
+                  >
+                    <option value="">Select Model</option>
+                    {ttsModelOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
                 </div>
-
                 <div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">STT Configuration</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">API Key</label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
-                        value={addForm.stt_config.api_key}
-                        onChange={(e) => setAddForm({
-                          ...addForm, 
-                          stt_config: {...addForm.stt_config, api_key: e.target.value}
-                        })}
-                        placeholder="05df4b7e4f1ce81d5e9fdfb4b0cadd02b317c373"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Model</label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
-                        value={addForm.stt_config.model}
-                        onChange={(e) => setAddForm({
-                          ...addForm, 
-                          stt_config: {...addForm.stt_config, model: e.target.value}
-                        })}
-                        placeholder="nova-2"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Language</label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
-                        value={addForm.stt_config.language}
-                        onChange={(e) => setAddForm({
-                          ...addForm, 
-                          stt_config: {...addForm.stt_config, language: e.target.value}
-                        })}
-                        placeholder="en-US"
-                      />
-                    </div>
-                  </div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Speed</label>
+                  <select
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    value={addForm.tts_config.speed}
+                    onChange={e => setAddForm({ ...addForm, tts_config: { ...addForm.tts_config, speed: parseFloat(e.target.value) } })}
+                  >
+                    <option value="">Select Speed</option>
+                    {speedOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Language</label>
+                  <select
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    value={addForm.stt_config.language}
+                    onChange={e => setAddForm({ ...addForm, stt_config: { ...addForm.stt_config, language: e.target.value } })}
+                  >
+                    <option value="">Select Language</option>
+                    {languageOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
                 </div>
               </div>
             </div>
@@ -564,13 +545,14 @@ const AgentsPage = () => {
             <div className="p-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
+                <select
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   value={phoneForm.phone_number}
-                  onChange={(e) => setPhoneForm({phone_number: e.target.value})}
-                  placeholder="+18143873168"
-                />
+                  onChange={e => setPhoneForm({ phone_number: e.target.value })}
+                >
+                  <option value="">Select Phone Number</option>
+                  {phoneNumberOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
               </div>
             </div>
             <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
@@ -602,140 +584,70 @@ const AgentsPage = () => {
               <div className="space-y-8">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Agent ID</label>
-                  <input
-                    type="text"
+                  <select
                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900"
                     value={updateForm.agentId}
+                    onChange={async e => {
+                      const agentId = e.target.value;
+                      setUpdateForm(f => ({ ...f, agentId }));
+                      if (agentId) {
+                        try {
+                          const data = await getAgentInfo(agentId);
+                          if (data.success && data.agent) {
+                            fillFormFromAgent(data.agent, setUpdateForm);
+                          }
+                        } catch {}
+                      }
+                    }}
                     disabled
-                  />
+                  >
+                    <option value="">Select Agent ID</option>
+                    {agentIdOptions.map(id => <option key={id} value={id}>{id}</option>)}
+                  </select>
                 </div>
                 <div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Chatbot Configuration</h4>
-                  <div className="grid grid-cols-1 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Chatbot API</label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900"
-                        value={updateForm.chatbot_api}
-                        onChange={(e) => setUpdateForm({...updateForm, chatbot_api: e.target.value})}
-                        placeholder=""
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Chatbot Key</label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900"
-                        value={updateForm.chatbot_key}
-                        onChange={(e) => setUpdateForm({...updateForm, chatbot_key: e.target.value})}
-                        placeholder=""
-                      />
-                    </div>
-                  </div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Voice ID</label>
+                  <select
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    value={updateForm.tts_config.voice_id}
+                    onChange={e => setUpdateForm({ ...updateForm, tts_config: { ...updateForm.tts_config, voice_id: e.target.value } })}
+                  >
+                    <option value="">Select Voice ID</option>
+                    {voiceIdOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
                 </div>
                 <div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">TTS Configuration</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Voice ID</label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900"
-                        value={updateForm.tts_config.voice_id}
-                        onChange={(e) => setUpdateForm({
-                          ...updateForm,
-                          tts_config: {...updateForm.tts_config, voice_id: e.target.value}
-                        })}
-                        placeholder=""
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">TTS API Key</label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900"
-                        value={updateForm.tts_config.tts_api_key}
-                        onChange={(e) => setUpdateForm({
-                          ...updateForm,
-                          tts_config: {...updateForm.tts_config, tts_api_key: e.target.value}
-                        })}
-                        placeholder=""
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Model</label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900"
-                        value={updateForm.tts_config.model}
-                        onChange={(e) => setUpdateForm({
-                          ...updateForm,
-                          tts_config: {...updateForm.tts_config, model: e.target.value}
-                        })}
-                        placeholder=""
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Speed</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0.1"
-                        max="2.0"
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900"
-                        value={updateForm.tts_config.speed}
-                        onChange={(e) => setUpdateForm({
-                          ...updateForm,
-                          tts_config: {...updateForm.tts_config, speed: parseFloat(e.target.value)}
-                        })}
-                      />
-                    </div>
-                  </div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Model</label>
+                  <select
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    value={updateForm.tts_config.model}
+                    onChange={e => setUpdateForm({ ...updateForm, tts_config: { ...updateForm.tts_config, model: e.target.value } })}
+                  >
+                    <option value="">Select Model</option>
+                    {ttsModelOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
                 </div>
                 <div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">STT Configuration</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">API Key</label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900"
-                        value={updateForm.stt_config.api_key}
-                        onChange={(e) => setUpdateForm({
-                          ...updateForm,
-                          stt_config: {...updateForm.stt_config, api_key: e.target.value}
-                        })}
-                        placeholder=""
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Model</label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900"
-                        value={updateForm.stt_config.model}
-                        onChange={(e) => setUpdateForm({
-                          ...updateForm,
-                          stt_config: {...updateForm.stt_config, model: e.target.value}
-                        })}
-                        placeholder=""
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Language</label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900"
-                        value={updateForm.stt_config.language}
-                        onChange={(e) => setUpdateForm({
-                          ...updateForm,
-                          stt_config: {...updateForm.stt_config, language: e.target.value}
-                        })}
-                        placeholder=""
-                      />
-                    </div>
-                  </div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Speed</label>
+                  <select
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    value={updateForm.tts_config.speed}
+                    onChange={e => setUpdateForm({ ...updateForm, tts_config: { ...updateForm.tts_config, speed: parseFloat(e.target.value) } })}
+                  >
+                    <option value="">Select Speed</option>
+                    {speedOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Language</label>
+                  <select
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    value={updateForm.stt_config.language}
+                    onChange={e => setUpdateForm({ ...updateForm, stt_config: { ...updateForm.stt_config, language: e.target.value } })}
+                  >
+                    <option value="">Select Language</option>
+                    {languageOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
                 </div>
               </div>
             </div>

@@ -26,4 +26,58 @@ services:
       - MONGODB_URI=${MONGODB_URI}
       - JWT_SECRET=${JWT_SECRET}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-    restart: unless-stopped 
+    restart: unless-stopped
+
+  calendar-backend:
+    build:
+      context: ./calendar-backend
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      # Google OAuth Configuration
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - REDIRECT_URI=${REDIRECT_URI}
+      - CALENDAR_REDIRECT_URI=${CALENDAR_REDIRECT_URI}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      
+      # MongoDB Configuration
+      - MONGODB_URL=${MONGODB_URL}
+      - DATABASE_NAME=${DATABASE_NAME}
+      
+      # Server Configuration
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8001
+      - DEBUG_MODE=${DEBUG_MODE:-false}
+      
+      # API Configuration
+      - API_VERSION=v1
+      - API_PREFIX=/api/v1
+      
+      # Google OAuth URLs
+      - GOOGLE_AUTH_URL=${GOOGLE_AUTH_URL}
+      - PROPEL_TOKEN_URL=${PROPEL_TOKEN_URL}
+      - GOOGLE_TOKEN_URL=${GOOGLE_TOKEN_URL}
+      - PROPEL_USER_INFO_URL=${PROPEL_USER_INFO_URL}
+      - PROPEL_GOOGLE_URL=${PROPEL_GOOGLE_URL}
+      - GOOGLE_CALENDAR_API_URL=${GOOGLE_CALENDAR_API_URL}
+      
+      # OAuth Scopes
+      - BASIC_SCOPES=${BASIC_SCOPES}
+      - CALENDAR_SCOPES=${CALENDAR_SCOPES}
+      
+      # Calendar Configuration
+      - DEFAULT_TIMEZONE=${DEFAULT_TIMEZONE:-America/New_York}
+      - MAX_CALENDAR_EVENTS=${MAX_CALENDAR_EVENTS:-10}
+      
+      # CORS Configuration
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      
+      # PropelAuth Configuration
+      - PROPELAUTH_URL=${PROPELAUTH_URL}
+      - PROPELAUTH_API_KEY=${PROPELAUTH_API_KEY}
+    restart: unless-stopped
+    depends_on:
+      - backend 
