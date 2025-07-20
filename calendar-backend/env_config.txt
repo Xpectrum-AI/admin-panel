@@ -1,7 +1,7 @@
 GOOGLE_CLIENT_ID=441654168539-9tfk7ibkt2r9tbsoohpjjfmjjn8u4lf0.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=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
-REDIRECT_URI=https://admin-test.xpectrum-ai.com/api/v1/oauth2callback
-CALENDAR_REDIRECT_URI=https://admin-test.xpectrum-ai.com/api/v1/calendar/oauth2callback
+REDIRECT_URI=https://admin-test.xpectrum-ai.com/calendar-api/oauth2callback
+CALENDAR_REDIRECT_URI=https://admin-test.xpectrum-ai.com/calendar-api/calendar/oauth2callback
 FRONTEND_URL=https://admin-test.xpectrum-ai.com
 SECRET_KEY=your_secret_key_for_sessions_change_this_in_production
 MONGODB_URL=mongodb+srv://mongo_access:3gfaAKMQsCwEjIXG@cluster0.4os5zqa.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
