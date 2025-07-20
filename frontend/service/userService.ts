@@ -21,8 +21,6 @@ export async function fetchUserMailApi(email: string, includeOrgs: boolean) {
   return res.json();
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com';
-
 export async function createUser({ email, password, firstName, lastName, username }: {
   email: string;
   password: string;
@@ -30,7 +28,7 @@ export async function createUser({ email, password, firstName, lastName, usernam
   lastName: string;
   username: string;
 }) {
-  const response = await fetch(`${API_BASE}/user/create-user`, {
+  const response = await fetch('http://localhost:8000/api/user/create-user', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password, firstName, lastName, username }),
@@ -40,7 +38,7 @@ export async function createUser({ email, password, firstName, lastName, usernam
 }
 
 export async function fetchUsersByQuery(query: any) {
-  const response = await fetch(`${API_BASE}/user/fetch-users-query`, {
+  const response = await fetch('http://localhost:8000/api/user/fetch-users-query', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(query),
