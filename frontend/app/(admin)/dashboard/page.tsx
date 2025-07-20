@@ -13,6 +13,7 @@ import axios from 'axios';
 import WelcomeSetupModal from '../components/WelcomeSetupModel';
 import OrgSetup from '../components/OrgSetup';
 import { removeUserFromOrg } from '@/service/orgService';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_CALENDAR_API_URL || 'http://localhost:8001/api/v1';
 
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const [showOrgSetup, setShowOrgSetup] = useState(false);
   const [showOrgChoice, setShowOrgChoice] = useState(false);
   const [orgs, setOrgs] = useState<any[]>([]);
+  const { showError, showSuccess } = useErrorHandler();
 
   useEffect(() => {
     if (!loading && orgHelper) {
@@ -70,14 +72,22 @@ export default function Dashboard() {
 
   // Handler for choosing an org
   const handleChooseOrg = async (chosenOrgId: string) => {
-    if (!user?.userId) return;
+    if (!user?.userId) {
+      showError('User not found. Please log in again.');
+      return;
+    }
     // Remove user from all orgs except the chosen one
     const orgsToRemove = orgs.filter((org: any) => (org.orgId || org.id) !== chosenOrgId);
-    await Promise.all(orgsToRemove.map((org: any) =>
-      removeUserFromOrg(org.orgId || org.id, user.userId)
-    ));
-    setShowOrgChoice(false);
-    window.location.reload();
+    try {
+      await Promise.all(orgsToRemove.map((org: any) =>
+        removeUserFromOrg(org.orgId || org.id, user.userId)
+      ));
+      showSuccess('Workspace selected successfully!');
+      setShowOrgChoice(false);
+      window.location.reload();
+    } catch (err: any) {
+      showError(err?.message || 'Failed to update workspace selection. Please try again.');
+    }
   };
 
   if (loading || !callbackCompleted) {
@@ -93,15 +103,18 @@ export default function Dashboard() {
       {showOrgSetup && <OrgSetup onOrgCreated={() => setShowOrgSetup(false)} />}
       {showOrgChoice && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 bg-opacity-40">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg relative animate-fade-in max-h-[90vh] flex flex-col">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg relative animate-fade-in max-h-[90vh] flex flex-col border border-gray-200">
             <h2 className="text-2xl font-bold mb-4">Choose Your Workspace</h2>
             <ul className="space-y-4">
               {orgs.map((org: any) => (
-                <li key={org.orgId || org.id} className="border rounded-lg p-4 flex flex-col">
-                  <div className="font-semibold text-lg">{org.orgName || org.name}</div>
+                <li
+                  key={org.orgId || org.id}
+                  className="border border-gray-300 rounded-xl p-4 flex flex-col bg-gray-50"
+                >
+                  <div className="font-semibold text-lg text-gray-900">{org.orgName || org.name}</div>
                   <div className="text-gray-600 text-sm mb-2">{org.description || org.metadata?.description || ''}</div>
                   <button
-                    className="mt-2 px-4 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700"
+                    className="mt-2 px-4 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition min-w-[160px]"
                     onClick={() => handleChooseOrg(org.orgId || org.id)}
                   >
                     Choose this workspace
@@ -109,7 +122,9 @@ export default function Dashboard() {
                 </li>
               ))}
             </ul>
-            <div className="text-sm text-gray-500 mt-4">You can only be part of one workspace. Choosing one will remove you from the others.</div>
+            <div className="text-sm text-gray-500 mt-4">
+              You can only be part of one workspace. Choosing one will remove you from the others.
+            </div>
           </div>
         </div>
       )}

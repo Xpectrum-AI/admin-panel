@@ -56,13 +56,13 @@ export default function OrgCreationModal({ onOrgCreated }: { onOrgCreated: () =>
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md relative animate-fade-in">
-        <h2 className="text-xl font-bold mb-4">Create Your Organization</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 bg-opacity-40">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg relative animate-fade-in max-h-[90vh] flex flex-col border border-gray-200">
+        <h2 className="text-2xl font-bold mb-4">Create Your Workspace</h2>
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Organization Name</label>
+          <label className="block text-sm font-medium mb-1">Workspace Name</label>
           <input
-            className="w-full border rounded px-3 py-2"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-gray-50"
             value={orgName}
             onChange={e => setOrgName(e.target.value)}
             placeholder="e.g. Acme Corp"
@@ -72,22 +72,23 @@ export default function OrgCreationModal({ onOrgCreated }: { onOrgCreated: () =>
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1">Description (optional)</label>
           <textarea
-            className="w-full border rounded px-3 py-2"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-gray-50"
             value={orgDesc}
             onChange={e => setOrgDesc(e.target.value)}
-            placeholder="What does your organization do?"
+            placeholder="What does your workspace do?"
             disabled={loading}
           />
         </div>
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-2 mt-2">
           <button
-            className="px-4 py-2 rounded bg-black text-white font-semibold"
+            className="px-4 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition min-w-[160px]"
             onClick={handleCreate}
             disabled={loading}
           >
-            {loading ? 'Creating...' : 'Create Organization'}
+            {loading ? 'Creating...' : 'Create Workspace'}
           </button>
         </div>
+        <div className="text-sm text-gray-500 mt-4">You can only be part of one workspace. Create a new one to get started.</div>
       </div>
     </div>
   );

@@ -22,7 +22,7 @@ export default function AgentsLayout({ children }: { children: React.ReactNode }
           </button>
           <h1 className="text-2xl md:text-2xl font-bold text-gray-900">Agents Management</h1>
         </div>
-      <main className="pt-6">{children}</main>
+      <main >{children}</main>
     </div>
     </ProtectedRoute>
   );
