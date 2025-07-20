@@ -14,7 +14,7 @@ import WelcomeSetupModal from '../components/WelcomeSetupModel';
 import OrgSetup from '../components/OrgSetup';
 import { removeUserFromOrg } from '@/service/orgService';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_CALENDAR_API_URL || 'https://admin-test.xpectrum-ai.com/';
+const API_BASE_URL = process.env.NEXT_PUBLIC_CALENDAR_API_URL || 'https://admin-test.xpectrum-ai.com';
 
 export default function Dashboard() {
   const { accessToken, user, loading, orgHelper } = useAuthInfo();

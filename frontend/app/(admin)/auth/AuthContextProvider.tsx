@@ -64,7 +64,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
   const [isGoogleAuthenticated, setIsGoogleAuthenticated] = useState(false);
 
-  const API_BASE_URL = process.env.NEXT_PUBLIC_CALENDAR_API_URL || 'https://admin-test.xpectrum-ai.com/'
+  const API_BASE_URL = process.env.NEXT_PUBLIC_CALENDAR_API_URL || 'https://admin-test.xpectrum-ai.com'
 
   // Set user info from PropelAuth
   useEffect(() => {
