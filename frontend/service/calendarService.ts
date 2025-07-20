@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_CALENDAR_API_URL || 'https://admin-test.xpectrum-ai.com/';
+const API_BASE = process.env.NEXT_PUBLIC_CALENDAR_API_URL || 'https://admin-test.xpectrum-ai.com';
 
 export interface CalendarService {
   id: string;

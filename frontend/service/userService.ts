@@ -21,7 +21,7 @@ export async function fetchUserMailApi(email: string, includeOrgs: boolean) {
   return res.json();
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com';
 
 export async function createUser({ email, password, firstName, lastName, username }: {
   email: string;
