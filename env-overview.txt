@@ -1,0 +1,138 @@
+# Admin Panel - Environment Configuration Overview
+# This file provides an overview of all URLs and environment configurations across all components
+
+## 🚀 Development URLs
+
+### Frontend (Next.js)
+- **Main App**: http://localhost:3000
+- **Services Dashboard**: http://localhost:3000/services
+- **Admin Dashboard**: http://localhost:3000/(admin)/dashboard
+- **Calendar**: http://localhost:3000/(admin)/calendar
+- **Billing**: http://localhost:3000/(admin)/billing
+- **Workspace**: http://localhost:3000/(admin)/workspace
+- **Settings**: http://localhost:3000/(admin)/settings
+
+### Backend (Node.js)
+- **API Base**: http://localhost:8000
+- **Health Check**: http://localhost:8000/health
+- **User API**: http://localhost:8000/api/user
+- **Org API**: http://localhost:8000/api/org
+- **Agent API**: http://localhost:8000/api/agent
+- **Stripe API**: http://localhost:8000/api/stripe
+
+### Calendar Backend (Python)
+- **API Base**: http://localhost:8001/api/v1
+- **Health Check**: http://localhost:8001/health
+- **Calendar API**: http://localhost:8001/api/v1/calendar
+- **OAuth Callback**: http://localhost:8001/api/v1/oauth2callback
+- **Calendar OAuth**: http://localhost:8001/api/v1/calendar/oauth2callback
+
+## 🔐 Authentication URLs
+
+### PropelAuth
+- **Base URL**: https://181249979.propelauthtest.com
+- **Login**: https://181249979.propelauthtest.com/google/login
+- **Token Endpoint**: https://181249979.propelauthtest.com/propelauth/oauth/token
+- **User Info**: https://181249979.propelauthtest.com/propelauth/oauth/userinfo
+
+### Google OAuth
+- **Auth URL**: https://accounts.google.com/o/oauth2/auth
+- **Token URL**: https://oauth2.googleapis.com/token
+- **Calendar API**: https://www.googleapis.com/calendar/v3
+
+## 💳 Payment URLs
+
+### Stripe
+- **Test Secret Key**: sk_test_51RaX9pBTMxLlaTtWg74455SOBukRu3gQsEY3SfP17rkMOHy3Aoh7SHvuoMqV5Kk1wdsEf9yCeoROtu66SulV1YKW00YGErU4Pq
+- **Publishable Key**: (configure in .env)
+
+## 🗄️ Database URLs
+
+### MongoDB
+- **Production**: mongodb+srv://mongo_access:3gfaAKMQsCwEjIXG@cluster0.4os5zqa.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+- **Test**: mongodb+srv://yashthakur:wEA3mi5yb7fUqe6Z@cluster0.sqfidzj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+
+## 📁 Environment Files Location
+
+### Frontend
+- **Config File**: `frontend/env-config.txt`
+- **Usage**: Copy to `frontend/.env.local`
+
+### Backend
+- **Config File**: `backend/env-config.txt`
+- **Usage**: Copy to `backend/.env`
+
+### Calendar Backend
+- **Config File**: `calendar-backend/env_config.txt`
+- **Usage**: Copy to `calendar-backend/.env`
+
+## 🔧 Port Configuration
+
+| Service | Port | Description |
+|---------|------|-------------|
+| Frontend | 3000 | Next.js development server |
+| Backend | 8000 | Node.js API server |
+| Calendar Backend | 8001 | Python calendar API server |
+
+## 🌐 CORS Configuration
+
+### Allowed Origins
+- http://localhost:3000
+- http://localhost:3001
+- http://localhost:5173
+
+## ⚙️ Environment Variables by Component
+
+### Frontend (.env.local)
+```
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_CALENDAR_API_URL=http://localhost:8001/api/v1
+NEXT_PUBLIC_AUTH_URL=https://181249979.propelauthtest.com
+NEXT_PUBLIC_API_KEY=xpectrum-ai@123
+NEXT_PUBLIC_DEFAULT_TIMEZONE=America/New_York
+```
+
+### Backend (.env)
+```
+PORT=8000
+API_KEY=xpectrum-ai@123
+LIVE_API_KEY=xpectrum-ai@123
+LIVE_API_BASE_URL=https://live.xpectrum-ai.com
+PROPELAUTH_API_KEY=5c1b57840f4d4ec7265d0622cf68dd63e028b78d8482b21b8fb00395bb6ee3c59a1fde5f9288d373b1a315e591bd8723
+STRIPE_SECRET_KEY=sk_test_51RaX9pBTMxLlaTtWg74455SOBukRu3gQsEY3SfP17rkMOHy3Aoh7SHvuoMqV5Kk1wdsEf9yCeoROtu66SulV1YKW00YGErU4Pq
+```
+
+### Calendar Backend (.env)
+```
+SERVER_PORT=8001
+GOOGLE_CLIENT_ID=441654168539-9tfk7ibkt2r9tbsoohpjjfmjjn8u4lf0.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=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
+MONGODB_URL=mongodb+srv://mongo_access:3gfaAKMQsCwEjIXG@cluster0.4os5zqa.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+```
+
+## 🚀 Quick Start Commands
+
+### Development
+```bash
+# Frontend
+cd frontend && npm run dev
+
+# Backend
+cd backend && npm start
+
+# Calendar Backend
+cd calendar-backend && python main.py
+```
+
+### Docker
+```bash
+docker-compose up -d
+```
+
+## 📝 Notes
+
+1. **Security**: All API keys and secrets should be changed in production
+2. **Environment Files**: Copy the respective `env-config.txt` files to `.env` or `.env.local`
+3. **CORS**: Ensure all frontend URLs are included in CORS configuration
+4. **Ports**: Make sure ports 3000, 8000, and 8001 are available
+5. **Database**: Ensure MongoDB connection strings are valid and accessible 

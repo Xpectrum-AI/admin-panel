@@ -47,8 +47,8 @@ function makeRequest(url, options) {
 async function testLiveAgents() {
   console.log('Testing Live API Agents Endpoint...\n');
 
-  const LIVE_API_BASE_URL = 'https://live.xpectrum-ai.com';
-  const LIVE_API_KEY = 'xpectrum-ai@123';
+  const LIVE_API_BASE_URL = process.env.LIVE_API_BASE_URL || 'https://live.xpectrum-ai.com';
+  const LIVE_API_KEY = process.env.LIVE_API_KEY || 'xpectrum-ai@123';
 
   try {
     console.log('1. Testing /agents/all endpoint...');

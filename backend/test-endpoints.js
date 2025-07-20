@@ -47,9 +47,9 @@ function makeRequest(url, options = {}) {
 async function testEndpoints() {
   console.log('Testing Backend Endpoints...\n');
 
-  const baseUrl = 'http://localhost:8000';
+  const baseUrl = process.env.API_BASE_URL || 'http://localhost:8000';
   const headers = {
-    'X-API-Key': 'xpectrum-ai@123',
+    'X-API-Key': process.env.API_KEY || 'xpectrum-ai@123',
     'Content-Type': 'application/json'
   };
 

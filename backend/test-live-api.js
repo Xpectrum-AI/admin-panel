@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 
-const LIVE_API_BASE_URL = 'https://live.xpectrum-ai.com';
-const LIVE_API_KEY = 'xpectrum-ai@123';
+const LIVE_API_BASE_URL = process.env.LIVE_API_BASE_URL || 'https://live.xpectrum-ai.com';
+const LIVE_API_KEY = process.env.LIVE_API_KEY || 'xpectrum-ai@123';
 
 async function testLiveAPI() {
   console.log('Testing Live API Connection...\n');

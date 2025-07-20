@@ -23,7 +23,7 @@ const SuccessPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-  const API_KEY = 'xpectrum-ai@123';
+  const API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'xpectrum-ai@123';
 
   useEffect(() => {
     // Get session_id from URL parameters

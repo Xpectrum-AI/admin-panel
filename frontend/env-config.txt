@@ -1,0 +1,46 @@
+# Frontend Environment Configuration
+# Copy this to .env.local for development
+
+# API URLs
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_CALENDAR_API_URL=http://localhost:8001/api/v1
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8001/api/v1
+NEXT_PUBLIC_AUTH_URL=https://181249979.propelauthtest.com
+
+# Authentication & PropelAuth
+NEXT_PUBLIC_PROPELAUTH_URL=https://181249979.propelauthtest.com
+NEXT_PUBLIC_PROPELAUTH_API_KEY=ad39ddd2967143bea4f4405e5f6dc4d0f5183c63a027add992e99a71cd80ab6c1ce07889f5ee6364f21abb40c827d29c
+
+# Timezone Configuration
+NEXT_PUBLIC_DEFAULT_TIMEZONE=America/New_York
+NEXT_PUBLIC_TIMEZONE_OPTIONS=IST:Asia/Kolkata,EST:America/New_York,PST:America/Los_Angeles
+
+# Development Server
+NEXT_PUBLIC_DEV_SERVER_URL=http://localhost:3000
+
+# CORS Origins (for development)
+CORS_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:5173
+
+# API Configuration
+NEXT_PUBLIC_API_KEY=xpectrum-ai@123
+
+# Stripe Configuration (if needed)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key_here
+
+# Google OAuth (if needed)
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=441654168539-9tfk7ibkt2r9tbsoohpjjfmjjn8u4lf0.apps.googleusercontent.com
+NEXT_PUBLIC_GOOGLE_REDIRECT_URI=http://localhost:8001/api/v1/oauth2callback
+
+# Calendar Service URLs
+NEXT_PUBLIC_CALENDAR_REDIRECT_URI=http://localhost:8001/api/v1/calendar/oauth2callback
+NEXT_PUBLIC_GOOGLE_CALENDAR_API_URL=https://www.googleapis.com/calendar/v3
+
+# Session Configuration
+NEXT_PUBLIC_SESSION_TIMEOUT_HOURS=24
+
+# Calendar Configuration
+NEXT_PUBLIC_MAX_CALENDAR_EVENTS=10
+
+# Database Configuration (if needed)
+NEXT_PUBLIC_MONGODB_URL=mongodb+srv://mongo_access:3gfaAKMQsCwEjIXG@cluster0.4os5zqa.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+NEXT_PUBLIC_DATABASE_NAME=google_oauth 
