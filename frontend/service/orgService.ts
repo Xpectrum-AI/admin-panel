@@ -1,7 +1,8 @@
 import type { UpdateOrgInput } from './type';
 
 export async function createOrg(orgName: string) {
-  const response = await fetch('http://localhost:8000/api/org/create-org', {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com/api';
+  const response = await fetch(`${API_BASE}/org/create-org`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orgName }),
@@ -15,7 +16,8 @@ export async function createOrg(orgName: string) {
 }
 
 export async function addUserToOrg(orgId: string, userId: string, role: string) {
-  const response = await fetch('http://localhost:8000/api/org/add-user', {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com/api';
+  const response = await fetch(`${API_BASE}/org/add-user`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orgId, userId, role }),
@@ -29,7 +31,8 @@ export async function addUserToOrg(orgId: string, userId: string, role: string) 
 }
 
 export async function inviteUserToOrg(orgId: string, email: string, role: string) {
-  const response = await fetch('http://localhost:8000/api/org/invite-user', {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com/api';
+  const response = await fetch(`${API_BASE}/org/invite-user`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orgId, email, role }),
@@ -43,7 +46,8 @@ export async function inviteUserToOrg(orgId: string, email: string, role: string
 }
 
 export async function fetchUsersInOrg(orgId: string) {
-  const response = await fetch('http://localhost:8000/api/org/fetch-users', {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com/api';
+  const response = await fetch(`${API_BASE}/org/fetch-users`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orgId }),
@@ -57,7 +61,8 @@ export async function fetchUsersInOrg(orgId: string) {
 }
 
 export async function fetchPendingInvites(orgId: string) {
-  const response = await fetch('http://localhost:8000/api/org/fetch-pending-invites', {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com/api';
+  const response = await fetch(`${API_BASE}/org/fetch-pending-invites`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orgId }),
@@ -71,7 +76,8 @@ export async function fetchPendingInvites(orgId: string) {
 }
 
 export async function removeUserFromOrg(orgId: string, userId: string) {
-  const response = await fetch('http://localhost:8000/api/org/remove-user', {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com/api';
+  const response = await fetch(`${API_BASE}/org/remove-user`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orgId, userId }),
@@ -85,7 +91,8 @@ export async function removeUserFromOrg(orgId: string, userId: string) {
 }
 
 export async function changeUserRoleInOrg(orgId: string, userId: string, role: string) {
-  const response = await fetch('http://localhost:8000/api/org/change-user-role', {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com/api';
+  const response = await fetch(`${API_BASE}/org/change-user-role`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orgId, userId, role }),
@@ -135,7 +142,8 @@ export async function updateOrg(orgId: string, updates: UpdateOrgInput): Promise
     }
   });
 
-  const response = await fetch('http://localhost:8000/api/org/update-org', {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com/api';
+  const response = await fetch(`${API_BASE}/org/update-org`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -152,7 +160,8 @@ export async function updateOrg(orgId: string, updates: UpdateOrgInput): Promise
 }
 
 export async function fetchOrgDetails(orgId: string) {
-  const response = await fetch('http://localhost:8000/api/org/fetch-org-details', {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com/api';
+  const response = await fetch(`${API_BASE}/org/fetch-org-details`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orgId }),
@@ -166,7 +175,8 @@ export async function fetchOrgDetails(orgId: string) {
 }
 
 export async function fetchOrgByQuery(query: any) {
-  const response = await fetch('http://localhost:8000/api/org/fetch-orgs-query', {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com/api';
+  const response = await fetch(`${API_BASE}/org/fetch-orgs-query`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(query),

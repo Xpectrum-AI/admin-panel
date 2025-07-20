@@ -22,7 +22,7 @@ const SuccessPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com';
   const API_KEY = 'xpectrum-ai@123';
 
   useEffect(() => {
