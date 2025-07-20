@@ -32,6 +32,8 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=8085
+      - PROPELAUTH_API_KEY=${PROPELAUTH_API_KEY}
+      - PROPELAUTH_AUTH_URL=${PROPELAUTH_AUTH_URL}
     restart: unless-stopped
 
   calendar-backend:
