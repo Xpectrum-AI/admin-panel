@@ -51,7 +51,7 @@ export function useGoogleAuth() {
 
     // Wait a bit for cleanup to complete, then redirect
     setTimeout(() => {
-      const redirectUrl = encodeURIComponent('http://localhost:3000/dashboard');
+      const redirectUrl = encodeURIComponent('https://admin-test.xpectrum-ai.com/dashboard');
       const authUrl = `https://181249979.propelauthtest.com/login?provider=google&redirect_url=${redirectUrl}`;
       
       // Use window.location.replace to avoid back button issues

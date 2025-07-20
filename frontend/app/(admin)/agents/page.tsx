@@ -85,7 +85,7 @@ const AgentsPage = () => {
 
   const [showUpdateModal, setShowUpdateModal] = useState(false);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com';
   const API_KEY = 'xpectrum-ai@123';
 
   const headers = {
