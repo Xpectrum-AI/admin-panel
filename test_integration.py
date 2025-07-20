@@ -9,8 +9,9 @@ import json
 import time
 
 # Configuration
-BASE_URL = "http://localhost:8086"
-API_KEY = "xpectrum-ai@123"
+import os
+BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8086")
+API_KEY = os.getenv("API_KEY", "xpectrum-ai@123")
 HEADERS = {
     "Content-Type": "application/json",
     "X-API-Key": API_KEY
@@ -249,14 +250,15 @@ def main():
         print("🎉 All tests passed! Backend integration is working correctly.")
         print("\n📝 Next steps:")
         print("1. Start your frontend: cd frontend && npm run dev")
-        print("2. Access the dashboard: http://localhost:3000/services")
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        print(f"2. Access the dashboard: {frontend_url}/services")
         print("3. Create your .env.local file with the provided configuration")
     else:
         print("⚠️ Some tests failed. Please check the backend configuration.")
         print("\n🔧 Troubleshooting:")
         print("1. Ensure backend is running: cd calendar-backend && python start.py")
         print("2. Check MongoDB connection in env_config.txt")
-        print("3. Verify API key matches: xpectrum-ai@123")
+        print("3. Verify API key matches: xpectrum-ai@123 (or set API_KEY environment variable)")
 
 if __name__ == "__main__":
     main() 

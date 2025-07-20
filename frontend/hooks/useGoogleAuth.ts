@@ -51,8 +51,8 @@ export function useGoogleAuth() {
 
     // Wait a bit for cleanup to complete, then redirect
     setTimeout(() => {
-      const redirectUrl = encodeURIComponent('http://localhost:3000/dashboard');
-      const authUrl = `https://181249979.propelauthtest.com/login?provider=google&redirect_url=${redirectUrl}`;
+      const redirectUrl = encodeURIComponent(`${process.env.NEXT_PUBLIC_DEV_SERVER_URL || 'http://localhost:3000'}/dashboard`);
+      const authUrl = `${process.env.NEXT_PUBLIC_AUTH_URL || 'https://181249979.propelauthtest.com'}/login?provider=google&redirect_url=${redirectUrl}`;
       
       // Use window.location.replace to avoid back button issues
       window.location.replace(authUrl);

@@ -47,8 +47,8 @@ function makeRequest(url, options) {
 async function testPhoneNumbers() {
   console.log('Testing Phone Number Functionality...\n');
 
-  const LIVE_API_BASE_URL = 'https://live.xpectrum-ai.com';
-  const LIVE_API_KEY = 'xpectrum-ai@123';
+  const LIVE_API_BASE_URL = process.env.LIVE_API_BASE_URL || 'https://live.xpectrum-ai.com';
+  const LIVE_API_KEY = process.env.LIVE_API_KEY || 'xpectrum-ai@123';
   const TEST_AGENT = 'agent-1';
   const TEST_PHONE = '+19147684790'; // Different phone number
 
