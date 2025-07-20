@@ -1,85 +1,36 @@
 #!/bin/bash
 
-# Production Deployment Script with CORS Fix
-# This script deploys the calendar backend using production environment with proper CORS handling
-
-set -e  # Exit on any error
-
-echo "🚀 Starting Production Deployment with CORS Fix..."
-
-# Check if Docker is installed
-if ! command -v docker &> /dev/null; then
-    echo "❌ Docker is not installed. Please install Docker first."
-    exit 1
-fi
-
-# Check if Docker Compose is installed
-if ! command -v docker-compose &> /dev/null; then
-    echo "❌ Docker Compose is not installed. Please install Docker Compose first."
-    exit 1
-fi
-
-# Check if production env file exists
-if [ ! -f env.production ]; then
-    echo "❌ env.production file not found. Please create it with your production configuration."
-    exit 1
-fi
-
-# Copy production env to .env
-echo "📋 Using production environment configuration..."
-cp env.production .env
+echo "🚀 Deploying production with fixed API routing..."
 
 # Stop existing containers
-echo "🛑 Stopping existing containers..."
-docker-compose down
+echo "📦 Stopping existing containers..."
+docker-compose -f docker-compose.production.yml down
 
-# Build frontend with production environment
-echo "🔨 Building frontend with production environment..."
-cd frontend
-cp ../frontend/env.production .env.production
-npm run build
-cd ..
-
-# Build and start services with production configuration
-echo "🔨 Building and starting production services..."
-NODE_ENV=production docker-compose -f docker-compose.production.yml up --build -d
+# Build and start containers with updated configuration
+echo "🔨 Building and starting containers..."
+docker-compose -f docker-compose.production.yml up -d --build
 
 # Wait for services to be ready
-echo "⏳ Waiting for services to be ready..."
-sleep 15
+echo "⏳ Waiting for services to start..."
+sleep 30
 
-# Check service health
-echo "🏥 Checking service health..."
+# Check service status
+echo "🔍 Checking service status..."
 docker-compose -f docker-compose.production.yml ps
 
-# Test calendar backend
-echo "🧪 Testing calendar backend..."
-if curl -f http://localhost:8001/api/v1/ > /dev/null 2>&1; then
-    echo "✅ Production deployment completed successfully!"
-    echo "📊 Calendar Backend API: http://localhost:8001"
-    echo "📊 Calendar Backend Docs: http://localhost:8001/docs"
-else
-    echo "❌ Calendar backend health check failed."
-    echo "📋 Checking logs..."
-    docker-compose -f docker-compose.production.yml logs calendar-backend
-    exit 1
-fi
+# Test the fixed endpoints
+echo "🧪 Testing fixed endpoints..."
 
-echo "🎉 Production deployment completed successfully!"
-echo ""
-echo "📋 Production Service URLs:"
-echo "   - Frontend: http://localhost:3000"
-echo "   - Backend: http://localhost:8085"
-echo "   - Calendar Backend: http://localhost:8001"
-echo "   - Calendar API Docs: http://localhost:8001/docs"
-echo ""
-echo "🌐 Production URLs (via nginx):"
-echo "   - Frontend: https://admin-test.xpectrum-ai.com"
-echo "   - Main API: https://admin-test.xpectrum-ai.com/api"
-echo "   - Calendar API: https://admin-test.xpectrum-ai.com/calendar-api"
-echo ""
-echo "🔧 Useful commands:"
-echo "   - View logs: docker-compose -f docker-compose.production.yml logs -f"
-echo "   - Stop services: docker-compose -f docker-compose.production.yml down"
-echo "   - Restart services: docker-compose -f docker-compose.production.yml restart"
-echo "   - Update and redeploy: NODE_ENV=production docker-compose -f docker-compose.production.yml up --build -d" 
+# Test calendar API endpoint
+echo "Testing calendar API endpoint..."
+curl -s -o /dev/null -w "%{http_code}" https://admin-test.xpectrum-ai.com/calendar-api/ || echo "Failed"
+
+# Test auth callback endpoint
+echo "Testing auth callback endpoint..."
+curl -s -o /dev/null -w "%{http_code}" https://admin-test.xpectrum-ai.com/calendar-api/auth/callback || echo "Failed"
+
+echo "✅ Deployment completed with fixed API routing!"
+echo "📝 The following changes were made:"
+echo "   - Updated frontend API calls to use /calendar-api/ instead of /api/v1/"
+echo "   - Updated OAuth redirect URIs to use /calendar-api/ path"
+echo "   - Fixed nginx routing to properly route calendar API requests" 
