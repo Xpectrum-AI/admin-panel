@@ -1,22 +1,38 @@
-FROM node:20-alpine
+# Use the official Node.js runtime as the base image
+FROM node:18-alpine AS base
 
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Install dependencies based on the preferred package manager
+COPY package.json package-lock.json* ./
+RUN npm ci --only=production
 
-# Install production dependencies only
-RUN npm ci --only=production --prefer-offline --no-audit
-
-# Copy source code
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Expose the port the app runs on
-EXPOSE 5000
+# Production image, copy all the files and run the app
+FROM base AS runner
+WORKDIR /app
 
-# Set environment variables
-ENV NODE_ENV=production
-ENV PORT=5000
+ENV NODE_ENV production
 
-# Start the application
-CMD ["node", "src/server.js"] 
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nodejs
+
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/package.json ./package.json
+
+USER nodejs
+
+EXPOSE 8005
+
+ENV PORT 8005
+
+CMD ["npm", "start"] 

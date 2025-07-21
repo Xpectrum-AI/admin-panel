@@ -2,12 +2,21 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  eslint: {
-    ignoreDuringBuilds: true,
+  experimental: {
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
   },
-  typescript: {
-    ignoreBuildErrors: true,
+  images: {
+    unoptimized: true,
   },
+  // Disable telemetry in production
+  telemetry: false,
 };
 
 export default nextConfig;
