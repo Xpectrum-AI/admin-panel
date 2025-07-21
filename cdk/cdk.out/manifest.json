@@ -1,0 +1,569 @@
+{
+  "version": "34.0.0",
+  "artifacts": {
+    "AdminPanelStack.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "AdminPanelStack.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "AdminPanelStack": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://641623447164/us-east-1",
+      "properties": {
+        "templateFile": "AdminPanelStack.template.json",
+        "terminationProtection": false,
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::641623447164:role/cdk-hnb659fds-deploy-role-641623447164-us-east-1",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::641623447164:role/cdk-hnb659fds-cfn-exec-role-641623447164-us-east-1",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-641623447164-us-east-1/4dc8d3d01c585771143eef75b3335556211d5d6b6cdcc7cb5dbe6da1826ee5a0.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "AdminPanelStack.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::641623447164:role/cdk-hnb659fds-lookup-role-641623447164-us-east-1",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "AdminPanelStack.assets"
+      ],
+      "metadata": {
+        "/AdminPanelStack/AdminPanelVPC/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPC9660A6F0"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/publicSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCpublicSubnet1Subnet014DAB8D"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/publicSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCpublicSubnet1RouteTableFB5BD19B"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/publicSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCpublicSubnet1RouteTableAssociationAFD679CD"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/publicSubnet1/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCpublicSubnet1DefaultRoute65E24EF4"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/publicSubnet1/EIP": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCpublicSubnet1EIP84258BB1"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/publicSubnet1/NATGateway": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCpublicSubnet1NATGateway09B234F0"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/publicSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCpublicSubnet2Subnet12CAE742"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/publicSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCpublicSubnet2RouteTable9F9F6ECD"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/publicSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCpublicSubnet2RouteTableAssociation86A179CF"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/publicSubnet2/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCpublicSubnet2DefaultRoute20C46E48"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/privateSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCprivateSubnet1Subnet9E9F80E3"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/privateSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCprivateSubnet1RouteTable1E9A8521"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/privateSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCprivateSubnet1RouteTableAssociationD6612F35"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/privateSubnet1/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCprivateSubnet1DefaultRoute4494C332"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/privateSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCprivateSubnet2Subnet24908E8D"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/privateSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCprivateSubnet2RouteTable0C65F2A4"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/privateSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCprivateSubnet2RouteTableAssociation0149E307"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/privateSubnet2/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCprivateSubnet2DefaultRouteC14DCAF4"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/isolatedSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCisolatedSubnet1SubnetAC269E41"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/isolatedSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCisolatedSubnet1RouteTable46B6A259"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/isolatedSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCisolatedSubnet1RouteTableAssociation54F35466"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/isolatedSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCisolatedSubnet2SubnetF3947E4F"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/isolatedSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCisolatedSubnet2RouteTable5AF35AC3"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/isolatedSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCisolatedSubnet2RouteTableAssociation0DB2A348"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/IGW": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCIGWD3943B47"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/VPCGW": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCVPCGW76931080"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/RestrictDefaultSecurityGroupCustomResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCRestrictDefaultSecurityGroupCustomResourceF1012391"
+          }
+        ],
+        "/AdminPanelStack/Custom::VpcRestrictDefaultSGCustomResourceProvider/Role": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0"
+          }
+        ],
+        "/AdminPanelStack/Custom::VpcRestrictDefaultSGCustomResourceProvider/Handler": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomVpcRestrictDefaultSGCustomResourceProviderHandlerDC833E5E"
+          }
+        ],
+        "/AdminPanelStack/ALBSecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ALBSecurityGroup29A3BDEF"
+          }
+        ],
+        "/AdminPanelStack/ECSSecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ECSSecurityGroupA14DBE7D"
+          }
+        ],
+        "/AdminPanelStack/ECSSecurityGroup/from AdminPanelStackALBSecurityGroup1600D068:3000": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ECSSecurityGroupfromAdminPanelStackALBSecurityGroup1600D06830001CFBB099"
+          }
+        ],
+        "/AdminPanelStack/ECSSecurityGroup/from AdminPanelStackALBSecurityGroup1600D068:8005": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ECSSecurityGroupfromAdminPanelStackALBSecurityGroup1600D0688005C637E8A5"
+          }
+        ],
+        "/AdminPanelStack/ECSSecurityGroup/from AdminPanelStackAdminPanelServiceLBSecurityGroupFB81E755:3000": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ECSSecurityGroupfromAdminPanelStackAdminPanelServiceLBSecurityGroupFB81E755300012868D87"
+          }
+        ],
+        "/AdminPanelStack/ECSSecurityGroup/from AdminPanelStackAdminPanelServiceLBSecurityGroupFB81E755:8005": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ECSSecurityGroupfromAdminPanelStackAdminPanelServiceLBSecurityGroupFB81E7558005AB92E182"
+          }
+        ],
+        "/AdminPanelStack/RDSSecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "RDSSecurityGroup6BF2CF10"
+          }
+        ],
+        "/AdminPanelStack/RDSSecurityGroup/from AdminPanelStackECSSecurityGroupF0548F3E:27017": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "RDSSecurityGroupfromAdminPanelStackECSSecurityGroupF0548F3E2701756C60291"
+          }
+        ],
+        "/AdminPanelStack/FrontendRepo/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendRepoF80FCC01"
+          }
+        ],
+        "/AdminPanelStack/BackendRepo/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendRepo7FFBAD06"
+          }
+        ],
+        "/AdminPanelStack/DBSecret/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DBSecretD58955BC"
+          }
+        ],
+        "/AdminPanelStack/JWTSecret/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "JWTSecretF6F1CBF0"
+          }
+        ],
+        "/AdminPanelStack/StripeSecret/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StripeSecret80A38A68"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelDB/Subnets/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelDBSubnetsB8BCB898"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelDB/Secret/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelDBSecretCD792D03"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelDB/Secret/Attachment/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelDBSecretAttachmentE16F2F59"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelDB/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelDBD0E70147"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelDB/Instance1": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelDBInstance1D21D6217"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelCluster/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelCluster354587DC"
+          }
+        ],
+        "/AdminPanelStack/FrontendTaskDef/TaskRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendTaskDefTaskRoleDA0FD037"
+          }
+        ],
+        "/AdminPanelStack/FrontendTaskDef/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendTaskDef7D3FD156"
+          }
+        ],
+        "/AdminPanelStack/FrontendTaskDef/FrontendContainer/LogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendTaskDefFrontendContainerLogGroup4779CF9C"
+          }
+        ],
+        "/AdminPanelStack/FrontendTaskDef/ExecutionRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendTaskDefExecutionRoleE7329A09"
+          }
+        ],
+        "/AdminPanelStack/FrontendTaskDef/ExecutionRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendTaskDefExecutionRoleDefaultPolicy48DF7F3B"
+          }
+        ],
+        "/AdminPanelStack/BackendTaskDef/TaskRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendTaskDefTaskRoleBA953A3B"
+          }
+        ],
+        "/AdminPanelStack/BackendTaskDef/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendTaskDef6ECE986E"
+          }
+        ],
+        "/AdminPanelStack/BackendTaskDef/BackendContainer/LogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendTaskDefBackendContainerLogGroupD7D6F38F"
+          }
+        ],
+        "/AdminPanelStack/BackendTaskDef/ExecutionRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendTaskDefExecutionRoleC5A001DB"
+          }
+        ],
+        "/AdminPanelStack/BackendTaskDef/ExecutionRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendTaskDefExecutionRoleDefaultPolicyAA625660"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelService/LB/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelServiceLB9B1B1814"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelService/LB/SecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelServiceLBSecurityGroup2078BA66"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelService/LB/SecurityGroup/to AdminPanelStackECSSecurityGroupF0548F3E:3000": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelServiceLBSecurityGrouptoAdminPanelStackECSSecurityGroupF0548F3E3000A35C3311"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelService/LB/SecurityGroup/to AdminPanelStackECSSecurityGroupF0548F3E:8005": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelServiceLBSecurityGrouptoAdminPanelStackECSSecurityGroupF0548F3E800537C2EA48"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelService/LB/PublicListener/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelServiceLBPublicListener5990C080"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelService/LB/PublicListener/ECSGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelServiceLBPublicListenerECSGroup83BE35C0"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelService/LB/BackendListener/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelServiceLBBackendListenerC05F8360"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelService/LB/BackendListener/BackendActionRule/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelServiceLBBackendListenerBackendActionRule3F91C488"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelService/LoadBalancerDNS": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelServiceLoadBalancerDNSFC977B03"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelService/ServiceURL": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelServiceServiceURLF243F1A1"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelService/Service/Service": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelService677475D4"
+          }
+        ],
+        "/AdminPanelStack/BackendService/Service": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendService7A4224EE"
+          }
+        ],
+        "/AdminPanelStack/BackendTargetGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendTargetGroupECF98930"
+          }
+        ],
+        "/AdminPanelStack/CPUAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CPUAlarm83780B26"
+          }
+        ],
+        "/AdminPanelStack/MemoryAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MemoryAlarm2E786DB4"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelNotifications/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelNotifications894873E8"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelLogs/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelLogs210F8B4B"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelLogs/Policy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelLogsPolicyCE6AF996"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelLogs/AutoDeleteObjectsCustomResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelLogsAutoDeleteObjectsCustomResourceBBE7537D"
+          }
+        ],
+        "/AdminPanelStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092"
+          }
+        ],
+        "/AdminPanelStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F"
+          }
+        ],
+        "/AdminPanelStack/LoadBalancerDNS": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LoadBalancerDNS"
+          }
+        ],
+        "/AdminPanelStack/FrontendRepoURI": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendRepoURI"
+          }
+        ],
+        "/AdminPanelStack/BackendRepoURI": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendRepoURI"
+          }
+        ],
+        "/AdminPanelStack/NotificationTopicARN": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "NotificationTopicARN"
+          }
+        ],
+        "/AdminPanelStack/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/AdminPanelStack/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/AdminPanelStack/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "AdminPanelStack"
+    },
+    "Tree": {
+      "type": "cdk:tree",
+      "properties": {
+        "file": "tree.json"
+      }
+    }
+  }
+}

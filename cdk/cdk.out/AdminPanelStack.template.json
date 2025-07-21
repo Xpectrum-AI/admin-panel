@@ -1,0 +1,2333 @@
+{
+ "Description": "Admin Panel Infrastructure Stack",
+ "Resources": {
+  "AdminPanelVPC9660A6F0": {
+   "Type": "AWS::EC2::VPC",
+   "Properties": {
+    "CidrBlock": "10.0.0.0/16",
+    "EnableDnsHostnames": true,
+    "EnableDnsSupport": true,
+    "InstanceTenancy": "default",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "AdminPanelStack/AdminPanelVPC"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/Resource"
+   }
+  },
+  "AdminPanelVPCpublicSubnet1Subnet014DAB8D": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1a",
+    "CidrBlock": "10.0.0.0/24",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Name",
+      "Value": "AdminPanelStack/AdminPanelVPC/publicSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AdminPanelVPC9660A6F0"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/publicSubnet1/Subnet"
+   }
+  },
+  "AdminPanelVPCpublicSubnet1RouteTableFB5BD19B": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "AdminPanelStack/AdminPanelVPC/publicSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AdminPanelVPC9660A6F0"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/publicSubnet1/RouteTable"
+   }
+  },
+  "AdminPanelVPCpublicSubnet1RouteTableAssociationAFD679CD": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "AdminPanelVPCpublicSubnet1RouteTableFB5BD19B"
+    },
+    "SubnetId": {
+     "Ref": "AdminPanelVPCpublicSubnet1Subnet014DAB8D"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/publicSubnet1/RouteTableAssociation"
+   }
+  },
+  "AdminPanelVPCpublicSubnet1DefaultRoute65E24EF4": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "AdminPanelVPCIGWD3943B47"
+    },
+    "RouteTableId": {
+     "Ref": "AdminPanelVPCpublicSubnet1RouteTableFB5BD19B"
+    }
+   },
+   "DependsOn": [
+    "AdminPanelVPCVPCGW76931080"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/publicSubnet1/DefaultRoute"
+   }
+  },
+  "AdminPanelVPCpublicSubnet1EIP84258BB1": {
+   "Type": "AWS::EC2::EIP",
+   "Properties": {
+    "Domain": "vpc",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "AdminPanelStack/AdminPanelVPC/publicSubnet1"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/publicSubnet1/EIP"
+   }
+  },
+  "AdminPanelVPCpublicSubnet1NATGateway09B234F0": {
+   "Type": "AWS::EC2::NatGateway",
+   "Properties": {
+    "AllocationId": {
+     "Fn::GetAtt": [
+      "AdminPanelVPCpublicSubnet1EIP84258BB1",
+      "AllocationId"
+     ]
+    },
+    "SubnetId": {
+     "Ref": "AdminPanelVPCpublicSubnet1Subnet014DAB8D"
+    },
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "AdminPanelStack/AdminPanelVPC/publicSubnet1"
+     }
+    ]
+   },
+   "DependsOn": [
+    "AdminPanelVPCpublicSubnet1DefaultRoute65E24EF4",
+    "AdminPanelVPCpublicSubnet1RouteTableAssociationAFD679CD"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/publicSubnet1/NATGateway"
+   }
+  },
+  "AdminPanelVPCpublicSubnet2Subnet12CAE742": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1b",
+    "CidrBlock": "10.0.1.0/24",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Name",
+      "Value": "AdminPanelStack/AdminPanelVPC/publicSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AdminPanelVPC9660A6F0"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/publicSubnet2/Subnet"
+   }
+  },
+  "AdminPanelVPCpublicSubnet2RouteTable9F9F6ECD": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "AdminPanelStack/AdminPanelVPC/publicSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AdminPanelVPC9660A6F0"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/publicSubnet2/RouteTable"
+   }
+  },
+  "AdminPanelVPCpublicSubnet2RouteTableAssociation86A179CF": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "AdminPanelVPCpublicSubnet2RouteTable9F9F6ECD"
+    },
+    "SubnetId": {
+     "Ref": "AdminPanelVPCpublicSubnet2Subnet12CAE742"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/publicSubnet2/RouteTableAssociation"
+   }
+  },
+  "AdminPanelVPCpublicSubnet2DefaultRoute20C46E48": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "AdminPanelVPCIGWD3943B47"
+    },
+    "RouteTableId": {
+     "Ref": "AdminPanelVPCpublicSubnet2RouteTable9F9F6ECD"
+    }
+   },
+   "DependsOn": [
+    "AdminPanelVPCVPCGW76931080"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/publicSubnet2/DefaultRoute"
+   }
+  },
+  "AdminPanelVPCprivateSubnet1Subnet9E9F80E3": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1a",
+    "CidrBlock": "10.0.2.0/24",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "private"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Private"
+     },
+     {
+      "Key": "Name",
+      "Value": "AdminPanelStack/AdminPanelVPC/privateSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AdminPanelVPC9660A6F0"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/privateSubnet1/Subnet"
+   }
+  },
+  "AdminPanelVPCprivateSubnet1RouteTable1E9A8521": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "AdminPanelStack/AdminPanelVPC/privateSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AdminPanelVPC9660A6F0"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/privateSubnet1/RouteTable"
+   }
+  },
+  "AdminPanelVPCprivateSubnet1RouteTableAssociationD6612F35": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "AdminPanelVPCprivateSubnet1RouteTable1E9A8521"
+    },
+    "SubnetId": {
+     "Ref": "AdminPanelVPCprivateSubnet1Subnet9E9F80E3"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/privateSubnet1/RouteTableAssociation"
+   }
+  },
+  "AdminPanelVPCprivateSubnet1DefaultRoute4494C332": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "NatGatewayId": {
+     "Ref": "AdminPanelVPCpublicSubnet1NATGateway09B234F0"
+    },
+    "RouteTableId": {
+     "Ref": "AdminPanelVPCprivateSubnet1RouteTable1E9A8521"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/privateSubnet1/DefaultRoute"
+   }
+  },
+  "AdminPanelVPCprivateSubnet2Subnet24908E8D": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1b",
+    "CidrBlock": "10.0.3.0/24",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "private"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Private"
+     },
+     {
+      "Key": "Name",
+      "Value": "AdminPanelStack/AdminPanelVPC/privateSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AdminPanelVPC9660A6F0"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/privateSubnet2/Subnet"
+   }
+  },
+  "AdminPanelVPCprivateSubnet2RouteTable0C65F2A4": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "AdminPanelStack/AdminPanelVPC/privateSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AdminPanelVPC9660A6F0"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/privateSubnet2/RouteTable"
+   }
+  },
+  "AdminPanelVPCprivateSubnet2RouteTableAssociation0149E307": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "AdminPanelVPCprivateSubnet2RouteTable0C65F2A4"
+    },
+    "SubnetId": {
+     "Ref": "AdminPanelVPCprivateSubnet2Subnet24908E8D"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/privateSubnet2/RouteTableAssociation"
+   }
+  },
+  "AdminPanelVPCprivateSubnet2DefaultRouteC14DCAF4": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "NatGatewayId": {
+     "Ref": "AdminPanelVPCpublicSubnet1NATGateway09B234F0"
+    },
+    "RouteTableId": {
+     "Ref": "AdminPanelVPCprivateSubnet2RouteTable0C65F2A4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/privateSubnet2/DefaultRoute"
+   }
+  },
+  "AdminPanelVPCisolatedSubnet1SubnetAC269E41": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1a",
+    "CidrBlock": "10.0.4.0/28",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "isolated"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Isolated"
+     },
+     {
+      "Key": "Name",
+      "Value": "AdminPanelStack/AdminPanelVPC/isolatedSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AdminPanelVPC9660A6F0"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/isolatedSubnet1/Subnet"
+   }
+  },
+  "AdminPanelVPCisolatedSubnet1RouteTable46B6A259": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "AdminPanelStack/AdminPanelVPC/isolatedSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AdminPanelVPC9660A6F0"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/isolatedSubnet1/RouteTable"
+   }
+  },
+  "AdminPanelVPCisolatedSubnet1RouteTableAssociation54F35466": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "AdminPanelVPCisolatedSubnet1RouteTable46B6A259"
+    },
+    "SubnetId": {
+     "Ref": "AdminPanelVPCisolatedSubnet1SubnetAC269E41"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/isolatedSubnet1/RouteTableAssociation"
+   }
+  },
+  "AdminPanelVPCisolatedSubnet2SubnetF3947E4F": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1b",
+    "CidrBlock": "10.0.4.16/28",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "isolated"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Isolated"
+     },
+     {
+      "Key": "Name",
+      "Value": "AdminPanelStack/AdminPanelVPC/isolatedSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AdminPanelVPC9660A6F0"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/isolatedSubnet2/Subnet"
+   }
+  },
+  "AdminPanelVPCisolatedSubnet2RouteTable5AF35AC3": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "AdminPanelStack/AdminPanelVPC/isolatedSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AdminPanelVPC9660A6F0"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/isolatedSubnet2/RouteTable"
+   }
+  },
+  "AdminPanelVPCisolatedSubnet2RouteTableAssociation0DB2A348": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "AdminPanelVPCisolatedSubnet2RouteTable5AF35AC3"
+    },
+    "SubnetId": {
+     "Ref": "AdminPanelVPCisolatedSubnet2SubnetF3947E4F"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/isolatedSubnet2/RouteTableAssociation"
+   }
+  },
+  "AdminPanelVPCIGWD3943B47": {
+   "Type": "AWS::EC2::InternetGateway",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "AdminPanelStack/AdminPanelVPC"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/IGW"
+   }
+  },
+  "AdminPanelVPCVPCGW76931080": {
+   "Type": "AWS::EC2::VPCGatewayAttachment",
+   "Properties": {
+    "InternetGatewayId": {
+     "Ref": "AdminPanelVPCIGWD3943B47"
+    },
+    "VpcId": {
+     "Ref": "AdminPanelVPC9660A6F0"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/VPCGW"
+   }
+  },
+  "AdminPanelVPCRestrictDefaultSecurityGroupCustomResourceF1012391": {
+   "Type": "Custom::VpcRestrictDefaultSG",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "CustomVpcRestrictDefaultSGCustomResourceProviderHandlerDC833E5E",
+      "Arn"
+     ]
+    },
+    "DefaultSecurityGroupId": {
+     "Fn::GetAtt": [
+      "AdminPanelVPC9660A6F0",
+      "DefaultSecurityGroup"
+     ]
+    },
+    "Account": "641623447164"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelVPC/RestrictDefaultSecurityGroupCustomResource/Default"
+   }
+  },
+  "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Version": "2012-10-17",
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ]
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+     }
+    ],
+    "Policies": [
+     {
+      "PolicyName": "Inline",
+      "PolicyDocument": {
+       "Version": "2012-10-17",
+       "Statement": [
+        {
+         "Effect": "Allow",
+         "Action": [
+          "ec2:AuthorizeSecurityGroupIngress",
+          "ec2:AuthorizeSecurityGroupEgress",
+          "ec2:RevokeSecurityGroupIngress",
+          "ec2:RevokeSecurityGroupEgress"
+         ],
+         "Resource": [
+          {
+           "Fn::Join": [
+            "",
+            [
+             "arn:aws:ec2:us-east-1:641623447164:security-group/",
+             {
+              "Fn::GetAtt": [
+               "AdminPanelVPC9660A6F0",
+               "DefaultSecurityGroup"
+              ]
+             }
+            ]
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/Custom::VpcRestrictDefaultSGCustomResourceProvider/Role"
+   }
+  },
+  "CustomVpcRestrictDefaultSGCustomResourceProviderHandlerDC833E5E": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-641623447164-us-east-1",
+     "S3Key": "7f18a11296f35510ee16538afec983ed6312e12afbf81b777089a9f8e34e2474.zip"
+    },
+    "Timeout": 900,
+    "MemorySize": 128,
+    "Handler": "__entrypoint__.handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs18.x",
+    "Description": "Lambda function for removing all inbound/outbound rules from the VPC default security group"
+   },
+   "DependsOn": [
+    "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/Custom::VpcRestrictDefaultSGCustomResourceProvider/Handler",
+    "aws:asset:path": "asset.7f18a11296f35510ee16538afec983ed6312e12afbf81b777089a9f8e34e2474",
+    "aws:asset:property": "Code"
+   }
+  },
+  "ALBSecurityGroup29A3BDEF": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Security group for Application Load Balancer",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AdminPanelVPC9660A6F0"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/ALBSecurityGroup/Resource"
+   }
+  },
+  "ECSSecurityGroupA14DBE7D": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Security group for ECS services",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "AdminPanelVPC9660A6F0"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/ECSSecurityGroup/Resource"
+   }
+  },
+  "ECSSecurityGroupfromAdminPanelStackALBSecurityGroup1600D06830001CFBB099": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Allow ALB to frontend",
+    "FromPort": 3000,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "ECSSecurityGroupA14DBE7D",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "ALBSecurityGroup29A3BDEF",
+      "GroupId"
+     ]
+    },
+    "ToPort": 3000
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/ECSSecurityGroup/from AdminPanelStackALBSecurityGroup1600D068:3000"
+   }
+  },
+  "ECSSecurityGroupfromAdminPanelStackALBSecurityGroup1600D0688005C637E8A5": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Allow ALB to backend",
+    "FromPort": 8005,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "ECSSecurityGroupA14DBE7D",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "ALBSecurityGroup29A3BDEF",
+      "GroupId"
+     ]
+    },
+    "ToPort": 8005
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/ECSSecurityGroup/from AdminPanelStackALBSecurityGroup1600D068:8005"
+   }
+  },
+  "ECSSecurityGroupfromAdminPanelStackAdminPanelServiceLBSecurityGroupFB81E755300012868D87": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "FromPort": 3000,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "ECSSecurityGroupA14DBE7D",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "AdminPanelServiceLBSecurityGroup2078BA66",
+      "GroupId"
+     ]
+    },
+    "ToPort": 3000
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/ECSSecurityGroup/from AdminPanelStackAdminPanelServiceLBSecurityGroupFB81E755:3000"
+   }
+  },
+  "ECSSecurityGroupfromAdminPanelStackAdminPanelServiceLBSecurityGroupFB81E7558005AB92E182": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "FromPort": 8005,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "ECSSecurityGroupA14DBE7D",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "AdminPanelServiceLBSecurityGroup2078BA66",
+      "GroupId"
+     ]
+    },
+    "ToPort": 8005
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/ECSSecurityGroup/from AdminPanelStackAdminPanelServiceLBSecurityGroupFB81E755:8005"
+   }
+  },
+  "RDSSecurityGroup6BF2CF10": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Security group for RDS instance",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "255.255.255.255/32",
+      "Description": "Disallow all traffic",
+      "FromPort": 252,
+      "IpProtocol": "icmp",
+      "ToPort": 86
+     }
+    ],
+    "VpcId": {
+     "Ref": "AdminPanelVPC9660A6F0"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/RDSSecurityGroup/Resource"
+   }
+  },
+  "RDSSecurityGroupfromAdminPanelStackECSSecurityGroupF0548F3E2701756C60291": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Allow ECS to MongoDB",
+    "FromPort": 27017,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "RDSSecurityGroup6BF2CF10",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "ECSSecurityGroupA14DBE7D",
+      "GroupId"
+     ]
+    },
+    "ToPort": 27017
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/RDSSecurityGroup/from AdminPanelStackECSSecurityGroupF0548F3E:27017"
+   }
+  },
+  "FrontendRepoF80FCC01": {
+   "Type": "AWS::ECR::Repository",
+   "Properties": {
+    "ImageScanningConfiguration": {
+     "ScanOnPush": true
+    },
+    "RepositoryName": "admin-panel-frontend"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/FrontendRepo/Resource"
+   }
+  },
+  "BackendRepo7FFBAD06": {
+   "Type": "AWS::ECR::Repository",
+   "Properties": {
+    "ImageScanningConfiguration": {
+     "ScanOnPush": true
+    },
+    "RepositoryName": "admin-panel-backend"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/BackendRepo/Resource"
+   }
+  },
+  "DBSecretD58955BC": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "GenerateSecretString": {
+     "ExcludeCharacters": "\"@/\\",
+     "GenerateStringKey": "password",
+     "SecretStringTemplate": "{\"username\":\"admin\",\"password\":\"{{password}}\",\"host\":\"{{host}}\",\"port\":\"3306\",\"database\":\"admin_panel\"}"
+    },
+    "Name": "admin-panel/db-credentials"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/DBSecret/Resource"
+   }
+  },
+  "JWTSecretF6F1CBF0": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "GenerateSecretString": {
+     "ExcludeCharacters": "\"@/\\",
+     "PasswordLength": 32
+    },
+    "Name": "admin-panel/jwt-secret"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/JWTSecret/Resource"
+   }
+  },
+  "StripeSecret80A38A68": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "GenerateSecretString": {
+     "GenerateStringKey": "secretKey",
+     "SecretStringTemplate": "{\"secretKey\":\"sk_test_...\",\"publishableKey\":\"pk_test_...\"}"
+    },
+    "Name": "admin-panel/stripe-secret"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/StripeSecret/Resource"
+   }
+  },
+  "AdminPanelDBSubnetsB8BCB898": {
+   "Type": "AWS::RDS::DBSubnetGroup",
+   "Properties": {
+    "DBSubnetGroupDescription": "Subnets for AdminPanelDB database",
+    "SubnetIds": [
+     {
+      "Ref": "AdminPanelVPCisolatedSubnet1SubnetAC269E41"
+     },
+     {
+      "Ref": "AdminPanelVPCisolatedSubnet2SubnetF3947E4F"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelDB/Subnets/Default"
+   }
+  },
+  "AdminPanelDBSecretCD792D03": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "Description": {
+     "Fn::Join": [
+      "",
+      [
+       "Generated by the CDK for stack: ",
+       {
+        "Ref": "AWS::StackName"
+       }
+      ]
+     ]
+    },
+    "GenerateSecretString": {
+     "ExcludeCharacters": " %+~`#$&*()|[]{}:;<>?!'/@\"\\",
+     "GenerateStringKey": "password",
+     "PasswordLength": 30,
+     "SecretStringTemplate": "{\"username\":\"admin\"}"
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelDB/Secret/Resource"
+   }
+  },
+  "AdminPanelDBSecretAttachmentE16F2F59": {
+   "Type": "AWS::SecretsManager::SecretTargetAttachment",
+   "Properties": {
+    "SecretId": {
+     "Ref": "AdminPanelDBSecretCD792D03"
+    },
+    "TargetId": {
+     "Ref": "AdminPanelDBD0E70147"
+    },
+    "TargetType": "AWS::RDS::DBCluster"
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelDB/Secret/Attachment/Resource"
+   }
+  },
+  "AdminPanelDBD0E70147": {
+   "Type": "AWS::RDS::DBCluster",
+   "Properties": {
+    "BackupRetentionPeriod": 7,
+    "CopyTagsToSnapshot": true,
+    "DBClusterParameterGroupName": "default.aurora-mysql8.0",
+    "DBSubnetGroupName": {
+     "Ref": "AdminPanelDBSubnetsB8BCB898"
+    },
+    "DeletionProtection": false,
+    "Engine": "aurora-mysql",
+    "EngineVersion": "8.0.mysql_aurora.3.04.0",
+    "MasterUserPassword": {
+     "Fn::Join": [
+      "",
+      [
+       "{{resolve:secretsmanager:",
+       {
+        "Ref": "AdminPanelDBSecretCD792D03"
+       },
+       ":SecretString:password::}}"
+      ]
+     ]
+    },
+    "MasterUsername": {
+     "Fn::Join": [
+      "",
+      [
+       "{{resolve:secretsmanager:",
+       {
+        "Ref": "AdminPanelDBSecretCD792D03"
+       },
+       ":SecretString:username::}}"
+      ]
+     ]
+    },
+    "PreferredBackupWindow": "03:00-04:00",
+    "StorageEncrypted": true,
+    "VpcSecurityGroupIds": [
+     {
+      "Fn::GetAtt": [
+       "RDSSecurityGroup6BF2CF10",
+       "GroupId"
+      ]
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelDB/Resource"
+   }
+  },
+  "AdminPanelDBInstance1D21D6217": {
+   "Type": "AWS::RDS::DBInstance",
+   "Properties": {
+    "DBClusterIdentifier": {
+     "Ref": "AdminPanelDBD0E70147"
+    },
+    "DBInstanceClass": "db.r5.large",
+    "DBSubnetGroupName": {
+     "Ref": "AdminPanelDBSubnetsB8BCB898"
+    },
+    "Engine": "aurora-mysql",
+    "PubliclyAccessible": false
+   },
+   "DependsOn": [
+    "AdminPanelVPCisolatedSubnet1RouteTableAssociation54F35466",
+    "AdminPanelVPCisolatedSubnet2RouteTableAssociation0DB2A348"
+   ],
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelDB/Instance1"
+   }
+  },
+  "AdminPanelCluster354587DC": {
+   "Type": "AWS::ECS::Cluster",
+   "Properties": {
+    "ClusterName": "admin-panel-cluster",
+    "ClusterSettings": [
+     {
+      "Name": "containerInsights",
+      "Value": "enabled"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelCluster/Resource"
+   }
+  },
+  "FrontendTaskDefTaskRoleDA0FD037": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/FrontendTaskDef/TaskRole/Resource"
+   }
+  },
+  "FrontendTaskDef7D3FD156": {
+   "Type": "AWS::ECS::TaskDefinition",
+   "Properties": {
+    "ContainerDefinitions": [
+     {
+      "Environment": [
+       {
+        "Name": "NODE_ENV",
+        "Value": "production"
+       },
+       {
+        "Name": "NEXT_PUBLIC_API_URL",
+        "Value": "http://backend:8005"
+       }
+      ],
+      "Essential": true,
+      "Image": {
+       "Fn::Join": [
+        "",
+        [
+         {
+          "Fn::Select": [
+           4,
+           {
+            "Fn::Split": [
+             ":",
+             {
+              "Fn::GetAtt": [
+               "FrontendRepoF80FCC01",
+               "Arn"
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         ".dkr.ecr.",
+         {
+          "Fn::Select": [
+           3,
+           {
+            "Fn::Split": [
+             ":",
+             {
+              "Fn::GetAtt": [
+               "FrontendRepoF80FCC01",
+               "Arn"
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         ".",
+         {
+          "Ref": "AWS::URLSuffix"
+         },
+         "/",
+         {
+          "Ref": "FrontendRepoF80FCC01"
+         },
+         ":latest"
+        ]
+       ]
+      },
+      "LogConfiguration": {
+       "LogDriver": "awslogs",
+       "Options": {
+        "awslogs-group": {
+         "Ref": "FrontendTaskDefFrontendContainerLogGroup4779CF9C"
+        },
+        "awslogs-stream-prefix": "frontend",
+        "awslogs-region": "us-east-1"
+       }
+      },
+      "Name": "FrontendContainer",
+      "PortMappings": [
+       {
+        "ContainerPort": 3000,
+        "Protocol": "tcp"
+       }
+      ]
+     }
+    ],
+    "Cpu": "256",
+    "ExecutionRoleArn": {
+     "Fn::GetAtt": [
+      "FrontendTaskDefExecutionRoleE7329A09",
+      "Arn"
+     ]
+    },
+    "Family": "AdminPanelStackFrontendTaskDef5A2A0538",
+    "Memory": "512",
+    "NetworkMode": "awsvpc",
+    "RequiresCompatibilities": [
+     "FARGATE"
+    ],
+    "TaskRoleArn": {
+     "Fn::GetAtt": [
+      "FrontendTaskDefTaskRoleDA0FD037",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/FrontendTaskDef/Resource"
+   }
+  },
+  "FrontendTaskDefFrontendContainerLogGroup4779CF9C": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "RetentionInDays": 7
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/FrontendTaskDef/FrontendContainer/LogGroup/Resource"
+   }
+  },
+  "FrontendTaskDefExecutionRoleE7329A09": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/FrontendTaskDef/ExecutionRole/Resource"
+   }
+  },
+  "FrontendTaskDefExecutionRoleDefaultPolicy48DF7F3B": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:BatchGetImage",
+        "ecr:GetDownloadUrlForLayer"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "FrontendRepoF80FCC01",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": "ecr:GetAuthorizationToken",
+       "Effect": "Allow",
+       "Resource": "*"
+      },
+      {
+       "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "FrontendTaskDefFrontendContainerLogGroup4779CF9C",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "FrontendTaskDefExecutionRoleDefaultPolicy48DF7F3B",
+    "Roles": [
+     {
+      "Ref": "FrontendTaskDefExecutionRoleE7329A09"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/FrontendTaskDef/ExecutionRole/DefaultPolicy/Resource"
+   }
+  },
+  "BackendTaskDefTaskRoleBA953A3B": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/BackendTaskDef/TaskRole/Resource"
+   }
+  },
+  "BackendTaskDef6ECE986E": {
+   "Type": "AWS::ECS::TaskDefinition",
+   "Properties": {
+    "ContainerDefinitions": [
+     {
+      "Environment": [
+       {
+        "Name": "NODE_ENV",
+        "Value": "production"
+       },
+       {
+        "Name": "PORT",
+        "Value": "8005"
+       }
+      ],
+      "Essential": true,
+      "Image": {
+       "Fn::Join": [
+        "",
+        [
+         {
+          "Fn::Select": [
+           4,
+           {
+            "Fn::Split": [
+             ":",
+             {
+              "Fn::GetAtt": [
+               "BackendRepo7FFBAD06",
+               "Arn"
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         ".dkr.ecr.",
+         {
+          "Fn::Select": [
+           3,
+           {
+            "Fn::Split": [
+             ":",
+             {
+              "Fn::GetAtt": [
+               "BackendRepo7FFBAD06",
+               "Arn"
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         ".",
+         {
+          "Ref": "AWS::URLSuffix"
+         },
+         "/",
+         {
+          "Ref": "BackendRepo7FFBAD06"
+         },
+         ":latest"
+        ]
+       ]
+      },
+      "LogConfiguration": {
+       "LogDriver": "awslogs",
+       "Options": {
+        "awslogs-group": {
+         "Ref": "BackendTaskDefBackendContainerLogGroupD7D6F38F"
+        },
+        "awslogs-stream-prefix": "backend",
+        "awslogs-region": "us-east-1"
+       }
+      },
+      "Name": "BackendContainer",
+      "PortMappings": [
+       {
+        "ContainerPort": 8005,
+        "Protocol": "tcp"
+       }
+      ],
+      "Secrets": [
+       {
+        "Name": "DB_HOST",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "DBSecretD58955BC"
+           },
+           ":host::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "DB_PASSWORD",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "DBSecretD58955BC"
+           },
+           ":password::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "JWT_SECRET",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "JWTSecretF6F1CBF0"
+           },
+           ":password::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "STRIPE_SECRET_KEY",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "StripeSecret80A38A68"
+           },
+           ":secretKey::"
+          ]
+         ]
+        }
+       }
+      ]
+     }
+    ],
+    "Cpu": "512",
+    "ExecutionRoleArn": {
+     "Fn::GetAtt": [
+      "BackendTaskDefExecutionRoleC5A001DB",
+      "Arn"
+     ]
+    },
+    "Family": "AdminPanelStackBackendTaskDef2CA97774",
+    "Memory": "1024",
+    "NetworkMode": "awsvpc",
+    "RequiresCompatibilities": [
+     "FARGATE"
+    ],
+    "TaskRoleArn": {
+     "Fn::GetAtt": [
+      "BackendTaskDefTaskRoleBA953A3B",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/BackendTaskDef/Resource"
+   }
+  },
+  "BackendTaskDefBackendContainerLogGroupD7D6F38F": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "RetentionInDays": 7
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/BackendTaskDef/BackendContainer/LogGroup/Resource"
+   }
+  },
+  "BackendTaskDefExecutionRoleC5A001DB": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/BackendTaskDef/ExecutionRole/Resource"
+   }
+  },
+  "BackendTaskDefExecutionRoleDefaultPolicyAA625660": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:BatchGetImage",
+        "ecr:GetDownloadUrlForLayer"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "BackendRepo7FFBAD06",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": "ecr:GetAuthorizationToken",
+       "Effect": "Allow",
+       "Resource": "*"
+      },
+      {
+       "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "BackendTaskDefBackendContainerLogGroupD7D6F38F",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": [
+        "secretsmanager:DescribeSecret",
+        "secretsmanager:GetSecretValue"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Ref": "DBSecretD58955BC"
+        },
+        {
+         "Ref": "JWTSecretF6F1CBF0"
+        },
+        {
+         "Ref": "StripeSecret80A38A68"
+        }
+       ]
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "BackendTaskDefExecutionRoleDefaultPolicyAA625660",
+    "Roles": [
+     {
+      "Ref": "BackendTaskDefExecutionRoleC5A001DB"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/BackendTaskDef/ExecutionRole/DefaultPolicy/Resource"
+   }
+  },
+  "AdminPanelServiceLB9B1B1814": {
+   "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+   "Properties": {
+    "LoadBalancerAttributes": [
+     {
+      "Key": "deletion_protection.enabled",
+      "Value": "false"
+     }
+    ],
+    "Scheme": "internet-facing",
+    "SecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "AdminPanelServiceLBSecurityGroup2078BA66",
+       "GroupId"
+      ]
+     }
+    ],
+    "Subnets": [
+     {
+      "Ref": "AdminPanelVPCpublicSubnet1Subnet014DAB8D"
+     },
+     {
+      "Ref": "AdminPanelVPCpublicSubnet2Subnet12CAE742"
+     }
+    ],
+    "Type": "application"
+   },
+   "DependsOn": [
+    "AdminPanelVPCpublicSubnet1DefaultRoute65E24EF4",
+    "AdminPanelVPCpublicSubnet1RouteTableAssociationAFD679CD",
+    "AdminPanelVPCpublicSubnet2DefaultRoute20C46E48",
+    "AdminPanelVPCpublicSubnet2RouteTableAssociation86A179CF"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelService/LB/Resource"
+   }
+  },
+  "AdminPanelServiceLBSecurityGroup2078BA66": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Automatically created Security Group for ELB AdminPanelStackAdminPanelServiceLB61B84C21",
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow from anyone on port 80",
+      "FromPort": 80,
+      "IpProtocol": "tcp",
+      "ToPort": 80
+     }
+    ],
+    "VpcId": {
+     "Ref": "AdminPanelVPC9660A6F0"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelService/LB/SecurityGroup/Resource"
+   }
+  },
+  "AdminPanelServiceLBSecurityGrouptoAdminPanelStackECSSecurityGroupF0548F3E3000A35C3311": {
+   "Type": "AWS::EC2::SecurityGroupEgress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "DestinationSecurityGroupId": {
+     "Fn::GetAtt": [
+      "ECSSecurityGroupA14DBE7D",
+      "GroupId"
+     ]
+    },
+    "FromPort": 3000,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "AdminPanelServiceLBSecurityGroup2078BA66",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "ToPort": 3000
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelService/LB/SecurityGroup/to AdminPanelStackECSSecurityGroupF0548F3E:3000"
+   }
+  },
+  "AdminPanelServiceLBSecurityGrouptoAdminPanelStackECSSecurityGroupF0548F3E800537C2EA48": {
+   "Type": "AWS::EC2::SecurityGroupEgress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "DestinationSecurityGroupId": {
+     "Fn::GetAtt": [
+      "ECSSecurityGroupA14DBE7D",
+      "GroupId"
+     ]
+    },
+    "FromPort": 8005,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "AdminPanelServiceLBSecurityGroup2078BA66",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "ToPort": 8005
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelService/LB/SecurityGroup/to AdminPanelStackECSSecurityGroupF0548F3E:8005"
+   }
+  },
+  "AdminPanelServiceLBPublicListener5990C080": {
+   "Type": "AWS::ElasticLoadBalancingV2::Listener",
+   "Properties": {
+    "DefaultActions": [
+     {
+      "TargetGroupArn": {
+       "Ref": "AdminPanelServiceLBPublicListenerECSGroup83BE35C0"
+      },
+      "Type": "forward"
+     }
+    ],
+    "LoadBalancerArn": {
+     "Ref": "AdminPanelServiceLB9B1B1814"
+    },
+    "Port": 80,
+    "Protocol": "HTTP"
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelService/LB/PublicListener/Resource"
+   }
+  },
+  "AdminPanelServiceLBPublicListenerECSGroup83BE35C0": {
+   "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+   "Properties": {
+    "Port": 80,
+    "Protocol": "HTTP",
+    "TargetGroupAttributes": [
+     {
+      "Key": "stickiness.enabled",
+      "Value": "false"
+     }
+    ],
+    "TargetType": "ip",
+    "VpcId": {
+     "Ref": "AdminPanelVPC9660A6F0"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelService/LB/PublicListener/ECSGroup/Resource"
+   }
+  },
+  "AdminPanelServiceLBBackendListenerC05F8360": {
+   "Type": "AWS::ElasticLoadBalancingV2::Listener",
+   "Properties": {
+    "DefaultActions": [
+     {
+      "TargetGroupArn": {
+       "Ref": "BackendTargetGroupECF98930"
+      },
+      "Type": "forward"
+     }
+    ],
+    "LoadBalancerArn": {
+     "Ref": "AdminPanelServiceLB9B1B1814"
+    },
+    "Port": 80,
+    "Protocol": "HTTP"
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelService/LB/BackendListener/Resource"
+   }
+  },
+  "AdminPanelServiceLBBackendListenerBackendActionRule3F91C488": {
+   "Type": "AWS::ElasticLoadBalancingV2::ListenerRule",
+   "Properties": {
+    "Actions": [
+     {
+      "TargetGroupArn": {
+       "Ref": "BackendTargetGroupECF98930"
+      },
+      "Type": "forward"
+     }
+    ],
+    "Conditions": [
+     {
+      "Field": "path-pattern",
+      "PathPatternConfig": {
+       "Values": [
+        "/api/*"
+       ]
+      }
+     }
+    ],
+    "ListenerArn": {
+     "Ref": "AdminPanelServiceLBBackendListenerC05F8360"
+    },
+    "Priority": 100
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelService/LB/BackendListener/BackendActionRule/Resource"
+   }
+  },
+  "AdminPanelService677475D4": {
+   "Type": "AWS::ECS::Service",
+   "Properties": {
+    "Cluster": {
+     "Ref": "AdminPanelCluster354587DC"
+    },
+    "DeploymentConfiguration": {
+     "Alarms": {
+      "AlarmNames": [],
+      "Enable": false,
+      "Rollback": false
+     },
+     "MaximumPercent": 200,
+     "MinimumHealthyPercent": 50
+    },
+    "DesiredCount": 2,
+    "EnableECSManagedTags": false,
+    "HealthCheckGracePeriodSeconds": 60,
+    "LaunchType": "FARGATE",
+    "LoadBalancers": [
+     {
+      "ContainerName": "FrontendContainer",
+      "ContainerPort": 3000,
+      "TargetGroupArn": {
+       "Ref": "AdminPanelServiceLBPublicListenerECSGroup83BE35C0"
+      }
+     }
+    ],
+    "NetworkConfiguration": {
+     "AwsvpcConfiguration": {
+      "AssignPublicIp": "DISABLED",
+      "SecurityGroups": [
+       {
+        "Fn::GetAtt": [
+         "ECSSecurityGroupA14DBE7D",
+         "GroupId"
+        ]
+       }
+      ],
+      "Subnets": [
+       {
+        "Ref": "AdminPanelVPCprivateSubnet1Subnet9E9F80E3"
+       },
+       {
+        "Ref": "AdminPanelVPCprivateSubnet2Subnet24908E8D"
+       }
+      ]
+     }
+    },
+    "ServiceName": "admin-panel-frontend",
+    "TaskDefinition": {
+     "Ref": "FrontendTaskDef7D3FD156"
+    }
+   },
+   "DependsOn": [
+    "AdminPanelServiceLBPublicListenerECSGroup83BE35C0",
+    "AdminPanelServiceLBPublicListener5990C080",
+    "FrontendTaskDefTaskRoleDA0FD037"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelService/Service/Service"
+   }
+  },
+  "BackendService7A4224EE": {
+   "Type": "AWS::ECS::Service",
+   "Properties": {
+    "Cluster": {
+     "Ref": "AdminPanelCluster354587DC"
+    },
+    "DeploymentConfiguration": {
+     "Alarms": {
+      "AlarmNames": [],
+      "Enable": false,
+      "Rollback": false
+     },
+     "MaximumPercent": 200,
+     "MinimumHealthyPercent": 50
+    },
+    "DesiredCount": 2,
+    "EnableECSManagedTags": false,
+    "HealthCheckGracePeriodSeconds": 60,
+    "LaunchType": "FARGATE",
+    "LoadBalancers": [
+     {
+      "ContainerName": "BackendContainer",
+      "ContainerPort": 8005,
+      "TargetGroupArn": {
+       "Ref": "BackendTargetGroupECF98930"
+      }
+     }
+    ],
+    "NetworkConfiguration": {
+     "AwsvpcConfiguration": {
+      "AssignPublicIp": "DISABLED",
+      "SecurityGroups": [
+       {
+        "Fn::GetAtt": [
+         "ECSSecurityGroupA14DBE7D",
+         "GroupId"
+        ]
+       }
+      ],
+      "Subnets": [
+       {
+        "Ref": "AdminPanelVPCprivateSubnet1Subnet9E9F80E3"
+       },
+       {
+        "Ref": "AdminPanelVPCprivateSubnet2Subnet24908E8D"
+       }
+      ]
+     }
+    },
+    "ServiceName": "admin-panel-backend",
+    "TaskDefinition": {
+     "Ref": "BackendTaskDef6ECE986E"
+    }
+   },
+   "DependsOn": [
+    "AdminPanelServiceLBBackendListenerBackendActionRule3F91C488",
+    "AdminPanelServiceLBBackendListenerC05F8360",
+    "BackendTaskDefTaskRoleBA953A3B"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/BackendService/Service"
+   }
+  },
+  "BackendTargetGroupECF98930": {
+   "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+   "Properties": {
+    "HealthCheckIntervalSeconds": 30,
+    "HealthCheckPath": "/health",
+    "HealthCheckTimeoutSeconds": 5,
+    "Matcher": {
+     "HttpCode": "200"
+    },
+    "Port": 8005,
+    "Protocol": "HTTP",
+    "TargetGroupAttributes": [
+     {
+      "Key": "stickiness.enabled",
+      "Value": "false"
+     }
+    ],
+    "TargetType": "ip",
+    "VpcId": {
+     "Ref": "AdminPanelVPC9660A6F0"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/BackendTargetGroup/Resource"
+   }
+  },
+  "CPUAlarm83780B26": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AdminPanelNotifications894873E8"
+     }
+    ],
+    "AlarmDescription": "CPU utilization is too high",
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "ClusterName",
+      "Value": {
+       "Ref": "AdminPanelCluster354587DC"
+      }
+     },
+     {
+      "Name": "ServiceName",
+      "Value": {
+       "Fn::GetAtt": [
+        "AdminPanelService677475D4",
+        "Name"
+       ]
+      }
+     }
+    ],
+    "EvaluationPeriods": 2,
+    "MetricName": "CPUUtilization",
+    "Namespace": "AWS/ECS",
+    "Period": 300,
+    "Statistic": "Average",
+    "Threshold": 80
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/CPUAlarm/Resource"
+   }
+  },
+  "MemoryAlarm2E786DB4": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AdminPanelNotifications894873E8"
+     }
+    ],
+    "AlarmDescription": "Memory utilization is too high",
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "ClusterName",
+      "Value": {
+       "Ref": "AdminPanelCluster354587DC"
+      }
+     },
+     {
+      "Name": "ServiceName",
+      "Value": {
+       "Fn::GetAtt": [
+        "AdminPanelService677475D4",
+        "Name"
+       ]
+      }
+     }
+    ],
+    "EvaluationPeriods": 2,
+    "MetricName": "MemoryUtilization",
+    "Namespace": "AWS/ECS",
+    "Period": 300,
+    "Statistic": "Average",
+    "Threshold": 80
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/MemoryAlarm/Resource"
+   }
+  },
+  "AdminPanelNotifications894873E8": {
+   "Type": "AWS::SNS::Topic",
+   "Properties": {
+    "TopicName": "admin-panel-notifications"
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelNotifications/Resource"
+   }
+  },
+  "AdminPanelLogs210F8B4B": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "SSEAlgorithm": "AES256"
+       }
+      }
+     ]
+    },
+    "BucketName": "admin-panel-logs-641623447164-us-east-1",
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    },
+    "Tags": [
+     {
+      "Key": "aws-cdk:auto-delete-objects",
+      "Value": "true"
+     }
+    ],
+    "VersioningConfiguration": {
+     "Status": "Enabled"
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelLogs/Resource"
+   }
+  },
+  "AdminPanelLogsPolicyCE6AF996": {
+   "Type": "AWS::S3::BucketPolicy",
+   "Properties": {
+    "Bucket": {
+     "Ref": "AdminPanelLogs210F8B4B"
+    },
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "s3:DeleteObject*",
+        "s3:GetBucket*",
+        "s3:List*",
+        "s3:PutBucketPolicy"
+       ],
+       "Effect": "Allow",
+       "Principal": {
+        "AWS": {
+         "Fn::GetAtt": [
+          "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
+          "Arn"
+         ]
+        }
+       },
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "AdminPanelLogs210F8B4B",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "AdminPanelLogs210F8B4B",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelLogs/Policy/Resource"
+   }
+  },
+  "AdminPanelLogsAutoDeleteObjectsCustomResourceBBE7537D": {
+   "Type": "Custom::S3AutoDeleteObjects",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F",
+      "Arn"
+     ]
+    },
+    "BucketName": {
+     "Ref": "AdminPanelLogs210F8B4B"
+    }
+   },
+   "DependsOn": [
+    "AdminPanelLogsPolicyCE6AF996"
+   ],
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/AdminPanelLogs/AutoDeleteObjectsCustomResource/Default"
+   }
+  },
+  "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Version": "2012-10-17",
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ]
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role"
+   }
+  },
+  "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-641623447164-us-east-1",
+     "S3Key": "b7f33614a69548d6bafe224d751a7ef238cde19097415e553fe8b63a4c8fd8a6.zip"
+    },
+    "Timeout": 900,
+    "MemorySize": 128,
+    "Handler": "index.handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs18.x",
+    "Description": {
+     "Fn::Join": [
+      "",
+      [
+       "Lambda function for auto-deleting objects in ",
+       {
+        "Ref": "AdminPanelLogs210F8B4B"
+       },
+       " S3 bucket."
+      ]
+     ]
+    }
+   },
+   "DependsOn": [
+    "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler",
+    "aws:asset:path": "asset.b7f33614a69548d6bafe224d751a7ef238cde19097415e553fe8b63a4c8fd8a6",
+    "aws:asset:property": "Code"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31UTW/bMAz9LbsrXpadesxHVwQoViMJei1omXXV2JIhUQkKw/99lBTHRhrsxMfHJ4lf9iL7NZ9n8x9wdjNZHme1KrJuTyCPgqm3DuUi615bKdbv+jVfi9wXtZJ7X2ikwI1oZzzhAYoaR37kls4ZqYCU0VdxAI/bPJi/QE9AeIYvkVt1YjhevNWElvEgSJlcvCVxrh8NahJ7lN4q+nqyxrcxh/8SW11ZdO4b/xjpXqC0WbfD1jhFxsZnR68XjuNIrgENFbJyH/3LbQElcwBbIU2yvApuI72wpcu6DRAU4HBde8d1i9SHawmb1ZQYxOPjm9VwMDpb7Qi0xFAOXz6JDfAPpwFhSO64wXel1TCiW8ZoAqXRTrjL2T3ak5Jp7An2QkHD3TNpGaLNDS9ObGNCvahNxTk9m+pa3YBjum8tUJi8y5Ztyyfi8jwbKFdQh5rKm+exBkdK1qwookLp6sTbe/+0Te9N/KlOcW/0RTPgSTzN7pr21L1zy86nNkz9XnCivjwDyQ9OsQbbBEkEvFxcdHcwrYrfXQRM/s66lZfHNOgLSmbs7dTve7FDZ7wNs+Fpm2Z0wzLfDeXWnFQZynUOif8EFbcx6F88tZ63VJsSs0/387SYZw/85/h0Ss2s16QazHbJ/gPW8ZVvVgQAAA=="
+   },
+   "Metadata": {
+    "aws:cdk:path": "AdminPanelStack/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "AdminPanelServiceLoadBalancerDNSFC977B03": {
+   "Value": {
+    "Fn::GetAtt": [
+     "AdminPanelServiceLB9B1B1814",
+     "DNSName"
+    ]
+   }
+  },
+  "AdminPanelServiceServiceURLF243F1A1": {
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "http://",
+      {
+       "Fn::GetAtt": [
+        "AdminPanelServiceLB9B1B1814",
+        "DNSName"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  "LoadBalancerDNS": {
+   "Description": "Load Balancer DNS Name",
+   "Value": {
+    "Fn::GetAtt": [
+     "AdminPanelServiceLB9B1B1814",
+     "DNSName"
+    ]
+   },
+   "Export": {
+    "Name": "AdminPanelLoadBalancerDNS"
+   }
+  },
+  "FrontendRepoURI": {
+   "Description": "Frontend ECR Repository URI",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      {
+       "Fn::Select": [
+        4,
+        {
+         "Fn::Split": [
+          ":",
+          {
+           "Fn::GetAtt": [
+            "FrontendRepoF80FCC01",
+            "Arn"
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      ".dkr.ecr.",
+      {
+       "Fn::Select": [
+        3,
+        {
+         "Fn::Split": [
+          ":",
+          {
+           "Fn::GetAtt": [
+            "FrontendRepoF80FCC01",
+            "Arn"
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      ".",
+      {
+       "Ref": "AWS::URLSuffix"
+      },
+      "/",
+      {
+       "Ref": "FrontendRepoF80FCC01"
+      }
+     ]
+    ]
+   },
+   "Export": {
+    "Name": "AdminPanelFrontendRepoURI"
+   }
+  },
+  "BackendRepoURI": {
+   "Description": "Backend ECR Repository URI",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      {
+       "Fn::Select": [
+        4,
+        {
+         "Fn::Split": [
+          ":",
+          {
+           "Fn::GetAtt": [
+            "BackendRepo7FFBAD06",
+            "Arn"
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      ".dkr.ecr.",
+      {
+       "Fn::Select": [
+        3,
+        {
+         "Fn::Split": [
+          ":",
+          {
+           "Fn::GetAtt": [
+            "BackendRepo7FFBAD06",
+            "Arn"
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      ".",
+      {
+       "Ref": "AWS::URLSuffix"
+      },
+      "/",
+      {
+       "Ref": "BackendRepo7FFBAD06"
+      }
+     ]
+    ]
+   },
+   "Export": {
+    "Name": "AdminPanelBackendRepoURI"
+   }
+  },
+  "NotificationTopicARN": {
+   "Description": "SNS Notification Topic ARN",
+   "Value": {
+    "Ref": "AdminPanelNotifications894873E8"
+   },
+   "Export": {
+    "Name": "AdminPanelNotificationTopicARN"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

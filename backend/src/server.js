@@ -33,6 +33,16 @@ app.get('/', (req, res) => {
     });
 });
 
+// Health check endpoint for ALB
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    service: 'admin-panel-backend',
+    version: process.env.npm_package_version || '1.0.0'
+  });
+});
+
 // Startup function
 function startServer() {
     // Start server
