@@ -45,7 +45,7 @@
                     "attributes": {
                       "aws:cdk:cloudformation:type": "AWS::EC2::Subnet",
                       "aws:cdk:cloudformation:props": {
-                        "availabilityZone": "us-east-1a",
+                        "availabilityZone": "us-west-1a",
                         "cidrBlock": "10.0.0.0/24",
                         "mapPublicIpOnLaunch": true,
                         "tags": [
@@ -205,7 +205,7 @@
                     "attributes": {
                       "aws:cdk:cloudformation:type": "AWS::EC2::Subnet",
                       "aws:cdk:cloudformation:props": {
-                        "availabilityZone": "us-east-1b",
+                        "availabilityZone": "us-west-1c",
                         "cidrBlock": "10.0.1.0/24",
                         "mapPublicIpOnLaunch": true,
                         "tags": [
@@ -300,6 +300,54 @@
                       "fqn": "aws-cdk-lib.aws_ec2.CfnRoute",
                       "version": "2.100.0"
                     }
+                  },
+                  "EIP": {
+                    "id": "EIP",
+                    "path": "AdminPanelStack/AdminPanelVPC/publicSubnet2/EIP",
+                    "attributes": {
+                      "aws:cdk:cloudformation:type": "AWS::EC2::EIP",
+                      "aws:cdk:cloudformation:props": {
+                        "domain": "vpc",
+                        "tags": [
+                          {
+                            "key": "Name",
+                            "value": "AdminPanelStack/AdminPanelVPC/publicSubnet2"
+                          }
+                        ]
+                      }
+                    },
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_ec2.CfnEIP",
+                      "version": "2.100.0"
+                    }
+                  },
+                  "NATGateway": {
+                    "id": "NATGateway",
+                    "path": "AdminPanelStack/AdminPanelVPC/publicSubnet2/NATGateway",
+                    "attributes": {
+                      "aws:cdk:cloudformation:type": "AWS::EC2::NatGateway",
+                      "aws:cdk:cloudformation:props": {
+                        "allocationId": {
+                          "Fn::GetAtt": [
+                            "AdminPanelVPCpublicSubnet2EIP27FFB152",
+                            "AllocationId"
+                          ]
+                        },
+                        "subnetId": {
+                          "Ref": "AdminPanelVPCpublicSubnet2Subnet12CAE742"
+                        },
+                        "tags": [
+                          {
+                            "key": "Name",
+                            "value": "AdminPanelStack/AdminPanelVPC/publicSubnet2"
+                          }
+                        ]
+                      }
+                    },
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_ec2.CfnNatGateway",
+                      "version": "2.100.0"
+                    }
                   }
                 },
                 "constructInfo": {
@@ -317,7 +365,7 @@
                     "attributes": {
                       "aws:cdk:cloudformation:type": "AWS::EC2::Subnet",
                       "aws:cdk:cloudformation:props": {
-                        "availabilityZone": "us-east-1a",
+                        "availabilityZone": "us-west-1a",
                         "cidrBlock": "10.0.2.0/24",
                         "mapPublicIpOnLaunch": false,
                         "tags": [
@@ -429,7 +477,7 @@
                     "attributes": {
                       "aws:cdk:cloudformation:type": "AWS::EC2::Subnet",
                       "aws:cdk:cloudformation:props": {
-                        "availabilityZone": "us-east-1b",
+                        "availabilityZone": "us-west-1c",
                         "cidrBlock": "10.0.3.0/24",
                         "mapPublicIpOnLaunch": false,
                         "tags": [
@@ -513,7 +561,7 @@
                       "aws:cdk:cloudformation:props": {
                         "destinationCidrBlock": "0.0.0.0/0",
                         "natGatewayId": {
-                          "Ref": "AdminPanelVPCpublicSubnet1NATGateway09B234F0"
+                          "Ref": "AdminPanelVPCpublicSubnet2NATGatewayA072C187"
                         },
                         "routeTableId": {
                           "Ref": "AdminPanelVPCprivateSubnet2RouteTable0C65F2A4"
@@ -541,7 +589,7 @@
                     "attributes": {
                       "aws:cdk:cloudformation:type": "AWS::EC2::Subnet",
                       "aws:cdk:cloudformation:props": {
-                        "availabilityZone": "us-east-1a",
+                        "availabilityZone": "us-west-1a",
                         "cidrBlock": "10.0.4.0/28",
                         "mapPublicIpOnLaunch": false,
                         "tags": [
@@ -633,7 +681,7 @@
                     "attributes": {
                       "aws:cdk:cloudformation:type": "AWS::EC2::Subnet",
                       "aws:cdk:cloudformation:props": {
-                        "availabilityZone": "us-east-1b",
+                        "availabilityZone": "us-west-1c",
                         "cidrBlock": "10.0.4.16/28",
                         "mapPublicIpOnLaunch": false,
                         "tags": [
@@ -1546,7 +1594,7 @@
                               "Ref": "FrontendTaskDefFrontendContainerLogGroup4779CF9C"
                             },
                             "awslogs-stream-prefix": "frontend",
-                            "awslogs-region": "us-east-1"
+                            "awslogs-region": "us-west-1"
                           }
                         },
                         "environment": [
@@ -1855,7 +1903,7 @@
                               "Ref": "BackendTaskDefBackendContainerLogGroupD7D6F38F"
                             },
                             "awslogs-stream-prefix": "backend",
-                            "awslogs-region": "us-east-1"
+                            "awslogs-region": "us-west-1"
                           }
                         },
                         "environment": [
@@ -2776,7 +2824,7 @@
                         }
                       ]
                     },
-                    "bucketName": "admin-panel-logs-641623447164-us-east-1",
+                    "bucketName": "admin-panel-logs-641623447164-us-west-1",
                     "publicAccessBlockConfiguration": {
                       "blockPublicAcls": true,
                       "blockPublicPolicy": true,

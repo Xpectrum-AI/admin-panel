@@ -19,8 +19,7 @@ export class AdminPanelStack extends cdk.Stack {
 
     // VPC
     const vpc = new ec2.Vpc(this, 'AdminPanelVPC', {
-      maxAzs: 2,
-      natGateways: 1,
+      availabilityZones: ['us-west-1a', 'us-west-1c'],
       subnetConfiguration: [
         {
           cidrMask: 24,

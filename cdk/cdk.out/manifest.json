@@ -11,21 +11,21 @@
     },
     "AdminPanelStack": {
       "type": "aws:cloudformation:stack",
-      "environment": "aws://641623447164/us-east-1",
+      "environment": "aws://641623447164/us-west-1",
       "properties": {
         "templateFile": "AdminPanelStack.template.json",
         "terminationProtection": false,
         "validateOnSynth": false,
-        "assumeRoleArn": "arn:${AWS::Partition}:iam::641623447164:role/cdk-hnb659fds-deploy-role-641623447164-us-east-1",
-        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::641623447164:role/cdk-hnb659fds-cfn-exec-role-641623447164-us-east-1",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-641623447164-us-east-1/4dc8d3d01c585771143eef75b3335556211d5d6b6cdcc7cb5dbe6da1826ee5a0.json",
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::641623447164:role/cdk-hnb659fds-deploy-role-641623447164-us-west-1",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::641623447164:role/cdk-hnb659fds-cfn-exec-role-641623447164-us-west-1",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-641623447164-us-west-1/a4598beb691d15132fcf023dea80418e2636bb178ebe70f24389ff9ab1373eb4.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
           "AdminPanelStack.assets"
         ],
         "lookupRole": {
-          "arn": "arn:${AWS::Partition}:iam::641623447164:role/cdk-hnb659fds-lookup-role-641623447164-us-east-1",
+          "arn": "arn:${AWS::Partition}:iam::641623447164:role/cdk-hnb659fds-lookup-role-641623447164-us-west-1",
           "requiresBootstrapStackVersion": 8,
           "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
         }
@@ -98,6 +98,18 @@
           {
             "type": "aws:cdk:logicalId",
             "data": "AdminPanelVPCpublicSubnet2DefaultRoute20C46E48"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/publicSubnet2/EIP": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCpublicSubnet2EIP27FFB152"
+          }
+        ],
+        "/AdminPanelStack/AdminPanelVPC/publicSubnet2/NATGateway": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AdminPanelVPCpublicSubnet2NATGatewayA072C187"
           }
         ],
         "/AdminPanelStack/AdminPanelVPC/privateSubnet1/Subnet": [

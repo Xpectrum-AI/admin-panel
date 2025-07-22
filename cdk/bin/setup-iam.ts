@@ -9,7 +9,7 @@ const app = new cdk.App();
 new GitHubActionsRole(app, 'GitHubActionsRoleStack', {
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
-    region: process.env.CDK_DEFAULT_REGION || 'us-east-1',
+    region: process.env.CDK_DEFAULT_REGION || 'us-west-1',
   },
   description: 'GitHub Actions IAM Role and OIDC Setup',
 });
