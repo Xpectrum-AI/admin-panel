@@ -53,7 +53,7 @@ const LIVE_API_KEY = 'xpectrum-ai@123';
 const updateAgent = async (req, res) => {
   try {
     const { agentId } = req.params;
-    const { chatbot_api, chatbot_key, tts_config, stt_config } = req.body;
+    const { chatbot_api, chatbot_key, tts_config, stt_config, initial_message } = req.body;
 
     // Validate required fields
     if (!chatbot_api || !chatbot_key || !tts_config || !stt_config) {
@@ -63,7 +63,7 @@ const updateAgent = async (req, res) => {
     }
 
     // Validate TTS config
-    if (!tts_config.voice_id || !tts_config.tts_api_key || !tts_config.model || !tts_config.speed) {
+    if (!tts_config.voice_id || !tts_config.tts_api_key || !tts_config.model || tts_config.speed === undefined) {
       return res.status(400).json({
         error: 'Invalid TTS configuration'
       });
@@ -83,6 +83,9 @@ const updateAgent = async (req, res) => {
       tts_config,
       stt_config
     };
+    if (initial_message !== undefined) {
+      payload.initial_message = initial_message;
+    }
 
     // Call live API to update agent
     console.log('Sending request to live API:', `${LIVE_API_BASE_URL}/agents/update/${agentId}`);
@@ -515,6 +518,82 @@ const getActiveCalls = async (req, res) => {
   }
 };
 
+// Delete agent
+const deleteAgent = async (req, res) => {
+  try {
+    const { agentId } = req.params;
+    console.log('Deleting agent from live API:', `${LIVE_API_BASE_URL}/agents/delete/${agentId}`);
+    const response = await makeRequest(`${LIVE_API_BASE_URL}/agents/delete/${agentId}`, {
+      method: 'DELETE',
+      headers: {
+        'X-API-Key': LIVE_API_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
+    console.log('Live API delete agent response status:', response.status);
+    let result;
+    try {
+      result = await response.json();
+    } catch (e) {
+      result = { message: 'Success but no response body' };
+    }
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: 'Failed to delete agent on live API',
+        details: result
+      });
+    }
+    res.json({
+      success: true,
+      message: `Agent ${agentId} deleted successfully`,
+      data: result
+    });
+  } catch (error) {
+    console.error('Error deleting agent:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      details: error.message
+    });
+  }
+};
+
+// Get trunks
+const getTrunks = async (req, res) => {
+  try {
+    console.log('Getting trunks from live API:', `${LIVE_API_BASE_URL}/agents/trunks`);
+    const response = await makeRequest(`${LIVE_API_BASE_URL}/agents/trunks`, {
+      method: 'GET',
+      headers: {
+        'X-API-Key': LIVE_API_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
+    console.log('Live API get trunks response status:', response.status);
+    let result;
+    try {
+      result = await response.json();
+    } catch (e) {
+      result = { message: 'Success but no response body' };
+    }
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: 'Failed to get trunks from live API',
+        details: result
+      });
+    }
+    res.json({
+      success: true,
+      trunks: result.trunks || result.data || result
+    });
+  } catch (error) {
+    console.error('Error getting trunks:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      details: error.message
+    });
+  }
+};
+
 module.exports = {
   updateAgent,
   getAgentInfo,
@@ -522,5 +601,7 @@ module.exports = {
   setAgentPhone,
   getAgentByPhone,
   deleteAgentPhone,
-  getActiveCalls
+  getActiveCalls,
+  deleteAgent,
+  getTrunks
 }; 
