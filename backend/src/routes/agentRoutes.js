@@ -8,7 +8,9 @@ const {
   setAgentPhone,
   getAgentByPhone,
   deleteAgentPhone,
-  getActiveCalls
+  getActiveCalls,
+  deleteAgent,
+  getTrunks
 } = require('../controllers/agentController');
 
 // Apply authentication middleware to all routes
@@ -24,5 +26,7 @@ router.get('/by_phone/:phone_number', getAgentByPhone);
 
 // Active calls route
 router.get('/active-calls', getActiveCalls);
+router.delete('/delete/:agentId', deleteAgent);
+router.get('/trunks', getTrunks);
 
 module.exports = router; 

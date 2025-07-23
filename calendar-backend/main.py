@@ -76,91 +76,92 @@ async def startup_event():
     # await session_db.cleanup_expired_sessions() # Removed as per edit hint
     pass # No longer needed
 
-@api_v1.get("/")
-async def root():
-    """API root endpoint"""
-    return {"message": "Google OAuth 2.0 API with MongoDB Storage", "status": "running", "version": "v1"}
+# Remove unused endpoints
+# @api_v1.get("/")
+# async def root():
+#     """API root endpoint"""
+#     return {"message": "Google OAuth 2.0 API with MongoDB Storage", "status": "running", "version": "v1"}
 
-@api_v1.get("/auth/google")
-async def google_auth():
-    """Get Google OAuth URL for basic authentication"""
-    # Generate state parameter for security
-    state = secrets.token_urlsafe(32)
+# @api_v1.get("/auth/google")
+# async def google_auth():
+#     """Get Google OAuth URL for basic authentication"""
+#     # Generate state parameter for security
+#     state = secrets.token_urlsafe(32)
     
-    # Build authorization URL
-    params = {
-        "client_id": GOOGLE_CLIENT_ID,
-        "redirect_uri": REDIRECT_URI,
-        "scope": " ".join(BASIC_SCOPES),
-        "response_type": "code",
-        "state": state,
-        "access_type": "offline",
-        "prompt": "consent"
-    }
+#     # Build authorization URL
+#     params = {
+#         "client_id": GOOGLE_CLIENT_ID,
+#         "redirect_uri": REDIRECT_URI,
+#         "scope": " ".join(BASIC_SCOPES),
+#         "response_type": "code",
+#         "state": state,
+#         "access_type": "offline",
+#         "prompt": "consent"
+#     }
     
-    auth_url = f"{GOOGLE_AUTH_URL}?{urlencode(params)}"
-    return {"auth_url": auth_url, "state": state}
+#     auth_url = f"{GOOGLE_AUTH_URL}?{urlencode(params)}"
+#     return {"auth_url": auth_url, "state": state}
 
-@api_v1.post("/auth/check-google-tokens")
-async def check_and_store_google_tokens(request: Request):
-    """Check PropelAuth for Google OAuth tokens and store them if they exist"""
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="No token provided")
-    jwt_token = auth_header.split(" ")[1]
-    try:
-        jwt_payload = verify_propelauth_jwt(jwt_token)
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=str(e))
-    user_id = jwt_payload["user_id"]
-    user_data = await user_db.get_user_by_id(user_id)
-    if not user_data:
-        raise HTTPException(status_code=401, detail="User not found")
+# @api_v1.post("/auth/check-google-tokens")
+# async def check_and_store_google_tokens(request: Request):
+#     """Check PropelAuth for Google OAuth tokens and store them if they exist"""
+#     auth_header = request.headers.get("Authorization")
+#     if not auth_header or not auth_header.startswith("Bearer "):
+#         raise HTTPException(status_code=401, detail="No token provided")
+#     jwt_token = auth_header.split(" ")[1]
+#     try:
+#         jwt_payload = verify_propelauth_jwt(jwt_token)
+#     except Exception as e:
+#         raise HTTPException(status_code=401, detail=str(e))
+#     user_id = jwt_payload["user_id"]
+#     user_data = await user_db.get_user_by_id(user_id)
+#     if not user_data:
+#         raise HTTPException(status_code=401, detail="User not found")
     
-    try:
-        # Call PropelAuth API to get OAuth tokens
-        propelauth_tokens = await get_user_oauth_tokens_from_propelauth(user_id)
+#     try:
+#         # Call PropelAuth API to get OAuth tokens
+#         propelauth_tokens = await get_user_oauth_tokens_from_propelauth(user_id)
         
-        if not propelauth_tokens or "google" not in propelauth_tokens:
-            return {
-                "message": "No Google OAuth tokens found",
-                "has_google_tokens": False,
-                "has_calendar_access": False
-            }
+#         if not propelauth_tokens or "google" not in propelauth_tokens:
+#             return {
+#                 "message": "No Google OAuth tokens found",
+#                 "has_google_tokens": False,
+#                 "has_calendar_access": False
+#             }
         
-        google_tokens = propelauth_tokens["google"]
-        authorized_scopes = google_tokens.get("authorized_scopes", [])
+#         google_tokens = propelauth_tokens["google"]
+#         authorized_scopes = google_tokens.get("authorized_scopes", [])
         
-        # Check if user has calendar access based on scopes
-        calendar_scopes = [
-            "https://www.googleapis.com/auth/calendar",
-            "https://www.googleapis.com/auth/calendar.events"
-        ]
+#         # Check if user has calendar access based on scopes
+#         calendar_scopes = [
+#             "https://www.googleapis.com/auth/calendar",
+#             "https://www.googleapis.com/auth/calendar.events"
+#         ]
         
-        has_calendar_access = all(scope in authorized_scopes for scope in calendar_scopes)
+#         has_calendar_access = all(scope in authorized_scopes for scope in calendar_scopes)
         
-        # Update only access token and calendar access status
-        await user_db.update_access_token_and_calendar_access(
-            user_id,
-            google_tokens["access_token"],
-            has_calendar_access
-        )
+#         # Update only access token and calendar access status
+#         await user_db.update_access_token_and_calendar_access(
+#             user_id,
+#             google_tokens["access_token"],
+#             has_calendar_access
+#         )
         
-        return {
-            "message": "Google OAuth tokens stored successfully",
-            "has_google_tokens": True,
-            "has_calendar_access": has_calendar_access,
-            "authorized_scopes": authorized_scopes
-        }
+#         return {
+#             "message": "Google OAuth tokens stored successfully",
+#             "has_google_tokens": True,
+#             "has_calendar_access": has_calendar_access,
+#             "authorized_scopes": authorized_scopes
+#         }
         
-    except Exception as e:
-        print(f"Error checking Google tokens: {e}")
-        return {
-            "message": "Error checking Google OAuth tokens",
-            "has_google_tokens": False,
-            "has_calendar_access": False,
-            "error": str(e)
-        }
+#     except Exception as e:
+#         print(f"Error checking Google tokens: {e}")
+#         return {
+#             "message": "Error checking Google OAuth tokens",
+#             "has_google_tokens": False,
+#             "has_calendar_access": False,
+#             "error": str(e)
+#         }
 
 @api_v1.get("/auth/google/calendar")
 async def google_calendar_auth():
@@ -173,108 +174,108 @@ async def google_auth_redirect():
     auth_data = await google_auth()
     return RedirectResponse(url=auth_data["auth_url"])
 
-@api_v1.get("/oauth2callback")
-async def oauth2callback(request: Request, code: str = None, state: str = None, error: str = None):
-    """Handle OAuth callback from Google (basic auth)"""
-    if error:
-        print(f"OAuth error: {error}")
-        return RedirectResponse(url=f"{FRONTEND_URL}/dashboard?error={error}")
+# @api_v1.get("/oauth2callback")
+# async def oauth2callback(request: Request, code: str = None, state: str = None, error: str = None):
+#     """Handle OAuth callback from Google (basic auth)"""
+#     if error:
+#         print(f"OAuth error: {error}")
+#         return RedirectResponse(url=f"{FRONTEND_URL}/dashboard?error={error}")
     
-    if not code:
-        print("No authorization code received")
-        return RedirectResponse(url=f"{FRONTEND_URL}/dashboard?error=no_code")
+#     if not code:
+#         print("No authorization code received")
+#         return RedirectResponse(url=f"{FRONTEND_URL}/dashboard?error=no_code")
     
-    try:    
-        # Try the main token exchange method first
-        try:
-            tokens = await exchange_code_for_token(code, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, REDIRECT_URI)
-        except Exception as e:
-            print(f"Main token exchange failed: {e}")
-            print("Trying alternative token exchange method...")
+#     try:    
+#         # Try the main token exchange method first
+#         try:
+#             tokens = await exchange_code_for_token(code, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, REDIRECT_URI)
+#         except Exception as e:
+#             print(f"Main token exchange failed: {e}")
+#             print("Trying alternative token exchange method...")
         
-        # Get user information
-        async with httpx.AsyncClient() as client:
-            headers = {"Authorization": f"Bearer {tokens['access_token']}"}
-            user_response = await client.get(PROPEL_USER_INFO_URL, headers=headers)
-            user_response.raise_for_status()
-            user_info = user_response.json()
+#         # Get user information
+#         async with httpx.AsyncClient() as client:
+#             headers = {"Authorization": f"Bearer {tokens['access_token']}"}
+#             user_response = await client.get(PROPEL_USER_INFO_URL, headers=headers)
+#             user_response.raise_for_status()
+#             user_info = user_response.json()
         
-        # Call PropelAuth API to get additional OAuth tokens
-        propelauth_tokens = None
-        try:
-            propelauth_tokens = await get_user_oauth_tokens_from_propelauth(user_info["user_id"])
+#         # Call PropelAuth API to get additional OAuth tokens
+#         propelauth_tokens = None
+#         try:
+#             propelauth_tokens = await get_user_oauth_tokens_from_propelauth(user_info["user_id"])
             
-        except Exception as e:
-            print(f"Failed to get PropelAuth tokens: {e}")
-            # Continue without PropelAuth tokens if the call fails
+#         except Exception as e:
+#             print(f"Failed to get PropelAuth tokens: {e}")
+#             # Continue without PropelAuth tokens if the call fails
         
-        # Store user and tokens in MongoDB with client credentials
-        if propelauth_tokens and "google" in propelauth_tokens:
-            await user_db.store_user_tokens(user_info, tokens, propelauth_tokens["google"], GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, has_calendar_access=False)
-        else:
-            # Fallback: store without PropelAuth tokens
-            await user_db.store_user_tokens(user_info, tokens, {}, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, has_calendar_access=False)
+#         # Store user and tokens in MongoDB with client credentials
+#         if propelauth_tokens and "google" in propelauth_tokens:
+#             await user_db.store_user_tokens(user_info, tokens, propelauth_tokens["google"], GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, has_calendar_access=False)
+#         else:
+#             # Fallback: store without PropelAuth tokens
+#             await user_db.store_user_tokens(user_info, tokens, {}, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, has_calendar_access=False)
         
-        # Redirect to frontend with session token
-        return RedirectResponse(url=f"{FRONTEND_URL}/dashboard?token=SAFE") # Updated redirect URL
+#         # Redirect to frontend with session token
+#         return RedirectResponse(url=f"{FRONTEND_URL}/dashboard?token=SAFE") # Updated redirect URL
         
-    except httpx.HTTPError as e:
-        print(f"HTTP Error during token exchange: {e}")
-        print(f"Response status: {e.response.status_code}")
-        print(f"Response text: {e.response.text}")
-        return RedirectResponse(url=f"{FRONTEND_URL}/dashboard?error=token_exchange_failed")
-    except Exception as e:
-        print(f"Unexpected error during token exchange: {e}")
-        import traceback
-        traceback.print_exc()
-        return RedirectResponse(url=f"{FRONTEND_URL}/dashboard?error=server_error")
+#     except httpx.HTTPError as e:
+#         print(f"HTTP Error during token exchange: {e}")
+#         print(f"Response status: {e.response.status_code}")
+#         print(f"Response text: {e.response.text}")
+#         return RedirectResponse(url=f"{FRONTEND_URL}/dashboard?error=token_exchange_failed")
+#     except Exception as e:
+#         print(f"Unexpected error during token exchange: {e}")
+#         import traceback
+#         traceback.print_exc()
+#         return RedirectResponse(url=f"{FRONTEND_URL}/dashboard?error=server_error")
 
-@api_v1.get("/calendar/oauth2callback")
-async def calendar_oauth2callback(request: Request, code: str = None, state: str = None, error: str = None):
-    """Handle OAuth callback from Google (calendar access)"""
-    if error:
-        return RedirectResponse(url=f"{FRONTEND_URL}/calendar?error={error}")
+# @api_v1.get("/calendar/oauth2callback")
+# async def calendar_oauth2callback(request: Request, code: str = None, state: str = None, error: str = None):
+#     """Handle OAuth callback from Google (calendar access)"""
+#     if error:
+#         return RedirectResponse(url=f"{FRONTEND_URL}/calendar?error={error}")
     
-    if not code:
-        return RedirectResponse(url=f"{FRONTEND_URL}/calendar?error=no_code")
+#     if not code:
+#         return RedirectResponse(url=f"{FRONTEND_URL}/calendar?error=no_code")
     
-    try:
-        # Exchange authorization code for tokens
-        tokens = await exchange_code_for_token(code, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, CALENDAR_REDIRECT_URI)
+#     try:
+#         # Exchange authorization code for tokens
+#         tokens = await exchange_code_for_token(code, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, CALENDAR_REDIRECT_URI)
         
-        # Get user information
-        async with httpx.AsyncClient() as client:
-            headers = {"Authorization": f"Bearer {tokens['access_token']}"}
-            user_response = await client.get(PROPEL_USER_INFO_URL, headers=headers)
-            user_response.raise_for_status()
-            user_info = user_response.json()
+#         # Get user information
+#         async with httpx.AsyncClient() as client:
+#             headers = {"Authorization": f"Bearer {tokens['access_token']}"}
+#             user_response = await client.get(PROPEL_USER_INFO_URL, headers=headers)
+#             user_response.raise_for_status()
+#             user_info = user_response.json()
         
-        # Call PropelAuth API to get additional OAuth tokens
-        propelauth_tokens = None
-        try:
-            propelauth_tokens = await get_user_oauth_tokens_from_propelauth(user_info["user_id"])
+#         # Call PropelAuth API to get additional OAuth tokens
+#         propelauth_tokens = None
+#         try:
+#             propelauth_tokens = await get_user_oauth_tokens_from_propelauth(user_info["user_id"])
             
-        except Exception as e:
-            print(f"Failed to get PropelAuth tokens: {e}")
-            # Continue without PropelAuth tokens if the call fails
+#         except Exception as e:
+#             print(f"Failed to get PropelAuth tokens: {e}")
+#             # Continue without PropelAuth tokens if the call fails
         
-        # Store user and tokens in MongoDB with calendar access and client credentials
-        if propelauth_tokens and "google" in propelauth_tokens:
-            await user_db.store_user_tokens(user_info, tokens, propelauth_tokens["google"], GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, has_calendar_access=True)
-        else:
-            # Fallback: store without PropelAuth tokens
-            await user_db.store_user_tokens(user_info, tokens, {}, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, has_calendar_access=True)
+#         # Store user and tokens in MongoDB with calendar access and client credentials
+#         if propelauth_tokens and "google" in propelauth_tokens:
+#             await user_db.store_user_tokens(user_info, tokens, propelauth_tokens["google"], GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, has_calendar_access=True)
+#         else:
+#             # Fallback: store without PropelAuth tokens
+#             await user_db.store_user_tokens(user_info, tokens, {}, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, has_calendar_access=True)
         
-        # Create session
-        # session_token = await session_db.create_session(user_info["user_id"]) # Removed as per edit hint
+#         # Create session
+#         # session_token = await session_db.create_session(user_info["user_id"]) # Removed as per edit hint
         
-        # Redirect to frontend with session token
-        return RedirectResponse(url=f"{FRONTEND_URL}/calendar?token={user_info['user_id']}&service=calendar") # Updated redirect URL
+#         # Redirect to frontend with session token
+#         return RedirectResponse(url=f"{FRONTEND_URL}/calendar?token={user_info['user_id']}&service=calendar") # Updated redirect URL
         
-    except httpx.HTTPError as e:
-        return RedirectResponse(url=f"{FRONTEND_URL}/calendar?error=calendar_token_exchange_failed")
-    except Exception as e:
-        return RedirectResponse(url=f"{FRONTEND_URL}/calendar?error=calendar_server_error")
+#     except httpx.HTTPError as e:
+#         return RedirectResponse(url=f"{FRONTEND_URL}/calendar?error=calendar_token_exchange_failed")
+#     except Exception as e:
+#         return RedirectResponse(url=f"{FRONTEND_URL}/calendar?error=calendar_server_error")
 
 @api_v1.post("/auth/callback")
 async def unified_oauth_callback(request: Request):
@@ -295,6 +296,8 @@ async def unified_oauth_callback(request: Request):
         propelauth_tokens = await get_user_oauth_tokens_from_propelauth(user_info["user_id"])
         if not propelauth_tokens or "google" not in propelauth_tokens:
             return {"error": "not_logged_in_with_google", "message": "User is not logged in with Google."}
+
+     
 
         # Store everything in DB
         await user_db.store_user_tokens(user_info, propelauth_tokens.get("google"), GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, has_calendar_access=False)
@@ -612,38 +615,38 @@ async def logout(request: Request):
     # await session_db.delete_session(token) # Removed as per edit hint
     pass # No longer needed
 
-@api_v1.get("/auth/verify/{token}")
-async def verify_token(token: str):
-    """Verify if token is valid"""
-    user_data = await user_db.get_user_by_id(token) # Changed to get_user_by_id
-    if not user_data:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+# @api_v1.get("/auth/verify/{token}")
+# async def verify_token(token: str):
+#     """Verify if token is valid"""
+#     user_data = await user_db.get_user_by_id(token) # Changed to get_user_by_id
+#     if not user_data:
+#         raise HTTPException(status_code=401, detail="Invalid or expired token")
     
-    return {
-        "valid": True,
-        "user": user_data["user_info"],
-        "has_calendar_access": user_data.get("has_calendar_access", False)
-    }
+#     return {
+#         "valid": True,
+#         "user": user_data["user_info"],
+#         "has_calendar_access": user_data.get("has_calendar_access", False)
+#     }
 
-@api_v1.get("/users/{user_id}/tokens")
-async def get_user_tokens(user_id: str):
-    """Get stored tokens for a user (admin endpoint)"""
-    user_data = await user_db.get_user_by_id(user_id) # Changed to get_user_by_id
-    if not user_data:
-        raise HTTPException(status_code=404, detail="User not found")
+# @api_v1.get("/users/{user_id}/tokens")
+# async def get_user_tokens(user_id: str):
+#     """Get stored tokens for a user (admin endpoint)"""
+#     user_data = await user_db.get_user_by_id(user_id) # Changed to get_user_by_id
+#     if not user_data:
+#         raise HTTPException(status_code=404, detail="User not found")
     
-    # Return tokens for later use (remove sensitive data for security)
-    return {
-        "user_id": user_data["user_id"],
-        "email": user_data["email"],
-        "name": user_data["name"],
-        "has_calendar_access": user_data.get("has_calendar_access", False),
-        "has_refresh_token": bool(user_data.get("refresh_token")),
-        "has_client_credentials": bool(user_data.get("client_id") and user_data.get("client_secret")),
-        "token_scope": user_data.get("scope"),
-        "created_at": user_data["created_at"],
-        "updated_at": user_data["updated_at"]
-    }
+#     # Return tokens for later use (remove sensitive data for security)
+#     return {
+#         "user_id": user_data["user_id"],
+#         "email": user_data["email"],
+#         "name": user_data["name"],
+#         "has_calendar_access": user_data.get("has_calendar_access", False),
+#         "has_refresh_token": bool(user_data.get("refresh_token")),
+#         "has_client_credentials": bool(user_data.get("client_id") and user_data.get("client_secret")),
+#         "token_scope": user_data.get("scope"),
+#         "created_at": user_data["created_at"],
+#         "updated_at": user_data["updated_at"]
+#     }
 
 @api_v1.get("/calendar/access")
 async def get_calendar_access(request: Request):
@@ -675,15 +678,15 @@ async def get_calendar_access(request: Request):
         await user_db.update_access_token_and_calendar_access(user_id, user_data.get("access_token"), True)
     return {"has_calendar_access": has_calendar_access}
 
-@api_v1.get("/timezone/options")
-async def get_timezone_options():
-    """Get available timezone options"""
-    timezone_options = [
-        {"label": "IST", "value": "Asia/Kolkata", "description": "India Standard Time"},
-        {"label": "EST", "value": "America/New_York", "description": "Eastern Standard Time"},
-        {"label": "PST", "value": "America/Los_Angeles", "description": "Pacific Standard Time"}
-    ]
-    return {"timezones": timezone_options}
+# @api_v1.get("/timezone/options")
+# async def get_timezone_options():
+#     """Get available timezone options"""
+#     timezone_options = [
+#         {"label": "IST", "value": "Asia/Kolkata", "description": "India Standard Time"},
+#         {"label": "EST", "value": "America/New_York", "description": "Eastern Standard Time"},
+#         {"label": "PST", "value": "America/Los_Angeles", "description": "Pacific Standard Time"}
+#     ]
+#     return {"timezones": timezone_options}
 
 @api_v1.get("/welcome-form/status")
 async def get_welcome_form_status(request: Request):
