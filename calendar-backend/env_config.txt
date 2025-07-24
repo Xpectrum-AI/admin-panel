@@ -37,7 +37,8 @@ PROPELAUTH_URL=https://181249979.propelauthtest.com
 PROPELAUTH_API_KEY=ad39ddd2967143bea4f4405e5f6dc4d0f5183c63a027add992e99a71cd80ab6c1ce07889f5ee6364f21abb40c827d29c
 PROPEL_TOKEN_URL=https://181249979.propelauthtest.com/propelauth/oauth/token
 PROPEL_USER_INFO_URL=https://181249979.propelauthtest.com/propelauth/oauth/userinfo
-PROPEL_GOOGLE_URL=https://181249979.propelauthtest.com/google/login?scope=openid%20https://www.googleapis.com/auth/userinfo.email%20https://www.googleapis.com/auth/userinfo.profile%20https://www.googleapis.com/auth/calendar%20https://www.googleapis.com/auth/calendar.events&external_param_access_type=offline&external_param_prompt=consent
+PROPEL_GOOGLE_URL=https://181249979.propelauthtest.com/google/login?scope=openid+email+profile&external_param_access_type=offline&external_param_prompt=consent
+PROPEL_GOOGLE_CALENDAR_URL=https://181249979.propelauthtest.com/google/login?scope=openid%20https://www.googleapis.com/auth/userinfo.email%20https://www.googleapis.com/auth/userinfo.profile%20https://www.googleapis.com/auth/calendar%20https://www.googleapis.com/auth/calendar.events&external_param_access_type=offline&external_param_prompt=consent
 
 # OAuth Scopes
 BASIC_SCOPES=https://www.googleapis.com/auth/userinfo.email,https://www.googleapis.com/auth/userinfo.profile

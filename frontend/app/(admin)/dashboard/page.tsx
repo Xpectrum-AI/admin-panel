@@ -45,7 +45,10 @@ export default function Dashboard() {
 
   useEffect(() => {
     const callAuthCallback = async () => {
-      if (!accessToken) return;
+      if (!accessToken) {
+        setCallbackCompleted(true); // <-- Fix: mark as complete even if not logged in
+        return;
+      }
       try {
         await axios.post(`${API_BASE_URL}/auth/callback`, {
           access_token: accessToken
@@ -61,7 +64,10 @@ export default function Dashboard() {
 
   useEffect(() => {
     const checkWelcome = async () => {
-      if (!accessToken) return;
+      if (!accessToken) {
+        setCallbackCompleted(true); // <-- Fix: mark as complete even if not logged in
+        return;
+      }
       const res = await axios.get(`${API_BASE_URL}/welcome-form/status`, {
         headers: { Authorization: `Bearer ${accessToken}` }
       });
@@ -90,7 +96,7 @@ export default function Dashboard() {
     }
   };
 
-  if (loading || !callbackCompleted) {
+  if (!callbackCompleted) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
         <SyncLoader size={15} color="#000000" />

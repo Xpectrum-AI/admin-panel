@@ -23,7 +23,7 @@ export default function Home() {
       router.push("/dashboard");
       }
     } else {
-      window.location.href = "/api/auth/login";
+      window.location.href = "/login";
     }
   }, [user, loading, router]);
 
