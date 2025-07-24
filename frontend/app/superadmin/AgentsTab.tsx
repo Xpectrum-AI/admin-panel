@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Search, Filter, Plus, UserRound, Settings, Ban } from 'lucide-react';
 import ActionMenu from './ActionMenu';
 import Pagination from './Pagination';
-import { updateAgent, setAgentPhone } from '@/service/agentService';
+import { updateAgent, setAgentPhone, deleteAgentPhone, deleteAgent } from '@/service/agentService';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 interface AgentsTabProps {
@@ -13,22 +13,26 @@ interface AgentsTabProps {
   setPageNumber: (n: number) => void;
   loading: boolean;
   refreshAgents: () => Promise<void>;
+  orgs: { orgId: string; name: string }[];
+  trunks: any[]; // Add trunks prop
 }
 
-export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, setPageNumber, loading, refreshAgents }: AgentsTabProps) {
+export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, setPageNumber, loading, refreshAgents, orgs = [], trunks = [] }: AgentsTabProps) {
   const { showError, showSuccess } = useErrorHandler();
   const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [addForm, setAddForm] = useState({
     agentId: '', chatbot_api: '', chatbot_key: '',
-    tts_config: { voice_id: '', tts_api_key: '', model: '', speed: 0.5 },
-    stt_config: { api_key: '', model: '', language: '' }
+    tts_config: { voice_id: '', tts_api_key: '', model: '', speed: 0.5, language: '' },
+    stt_config: { api_key: '', model: '', language: '' },
+    initial_message: ''
   });
   const [updateForm, setUpdateForm] = useState({
     agentId: '', chatbot_api: '', chatbot_key: '',
-    tts_config: { voice_id: '', tts_api_key: '', model: '', speed: 0.5 },
-    stt_config: { api_key: '', model: '', language: '' }
+    tts_config: { voice_id: '', tts_api_key: '', model: '', speed: 0.5, language: '' },
+    stt_config: { api_key: '', model: '', language: '' },
+    initial_message: ''
   });
   const [showSetPhoneModal, setShowSetPhoneModal] = useState(false);
   const [setPhoneForm, setSetPhoneForm] = useState({ agentId: '', phone_number: '' });
@@ -76,8 +80,9 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
         // Reset form
         setAddForm({
           agentId: '', chatbot_api: '', chatbot_key: '',
-          tts_config: { voice_id: '', tts_api_key: '', model: '', speed: 0.5 },
-          stt_config: { api_key: '', model: '', language: '' }
+          tts_config: { voice_id: '', tts_api_key: '', model: '', speed: 0.5, language: '' },
+          stt_config: { api_key: '', model: '', language: '' },
+          initial_message: ''
         });
       } else {
         showError(data.error || 'Failed to add agent');
@@ -288,8 +293,28 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                       />
                     </div>
                   </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none" htmlFor="ttsLanguage">Language</label>
+                    <select
+                      className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                      name="ttsLanguage"
+                      id="ttsLanguage"
+                      value={addForm.tts_config.language}
+                      onChange={e => setAddForm({ ...addForm, tts_config: { ...addForm.tts_config, language: e.target.value } })}
+                      required
+                    >
+                      <option value="">Select language</option>
+                      <option value="en">English</option>
+                      <option value="hi">Hindi</option>
+                      <option value="es">Spanish</option>
+                      <option value="fr">French</option>
+                      <option value="de">German</option>
+                      <option value="zh">Chinese</option>
+                    </select>
+                  </div>
                 </div>
               </div>
+              
               <div className="rounded-lg border border-gray-300 bg-card text-card-foreground shadow-sm">
                 <div className="flex flex-col space-y-1.5 p-6">
                   <h3 className="text-2xl font-semibold leading-none tracking-tight">STT Configuration</h3>
@@ -340,6 +365,17 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                     </div>
                   </div>
                 </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium leading-none" htmlFor="initialMessage">Initial Message</label>
+                <input
+                  className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                  name="initialMessage"
+                  id="initialMessage"
+                  value={addForm.initial_message}
+                  onChange={e => setAddForm({ ...addForm, initial_message: e.target.value })}
+                  placeholder="Hello! How can I help you today?"
+                />
               </div>
               <div className="flex justify-end space-x-2">
                 <button type="button" className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2" onClick={() => setShowAddModal(false)}>
@@ -466,8 +502,28 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                       />
                     </div>
                   </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none" htmlFor="updateTtsLanguage">Language</label>
+                    <select
+                      className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                      name="updateTtsLanguage"
+                      id="updateTtsLanguage"
+                      value={updateForm.tts_config.language}
+                      onChange={e => setUpdateForm({ ...updateForm, tts_config: { ...updateForm.tts_config, language: e.target.value } })}
+                      required
+                    >
+                      <option value="">Select language</option>
+                      <option value="en">English</option>
+                      <option value="hi">Hindi</option>
+                      <option value="es">Spanish</option>
+                      <option value="fr">French</option>
+                      <option value="de">German</option>
+                      <option value="zh">Chinese</option>
+                    </select>
+                  </div>
                 </div>
               </div>
+              
               <div className="rounded-lg border border-gray-300 bg-card text-card-foreground shadow-sm">
                 <div className="flex flex-col space-y-1.5 p-6">
                   <h3 className="text-2xl font-semibold leading-none tracking-tight">STT Configuration</h3>
@@ -517,6 +573,17 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                     </div>
                   </div>
                 </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium leading-none" htmlFor="initialMessage">Initial Message</label>
+                <input
+                  className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                  name="initialMessage"
+                  id="initialMessage"
+                  value={updateForm.initial_message}
+                  onChange={e => setUpdateForm({ ...updateForm, initial_message: e.target.value })}
+                  placeholder="Hello! How can I help you today?"
+                />
               </div>
               <div className="flex justify-end space-x-2">
                 <button type="button" className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2" onClick={() => setShowUpdateModal(false)}>
@@ -614,17 +681,30 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                     <tr key={agent.agentId} className="bg-white rounded-xl shadow-sm">
                       <td className="py-4 px-4 font-bold text-gray-900">{agent.agentId}</td>
                       <td className="py-4 px-4">
-                        {agent.phone_number ? (
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-900 text-white">
-                            {agent.phone_number}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                            Not set
-                          </span>
-                        )}
+                        {(() => {
+                          // Find trunk by agentId/id and show first number
+                          const trunk = trunks.find(t => t.name === agent.agentId || t.name === agent.id);
+                          return trunk && trunk.numbers && trunk.numbers.length > 0
+                            ? (
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-900 text-white">
+                                {trunk.numbers[0]}
+                              </span>
+                            )
+                            : (
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                Not set
+                              </span>
+                            );
+                        })()}
                       </td>
-                      <td className="py-4 px-4 text-gray-700">{agent.orgName || '-'}</td>
+                      <td className="py-4 px-4 text-gray-700">
+                        {(() => {
+                          console.log(orgs);
+                          
+                          const org = orgs.find(o => o.orgId === agent.agentId);
+                          return org ? org.name : '-';
+                        })()}
+                      </td>
                       <td className="py-4 px-4 text-gray-700">{agent.tts_config?.model || '-'}</td>
                       <td className="py-4 px-4 text-gray-700">{agent.stt_config?.model || '-'}</td>
                       <td className="py-4 px-4">
@@ -643,6 +723,21 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                               },
                             },
                             {
+                              label: 'Delete Phone',
+                              icon: <UserRound className="w-5 h-5 text-red-500" />,
+                              onClick: async () => {
+                                try {
+                                  await deleteAgentPhone(agent.agentId);
+                                  // Optionally refresh agent data or show a success message
+                                  if (typeof refreshAgents === 'function') refreshAgents();
+                                  if (typeof showSuccess === 'function') showSuccess('Phone number deleted');
+                                } catch (err) {
+                                  if (typeof showError === 'function') showError('Failed to delete phone number');
+                                }
+                              },
+                              danger: true,
+                            },
+                            {
                               label: 'Update Agent',
                               icon: <Settings className="w-5 h-5" />,
                               onClick: () => {
@@ -655,12 +750,14 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                                     tts_api_key: agent.tts_config?.tts_api_key || '',
                                     model: agent.tts_config?.model || '',
                                     speed: agent.tts_config?.speed ?? 0.5,
+                                    language: agent.tts_config?.language || '',
                                   },
                                   stt_config: {
                                     api_key: agent.stt_config?.api_key || '',
                                     model: agent.stt_config?.model || '',
                                     language: agent.stt_config?.language || '',
-                                  }
+                                  },
+                                  initial_message: agent.initial_message || ''
                                 });
                                 setShowUpdateModal(true);
                               },
@@ -668,7 +765,15 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                             {
                               label: 'Suspend',
                               icon: <Ban className="w-5 h-5" />,
-                              onClick: () => {},
+                              onClick: async () => {
+                                try {
+                                  await deleteAgent(agent.agentId);
+                                  if (typeof refreshAgents === 'function') refreshAgents();
+                                  if (typeof showSuccess === 'function') showSuccess('Agent suspended (deleted) successfully');
+                                } catch (err) {
+                                  if (typeof showError === 'function') showError('Failed to suspend (delete) agent');
+                                }
+                              },
                               danger: true,
                             },
                           ]}

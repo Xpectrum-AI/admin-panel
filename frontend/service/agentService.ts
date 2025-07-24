@@ -90,4 +90,23 @@ export async function getActiveCalls() {
     await handleApiError(res, 'Failed to fetch active calls');
   }
   return res.json();
+}
+
+export async function deleteAgent(agentId: string) {
+  const res = await fetch(`${API_BASE}/agents/delete/${agentId}`, {
+    method: 'DELETE',
+    headers,
+  });
+  if (!res.ok) {
+    await handleApiError(res, 'Failed to delete agent');
+  }
+  return res.json();
+}
+
+export async function getTrunks() {
+  const res = await fetch(`${API_BASE}/agents/trunks`, { headers });
+  if (!res.ok) {
+    await handleApiError(res, 'Failed to fetch trunks');
+  }
+  return res.json();
 } 
