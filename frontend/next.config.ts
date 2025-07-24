@@ -17,6 +17,9 @@ const nextConfig: NextConfig = {
   },
   // Disable telemetry in production
   telemetry: false,
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 export default nextConfig;

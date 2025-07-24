@@ -76,6 +76,10 @@ async def startup_event():
     # await session_db.cleanup_expired_sessions() # Removed as per edit hint
     pass # No longer needed
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
 @api_v1.get("/")
 async def root():
     """API root endpoint"""
