@@ -10,8 +10,8 @@ services:
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_API_URL=http://backend:8005
-      - NEXT_PUBLIC_CALENDAR_API_URL=http://calendar-backend:8001
-      - NEXT_PUBLIC_API_BASE_URL=http://calendar-backend:8001
+      - NEXT_PUBLIC_CALENDAR_API_URL=http://admin-test.xpectrum-ai.com
+      - NEXT_PUBLIC_API_BASE_URL=http://admin-test.xpectrum-ai.com
       - NEXT_PUBLIC_AUTH_URL=https://auth.admin-test.xpectrum-ai.com
       - NEXT_PUBLIC_PROPELAUTH_URL=https://auth.admin-test.xpectrum-ai.com
       - NEXT_PUBLIC_PROPELAUTH_API_KEY=41f5b65faf738abef77864b5753afd5d7f12231eb4556a14667b6cc3a8e0e103830a9789e8ee5a54773d9f512f11d17a
@@ -22,8 +22,8 @@ services:
       - NEXT_PUBLIC_TIMEZONE_OPTIONS=IST:Asia/Kolkata,EST:America/New_York,PST:America/Los_Angeles
       - NEXT_PUBLIC_GOOGLE_CALENDAR_API_URL=https://www.googleapis.com/calendar/v3
       - NEXT_PUBLIC_DATABASE_NAME=google_oauth
-      - NEXT_PUBLIC_CALENDAR_REDIRECT_URI=http://calendar-backend:8001/api/v1/calendar/oauth2callback
-      - NEXT_PUBLIC_GOOGLE_REDIRECT_URI=http://calendar-backend:8001/api/v1/oauth2callback
+      - NEXT_PUBLIC_CALENDAR_REDIRECT_URI=http://admin-test.xpectrum-ai.com/api/v1/calendar/oauth2callback
+      - NEXT_PUBLIC_GOOGLE_REDIRECT_URI=http://admin-test.xpectrum-ai.com/api/v1/oauth2callback
       - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key_here
       - SECRET_KEY=your_secret_key_for_sessions_change_this_in_production
     depends_on:
@@ -52,7 +52,7 @@ services:
       - LIVE_API_BASE_URL=https://multiagents.livekit.xpectrum-ai.com
       - DATABASE_NAME=admin_panel
       - API_BASE_URL=http://backend:8005
-      - CALENDAR_API_URL=http://calendar-backend:8001/api/v1
+      - CALENDAR_API_URL=http://admin-test.xpectrum-ai.com/api/v1
       - AUTH_REDIRECT_URL=https://auth.admin-test.xpectrum-ai.com/google/login
       - PROPEL_TOKEN_URL=https://auth.admin-test.xpectrum-ai.com/propelauth/oauth/token
       - PROPEL_USER_INFO_URL=https://auth.admin-test.xpectrum-ai.com/propelauth/oauth/userinfo
@@ -72,8 +72,8 @@ services:
     environment:
       - GOOGLE_CLIENT_ID=441654168539-9tfk7ibkt2r9tbsoohpjjfmjjn8u4lf0.apps.googleusercontent.com
       - GOOGLE_CLIENT_SECRET=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
-      - REDIRECT_URI=http://calendar-backend:8001/api/v1/oauth2callback
-      - CALENDAR_REDIRECT_URI=http://calendar-backend:8001/api/v1/calendar/oauth2callback
+      - REDIRECT_URI=http://admin-test.xpectrum-ai.com/api/v1/oauth2callback
+      - CALENDAR_REDIRECT_URI=http://admin-test.xpectrum-ai.com/api/v1/calendar/oauth2callback
       - MONGODB_URL=mongodb+srv://mongo_access:3gfaAKMQsCwEjIXG@cluster0.4os5zqa.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
       - DATABASE_NAME=google_oauth
       - PROPELAUTH_URL=https://auth.admin-test.xpectrum-ai.com
