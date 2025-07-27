@@ -82,7 +82,7 @@ const BillingPage = () => {
     cancel_url: 'https://admin-test.xpectrum-ai.com/billing/cancel'
   });
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com/api';
   const API_KEY = 'xpectrum-ai@123';
 
   const headers = {
