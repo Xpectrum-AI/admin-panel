@@ -1,31 +1,44 @@
+# Calendar Backend Environment Configuration
+# Copy this to .env for development
+
+# Google OAuth Configuration
 GOOGLE_CLIENT_ID=441654168539-9tfk7ibkt2r9tbsoohpjjfmjjn8u4lf0.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=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
 REDIRECT_URI=https://admin-test.xpectrum-ai.com/calendar-api/oauth2callback
-CALENDAR_REDIRECT_URI=https://admin-test.xpectrum-ai.com/calendar-api/calendar/oauth2callback
-FRONTEND_URL=https://admin-test.xpectrum-ai.com
-SECRET_KEY=your_secret_key_for_sessions_change_this_in_production
-MONGODB_URL=mongodb+srv://mongo_access:3gfaAKMQsCwEjIXG@cluster0.4os5zqa.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
-DATABASE_NAME=google_oauth
-
-MONGODB_URL_TEST=mongodb+srv://yashthakur:wEA3mi5yb7fUqe6Z@cluster0.sqfidzj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+CALENDAR_REDIRECT_URI=https://admin-test.xpectrum-ai.com/calendar-api/oauth2callback
 
 # Server Configuration
 SERVER_HOST=0.0.0.0
 SERVER_PORT=8001
 DEBUG_MODE=true
+SECRET_KEY=your_secret_key_for_sessions_change_this_in_production
 
 # API Configuration
 API_VERSION=v1
 API_PREFIX=/api/v1
 
-# Google OAuth URLs
-GOOGLE_AUTH_URL=https://accounts.google.com/o/oauth2/auth
-PROPEL_TOKEN_URL=https://181249979.propelauthtest.com/propelauth/oauth/token
-GOOGLE_TOKEN_URL=https://oauth2.googleapis.com/token
-PROPEL_USER_INFO_URL=https://181249979.propelauthtest.com/propelauth/oauth/userinfo
-PROPEL_GOOGLE_URL=https://181249979.propelauthtest.com/google/login?scope=openid%20https://www.googleapis.com/auth/userinfo.email%20https://www.googleapis.com/auth/userinfo.profile%20https://www.googleapis.com/auth/calendar%20https://www.googleapis.com/auth/calendar.events&external_param_access_type=offline&external_param_prompt=consent
+# Database Configuration
+MONGODB_URL=mongodb+srv://mongo_access:3gfaAKMQsCwEjIXG@cluster0.4os5zqa.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+DATABASE_NAME=google_oauth
+MONGODB_URL_TEST=mongodb+srv://yashthakur:wEA3mi5yb7fUqe6Z@cluster0.sqfidzj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
 
+# Database Collections
+USER_TOKENS_COLLECTION=user_tokens
+SESSIONS_COLLECTION=sessions
+
+# External Service URLs
+FRONTEND_URL=https://admin-test.xpectrum-ai.com
+GOOGLE_AUTH_URL=https://accounts.google.com/o/oauth2/auth
+GOOGLE_TOKEN_URL=https://oauth2.googleapis.com/token
 GOOGLE_CALENDAR_API_URL=https://www.googleapis.com/calendar/v3
+
+# PropelAuth Configuration
+PROPELAUTH_URL=https://auth.admin-test.xpectrum-ai.com
+PROPELAUTH_API_KEY=ad39ddd2967143bea4f4405e5f6dc4d0f5183c63a027add992e99a71cd80ab6c1ce07889f5ee6364f21abb40c827d29c
+PROPEL_TOKEN_URL=https://auth.admin-test.xpectrum-ai.com/propelauth/oauth/token
+PROPEL_USER_INFO_URL=https://auth.admin-test.xpectrum-ai.com/propelauth/oauth/userinfo
+PROPEL_GOOGLE_URL=https://auth.admin-test.xpectrum-ai.com/google/login?scope=openid+email+profile&external_param_access_type=offline&external_param_prompt=consent
+PROPEL_GOOGLE_CALENDAR_URL=https://auth.admin-test.xpectrum-ai.com/google/login?scope=openid%20https://www.googleapis.com/auth/userinfo.email%20https://www.googleapis.com/auth/userinfo.profile%20https://www.googleapis.com/auth/calendar%20https://www.googleapis.com/auth/calendar.events&external_param_access_type=offline&external_param_prompt=consent
 
 # OAuth Scopes
 BASIC_SCOPES=https://www.googleapis.com/auth/userinfo.email,https://www.googleapis.com/auth/userinfo.profile
@@ -38,17 +51,29 @@ SESSION_CLEANUP_INTERVAL_HOURS=6
 # Calendar Configuration
 DEFAULT_TIMEZONE=America/New_York
 MAX_CALENDAR_EVENTS=10
-
-# Timezone Options (for client selection)
 TIMEZONE_OPTIONS=IST:Asia/Kolkata,EST:America/New_York,PST:America/Los_Angeles
 
-# Database Collections
-USER_TOKENS_COLLECTION=user_tokens
-SESSIONS_COLLECTION=sessions
-
 # CORS Configuration
-CORS_ORIGINS=https://admin-test.xpectrum-ai.com,https://auth.admin-test.xpectrum-ai.com
+CORS_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:5173
 
-# PropelAuth Configuration
-PROPELAUTH_URL=https://181249979.propelauthtest.com
-PROPELAUTH_API_KEY=ad39ddd2967143bea4f4405e5f6dc4d0f5183c63a027add992e99a71cd80ab6c1ce07889f5ee6364f21abb40c827d29c
+# Logging Configuration
+LOG_LEVEL=debug
+ENABLE_LOGGING=true
+
+# Security Configuration
+JWT_SECRET=your_jwt_secret_change_this_in_production
+BCRYPT_ROUNDS=12
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+
+# File Upload Configuration
+MAX_FILE_SIZE=10485760
+UPLOAD_DIR=./uploads
+
+# Email Configuration (if needed)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@gmail.com
+SMTP_PASS=your_app_password
