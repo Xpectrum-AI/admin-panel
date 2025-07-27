@@ -15,18 +15,17 @@ RUN npm ci --prefer-offline --no-audit --production=false && \
     npm cache clean --force && \
     rm -rf /root/.npm
 
-# Add timestamp to force cache invalidation for source files
-RUN echo "Build timestamp: $(date)" > .build-timestamp
-
 # Copy source files
 COPY . .
 
-# Build with aggressive cleanup
+# Build with aggressive cleanup and optimization
 RUN npm run build && \
     rm -rf node_modules && \
     rm -rf .next/cache && \
     rm -rf /root/.npm && \
-    npm cache clean --force
+    npm cache clean --force && \
+    rm -rf /tmp/* && \
+    rm -rf /var/cache/apk/*
 
 # Production stage - use a smaller base image
 FROM node:20-alpine AS runner

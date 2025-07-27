@@ -16,7 +16,8 @@ RUN apt-get update \
         curl \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean \
-    && apt-get autoremove -y
+    && apt-get autoremove -y \
+    && rm -rf /var/cache/apt/*
 
 # Copy requirements first for better caching
 COPY requirements.txt .
@@ -25,7 +26,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt \
     && pip cache purge \
-    && rm -rf /root/.cache/pip
+    && rm -rf /root/.cache/pip \
+    && rm -rf /tmp/*
 
 # Copy application code
 COPY . .
