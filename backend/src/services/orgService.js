@@ -1,6 +1,6 @@
 const {initAuth} = require('@propelauth/express');
 
-const PROPELAUTH_API_KEY = process.env.PROPELAUTH_API_KEY;
+const PROPELAUTH_API_KEY = process.env.PROPELAUTH_API_KEY || "0fe5896d1060306a9c4ad9df5d6143ac6bcf2fc67cd212b2a45eca5b03e021bfcdee85047883424517c52dca1dcc2952";
 const PROPELAUTH_AUTH_URL = process.env.PROPELAUTH_AUTH_URL || 'https://auth.admin-test.xpectrum-ai.com';
 
 // Validate required environment variables

@@ -11,7 +11,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { fetchUsersByQuery } from '@/service/userService';
 import { fetchOrgByQuery, inviteUserToOrg, removeUserFromOrg, changeUserRoleInOrg } from '@/service/orgService';
-import { getAllAgents } from '@/service/agentService';
+import { getAllAgents, getTrunks } from '@/service/agentService';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { fetchUsersInOrg } from '@/service/orgService';
 
@@ -49,6 +49,7 @@ export default function SuperAdminPanel() {
     const [loadingInvite, setLoadingInvite] = useState(false);
     const [loadingRemove, setLoadingRemove] = useState(false);
     const [loadingRoleChange, setLoadingRoleChange] = useState(false);
+    const [trunks, setTrunks] = useState<any[]>([]);
 
     // Set mounted flag after component mounts
     useEffect(() => {
@@ -127,6 +128,20 @@ export default function SuperAdminPanel() {
 
         fetchAgents();
     }, [agentPageNumber, mounted]);
+
+    // Fetch trunks on mount
+    useEffect(() => {
+        const fetchTrunks = async () => {
+            try {
+                const res = await getTrunks();
+                setTrunks(res.trunks || []);
+            } catch (error) {
+                setTrunks([]);
+                showError('Failed to fetch trunks');
+            }
+        };
+        fetchTrunks();
+    }, []);
 
     // Refresh agents utility for children
     const refreshAgents = async () => {
@@ -280,6 +295,8 @@ export default function SuperAdminPanel() {
                                     setPageNumber={setAgentPageNumber}
                                     loading={agentsLoading}
                                     refreshAgents={refreshAgents}
+                                    orgs={orgs}
+                                    trunks={trunks}
                                 />
                             )}
                             {activeTab === 'Team' && (
