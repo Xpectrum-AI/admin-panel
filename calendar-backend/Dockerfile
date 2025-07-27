@@ -8,22 +8,24 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Install system dependencies
+# Install system dependencies with aggressive cleanup
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         gcc \
         g++ \
         curl \
     && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+    && apt-get clean \
+    && apt-get autoremove -y
 
 # Copy requirements first for better caching
 COPY requirements.txt .
 
-# Install Python dependencies
+# Install Python dependencies with aggressive cleanup
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt \
-    && pip cache purge
+    && pip cache purge \
+    && rm -rf /root/.cache/pip
 
 # Copy application code
 COPY . .
