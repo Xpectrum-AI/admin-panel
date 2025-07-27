@@ -99,7 +99,7 @@ export default function Dashboard() {
     const orgsToRemove = orgs.filter((org: any) => (org.orgId || org.id) !== chosenOrgId);
     try {
       await Promise.all(orgsToRemove.map((org: any) =>
-        removeUserFromOrg(org.orgId || org.id, user.userId)
+        removeUserFromOrg(org.orgId || org.id, user.userId, accessToken)
       ));
       showSuccess('Workspace selected successfully!');
       setShowOrgChoice(false);
