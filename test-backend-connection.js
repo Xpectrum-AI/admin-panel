@@ -6,7 +6,7 @@ function testBackend() {
     
     const options = {
         hostname: 'localhost',
-        port: 8005,
+        port: 8085,
         path: '/',
         method: 'GET'
     };

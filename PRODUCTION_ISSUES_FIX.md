@@ -3,14 +3,14 @@
 ## Issues Identified
 
 ### 1. **Nginx Configuration Port Mismatch**
-- **Problem**: Nginx was trying to connect to backend on port 8085, but Docker containers are running on port 8005
+- **Problem**: Nginx was trying to connect to backend on port 8085, but Docker containers are running on port 8085
 - **Error**: `connect() failed (111: Unknown error) while connecting to upstream`
-- **Fix**: Updated nginx configuration to use correct port 8005
+- **Fix**: Updated nginx configuration to use correct port 8085
 
 ### 2. **Incorrect API Route Proxying**
 - **Problem**: Nginx was stripping `/api` prefix when proxying to backend
 - **Error**: Backend routes mounted at `/api/org` but nginx was proxying to `/`
-- **Fix**: Updated proxy_pass to preserve `/api` prefix: `proxy_pass http://localhost:8005/api/`
+- **Fix**: Updated proxy_pass to preserve `/api` prefix: `proxy_pass http://localhost:8085/api/`
 
 ### 3. **Missing Route Handlers**
 - **Problem**: Nginx wasn't handling `/agents/` and `/stripe/` routes separately
@@ -21,9 +21,9 @@
 The nginx configuration now properly handles:
 
 1. **Calendar API** (`/calendar-api/`) → `localhost:8001/api/v1/`
-2. **Agents API** (`/agents/`) → `localhost:8005/agents/`
-3. **Stripe API** (`/stripe/`) → `localhost:8005/stripe/`
-4. **General API** (`/api/`) → `localhost:8005/api/`
+2. **Agents API** (`/agents/`) → `localhost:8085/agents/`
+3. **Stripe API** (`/stripe/`) → `localhost:8085/stripe/`
+4. **General API** (`/api/`) → `localhost:8085/api/`
 5. **Frontend** (`/`) → `localhost:3000/`
 
 ## Backend Route Structure
@@ -50,7 +50,7 @@ docker-compose ps
 ### Test Direct Connections
 ```bash
 # Test backend
-curl http://localhost:8005/
+curl http://localhost:8085/
 
 # Test calendar backend
 curl http://localhost:8001/api/v1/

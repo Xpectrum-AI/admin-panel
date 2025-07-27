@@ -19,8 +19,8 @@ docker-compose logs frontend --tail=10
 # 3. Test direct connections to containers
 echo "🧪 Testing direct connections..."
 
-echo "Testing backend on port 8005..."
-curl -s http://localhost:8005/ || echo "❌ Backend not responding on port 8005"
+echo "Testing backend on port 8085..."
+curl -s http://localhost:8085/ || echo "❌ Backend not responding on port 8085"
 
 echo "Testing calendar backend on port 8001..."
 curl -s http://localhost:8001/api/v1/ || echo "❌ Calendar backend not responding on port 8001"
@@ -68,7 +68,7 @@ sudo tail -n 10 /var/log/nginx/access.log
 echo "✅ Diagnosis and fix complete!"
 echo ""
 echo "📋 Summary of changes:"
-echo "   - Updated nginx configuration to use correct ports (8005 for backend)"
+echo "   - Updated nginx configuration to use correct ports (8085 for backend)"
 echo "   - Added proper routing for /agents/ and /stripe/ endpoints"
 echo "   - Fixed /api/ proxy_pass to preserve the /api prefix"
 echo "   - Reloaded nginx configuration"
