@@ -15,6 +15,9 @@ RUN npm ci --prefer-offline --no-audit --production=false && \
     npm cache clean --force && \
     rm -rf /root/.npm
 
+# Add cache-busting timestamp
+RUN echo "Build timestamp: $(date +%s)" > .build-timestamp
+
 # Copy source files
 COPY . .
 
