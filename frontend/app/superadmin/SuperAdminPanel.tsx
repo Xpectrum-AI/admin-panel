@@ -9,7 +9,6 @@ import AgentsTab from './AgentsTab';
 import SuperAdminTeamTab from './SuperAdminTeamTab';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useAuthInfo } from '@propelauth/react';
 import { fetchUsersByQuery } from '@/service/userService';
 import { fetchOrgByQuery, inviteUserToOrg, removeUserFromOrg, changeUserRoleInOrg } from '@/service/orgService';
 import { getAllAgents, getTrunks } from '@/service/agentService';
@@ -30,7 +29,6 @@ const tabs = [
 
 export default function SuperAdminPanel() {
     const { showError, showSuccess } = useErrorHandler();
-    const { accessToken } = useAuthInfo();
     const [activeTab, setActiveTab] = useState('Users');
     const [totalUsers, setTotalUsers] = useState<number | null>(null);
     const [totalOrgs, setTotalOrgs] = useState<number | null>(null);
@@ -85,9 +83,8 @@ export default function SuperAdminPanel() {
         if (!mounted) return;
         
         const fetchOrgs = async () => {
-            if (!accessToken) return;
             try {
-                const res = await fetchOrgByQuery({ pageSize: orgPageSize, pageNumber: orgPageNumber }, accessToken);
+                const res = await fetchOrgByQuery({ pageSize: orgPageSize, pageNumber: orgPageNumber });
                 if (mounted) {
                     setOrgs(res.data?.orgs || res.data || []);
                     setTotalOrgs(res.data?.totalOrgs || res.totalOrgs || 0);
@@ -173,15 +170,14 @@ export default function SuperAdminPanel() {
 
     // Fetch super admin team - fixed to prevent infinite loops
     const fetchTeam = useCallback(async () => {
-        if (!accessToken) return;
         try {
-            const team = await fetchUsersInOrg(SUPER_ADMIN_ORG_ID, accessToken);
+            const team = await fetchUsersInOrg(SUPER_ADMIN_ORG_ID);
             setSuperAdminTeam(Array.isArray(team) ? team : team?.users || []);
         } catch (e: any) {
             showError(e.message || "Failed to fetch super admin team");
             setSuperAdminTeam([]);
         }
-    }, [accessToken]);
+    }, []);
 
     useEffect(() => {
         if (activeTab === "Team") {
@@ -191,10 +187,9 @@ export default function SuperAdminPanel() {
 
     // Super Admin Team Handlers
     const handleInviteMember = async (form: { email: string; role: string }) => {
-        if (!accessToken) return;
         setLoadingInvite(true);
         try {
-            await inviteUserToOrg(SUPER_ADMIN_ORG_ID, form.email, form.role, accessToken);
+            await inviteUserToOrg(SUPER_ADMIN_ORG_ID, form.email, form.role);
             showSuccess('Invitation sent successfully!');
             // Refresh team data
             await fetchTeam();
@@ -207,10 +202,9 @@ export default function SuperAdminPanel() {
     };
 
     const handleRemoveUser = async (userId: string, userName: string) => {
-        if (!accessToken) return;
         setLoadingRemove(true);
         try {
-            await removeUserFromOrg(SUPER_ADMIN_ORG_ID, userId, accessToken);
+            await removeUserFromOrg(SUPER_ADMIN_ORG_ID, userId);
             showSuccess(`${userName} has been removed from the super admin team`);
             // Refresh team data
             await fetchTeam();
@@ -223,10 +217,9 @@ export default function SuperAdminPanel() {
     };
 
     const handleChangeRole = async (userId: string, newRole: string, userName: string) => {
-        if (!accessToken) return;
         setLoadingRoleChange(true);
         try {
-            await changeUserRoleInOrg(SUPER_ADMIN_ORG_ID, userId, newRole, accessToken);
+            await changeUserRoleInOrg(SUPER_ADMIN_ORG_ID, userId, newRole);
             showSuccess(`${userName}'s role has been changed to ${newRole}`);
             // Refresh team data
             await fetchTeam();

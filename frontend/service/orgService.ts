@@ -2,13 +2,10 @@ import type { UpdateOrgInput } from './type';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com/api';
 
-export async function createOrg(orgName: string, token: string) {
+export async function createOrg(orgName: string) {
   const response = await fetch(`${API_BASE}/org/create-org`, {
     method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orgName }),
   });
   if (!response.ok) {
@@ -19,13 +16,10 @@ export async function createOrg(orgName: string, token: string) {
   return result.data;
 }
 
-export async function addUserToOrg(orgId: string, userId: string, role: string, token: string) {
+export async function addUserToOrg(orgId: string, userId: string, role: string) {
   const response = await fetch(`${API_BASE}/org/add-user`, {
     method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orgId, userId, role }),
   });
   if (!response.ok) {
@@ -36,13 +30,10 @@ export async function addUserToOrg(orgId: string, userId: string, role: string, 
   return result.data;
 }
 
-export async function inviteUserToOrg(orgId: string, email: string, role: string, token: string) {
+export async function inviteUserToOrg(orgId: string, email: string, role: string) {
   const response = await fetch(`${API_BASE}/org/invite-user`, {
     method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orgId, email, role }),
   });
   if (!response.ok) {
@@ -53,13 +44,10 @@ export async function inviteUserToOrg(orgId: string, email: string, role: string
   return result.data;
 }
 
-export async function fetchUsersInOrg(orgId: string, token: string) {
+export async function fetchUsersInOrg(orgId: string) {
   const response = await fetch(`${API_BASE}/org/fetch-users`, {
     method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orgId }),
   });
   if (!response.ok) {
@@ -70,13 +58,10 @@ export async function fetchUsersInOrg(orgId: string, token: string) {
   return result.data;
 }
 
-export async function fetchPendingInvites(orgId: string, token: string) {
+export async function fetchPendingInvites(orgId: string) {
   const response = await fetch(`${API_BASE}/org/fetch-pending-invites`, {
     method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orgId }),
   });
   if (!response.ok) {
@@ -87,13 +72,10 @@ export async function fetchPendingInvites(orgId: string, token: string) {
   return result.data;
 }
 
-export async function removeUserFromOrg(orgId: string, userId: string, token: string) {
+export async function removeUserFromOrg(orgId: string, userId: string) {
   const response = await fetch(`${API_BASE}/org/remove-user`, {
     method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orgId, userId }),
   });
   if (!response.ok) {
@@ -104,13 +86,10 @@ export async function removeUserFromOrg(orgId: string, userId: string, token: st
   return result.data;
 }
 
-export async function changeUserRoleInOrg(orgId: string, userId: string, role: string, token: string) {
+export async function changeUserRoleInOrg(orgId: string, userId: string, role: string) {
   const response = await fetch(`${API_BASE}/org/change-user-role`, {
     method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orgId, userId, role }),
   });
   if (!response.ok) {
@@ -134,7 +113,7 @@ const ALLOWED_FIELDS: Array<keyof UpdateOrgInput> = [
   'legacyOrgId',
 ];
 
-export async function updateOrg(orgId: string, updates: UpdateOrgInput, token: string): Promise<any> {
+export async function updateOrg(orgId: string, updates: UpdateOrgInput): Promise<any> {
   if (!orgId) {
     throw new Error('Missing orgId');
   }
@@ -160,10 +139,7 @@ export async function updateOrg(orgId: string, updates: UpdateOrgInput, token: s
 
   const response = await fetch(`${API_BASE}/org/update-org`, {
     method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
 
@@ -177,13 +153,10 @@ export async function updateOrg(orgId: string, updates: UpdateOrgInput, token: s
   return result.data;
 }
 
-export async function fetchOrgDetails(orgId: string, token: string) {
+export async function fetchOrgDetails(orgId: string) {
   const response = await fetch(`${API_BASE}/org/fetch-org-details`, {
     method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orgId }),
   });
   if (!response.ok) {
@@ -194,27 +167,30 @@ export async function fetchOrgDetails(orgId: string, token: string) {
   return result.data;
 }
 
-export async function fetchOrgByQuery(query: any, token: string) {
+export async function fetchOrgByQuery(query: any) {
   const response = await fetch(`${API_BASE}/org/fetch-orgs-query`, {
     method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(query),
   });
   if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err.error || 'Failed to fetch organizations');
+    throw new Error('Failed to fetch orgs by query');
   }
-  const result = await response.json();
-  return result.data;
+  return response.json();
 }
 
+// Helper function to get display name from org data (metadata first, then fallback to name)
 export function getOrgDisplayName(orgData: any): string {
-  return orgData?.displayName || orgData?.name || 'Unknown Organization';
+  if (orgData?.metadata?.displayName) {
+    return orgData.metadata.displayName;
+  }
+  return orgData?.name || 'Unnamed Organization';
 }
 
+// Helper function to get description from org data (metadata first, then fallback to description field)
 export function getOrgDescription(orgData: any): string {
+  if (orgData?.metadata?.description) {
+    return orgData.metadata.description;
+  }
   return orgData?.description || 'No description available';
 } 
