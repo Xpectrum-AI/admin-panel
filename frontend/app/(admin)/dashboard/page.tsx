@@ -58,7 +58,6 @@ export default function Dashboard() {
             'Content-Type': 'application/json'
           }
         });
-        console.log('Auth callback successful:', response.data);
         setCallbackCompleted(true);
       } catch (error: any) {
         console.error('Auth callback failed:', error?.response?.data || error?.message || error);

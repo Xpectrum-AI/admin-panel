@@ -175,16 +175,6 @@ async def startup_event():
 #             "error": str(e)
 #         }
 
-@api_v1.get("/auth/google/calendar")
-async def google_calendar_auth():
-    """Get Google OAuth URL for calendar access (when user buys service)""" 
-    return {"auth_url": PROPEL_GOOGLE_CALENDAR_URL, "message": "Calendar access OAuth URL"}
-
-@api_v1.get("/auth/google/redirect")
-async def google_auth_redirect():
-    """Redirect to Google OAuth (for direct browser access)"""
-    return {"auth_url": PROPEL_GOOGLE_URL}
-
 # @api_v1.get("/oauth2callback")
 # async def oauth2callback(request: Request, code: str = None, state: str = None, error: str = None):
 #     """Handle OAuth callback from Google (basic auth)"""
@@ -288,6 +278,11 @@ async def google_auth_redirect():
 #     except Exception as e:
 #         return RedirectResponse(url=f"{FRONTEND_URL}/calendar?error=calendar_server_error")
 
+@api_v1.get("/auth/google/redirect")
+async def google_auth_redirect():
+    """Redirect to Google OAuth (for direct browser access)"""
+    return {"auth_url": "https://auth.admin-test.xpectrum-ai.com/google/login?scope=openid+email+profile&external_param_access_type=offline&external_param_prompt=consent"}
+
 @api_v1.post("/auth/callback")
 async def unified_oauth_callback(request: Request):
     print(f"[DEBUG] Auth callback request received")
@@ -341,8 +336,7 @@ async def unified_oauth_callback(request: Request):
 @api_v1.post("/buy-service")
 async def buy_service(request: Request):
     """Simulate user buying calendar service - redirect to calendar OAuth"""
-    auth_data = await google_calendar_auth()
-    return {"redirect_url": auth_data["auth_url"], "message": "Redirecting to Google for calendar access"}
+    return {"redirect_url": "https://auth.admin-test.xpectrum-ai.com/google/login?scope=openid%20https://www.googleapis.com/auth/userinfo.email%20https://www.googleapis.com/auth/userinfo.profile%20https://www.googleapis.com/auth/calendar%20https://www.googleapis.com/auth/calendar.events&external_param_access_type=offline&external_param_prompt=consent", "message": "Redirecting to Google for calendar access"}
 
 @api_v1.post("/update-user-names")
 async def update_user_names(request: Request, name_data: dict):
