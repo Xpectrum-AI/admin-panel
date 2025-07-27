@@ -6,7 +6,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install production dependencies only
-RUN npm ci --only=production --prefer-offline --no-audit
+RUN npm ci --only=production --prefer-offline --no-audit && \
+    npm cache clean --force
 
 # Copy source code
 COPY . .
