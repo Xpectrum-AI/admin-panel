@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Update nginx configuration on production server
+# Update nginx configuration for production
 echo "Updating nginx configuration..."
 
 # Copy the updated nginx config
@@ -13,22 +13,10 @@ sudo nginx -t
 if [ $? -eq 0 ]; then
     echo "Nginx configuration is valid. Reloading nginx..."
     sudo systemctl reload nginx
-    echo "Nginx reloaded successfully!"
+    echo "Nginx configuration updated successfully!"
 else
-    echo "Nginx configuration test failed!"
+    echo "Nginx configuration test failed. Please check the configuration."
     exit 1
 fi
 
-# Check if containers are running
-echo "Checking Docker containers..."
-docker-compose ps
-
-# Test the backend connection
-echo "Testing backend connection..."
-curl -s http://localhost:8085/ || echo "Backend not responding on port 8085"
-
-# Test calendar backend connection
-echo "Testing calendar backend connection..."
-curl -s http://localhost:8001/api/v1/ || echo "Calendar backend not responding on port 8001"
-
-echo "Update complete!" 
+echo "Nginx configuration update completed!" 

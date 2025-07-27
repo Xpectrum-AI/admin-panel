@@ -16,7 +16,7 @@ const orgRoutes = require('./routes/orgRoutes');
 const userRoutes = require('./routes/userRoutes');
 
 // Use routes
-app.use('/agents', agentRoutes);
+app.use('/api/agents', agentRoutes);
 app.use('/stripe', stripeRoutes);
 app.use('/api/org', orgRoutes);
 app.use('/api/user', userRoutes);
@@ -26,7 +26,7 @@ app.get('/', (req, res) => {
         message: 'Xpectrum AI Agent Management API',
         version: '1.0.0',
         endpoints: {
-            agents: '/agents',
+            agents: '/api/agents',
             stripe: '/stripe',
             organization: '/api/org'
         }
