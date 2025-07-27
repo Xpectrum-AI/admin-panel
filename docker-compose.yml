@@ -27,6 +27,8 @@ services:
       - MONGODB_URI=${MONGODB_URI}
       - JWT_SECRET=${JWT_SECRET}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - PROPELAUTH_API_KEY=${PROPELAUTH_API_KEY}
+      - PROPELAUTH_AUTH_URL=${PROPELAUTH_AUTH_URL:-https://auth.admin-test.xpectrum-ai.com}
     restart: unless-stopped
 
   calendar-backend:
