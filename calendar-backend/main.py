@@ -398,12 +398,17 @@ async def get_current_user(request: Request):
     if not user_data:
         raise HTTPException(status_code=401, detail="User not found")
     
-    # Use custom first/last name if available, otherwise use Google name
-    display_user = user_data["user_info"].copy()
-    
-    # Ensure the user ID is correctly set
-    display_user["id"] = user_data["user_id"]  # Use the stored user_id
-    display_user["user_id"] = user_data["user_id"]  # Also include user_id for compatibility
+    # Create display user object with available data
+    display_user = {
+        "id": user_data["user_id"],
+        "user_id": user_data["user_id"],
+        "email": user_data.get("email", ""),
+        "name": user_data.get("name", ""),
+        "picture": user_data.get("picture", ""),
+        "first_name": user_data.get("first_name", ""),
+        "last_name": user_data.get("last_name", ""),
+        "has_custom_name": False
+    }
     
     if user_data.get("first_name") and user_data.get("last_name"):
         display_user["name"] = f"{user_data['first_name']} {user_data['last_name']}"
