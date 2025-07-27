@@ -12,11 +12,11 @@ RUN npm ci --only=production --prefer-offline --no-audit
 COPY . .
 
 # Expose the port the app runs on
-EXPOSE 5000
+EXPOSE 8005
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV PORT=5000
+ENV PORT=8005
 
 # Start the application
 CMD ["node", "src/server.js"] 
