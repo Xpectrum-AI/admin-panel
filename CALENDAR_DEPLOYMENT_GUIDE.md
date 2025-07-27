@@ -94,7 +94,7 @@ Before starting the deployment, ensure you have the following installed:
 After successful deployment, your services will be available at:
 
 - **Frontend:** http://localhost:3000
-- **Backend:** http://localhost:8005
+- **Backend:** http://localhost:8085
 - **Calendar Backend:** http://localhost:8001
 - **Calendar API Docs:** http://localhost:8001/docs
 

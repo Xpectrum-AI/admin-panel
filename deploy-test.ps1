@@ -81,7 +81,7 @@ Write-Host "🎉 Test deployment completed successfully!" -ForegroundColor Green
 Write-Host ""
 Write-Host "📋 Test Environment Service URLs:" -ForegroundColor Cyan
 Write-Host "   - Frontend: http://localhost:3000" -ForegroundColor White
-Write-Host "   - Backend: http://localhost:8005" -ForegroundColor White
+Write-Host "   - Backend: http://localhost:8085" -ForegroundColor White
 Write-Host "   - Calendar Backend: http://localhost:8001" -ForegroundColor White
 Write-Host "   - Calendar API Docs: http://localhost:8001/docs" -ForegroundColor White
 Write-Host ""
