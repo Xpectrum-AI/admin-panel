@@ -25,7 +25,7 @@ docker-compose ps
 
 # Test the backend connection
 echo "Testing backend connection..."
-curl -s http://localhost:8005/ || echo "Backend not responding on port 8005"
+curl -s http://localhost:8085/ || echo "Backend not responding on port 8085"
 
 # Test calendar backend connection
 echo "Testing calendar backend connection..."
