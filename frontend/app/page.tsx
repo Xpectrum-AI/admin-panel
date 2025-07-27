@@ -1,7 +1,7 @@
 "use client";  // ← makes this a Client Component
 
 import { useEffect } from "react";
-import { useAuthInfo, useRedirectFunctions } from "@propelauth/react";
+import { useAuthInfo } from "@propelauth/react";
 import { useRouter } from "next/navigation";
 import {SyncLoader} from "react-spinners";
 
@@ -10,7 +10,6 @@ const SUPER_ADMIN_ORG_ID = "c53e8731-2ce7-4484-919c-0aba50c2f46a"; // your org I
 export default function Home() {
   const { user, loading , orgHelper} = useAuthInfo();
   const router = useRouter();
-  const {redirectToLoginPage} = useRedirectFunctions();
 
   useEffect(() => {
     if (loading) return;
@@ -23,7 +22,7 @@ export default function Home() {
       router.push("/dashboard");
       }
     } else {
-      window.location.href = "/api/auth/login";
+      window.location.href = "/login";
     }
   }, [user, loading, router]);
 
