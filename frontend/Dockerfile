@@ -8,13 +8,15 @@ RUN npm config set registry https://registry.npmjs.org/ && \
     npm config set fetch-retry-maxtimeout 120000
 
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --prefer-offline --no-audit && \
+    npm cache clean --force
 
 # Add timestamp to force cache invalidation for source files
 RUN echo "Build timestamp: $(date)" > .build-timestamp
 
 COPY . .
-RUN npm run build
+RUN npm run build && \
+    rm -rf node_modules
 
 # Production stage
 FROM node:20-alpine AS runner
