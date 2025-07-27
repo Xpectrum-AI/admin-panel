@@ -32,6 +32,15 @@ export interface UpdateServiceData {
 }
 
 export const calendarServiceAPI = {
+
+  async login(): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE}/auth/google/redirect`);
+      return await response.json();
+    } catch (error) {
+      return { success: false, error: 'Failed to login' };
+    }
+  },
   // Fetch all calendar services
   async getServices(token: string): Promise<{ success: boolean; calendars?: any[]; events?: any[]; timezone?: string; error?: string }> {
     try {

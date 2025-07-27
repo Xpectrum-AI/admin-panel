@@ -8,7 +8,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { loading, user } = useAuthInfo();
   useEffect(() => {
     if (!loading && !user) {
-      window.location.href = "/api/auth/login";
+      window.location.href = "/login";
     }
   }, [loading, user]);
 
