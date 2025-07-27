@@ -13,9 +13,9 @@ const port = process.env.PORT || 8000;  // Default: 8000
 ```yaml
 backend:
   ports:
-    - "8005:8005"  # Host:Container
+    - "8085:8085"  # Host:Container
   environment:
-    - PORT=8005
+          - PORT=8085
 ```
 
 #### **Production docker-compose.production.yml**
@@ -43,13 +43,13 @@ PORT=8085
 
 ### **4. Current Running Containers (from your logs)**
 ```
-backend_1           | 🚀 Server running on port 8005
+backend_1           | 🚀 Server running on port 8085
 ```
 
 ## 🔍 **Analysis Results**
 
 ### **What's Actually Running:**
-- ✅ **Backend**: Port **8005** (from regular docker-compose.yml)
+- ✅ **Backend**: Port **8085** (from regular docker-compose.yml)
 - ✅ **Frontend**: Port **3000**
 - ✅ **Calendar Backend**: Port **8001**
 
@@ -64,12 +64,12 @@ You're running the **regular docker-compose.yml** instead of the **production do
 
 ### **Current Setup:**
 - Using: `docker-compose up` (regular config)
-- Backend running on: **8005**
+- Backend running on: **8085**
 - Nginx trying to proxy to: **8085** (production config)
 
 ### **Solution Options:**
 
-#### **Option 1: Update nginx to use port 8005 (Quick Fix)**
+#### **Option 1: Update nginx to use port 8085 (Quick Fix)**
 ```bash
 sudo nano /etc/nginx/sites-available/admin-test.xpectrum-ai.com
 ```
@@ -82,7 +82,7 @@ location /api/ {
 To:
 ```nginx
 location /api/ {
-    proxy_pass http://localhost:8005/;  # ✅ Correct
+    proxy_pass http://localhost:8085/;  # ✅ Correct
 }
 ```
 
@@ -100,7 +100,7 @@ docker-compose -f docker-compose.production.yml up -d
 | Environment | Backend Port | Frontend Port | Calendar Port |
 |-------------|--------------|---------------|---------------|
 | **Local** | 8000 | 3000 | 8001 |
-| **Production (Current)** | 8005 | 3000 | 8001 |
+| **Production (Current)** | 8085 | 3000 | 8001 |
 | **Production (Should be)** | 8085 | 3000 | 8001 |
 
 ## 🎯 **Recommendation**
