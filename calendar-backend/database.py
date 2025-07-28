@@ -286,6 +286,4 @@ async def get_user_oauth_tokens_from_propelauth(user_id: str):
             raise
         except Exception as e:
             print(f"Unexpected error in PropelAuth API call: {e}")
-            raise 
-
-    
+            raise    

@@ -78,11 +78,11 @@ const BillingPage = () => {
   const [checkoutForm, setCheckoutForm] = useState({
     customer: '',
     price_id: '',
-    success_url: 'http://localhost:3000/billing/success',
-    cancel_url: 'http://localhost:3000/billing/cancel'
+    success_url: 'https://admin-test.xpectrum-ai.com/billing/success',
+    cancel_url: 'https://admin-test.xpectrum-ai.com/billing/cancel'
   });
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com/api';
   const API_KEY = 'xpectrum-ai@123';
 
   const headers = {
@@ -217,8 +217,8 @@ const BillingPage = () => {
         setCheckoutForm({
           customer: '',
           price_id: '',
-          success_url: 'http://localhost:3000/billing/success',
-          cancel_url: 'http://localhost:3000/billing/cancel'
+          success_url: 'https://admin-test.xpectrum-ai.com/billing/success',
+          cancel_url: 'https://admin-test.xpectrum-ai.com/billing/cancel'
         });
         // Redirect to Stripe Checkout
         window.location.href = data.session.url;
