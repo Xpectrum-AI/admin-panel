@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 
-const LIVE_API_BASE_URL = 'https://live.xpectrum-ai.com';
+const LIVE_API_BASE_URL = 'https://multiagents.livekit.xpectrum-ai.com';
 const LIVE_API_KEY = 'xpectrum-ai@123';
 
 async function testLiveAPI() {

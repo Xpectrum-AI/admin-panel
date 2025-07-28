@@ -1,6 +1,7 @@
 // app/layout.tsx
 import { AuthProviderWrapper } from "./(admin)/auth/AuthProviderWrapper";
 import { ErrorProvider } from "./(admin)/contexts/ErrorContext";
+import { ErrorBoundary } from "./(admin)/components/ErrorBoundary";
 import "./globals.css";
 import React from "react";
 
@@ -9,18 +10,17 @@ export const metadata = {
   description: "My description",
 };
 
-
-
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
+        <ErrorBoundary>
           <AuthProviderWrapper>
             <ErrorProvider>
-                {children}             
+              {children}             
             </ErrorProvider>
           </AuthProviderWrapper>
+        </ErrorBoundary>
       </body>
     </html>
   );

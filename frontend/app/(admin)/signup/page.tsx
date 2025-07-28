@@ -23,7 +23,8 @@ export default function SignUp() {
   const { showError, showSuccess } = useErrorHandler();
 
   const handleGoogleSignUp = () => {
-    window.location.href = "/api/auth/login";
+    window.location.href = "https://auth.admin-test.xpectrum-ai.com/google/login?scope=openid+email+profile&external_param_access_type=offline&external_param_prompt=consent";
+    showSuccess('Redirecting to OAuth login');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

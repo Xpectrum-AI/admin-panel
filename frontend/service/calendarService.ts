@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8001/api/v1';
+const API_BASE = process.env.NEXT_PUBLIC_CALENDAR_API_URL || 'https://admin-test.xpectrum-ai.com/calendar-api';
 
 export interface CalendarService {
   id: string;
@@ -32,6 +32,15 @@ export interface UpdateServiceData {
 }
 
 export const calendarServiceAPI = {
+
+  async login(): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE}/auth/google/redirect`);
+      return await response.json();
+    } catch (error) {
+      return { success: false, error: 'Failed to login' };
+    }
+  },
   // Fetch all calendar services
   async getServices(token: string): Promise<{ success: boolean; calendars?: any[]; events?: any[]; timezone?: string; error?: string }> {
     try {
