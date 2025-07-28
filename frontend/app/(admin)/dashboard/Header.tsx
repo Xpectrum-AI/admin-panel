@@ -90,27 +90,6 @@ export default function Header() {
                   <Building2 className="h-5 w-5 mr-3" />
                   Workspace
                 </Link>
-                <Link
-                  href="/calendar"
-                  className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
-                >
-                  <Calendar className="h-5 w-5 mr-3" />
-                  Services
-                </Link>
-                <Link
-                  href="/agents"
-                  className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
-                >
-                  <Bot className="h-5 w-5 mr-3" />
-                  Agent Management
-                </Link>
-                {/* <Link
-                  href="/services"
-                  className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
-                >
-                  <Calendar className="h-5 w-5 mr-3" />
-                  Calendar Services
-                </Link> */}
                 {/* <Link
                   href="/billing"
                   className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
