@@ -16,7 +16,7 @@ from auth_utils import verify_propelauth_jwt
 
 # Load environment variables
 load_dotenv()
-load_dotenv("env_config.txt")  # Load from our custom config file
+load_dotenv("env.local")  # Load from our custom config file
 
 app = FastAPI(title="Google OAuth 2.0 API with MongoDB", version="1.0.0")
 
@@ -486,10 +486,6 @@ async def unified_oauth_callback(request: Request):
                 print(f"[DEBUG] No Google OAuth tokens found")
                 return {"error": "not_logged_in_with_google", "message": "User is not logged in with Google."}
 
-     
-
-        # Store everything in DB
-        await user_db.store_user_tokens(user_info, propelauth_tokens.get("google"), GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, has_calendar_access=False)
             print(f"[DEBUG] Google OAuth tokens found")
 
             # Store everything in DB
@@ -510,7 +506,7 @@ async def unified_oauth_callback(request: Request):
 @api_v1.post("/buy-service")
 async def buy_service(request: Request):
     """Simulate user buying calendar service - redirect to calendar OAuth"""
-    return {"redirect_url": "https://auth.admin-test.xpectrum-ai.com/google/login?scope=openid%20https://www.googleapis.com/auth/userinfo.email%20https://www.googleapis.com/auth/userinfo.profile%20https://www.googleapis.com/auth/calendar%20https://www.googleapis.com/auth/calendar.events&external_param_access_type=offline&external_param_prompt=consent", "message": "Redirecting to Google for calendar access"}
+    return {"redirect_url": "https://181249979.propelauthtest.com/google/login?scope=openid%20https://www.googleapis.com/auth/userinfo.email%20https://www.googleapis.com/auth/userinfo.profile%20https://www.googleapis.com/auth/calendar%20https://www.googleapis.com/auth/calendar.events&external_param_access_type=offline&external_param_prompt=consent", "message": "Redirecting to Google for calendar access"}
 
 @api_v1.post("/update-user-names")
 async def update_user_names(request: Request, name_data: dict):

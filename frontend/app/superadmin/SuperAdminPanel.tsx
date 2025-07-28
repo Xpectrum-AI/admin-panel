@@ -15,8 +15,7 @@ import { getAllAgents, getTrunks } from '@/service/agentService';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { fetchUsersInOrg } from '@/service/orgService';
 
-//const SUPER_ADMIN_ORG_ID = "c53e8731-2ce7-4484-919c-0aba50c2f46a"; // Use your actual org ID
-const SUPER_ADMIN_ORG_ID = "7f4f4566-0435-42d0-ab5f-80c6018f625b";
+const SUPER_ADMIN_ORG_ID = process.env.SUPER_ADMIN_ORG_ID;
 
 const tabs = [
     'Users',

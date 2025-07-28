@@ -23,7 +23,7 @@ export default function SignUp() {
   const { showError, showSuccess } = useErrorHandler();
 
   const handleGoogleSignUp = () => {
-    window.location.href = "https://auth.admin-test.xpectrum-ai.com/google/login?scope=openid+email+profile&external_param_access_type=offline&external_param_prompt=consent";
+    window.location.href = "https://181249979.propelauthtest.com/google/login?scope=openid+email+profile&external_param_access_type=offline&external_param_prompt=consent"
     showSuccess('Redirecting to OAuth login');
   };
 

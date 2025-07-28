@@ -1,4 +1,5 @@
 // Example: User service API calls
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 export async function getUser(userId: string) {
   // Placeholder for user fetching logic
@@ -12,7 +13,7 @@ export async function fetchUserMailApi(email: string, includeOrgs: boolean) {
     email,
     includeOrgs: includeOrgs ? 'true' : 'false',
   });
-  const res = await fetch(`/api/user/fetch-user-mail?${params.toString()}`, {
+  const res = await fetch(`${API_BASE}/api/user/fetch-user-mail?${params.toString()}`, {
     method: 'GET',
   });
   if (!res.ok) {
@@ -28,8 +29,7 @@ export async function createUser({ email, password, firstName, lastName, usernam
   lastName: string;
   username: string;
 }) {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com/api';
-  const response = await fetch(`${API_BASE}/user/create-user`, {
+  const response = await fetch(`${API_BASE}/api/user/create-user`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password, firstName, lastName, username }),
@@ -39,8 +39,7 @@ export async function createUser({ email, password, firstName, lastName, usernam
 }
 
 export async function fetchUsersByQuery(query: any) {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com/api';
-  const response = await fetch(`${API_BASE}/user/fetch-users-query`, {
+  const response = await fetch(`${API_BASE}/api/user/fetch-users-query`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(query),

@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config({ path: './env.local' });
 
 // Now add CORS, express.json, and all other middleware/routes below
 const cors = require('cors');
