@@ -32,6 +32,9 @@ RUN pip install --no-cache-dir --upgrade pip \
 # Copy application code
 COPY . .
 
+# Copy production environment file
+COPY env_config.txt .env
+
 # Create non-root user for security
 RUN adduser --disabled-password --gecos '' appuser \
     && chown -R appuser:appuser /app

@@ -10,8 +10,8 @@ CALENDAR_REDIRECT_URI=https://admin-test.xpectrum-ai.com/calendar-api/oauth2call
 # Server Configuration
 SERVER_HOST=0.0.0.0
 SERVER_PORT=8001
-DEBUG_MODE=true
-SECRET_KEY=your_secret_key_for_sessions_change_this_in_production
+DEBUG_MODE=false
+SECRET_KEY=prod_secret_key_2024_admin_panel
 
 # API Configuration
 API_VERSION=v1
@@ -54,14 +54,14 @@ MAX_CALENDAR_EVENTS=10
 TIMEZONE_OPTIONS=IST:Asia/Kolkata,EST:America/New_York,PST:America/Los_Angeles
 
 # CORS Configuration
-CORS_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:5173
+CORS_ORIGINS=https://admin-test.xpectrum-ai.com,https://auth.admin-test.xpectrum-ai.com
 
 # Logging Configuration
-LOG_LEVEL=debug
+LOG_LEVEL=info
 ENABLE_LOGGING=true
 
 # Security Configuration
-JWT_SECRET=your_jwt_secret_change_this_in_production
+JWT_SECRET=prod_jwt_secret_2024_admin_panel
 BCRYPT_ROUNDS=12
 
 # Rate Limiting

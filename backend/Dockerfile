@@ -14,6 +14,9 @@ RUN npm ci --only=production --prefer-offline --no-audit && \
 # Copy source code
 COPY . .
 
+# Copy production environment file
+COPY env.production .env.production
+
 # Expose the port the app runs on
 EXPOSE 8085
 
