@@ -11,7 +11,7 @@ import time
 
 # Load environment variables
 load_dotenv()
-load_dotenv("env_config.txt")  # Load from our custom config file
+load_dotenv("env.local")  # Load from our custom config file
 
 class MongoDB:
     client: Optional[AsyncIOMotorClient] = None
