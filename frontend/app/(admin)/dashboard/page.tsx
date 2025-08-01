@@ -15,7 +15,7 @@ import OrgSetup from '../components/OrgSetup';
 import { removeUserFromOrg } from '@/service/orgService';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_CALENDAR_API_URL || 'http://localhost:8001/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_CALENDAR_API_URL || 'https://admin-test.xpectrum-ai.com/calendar-api'; 
 
 export default function Dashboard() {
   const { accessToken, user, loading, orgHelper } = useAuthInfo();
@@ -46,16 +46,22 @@ export default function Dashboard() {
   useEffect(() => {
     const callAuthCallback = async () => {
       if (!accessToken) {
-        setCallbackCompleted(true); // <-- Fix: mark as complete even if not logged in
+        setCallbackCompleted(true);
         return;
       }
       try {
-        await axios.post(`${API_BASE_URL}/auth/callback`, {
+        const response = await axios.post(`${API_BASE_URL}/auth/callback`, {
           access_token: accessToken
+        }, {
+          timeout: 10000, // 10 second timeout
+          headers: {
+            'Content-Type': 'application/json'
+          }
         });
         setCallbackCompleted(true);
-      } catch (error) {
-        console.error('Auth callback failed:', error);
+      } catch (error: any) {
+        console.error('Auth callback failed:', error?.response?.data || error?.message || error);
+        // Don't fail the entire app if auth callback fails
         setCallbackCompleted(true);
       }
     };
@@ -65,13 +71,20 @@ export default function Dashboard() {
   useEffect(() => {
     const checkWelcome = async () => {
       if (!accessToken) {
-        setCallbackCompleted(true); // <-- Fix: mark as complete even if not logged in
+        setCallbackCompleted(true);
         return;
       }
-      const res = await axios.get(`${API_BASE_URL}/welcome-form/status`, {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
-      setShowWelcome(!res.data.has_completed_welcome_form);
+      try {
+        const res = await axios.get(`${API_BASE_URL}/welcome-form/status`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          timeout: 10000 // 10 second timeout
+        });
+        setShowWelcome(!res.data.has_completed_welcome_form);
+      } catch (error: any) {
+        console.error('Welcome form status check failed:', error?.response?.data || error?.message || error);
+        // Default to not showing welcome form if check fails
+        setShowWelcome(false);
+      }
     };
     checkWelcome();
   }, [accessToken]);

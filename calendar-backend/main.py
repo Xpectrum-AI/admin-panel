@@ -58,6 +58,17 @@ CORS_ORIGINS = os.getenv("CORS_ORIGINS").split(",")
 # Create API router with configurable prefix
 api_v1 = APIRouter(prefix=API_PREFIX)
 
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for load balancer"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "service": "calendar-backend",
+        "version": "1.0.0"
+    }
+
 # Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
@@ -164,16 +175,6 @@ async def startup_event():
 #             "error": str(e)
 #         }
 
-@api_v1.get("/auth/google/calendar")
-async def google_calendar_auth():
-    """Get Google OAuth URL for calendar access (when user buys service)""" 
-    return {"auth_url": PROPEL_GOOGLE_CALENDAR_URL, "message": "Calendar access OAuth URL"}
-
-@api_v1.get("/auth/google/redirect")
-async def google_auth_redirect():
-    """Redirect to Google OAuth (for direct browser access)"""
-    return {"auth_url": PROPEL_GOOGLE_URL}
-
 # @api_v1.get("/oauth2callback")
 # async def oauth2callback(request: Request, code: str = None, state: str = None, error: str = None):
 #     """Handle OAuth callback from Google (basic auth)"""
@@ -277,43 +278,65 @@ async def google_auth_redirect():
 #     except Exception as e:
 #         return RedirectResponse(url=f"{FRONTEND_URL}/calendar?error=calendar_server_error")
 
+@api_v1.get("/auth/google/redirect")
+async def google_auth_redirect():
+    """Redirect to Google OAuth (for direct browser access)"""
+    return {"auth_url": "https://auth.admin-test.xpectrum-ai.com/google/login?scope=openid+email+profile&external_param_access_type=offline&external_param_prompt=consent"}
+
 @api_v1.post("/auth/callback")
 async def unified_oauth_callback(request: Request):
-    data = await request.json()
-    access_token = data.get("access_token")
-    service = data.get("service")
-    if not access_token:
-        return {"error": "no_access_token", "message": "No access token provided."}
+    print(f"[DEBUG] Auth callback request received")
+    
     try:
-        # Fetch user info
-        async with httpx.AsyncClient() as client:
-            headers = {"Authorization": f"Bearer {access_token}"}
-            user_response = await client.get(PROPEL_USER_INFO_URL, headers=headers)
-            user_response.raise_for_status()
-            user_info = user_response.json()
+        data = await request.json()
+        access_token = data.get("access_token")
+        service = data.get("service")
+        
+        print(f"[DEBUG] Access token provided: {bool(access_token)}")
+        print(f"[DEBUG] Service: {service}")
+        
+        if not access_token:
+            print(f"[DEBUG] No access token provided")
+            return {"error": "no_access_token", "message": "No access token provided."}
+        
+        try:
+            # Fetch user info
+            async with httpx.AsyncClient() as client:
+                headers = {"Authorization": f"Bearer {access_token}"}
+                print(f"[DEBUG] Fetching user info from PropelAuth")
+                user_response = await client.get(PROPEL_USER_INFO_URL, headers=headers)
+                user_response.raise_for_status()
+                user_info = user_response.json()
+                print(f"[DEBUG] User info fetched successfully for user: {user_info.get('user_id', 'unknown')}")
 
-        # Get additional tokens from PropelAuth if needed
-        propelauth_tokens = await get_user_oauth_tokens_from_propelauth(user_info["user_id"])
-        if not propelauth_tokens or "google" not in propelauth_tokens:
-            return {"error": "not_logged_in_with_google", "message": "User is not logged in with Google."}
+            # Get additional tokens from PropelAuth if needed
+            print(f"[DEBUG] Getting OAuth tokens from PropelAuth")
+            propelauth_tokens = await get_user_oauth_tokens_from_propelauth(user_info["user_id"])
+            if not propelauth_tokens or "google" not in propelauth_tokens:
+                print(f"[DEBUG] No Google OAuth tokens found")
+                return {"error": "not_logged_in_with_google", "message": "User is not logged in with Google."}
 
-     
+            print(f"[DEBUG] Google OAuth tokens found")
 
-        # Store everything in DB
-        await user_db.store_user_tokens(user_info, propelauth_tokens.get("google"), GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, has_calendar_access=False)
+            # Store everything in DB
+            print(f"[DEBUG] Storing user tokens in database")
+            await user_db.store_user_tokens(user_info, propelauth_tokens.get("google"), GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, has_calendar_access=False)
 
-        # Return success message and user id
-        return {"success": True, "user_id": user_info["user_id"], "message": "User authenticated and tokens stored."}
+            # Return success message and user id
+            print(f"[DEBUG] Auth callback completed successfully")
+            return {"success": True, "user_id": user_info["user_id"], "message": "User authenticated and tokens stored."}
+        except Exception as e:
+            print(f"[DEBUG] OAuth callback error: {e}")
+            return {"error": "server_error", "message": "An error occurred during OAuth callback."}
     except Exception as e:
-        print(f"OAuth callback error: {e}")
-        return {"error": "server_error", "message": "An error occurred during OAuth callback."}
+        print(f"[DEBUG] Request parsing error: {e}")
+        return {"error": "invalid_request", "message": "Invalid request format."}
     
     
 @api_v1.post("/buy-service")
 async def buy_service(request: Request):
     """Simulate user buying calendar service - redirect to calendar OAuth"""
-    auth_data = await google_calendar_auth()
-    return {"redirect_url": auth_data["auth_url"], "message": "Redirecting to Google for calendar access"}
+    return {"redirect_url": "https://auth.admin-test.xpectrum-ai.com/google/login?scope=openid%20https://www.googleapis.com/auth/userinfo.email%20https://www.googleapis.com/auth/userinfo.profile%20https://www.googleapis.com/auth/calendar%20https://www.googleapis.com/auth/calendar.events&external_param_access_type=offline&external_param_prompt=consent", "message": "Redirecting to Google for calendar access"}
 
 @api_v1.post("/update-user-names")
 async def update_user_names(request: Request, name_data: dict):
@@ -691,18 +714,36 @@ async def get_calendar_access(request: Request):
 @api_v1.get("/welcome-form/status")
 async def get_welcome_form_status(request: Request):
     """Check if user has completed the welcome form"""
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="No token provided")
-    jwt_token = auth_header.split(" ")[1]
-    try:
-        jwt_payload = verify_propelauth_jwt(jwt_token)
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=str(e))
-    user_id = jwt_payload["user_id"]
+    print(f"[DEBUG] Welcome form status request received")
     
-    has_completed = await user_db.has_completed_welcome_form(user_id)
-    return {"has_completed_welcome_form": has_completed}
+    try:
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            print(f"[DEBUG] No Authorization header found")
+            raise HTTPException(status_code=401, detail="No token provided")
+        
+        jwt_token = auth_header.split(" ")[1]
+        try:
+            jwt_payload = verify_propelauth_jwt(jwt_token)
+            print(f"[DEBUG] JWT verified for user: {jwt_payload.get('user_id', 'unknown')}")
+        except Exception as e:
+            print(f"[DEBUG] JWT verification failed: {str(e)}")
+            raise HTTPException(status_code=401, detail=str(e))
+        
+        user_id = jwt_payload["user_id"]
+        print(f"[DEBUG] Checking welcome form status for user: {user_id}")
+        
+        try:
+            has_completed = await user_db.has_completed_welcome_form(user_id)
+            print(f"[DEBUG] Welcome form completed: {has_completed}")
+            return {"has_completed_welcome_form": has_completed}
+        except Exception as e:
+            print(f"[DEBUG] Error checking welcome form status: {str(e)}")
+            # Return a default response instead of throwing an error
+            return {"has_completed_welcome_form": False}
+    except Exception as e:
+        print(f"[DEBUG] Unexpected error in welcome form status: {str(e)}")
+        return {"has_completed_welcome_form": False}
 
 @api_v1.post("/welcome-form/submit")
 async def submit_welcome_form(request: Request):
@@ -724,6 +765,7 @@ async def submit_welcome_form(request: Request):
         "message": "Welcome form submitted successfully",
         "welcome_form_data": form_data
     }
+
 
 # Include the API router
 app.include_router(api_v1)

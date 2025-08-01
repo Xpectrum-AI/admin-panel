@@ -1,4 +1,4 @@
-const API_KEY = process.env.API_KEY || 'xpectrum-ai@123';
+const API_KEY = 'xpectrum-ai@123';
 
 const authenticateApiKey = (req, res, next) => {
   const apiKey = req.headers['x-api-key'];

@@ -7,7 +7,7 @@ import { SyncLoader } from 'react-spinners';
 import {UserPen, UserCheck, Trash, Plus} from "lucide-react";
 import Module from 'module';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_CALENDAR_API_URL || 'http://localhost:8001/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_CALENDAR_API_URL || 'https://admin-test.xpectrum-ai.com/calendar-api';
 
 const initialDoctorProfile = {
   first_name: '',
