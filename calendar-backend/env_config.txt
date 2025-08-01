@@ -4,14 +4,14 @@
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID=441654168539-9tfk7ibkt2r9tbsoohpjjfmjjn8u4lf0.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=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
-REDIRECT_URI=http://localhost:8001/api/v1/oauth2callback
-CALENDAR_REDIRECT_URI=http://localhost:8001/api/v1/calendar/oauth2callback
+REDIRECT_URI=https://admin-test.xpectrum-ai.com/calendar-api/oauth2callback
+CALENDAR_REDIRECT_URI=https://admin-test.xpectrum-ai.com/calendar-api/oauth2callback
 
 # Server Configuration
 SERVER_HOST=0.0.0.0
 SERVER_PORT=8001
-DEBUG_MODE=true
-SECRET_KEY=your_secret_key_for_sessions_change_this_in_production
+DEBUG_MODE=false
+SECRET_KEY=prod_secret_key_2024_admin_panel
 
 # API Configuration
 API_VERSION=v1
@@ -27,18 +27,18 @@ USER_TOKENS_COLLECTION=user_tokens
 SESSIONS_COLLECTION=sessions
 
 # External Service URLs
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=https://admin-test.xpectrum-ai.com
 GOOGLE_AUTH_URL=https://accounts.google.com/o/oauth2/auth
 GOOGLE_TOKEN_URL=https://oauth2.googleapis.com/token
 GOOGLE_CALENDAR_API_URL=https://www.googleapis.com/calendar/v3
 
 # PropelAuth Configuration
-PROPELAUTH_URL=https://181249979.propelauthtest.com
+PROPELAUTH_URL=https://auth.admin-test.xpectrum-ai.com
 PROPELAUTH_API_KEY=ad39ddd2967143bea4f4405e5f6dc4d0f5183c63a027add992e99a71cd80ab6c1ce07889f5ee6364f21abb40c827d29c
-PROPEL_TOKEN_URL=https://181249979.propelauthtest.com/propelauth/oauth/token
-PROPEL_USER_INFO_URL=https://181249979.propelauthtest.com/propelauth/oauth/userinfo
-PROPEL_GOOGLE_URL=https://181249979.propelauthtest.com/google/login?scope=openid+email+profile&external_param_access_type=offline&external_param_prompt=consent
-PROPEL_GOOGLE_CALENDAR_URL=https://181249979.propelauthtest.com/google/login?scope=openid%20https://www.googleapis.com/auth/userinfo.email%20https://www.googleapis.com/auth/userinfo.profile%20https://www.googleapis.com/auth/calendar%20https://www.googleapis.com/auth/calendar.events&external_param_access_type=offline&external_param_prompt=consent
+PROPEL_TOKEN_URL=https://auth.admin-test.xpectrum-ai.com/propelauth/oauth/token
+PROPEL_USER_INFO_URL=https://auth.admin-test.xpectrum-ai.com/propelauth/oauth/userinfo
+PROPEL_GOOGLE_URL=https://auth.admin-test.xpectrum-ai.com/google/login?scope=openid+email+profile&external_param_access_type=offline&external_param_prompt=consent
+PROPEL_GOOGLE_CALENDAR_URL=https://auth.admin-test.xpectrum-ai.com/google/login?scope=openid%20https://www.googleapis.com/auth/userinfo.email%20https://www.googleapis.com/auth/userinfo.profile%20https://www.googleapis.com/auth/calendar%20https://www.googleapis.com/auth/calendar.events&external_param_access_type=offline&external_param_prompt=consent
 
 # OAuth Scopes
 BASIC_SCOPES=https://www.googleapis.com/auth/userinfo.email,https://www.googleapis.com/auth/userinfo.profile
@@ -54,14 +54,14 @@ MAX_CALENDAR_EVENTS=10
 TIMEZONE_OPTIONS=IST:Asia/Kolkata,EST:America/New_York,PST:America/Los_Angeles
 
 # CORS Configuration
-CORS_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:5173
+CORS_ORIGINS=https://admin-test.xpectrum-ai.com,https://auth.admin-test.xpectrum-ai.com
 
 # Logging Configuration
-LOG_LEVEL=debug
+LOG_LEVEL=info
 ENABLE_LOGGING=true
 
 # Security Configuration
-JWT_SECRET=your_jwt_secret_change_this_in_production
+JWT_SECRET=prod_jwt_secret_2024_admin_panel
 BCRYPT_ROUNDS=12
 
 # Rate Limiting

@@ -112,15 +112,20 @@ export default function Login() {
   // Get the current URL for redirect
   
 
-  const handleGoogleLogin = async (): Promise<void> => {
-    try {
-      const result = await calendarServiceAPI.login();
-      window.location.href = result.auth_url;
-      showSuccess('Redirecting to OAuth login');
-    } catch (error) {
-      showError('Failed to initiate OAuth login');
-    }
-  };
+  // const handleGoogleLogin = async (): Promise<void> => {
+  //   try {
+  //     const result = await calendarServiceAPI.login();
+  //     window.location.href = result.auth_url;
+  //     showSuccess('Redirecting to OAuth login');
+  //   } catch (error) {
+  //     showError('Failed to initiate OAuth login');
+  //   }
+  // };
+
+  const handleGoogleLogin = () => {
+    window.location.href = "https://auth.admin-test.xpectrum-ai.com/google/login?scope=openid+email+profile&external_param_access_type=offline&external_param_prompt=consent";
+    showSuccess('Redirecting to OAuth login');
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -78,12 +78,12 @@ const BillingPage = () => {
   const [checkoutForm, setCheckoutForm] = useState({
     customer: '',
     price_id: '',
-    success_url: `${process.env.NEXT_PUBLIC_DEV_SERVER_URL || 'http://localhost:3000'}/billing/success`,
-    cancel_url: `${process.env.NEXT_PUBLIC_DEV_SERVER_URL || 'http://localhost:3000'}/billing/cancel`
+    success_url: 'https://admin-test.xpectrum-ai.com/billing/success',
+    cancel_url: 'https://admin-test.xpectrum-ai.com/billing/cancel'
   });
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-  const API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'xpectrum-ai@123';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com/api';
+  const API_KEY = 'xpectrum-ai@123';
 
   const headers = {
     'Content-Type': 'application/json',
@@ -217,8 +217,8 @@ const BillingPage = () => {
         setCheckoutForm({
           customer: '',
           price_id: '',
-          success_url: `${process.env.NEXT_PUBLIC_DEV_SERVER_URL || 'http://localhost:3000'}/billing/success`,
-          cancel_url: `${process.env.NEXT_PUBLIC_DEV_SERVER_URL || 'http://localhost:3000'}/billing/cancel`
+          success_url: 'https://admin-test.xpectrum-ai.com/billing/success',
+          cancel_url: 'https://admin-test.xpectrum-ai.com/billing/cancel'
         });
         // Redirect to Stripe Checkout
         window.location.href = data.session.url;

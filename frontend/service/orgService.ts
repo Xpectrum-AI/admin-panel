@@ -1,6 +1,6 @@
 import type { UpdateOrgInput } from './type';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com';
 
 export async function createOrg(orgName: string) {
   const response = await fetch(`${API_BASE}/api/org/create-org`, {

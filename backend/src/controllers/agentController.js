@@ -46,8 +46,8 @@ function makeRequest(url, options) {
 }
 
 // Live API configuration
-const LIVE_API_BASE_URL = process.env.LIVE_API_BASE_URL || 'https://multiagents.livekit.xpectrum-ai.com';
-const LIVE_API_KEY = process.env.LIVE_API_KEY || 'xpectrum-ai@123';
+const LIVE_API_BASE_URL = 'https://multiagents.livekit.xpectrum-ai.com';
+const LIVE_API_KEY = 'xpectrum-ai@123';
 
 // Update agent configuration
 const updateAgent = async (req, res) => {
