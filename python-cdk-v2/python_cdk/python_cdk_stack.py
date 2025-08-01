@@ -63,7 +63,6 @@ class AdminPanelTestStack(Stack):
                 "NODE_ENV": "production",
                 "NEXT_PUBLIC_API_URL": "https://admin-test.xpectrum-ai.com/api",
                 "NEXT_PUBLIC_API_KEY": "xpectrum-ai@123",
-                "NEXT_PUBLIC_CALENDAR_API_URL": "https://admin-test.xpectrum-ai.com/calendar-api",
                 "NEXT_PUBLIC_AUTH_URL": "https://auth.admin-test.xpectrum-ai.com",
                 "NEXT_PUBLIC_PROPELAUTH_URL": "https://auth.admin-test.xpectrum-ai.com"
             },
@@ -89,33 +88,7 @@ class AdminPanelTestStack(Stack):
             port_mappings=[ecs.PortMapping(container_port=8085)]
         )
 
-        # Calendar-backend container (temporarily disabled)
-        # calendar_container = task.add_container(
-        #     "CalendarContainer",
-        #     image=ecs.ContainerImage.from_ecr_repository(repo, tag="calendar-latest"),
-        #     logging=ecs.LogDriver.aws_logs(stream_prefix="calendar"),
-        #     secrets={
-        #         "GOOGLE_CLIENT_ID": ecs.Secret.from_secrets_manager(secret, "GOOGLE_CLIENT_ID"),
-        #         "GOOGLE_CLIENT_SECRET": ecs.Secret.from_secrets_manager(secret, "GOOGLE_CLIENT_SECRET"),
-        #         "REDIRECT_URI": ecs.Secret.from_secrets_manager(secret, "REDIRECT_URI"),
-        #         "CALENDAR_REDIRECT_URI": ecs.Secret.from_secrets_manager(secret, "CALENDAR_REDIRECT_URI"),
-        #         "PROPELAUTH_API_KEY": ecs.Secret.from_secrets_manager(secret, "PROPELAUTH_API_KEY_CALENDAR"),
-        #         "JWT_SECRET": ecs.Secret.from_secrets_manager(secret, "JWT_SECRET_CALENDAR"),
-        #         "SECRET_KEY": ecs.Secret.from_secrets_manager(secret, "SECRET_KEY_CALENDAR"),
-        #         "SMTP_USER": ecs.Secret.from_secrets_manager(secret, "SMTP_USER_CALENDAR"),
-        #         "SMTP_PASS": ecs.Secret.from_secrets_manager(secret, "SMTP_PASS_CALENDAR"),
-        #         "SMTP_HOST": ecs.Secret.from_secrets_manager(secret, "SMTP_HOST"),
-        #         "SMTP_PORT": ecs.Secret.from_secrets_manager(secret, "SMTP_PORT")
-        #     },
-        #     environment={
-        #         "PROPELAUTH_URL": "https://auth.admin-test.xpectrum-ai.com",
-        #         "DATABASE_NAME": "google_oauth",
-        #         "DEFAULT_TIMEZONE": "America/New_York",
-        #         "MAX_CALENDAR_EVENTS": "10",
-        #         "TIMEZONE_OPTIONS": "IST:Asia/Kolkata,EST:America/New_York,PST:America/Los_Angeles"
-        #     },
-        #     port_mappings=[ecs.PortMapping(container_port=8001)]
-        # )
+
 
         # Fargate Service
         service = ecs.FargateService(
@@ -192,23 +165,6 @@ class AdminPanelTestStack(Stack):
             )
         )
 
-        # Calendar Target Group (temporarily disabled)
-        # calendar_target_group = elbv2.ApplicationTargetGroup(
-        #     self, "CalendarTargetGroup",
-        #     vpc=vpc,
-        #     port=8001,
-        #     protocol=elbv2.ApplicationProtocol.HTTP,
-        #     target_type=elbv2.TargetType.IP,
-        #     health_check=elbv2.HealthCheck(
-        #         path="/health",
-        #         port="8001",
-        #         healthy_http_codes="200-399",
-        #         timeout=Duration.seconds(15),
-        #         interval=Duration.seconds(45),
-        #         healthy_threshold_count=2,
-        #         unhealthy_threshold_count=5
-        #     )
-        # )
 
         # Add default target group to HTTPS listener (frontend)
         https_listener.add_targets(
@@ -227,16 +183,6 @@ class AdminPanelTestStack(Stack):
             conditions=[elbv2.ListenerCondition.path_patterns(["/api/*"])],
             priority=2
         )
-
-        # Calendar API - /api/v1/* routes (temporarily disabled)
-        # https_listener.add_targets(
-        #     "CalendarAPI",
-        #     port=8001,
-        #     protocol=elbv2.ApplicationProtocol.HTTP,
-        #     targets=[service],
-        #     conditions=[elbv2.ListenerCondition.path_patterns(["/api/v1/*"])],
-        #     priority=3
-        # )
 
         # Output
         CfnOutput(self, "FrontendURL", value=f"https://{lb.load_balancer_dns_name}")
