@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Mail, Eye, EyeOff, Phone, MapPin, User2, Save } from 'lucide-react';
+import { ArrowLeft, Mail, Eye, EyeOff, Phone, MapPin, User2, Save, Plus, Trash, GraduationCap, Stethoscope, Building, Lock, UserCheck } from 'lucide-react';
 import { useAuthInfo } from '@propelauth/react';
 import { ProtectedRoute } from '../auth/ProtectedRoute';
 import { useAuthFrontendApis } from '@propelauth/frontend-apis-react';
@@ -43,6 +43,81 @@ export default function AccountSettings() {
     phone: phone,
     location: location,
   });
+
+  // Doctor profile state (similar to WelcomeSetupModel)
+  const [doctorProfile, setDoctorProfile] = useState({
+    first_name: user?.firstName || 'Meena',
+    last_name: user?.lastName || 'Desai',
+    gender: 'Female',
+    age: '30',
+    experience: '10',
+    phone: '9876543210',
+    registration_number: '1234567890',
+    registration_year: '2010',
+    registration_state: 'Karnataka',
+    registration_country: 'India',
+    registration_board: 'MCI',
+    qualifications: [
+      { degree: 'MBBS', university: 'University of Mumbai', year: '2010', place: 'Mumbai' },
+      { degree: 'MD', university: 'University of Mumbai', year: '2012', place: 'Mumbai' }
+    ],
+    specializations: [
+      { specialization: 'gynecologist', level: 'Senior' },
+      { specialization: 'obstetrician', level: 'Senior' }
+    ],
+    aliases: ['Dr. Meena', 'Dr. Desai'],
+    facilities: [
+      { 
+        name: 'Fortis Hospital', 
+        type: 'Hospital', 
+        area: 'Bannerghatta', 
+        city: 'Bangalore', 
+        state: 'Karnataka', 
+        pincode: '560076', 
+        address: '154, Bannerghatta Road, Bangalore' 
+      },
+      { 
+        name: 'Desai Skin Clinic', 
+        type: 'Clinic', 
+        area: 'Jayanagar', 
+        city: 'Bangalore', 
+        state: 'Karnataka', 
+        pincode: '560076', 
+        address: '123, Main Road, Jayanagar' 
+      }
+    ],
+  });
+
+  // Handlers for dynamic fields (similar to WelcomeSetupModel)
+  const handleDoctorChange = (field: string, value: any) => {
+    setDoctorProfile((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  const handleArrayChange = (field: string, idx: number, subfield: string, value: any) => {
+    setDoctorProfile((prev: any) => {
+      const arr = [...prev[field]];
+      arr[idx][subfield] = value;
+      return { ...prev, [field]: arr };
+    });
+  };
+
+  const addArrayItem = (field: string, template: any) => {
+    setDoctorProfile((prev: any) => ({
+      ...prev,
+      [field]: [
+        ...prev[field],
+        field === 'aliases' ? '' : { ...template }
+      ],
+    }));
+  };
+
+  const removeArrayItem = (field: string, idx: number) => {
+    setDoctorProfile((prev: any) => {
+      const arr = [...prev[field]];
+      arr.splice(idx, 1);
+      return { ...prev, [field]: arr };
+    });
+  };
 
   useEffect(() => {
     if (user) {
@@ -183,9 +258,9 @@ export default function AccountSettings() {
           <h1 className="text-2xl md:text-2xl font-bold text-gray-900">Account Settings</h1>
         </div>
         {/* Main Content */}
-        <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="max-w-6xl mx-auto px-4">
           {/* Profile Card */}
-          <div className="col-span-1 bg-white rounded-2xl   border border-gray-200 p-8 flex flex-col items-center mb-6">
+          <div className="bg-white rounded-2xl border border-gray-200 p-8 flex flex-col items-center mb-8">
             <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-4">
               <div className="w-24 h-24 rounded-full bg-gray-900 flex items-center justify-center">
                 <span className="text-white text-4xl font-bold">
@@ -204,104 +279,225 @@ export default function AccountSettings() {
               <div className="flex items-center gap-2"><MapPin className="h-4 w-4" />{savedData.location}</div>
             </div>
           </div>
-          {/* Account Info and Password Cards */}
-          <div className="col-span-2 flex flex-col gap-8">
-            {/* Account Info Card */}
-            <div className="bg-white rounded-2xl   border border-gray-200 p-8">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Account Information</h2>
-                {!editing && (
-                  <button
-                    type="button"
-                    onClick={handleEdit}
-                    className="px-4 py-2 rounded-lg bg-gray-900 text-white font-semibold hover:bg-gray-800"
-                  >
-                    Edit
-                  </button>
-                )}
+
+          {/* Multi-Card Sections */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Personal Information Card */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">First Name</label>
+                  <div className="text-sm text-gray-900 mt-1">{doctorProfile.first_name}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Last Name</label>
+                  <div className="text-sm text-gray-900 mt-1">{doctorProfile.last_name}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Age</label>
+                  <div className="text-sm text-gray-900 mt-1">{doctorProfile.age}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Phone Number</label>
+                  <div className="text-sm text-gray-900 mt-1">{doctorProfile.phone}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Experience (Years)</label>
+                  <div className="text-sm text-gray-900 mt-1">{doctorProfile.experience}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Gender</label>
+                  <div className="text-sm text-gray-900 mt-1">{doctorProfile.gender}</div>
+                </div>
               </div>
-              <form onSubmit={handleSaveChanges} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                    <input
-                      type="text"
-                      name="firstName"
-                      value={formData.firstName}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900"
-                      readOnly={!editing}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                    <input
-                      type="text"
-                      name="lastName"
-                      value={formData.lastName}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900"
-                      readOnly={!editing}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900"
-                    readOnly
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                  <input
-                    type="text"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900"
-                    readOnly={!editing}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                  <input
-                    type="text"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900"
-                    readOnly={!editing}
-                  />
-                </div>
-                {editing && (
-                  <div className="flex justify-end mt-4 gap-2">
-                    <button
-                      type="button"
-                      onClick={handleCancel}
-                      className="flex items-center gap-2 px-6 py-2 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-gray-100 shadow"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex items-center gap-2 px-6 py-2 rounded-lg bg-gray-900 text-white font-semibold hover:bg-gray-800 shadow"
-                    >
-                      <Save className="h-5 w-5" />
-                      Save
-                    </button>
-                  </div>
-                )}
-              </form>
             </div>
-            {/* Change Password Card */}
-            <div className="bg-white rounded-2xl   border border-gray-200 p-8 mb-6">
+
+            {/* Registration Details Card */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <GraduationCap className="h-5 w-5 text-gray-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Registration Details</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Registration Number</label>
+                  <div className="text-sm text-gray-900 mt-1">{doctorProfile.registration_number}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Registration Year</label>
+                  <div className="text-sm text-gray-900 mt-1">{doctorProfile.registration_year}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">State</label>
+                  <div className="text-sm text-gray-900 mt-1">{doctorProfile.registration_state}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Country</label>
+                  <div className="text-sm text-gray-900 mt-1">{doctorProfile.registration_country}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Board</label>
+                  <div className="text-sm text-gray-900 mt-1">{doctorProfile.registration_board}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Status</label>
+                  <div className="text-sm text-green-600 mt-1">Active</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Qualifications Section */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <GraduationCap className="h-5 w-5 text-gray-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Qualifications</h3>
+              </div>
+              <button className="inline-flex items-center gap-2 text-sm font-medium bg-black text-white hover:bg-gray-900 h-9 rounded-md px-3">
+                <Plus className="h-4 w-4" />
+                Add Qualification
+              </button>
+            </div>
+            {doctorProfile.qualifications.map((q: any, idx: number) => (
+              <div key={idx} className="border border-gray-200 rounded-lg p-4 mb-3">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold text-sm">Qualification {idx + 1}</h4>
+                  <button className="text-red-500 hover:text-red-700">
+                    <Trash className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Degree</label>
+                    <div className="text-sm text-gray-900 mt-1">{q.degree}</div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">University</label>
+                    <div className="text-sm text-gray-900 mt-1">{q.university}</div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Year</label>
+                    <div className="text-sm text-gray-900 mt-1">{q.year}</div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Place</label>
+                    <div className="text-sm text-gray-900 mt-1">{q.place}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Specializations Section */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Stethoscope className="h-5 w-5 text-gray-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Specializations</h3>
+              </div>
+              <button className="inline-flex items-center gap-2 text-sm font-medium bg-black text-white hover:bg-gray-900 h-9 rounded-md px-3">
+                <Plus className="h-4 w-4" />
+                Add Specialization
+              </button>
+            </div>
+            {doctorProfile.specializations.map((s: any, idx: number) => (
+              <div key={idx} className="border border-gray-200 rounded-lg p-4 mb-3">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold text-sm">Specialization {idx + 1}</h4>
+                  <button className="text-red-500 hover:text-red-700">
+                    <Trash className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Specialization</label>
+                    <div className="text-sm text-gray-900 mt-1">{s.specialization}</div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Level</label>
+                    <div className="text-sm text-gray-900 mt-1">{s.level}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Professional Aliases Section */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Professional Aliases</h3>
+            <div className="space-y-2">
+              {doctorProfile.aliases.map((alias: string, idx: number) => (
+                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-900">{alias}</span>
+                  <button className="text-red-500 hover:text-red-700">
+                    <Trash className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Practice Facilities Section */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Building className="h-5 w-5 text-gray-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Practice Facilities</h3>
+              </div>
+              <button className="inline-flex items-center gap-2 text-sm font-medium bg-black text-white hover:bg-gray-900 h-9 rounded-md px-3">
+                <Plus className="h-4 w-4" />
+                Add Facility
+              </button>
+            </div>
+            {doctorProfile.facilities.map((f: any, idx: number) => (
+              <div key={idx} className="border border-gray-200 rounded-lg p-4 mb-3">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold text-sm">Facility {idx + 1}</h4>
+                  <button className="text-red-500 hover:text-red-700">
+                    <Trash className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Facility Name</label>
+                    <div className="text-sm text-gray-900 mt-1">{f.name}</div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Type</label>
+                    <div className="text-sm text-gray-900 mt-1">{f.type}</div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Area</label>
+                    <div className="text-sm text-gray-900 mt-1">{f.area}</div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">City</label>
+                    <div className="text-sm text-gray-900 mt-1">{f.city}</div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">State</label>
+                    <div className="text-sm text-gray-900 mt-1">{f.state}</div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Pincode</label>
+                    <div className="text-sm text-gray-900 mt-1">{f.pincode}</div>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-sm font-medium text-gray-700">Address</label>
+                    <div className="text-sm text-gray-900 mt-1">{f.address}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-8">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-900">Change Password</h2>
+                <div className="flex items-center gap-2">
+                  <Lock className="h-5 w-5 text-gray-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Change Password</h3>
+                </div>
                 {!passwordEditing && (
                   <button
                     type="button"
@@ -405,7 +601,6 @@ export default function AccountSettings() {
                 </form>
               )}
             </div>
-          </div>
         </div>
       </div>
     </ProtectedRoute>
