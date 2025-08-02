@@ -35,8 +35,23 @@ class AdminPanelDeploymentStack(Stack):
         
         config = env_configs.get(environment, env_configs['staging'])
 
-        # Use single AZ to avoid EIP limit issues
-        vpc = ec2.Vpc(self, "AdminPanelVpc", max_azs=1)
+        # Use 2 AZs but disable EIP allocation to avoid EIP limit issues
+        vpc = ec2.Vpc(self, "AdminPanelVpc", 
+            max_azs=2,
+            nat_gateways=0,  # Don't create NAT gateways (which require EIPs)
+            subnet_configuration=[
+                ec2.SubnetConfiguration(
+                    name='public',
+                    subnet_type=ec2.SubnetType.PUBLIC,
+                    cidr_mask=24
+                ),
+                ec2.SubnetConfiguration(
+                    name='private',
+                    subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
+                    cidr_mask=24
+                )
+            ]
+        )
         cluster = ecs.Cluster(self, "AdminPanelCluster", vpc=vpc)
 
         # Use single ECR Repository by name
