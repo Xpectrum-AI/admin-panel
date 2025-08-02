@@ -5,7 +5,6 @@ import { Mail, Eye, EyeOff, Lock, X } from 'lucide-react';
 import { useAuthFrontendApis } from '@propelauth/frontend-apis-react';
 import React from 'react';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
-import { calendarServiceAPI } from '@/service/calendarService';
 
 
 interface ResetPasswordModalProps {
@@ -123,7 +122,7 @@ export default function Login() {
   // };
 
   const handleGoogleLogin = () => {
-    window.location.href = "https://181249979.propelauthtest.com/google/login?scope=openid+email+profile&external_param_access_type=offline&external_param_prompt=consent"
+    window.location.href = `${process.env.NEXT_PUBLIC_PROPELAUTH_URL}/google/login?scope=openid+email+profile&external_param_access_type=offline&external_param_prompt=consent`
     showSuccess('Redirecting to OAuth login');
   }
 

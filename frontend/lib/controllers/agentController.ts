@@ -3,8 +3,8 @@ import { authenticateApiKey } from '@/lib/middleware/auth';
 import axios from 'axios';
 
 // Live API configuration
-const LIVE_API_BASE_URL = 'https://multiagents.livekit.xpectrum-ai.com';
-const LIVE_API_KEY = 'xpectrum-ai@123';
+const LIVE_API_BASE_URL = process.env.NEXT_PUBLIC_LIVE_API_URL || '';
+const LIVE_API_KEY = process.env.NEXT_PUBLIC_API_KEY || '';
 
 // GET /api/agents/all
 export async function getAllAgents(request: NextRequest) {
