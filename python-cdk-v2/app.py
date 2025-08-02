@@ -8,8 +8,14 @@ from python_cdk.python_cdk_stack import AdminPanelDeploymentStack
 
 app = cdk.App()
 
-# Deploy AdminPanelDeploymentStack
-AdminPanelDeploymentStack(app, "AdminPanelDeploymentStack",
+# Get environment from context or default to production
+environment = app.node.try_get_context('environment') or 'production'
+
+# Use AdminPanelProductionStack for all environments
+stack_name = "AdminPanelProductionStack"
+
+# Deploy AdminPanelDeploymentStack with production stack name
+AdminPanelDeploymentStack(app, stack_name,
     # If you don't specify 'env', this stack will be environment-agnostic.
     # Account/Region-dependent features and context lookups will not work,
     # but a single synthesized template can be deployed anywhere.
