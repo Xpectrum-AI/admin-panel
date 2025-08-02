@@ -73,6 +73,8 @@ class AdminPanelDeploymentStack(Stack):
             'PROPELAUTH_API_KEY': os.environ.get('PROPELAUTH_API_KEY', ''),
             'PROPELAUTH_VERIFIER_KEY': os.environ.get('PROPELAUTH_VERIFIER_KEY', ''),
             'PROPELAUTH_REDIRECT_URI': os.environ.get('PROPELAUTH_REDIRECT_URI', f"https://{config['auth_domain']}"),
+            'NEXT_PUBLIC_LIVE_API_URL': os.environ.get('NEXT_PUBLIC_LIVE_API_URL', ''),
+            'SUPER_ADMIN_ORG_ID': os.environ.get('SUPER_ADMIN_ORG_ID', ''),
         }
 
         # ACM Certificate
@@ -99,6 +101,8 @@ class AdminPanelDeploymentStack(Stack):
                 "PROPELAUTH_API_KEY": secrets["PROPELAUTH_API_KEY"],
                 "PROPELAUTH_VERIFIER_KEY": secrets["PROPELAUTH_VERIFIER_KEY"],
                 "PROPELAUTH_REDIRECT_URI": secrets["PROPELAUTH_REDIRECT_URI"],
+                "NEXT_PUBLIC_LIVE_API_URL": secrets["NEXT_PUBLIC_LIVE_API_URL"],
+                "SUPER_ADMIN_ORG_ID": secrets["SUPER_ADMIN_ORG_ID"],
                 "NEXT_PUBLIC_DEFAULT_TIMEZONE": "America/New_York",
                 "NEXT_PUBLIC_TIMEZONE_OPTIONS": "IST:Asia/Kolkata,EST:America/New_York,PST:America/Los_Angeles",
                 "NEXT_PUBLIC_GOOGLE_CALENDAR_API_URL": "https://www.googleapis.com/calendar/v3",
