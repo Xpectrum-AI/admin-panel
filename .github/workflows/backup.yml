@@ -1,0 +1,91 @@
+name: Backup Operations
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+  workflow_dispatch:
+    inputs:
+      backup_type:
+        description: 'Type of backup to perform'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - incremental
+          - database-only
+
+env:
+  AWS_REGION: us-east-1
+  BACKUP_BUCKET: admin-panel-backups
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Create backup directory
+        run: |
+          mkdir -p backup
+          echo "Backup started at $(date)" > backup/backup.log
+
+      - name: Backup database
+        if: github.event.inputs.backup_type == 'database-only' || github.event.inputs.backup_type == 'full'
+        run: |
+          echo "Backing up database..."
+          # Add your database backup commands here
+          echo "Database backup completed at $(date)" >> backup/backup.log
+
+      - name: Backup application data
+        if: github.event.inputs.backup_type == 'full'
+        run: |
+          echo "Backing up application data..."
+          # Add your application data backup commands here
+          echo "Application data backup completed at $(date)" >> backup/backup.log
+
+      - name: Upload backup to S3
+        run: |
+          BACKUP_NAME="admin-panel-backup-$(date +%Y%m%d-%H%M%S).tar.gz"
+          tar -czf $BACKUP_NAME backup/
+          aws s3 cp $BACKUP_NAME s3://$BACKUP_BUCKET/
+          echo "Backup uploaded: s3://$BACKUP_BUCKET/$BACKUP_NAME"
+
+      - name: Cleanup local files
+        if: always()
+        run: |
+          rm -rf backup/
+          rm -f *.tar.gz
+
+      # Slack notifications commented out - optional
+      # - name: Notify Slack - Backup Complete
+      #   if: success()
+      #   uses: 8398a7/action-slack@v3
+      #   with:
+      #     status: success
+      #     channel: '#backups'
+      #     webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+      #     text: |
+      #       ✅ Backup Completed
+      #       Type: ${{ github.event.inputs.backup_type || 'scheduled' }}
+      #       Timestamp: $(date)
+      #       Location: s3://$BACKUP_BUCKET/
+
+      # - name: Notify Slack - Backup Failed
+      #   if: failure()
+      #   uses: 8398a7/action-slack@v3
+      #   with:
+      #     status: failure
+      #     channel: '#backups'
+      #     webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+      #     text: |
+      #       ❌ Backup Failed
+      #       Type: ${{ github.event.inputs.backup_type || 'scheduled' }}
+      #       Please check the logs for details. 
