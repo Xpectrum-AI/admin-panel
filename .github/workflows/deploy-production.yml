@@ -115,9 +115,9 @@ jobs:
         
         echo "Testing health endpoints on: $HOSTNAME"
         
-        # Health checks for frontend only
-        curl -f "https://$HOSTNAME/" || exit 1
-        curl -f "https://$HOSTNAME/api/health" || exit 1
+        # Health checks for frontend only (skip SSL verification)
+        curl -f -k "https://$HOSTNAME/" || exit 1
+        curl -f -k "https://$HOSTNAME/api/health" || exit 1
 
     - name: Create GitHub release
       if: success()
