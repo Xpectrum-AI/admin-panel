@@ -114,8 +114,7 @@ export async function fetchUsersInOrg(request: NextRequest) {
     }
 
     const authInstance = getAuth();
-    const data = await authInstance.fetchUsersInOrg({ orgId });
-
+    const data = await authInstance.fetchUsersInOrg( orgId );
     return NextResponse.json({
       success: true,
       data: data,
@@ -146,8 +145,7 @@ export async function fetchPendingInvites(request: NextRequest) {
     }
 
     const authInstance = getAuth();
-    const data = await authInstance.fetchPendingInvites({ orgId });
-
+    const data = await authInstance.fetchPendingInvites( orgId );
     return NextResponse.json({
       success: true,
       data: data,

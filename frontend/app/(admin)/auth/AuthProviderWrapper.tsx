@@ -11,21 +11,7 @@ export function AuthProviderWrapper({ children }: { children: React.ReactNode })
     setIsClient(true);
   }, []);
 
-  // Get the PropelAuth URL from environment variables
-  const getAuthUrl = () => {
-    // Check for production environment
-    if (process.env.NODE_ENV === 'production') {
-      return process.env.NEXT_PUBLIC_PROPELAUTH_URL || "https://auth.admin-test.xpectrum-ai.com";
-    }
-    
-    // Check for test environment
-    if (process.env.NEXT_PUBLIC_ENV === 'test') {
-      return "https://181249979.propelauthtest.com";
-    }
-    
-    // Default to test environment for development
-    return "https://181249979.propelauthtest.com";
-  };
+  const AUTH_URL = process.env.NEXT_PUBLIC_PROPELAUTH_URL || "";
 
   // Prevent hydration mismatch by not rendering until client-side
   if (!isClient) {
@@ -37,7 +23,7 @@ export function AuthProviderWrapper({ children }: { children: React.ReactNode })
   }
 
   return (
-    <AuthProvider authUrl={getAuthUrl()}>
+    <AuthProvider authUrl={AUTH_URL || ""}>
       {children}
     </AuthProvider>
   );

@@ -5,7 +5,7 @@ import { useAuthInfo } from "@propelauth/react";
 import { useRouter } from "next/navigation";
 import {SyncLoader} from "react-spinners";
 
-const SUPER_ADMIN_ORG_ID = "7f4f4566-0435-42d0-ab5f-80c6018f625b";
+const SUPER_ADMIN_ORG_ID = process.env.SUPER_ADMIN_ORG_ID || "";
 
 export default function Home() {
   const { user, loading , orgHelper} = useAuthInfo();
