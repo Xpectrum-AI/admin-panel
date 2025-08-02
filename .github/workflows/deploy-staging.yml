@@ -56,6 +56,17 @@ jobs:
         npm install -g aws-cdk
 
     - name: Deploy CDK stack (staging)
+      env:
+        # Pass GitHub environment variables to CDK
+        NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.NEXT_PUBLIC_PROPELAUTH_API_KEY }}
+        NEXT_PUBLIC_API_KEY: ${{ secrets.NEXT_PUBLIC_API_KEY }}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
+        NEXT_PUBLIC_MONGODB_URL: ${{ secrets.NEXT_PUBLIC_MONGODB_URL }}
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        PROPELAUTH_API_KEY: ${{ secrets.PROPELAUTH_API_KEY }}
+        PROPELAUTH_VERIFIER_KEY: ${{ secrets.PROPELAUTH_VERIFIER_KEY }}
+        PROPELAUTH_REDIRECT_URI: ${{ secrets.PROPELAUTH_REDIRECT_URI }}
       run: |
         cd python-cdk-v2
         # Deploy to staging environment with staging context

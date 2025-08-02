@@ -51,8 +51,8 @@ export function useGoogleAuth() {
 
     // Wait a bit for cleanup to complete, then redirect
     setTimeout(() => {
-      const redirectUrl = encodeURIComponent('https://admin-test.xpectrum-ai.com/dashboard');
-      const authUrl = `https://auth.admin-test.xpectrum-ai.com/login?provider=google&redirect_url=${redirectUrl}`;
+      const redirectUrl = encodeURIComponent(`${process.env.NEXT_PUBLIC_API_URL}/dashboard`);
+      const authUrl = `${process.env.NEXT_PUBLIC_AUTH_URL}/login?provider=google&redirect_url=${redirectUrl}`;
       
       // Use window.location.replace to avoid back button issues
       window.location.replace(authUrl);
