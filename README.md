@@ -1,40 +1,47 @@
-# Admin Panel - Multi-Service Application
+# Admin Panel - Frontend-Only Application
 
-A comprehensive admin panel application with frontend, backend, and calendar services, built with modern technologies and containerized with Docker.
+A modern admin panel application built with Next.js, featuring a self-contained frontend with integrated API routes and AWS CDK deployment infrastructure.
 
 ## 🏗️ Architecture Overview
 
-This project consists of three main services:
+This project consists of a single, comprehensive frontend service:
 
 - **Frontend**: Next.js 15 with React 19, TypeScript, and Tailwind CSS
-- **Backend**: Node.js Express server with MongoDB
-- **Calendar Backend**: Python FastAPI service for Google Calendar integration
+- **API Routes**: Self-contained Next.js API routes for all backend functionality
+- **Deployment**: AWS CDK with ECS Fargate and Application Load Balancer
 
 ## 📁 Project Structure
 
 ```
 admin-panel/
 ├── frontend/                 # Next.js React application
-│   ├── app/                 # App router pages
+│   ├── app/                 # App router pages and API routes
+│   │   ├── (admin)/        # Admin dashboard pages
+│   │   ├── api/            # Next.js API routes
+│   │   │   ├── agents/     # Agent management APIs
+│   │   │   ├── org/        # Organization management APIs
+│   │   │   ├── user/       # User management APIs
+│   │   │   ├── stripe/     # Payment processing APIs
+│   │   │   └── health/     # Health check API
+│   │   └── globals.css     # Global styles
+│   ├── components/         # Reusable React components
 │   ├── hooks/              # Custom React hooks
+│   ├── lib/                # Utility libraries
+│   ├── service/            # API service functions
 │   ├── public/             # Static assets
 │   └── package.json        # Frontend dependencies
-├── backend/                 # Node.js Express server
-│   ├── src/
-│   │   ├── controllers/    # Route controllers
-│   │   ├── middleware/     # Express middleware
-│   │   ├── routes/         # API routes
-│   │   ├── services/       # Business logic
-│   │   └── config/         # Configuration files
-│   └── package.json        # Backend dependencies
-├── calendar-backend/        # Python FastAPI service
-│   ├── main.py            # FastAPI application
-│   ├── database.py        # MongoDB operations
-│   ├── auth_utils.py      # Authentication utilities
-│   └── requirements.txt   # Python dependencies
-├── docker-compose.yml      # Multi-service container orchestration
+├── python-cdk-v2/          # AWS CDK infrastructure
+│   ├── python_cdk/         # CDK stack definitions
+│   ├── app.py             # CDK application entry point
+│   └── requirements.txt   # Python CDK dependencies
+├── .github/workflows/      # GitHub Actions CI/CD
+│   ├── deploy-production.yml  # Production deployment
+│   ├── deploy-staging.yml     # Staging deployment
+│   ├── ci.yml                # Continuous integration
+│   ├── security.yml          # Security scanning
+│   └── backup.yml            # Database backup
+├── docker-compose.yml      # Local development setup
 ├── docker-compose.production.yml  # Production configuration
-├── nginx-config-updated.conf      # Nginx reverse proxy config
 ├── env.template           # Environment variables template
 ├── env.test              # Test environment variables
 ├── env.production        # Production environment variables
@@ -45,10 +52,10 @@ admin-panel/
 
 ### Prerequisites
 
-- Docker and Docker Compose
+- Docker and Docker Compose (for local development)
 - Node.js 18+ (for local development)
-- Python 3.8+ (for calendar backend development)
-- MongoDB instance
+- AWS CLI (for deployment)
+- AWS CDK (for infrastructure deployment)
 
 ### Environment Setup
 
@@ -58,24 +65,21 @@ admin-panel/
    ```
 
 2. **Configure environment variables:**
-   - MongoDB connection string
-   - JWT secret
-   - Stripe API keys
    - PropelAuth configuration
+   - Stripe API keys
    - Google OAuth credentials
+   - MongoDB connection string
 
 ### Development
 
 #### Using Docker (Recommended)
 
 ```bash
-# Start all services
+# Start the frontend service
 docker-compose up --build
 
 # Access the application
 # Frontend: http://localhost:3000
-# Backend API: http://localhost:8085
-# Calendar API: http://localhost:8001
 ```
 
 #### Local Development
@@ -85,22 +89,6 @@ docker-compose up --build
 cd frontend
 npm install
 npm run dev
-```
-
-**Backend:**
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-**Calendar Backend:**
-```bash
-cd calendar-backend
-python -m venv venv
-./venv/scripts/activate
-pip install -r requirements.txt
-uvicorn main:app --reload --host 0.0.0.0 --port 8001
 ```
 
 ## 🛠️ Technology Stack
@@ -113,31 +101,23 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8001
 - **Authentication**: PropelAuth
 - **UI Components**: Radix UI, Headless UI
 - **Icons**: Lucide React
-- **HTTP Client**: Axios
+- **Payment**: Stripe integration
+- **Database**: MongoDB (via Next.js API routes)
 
-### Backend
-- **Runtime**: Node.js
-- **Framework**: Express.js
-- **Database**: MongoDB with Mongoose
-- **Authentication**: PropelAuth, JWT
-- **Payment**: Stripe
-- **Validation**: Express Validator
-- **Security**: bcryptjs, CORS
-
-### Calendar Backend
-- **Framework**: FastAPI
-- **Language**: Python 3.8+
-- **Database**: MongoDB with Motor
-- **Authentication**: Google OAuth 2.0
-- **HTTP Client**: httpx
-- **Validation**: Pydantic
-- **Security**: python-jose, passlib
+### API Routes (Self-Contained)
+- **User Management**: `/api/user/*`
+- **Organization Management**: `/api/org/*`
+- **Agent Management**: `/api/agents/*`
+- **Payment Processing**: `/api/stripe/*`
+- **Health Checks**: `/api/health`
 
 ### Infrastructure
 - **Containerization**: Docker
-- **Orchestration**: Docker Compose
-- **Reverse Proxy**: Nginx
-- **Environment**: Multi-environment support (dev/test/prod)
+- **Orchestration**: Docker Compose (local)
+- **Cloud Deployment**: AWS CDK with ECS Fargate
+- **Load Balancer**: AWS Application Load Balancer
+- **Container Registry**: Amazon ECR
+- **CI/CD**: GitHub Actions
 
 ## 🔧 Configuration
 
@@ -145,137 +125,157 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8001
 
 #### Frontend (.env.local)
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:8085
-NEXT_PUBLIC_API_KEY=api-key
-NEXT_PUBLIC_CALENDAR_API_URL=https://domain.com/calendar-api
+# PropelAuth Configuration
+NEXT_PUBLIC_PROPELAUTH_API_KEY=your-propelauth-key
 NEXT_PUBLIC_AUTH_URL=https://auth.domain.com
 NEXT_PUBLIC_PROPELAUTH_URL=https://auth.domain.com
-```
 
-#### Backend (.env)
-```env
-NODE_ENV=production
-PORT=8085
-MONGODB_URI=mongodb://localhost:27017/admin-panel
-JWT_SECRET=jwt-secret
-STRIPE_SECRET_KEY=stripe-secret
-PROPELAUTH_API_KEY=propelauth-key
-PROPELAUTH_AUTH_URL=https://auth.domain.com
-```
+# API Configuration
+NEXT_PUBLIC_API_KEY=your-api-key
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id
 
-#### Calendar Backend (.env)
-```env
-# Google OAuth
-GOOGLE_CLIENT_ID=google-client-id
-GOOGLE_CLIENT_SECRET=google-client-secret
-REDIRECT_URI=https://domain.com/auth/callback
-CALENDAR_REDIRECT_URI=https://domain.com/calendar/callback
+# Database
+NEXT_PUBLIC_MONGODB_URL=mongodb://localhost:27017/admin-panel
 
-# MongoDB
-MONGODB_URL=mongodb://localhost:27017
-DATABASE_NAME=calendar_db
+# Payment
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your-stripe-key
 
-# Server
-SERVER_HOST=0.0.0.0
-SERVER_PORT=8001
-DEBUG_MODE=false
-
-# PropelAuth
-PROPELAUTH_URL=https://auth.domain.com
-PROPELAUTH_API_KEY=propelauth-key
+# Application
+NEXT_PUBLIC_DEFAULT_TIMEZONE=America/New_York
+NEXT_PUBLIC_TIMEZONE_OPTIONS=IST:Asia/Kolkata,EST:America/New_York,PST:America/Los_Angeles
 ```
 
 ## 🚀 Deployment
 
-### Production Deployment
+### AWS CDK Deployment
 
-1. **Build and deploy with Docker:**
+1. **Install CDK dependencies:**
    ```bash
-   docker-compose -f docker-compose.production.yml up --build -d
+   cd python-cdk-v2
+   pip install -r requirements.txt
+   npm install -g aws-cdk
    ```
 
-2. **Configure Nginx reverse proxy:**
-   - Copy `nginx-config-updated.conf` to your server
-   - Update domain names and SSL certificates
-   - Restart Nginx
+2. **Deploy to production:**
+   ```bash
+   cdk deploy AdminPanelProductionStack --require-approval never --context environment=production
+   ```
 
-3. **Environment setup:**
-   - Copy `env.production` to `.env`
-   - Update all production environment variables
-   - Ensure MongoDB is accessible
+3. **Deploy to staging:**
+   ```bash
+   cdk deploy AdminPanelProductionStack --require-approval never --context environment=staging
+   ```
+
+### GitHub Actions CI/CD
+
+The project includes automated CI/CD pipelines:
+
+- **Production Deployment**: Triggered on push to `main` branch
+- **Staging Deployment**: Triggered on push to `develop` branch
+- **Security Scanning**: Automated vulnerability checks
+- **Database Backup**: Automated daily backups
 
 ### Docker Commands
 
 ```bash
-# Build all services
-docker-compose build
+# Build frontend image
+docker build -t admin-panel:frontend-latest frontend/
 
-# Start services in background
-docker-compose up -d
+# Run locally
+docker-compose up --build
 
-# View logs
-docker-compose logs -f
-
-# Stop all services
+# Stop services
 docker-compose down
 
-# Rebuild and restart
-docker-compose up --build -d
+# View logs
+docker-compose logs -f frontend
 ```
 
 ## 📊 API Endpoints
 
-### Backend API (Port 8085)
-- `GET /` - Health check
-- `GET /agents/all` - Get all agents
-- `GET /agents/trunks` - Get agent trunks
-- `POST /api/org/fetch-orgs-query` - Fetch organizations
+### User Management (`/api/user/*`)
+- `POST /api/user/create-user` - Create new user
+- `GET /api/user/fetch-user-mail` - Fetch user by email
+- `POST /api/user/fetch-users-query` - Search users
 
-### Calendar API (Port 8001)
-- `GET /api/v1/health` - Health check
-- `GET /api/v1/services` - Get calendar services
-- `POST /api/v1/services` - Create calendar service
-- `PUT /api/v1/services/{id}` - Update service
-- `DELETE /api/v1/services/{id}` - Delete service
-- `GET /api/v1/timezones` - Get timezone options
+### Organization Management (`/api/org/*`)
+- `POST /api/org/create-org` - Create organization
+- `POST /api/org/add-user` - Add user to organization
+- `POST /api/org/invite-user` - Invite user to organization
+- `POST /api/org/fetch-users` - Get organization users
+- `POST /api/org/fetch-pending-invites` - Get pending invites
+- `POST /api/org/remove-user` - Remove user from organization
+- `POST /api/org/change-user-role` - Change user role
+- `POST /api/org/update-org` - Update organization
+- `POST /api/org/fetch-org-details` - Get organization details
+- `POST /api/org/fetch-orgs-query` - Search organizations
+
+### Agent Management (`/api/agents/*`)
+- `GET /api/agents/all` - Get all agents
+- `GET /api/agents/active-calls` - Get active calls
+- `GET /api/agents/trunks` - Get agent trunks
+- `GET /api/agents/info/[agentId]` - Get agent info
+- `POST /api/agents/update/[agentId]` - Update agent
+- `DELETE /api/agents/delete/[agentId]` - Delete agent
+- `POST /api/agents/set_phone/[agentId]` - Set agent phone
+- `DELETE /api/agents/delete_phone/[agentId]` - Delete agent phone
+- `GET /api/agents/by_phone/[phoneNumber]` - Get agent by phone
+
+### Payment Processing (`/api/stripe/v1/*`)
+- `GET /api/stripe/v1/customers` - Get customers
+- `GET /api/stripe/v1/customers/[id]` - Get customer
+- `GET /api/stripe/v1/products` - Get products
+- `GET /api/stripe/v1/prices` - Get prices
+- `GET /api/stripe/v1/subscriptions` - Get subscriptions
+- `GET /api/stripe/v1/invoices` - Get invoices
+- `POST /api/stripe/v1/checkout/sessions` - Create checkout session
+- `GET /api/stripe/v1/checkout/sessions/[id]` - Get checkout session
+- `GET /api/stripe/v1/payment_intents/[id]` - Get payment intent
+- `GET /api/stripe/v1/events` - Get events
+
+### Health Check
+- `GET /api/health` - Application health status
 
 ## 🔐 Authentication & Security
 
 - **Frontend Authentication**: PropelAuth integration
-- **Backend Authentication**: JWT tokens with PropelAuth
-- **Calendar Service**: Google OAuth 2.0
+- **API Security**: Next.js API routes with proper validation
 - **Database Security**: MongoDB with proper indexing
-- **API Security**: CORS, input validation, rate limiting
+- **Payment Security**: Stripe secure payment processing
+- **Infrastructure Security**: AWS IAM roles and security groups
 
 ## 📱 Features
 
 ### Admin Panel
-- User authentication and authorization
-- Agent management
-- Organization management
-- Payment processing with Stripe
+- User authentication and authorization via PropelAuth
+- Agent management and monitoring
+- Organization management with role-based access
+- Payment processing with Stripe integration
 - Real-time data updates
+- Responsive design with Tailwind CSS
 
-### Calendar Integration
-- Google Calendar API integration
-- OAuth 2.0 authentication
-- Calendar service management
-- Timezone handling
-- Event synchronization
+### Infrastructure Features
+- Auto-scaling ECS Fargate services
+- Application Load Balancer with SSL termination
+- Automated CI/CD with GitHub Actions
+- Security scanning and vulnerability checks
+- Automated database backups
+- Multi-environment deployment (staging/production)
 
 ## 🧪 Testing
 
 The project includes comprehensive testing setup:
-- Integration tests for backend services
-- API endpoint testing
+- Next.js API route testing
+- Frontend component testing
 - Authentication testing
-- Calendar service testing
+- Payment processing testing
+- Infrastructure testing with CDK
 
 ## 🔧 Development Workflow
 
 1. **Feature Development:**
    - Create feature branch
-   - Implement changes
+   - Implement changes in frontend
    - Test locally with Docker
    - Submit pull request
 
@@ -283,12 +283,13 @@ The project includes comprehensive testing setup:
    - ESLint for JavaScript/TypeScript
    - Prettier for code formatting
    - TypeScript strict mode enabled
+   - Security scanning with Trivy and Bandit
 
 3. **Deployment:**
    - Automated Docker builds
+   - AWS CDK infrastructure deployment
+   - GitHub Actions CI/CD pipelines
    - Environment-specific configurations
-   - Nginx reverse proxy setup
-
 
 ## 📄 License
 
@@ -297,13 +298,13 @@ This project is proprietary software. All rights reserved.
 ## 🆘 Support
 
 For technical support or questions:
-- Check the logs: `docker-compose logs -f`
+- Check the logs: `docker-compose logs -f frontend`
 - Verify environment variables
-- Ensure all services are running
-- Check network connectivity between services
+- Ensure the frontend service is running
+- Check AWS CDK deployment status
+- Review GitHub Actions workflow logs
 
 ---
 
-**Last Updated**: July 2025
-**Version**: 1.0.0 #   U p d a t e d   0 8 / 0 2 / 2 0 2 5   1 4 : 0 3 : 0 8  
- 
+**Last Updated**: August 2025
+**Version**: 2.0.0 (Frontend-Only Architecture)
