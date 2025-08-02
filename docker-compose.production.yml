@@ -15,6 +15,9 @@ services:
       - NEXT_PUBLIC_API_URL=https://admin-test.xpectrum-ai.com/api
       - NEXT_PUBLIC_PROPELAUTH_URL=https://auth.admin-test.xpectrum-ai.com
       - NEXT_PUBLIC_AUTH_URL=https://auth.admin-test.xpectrum-ai.com
+      - PROPELAUTH_URL=${PROPELAUTH_URL}
+      - PROPELAUTH_API_KEY=${PROPELAUTH_API_KEY}
+      - SUPER_ADMIN_ORG_ID=${SUPER_ADMIN_ORG_ID}
     depends_on:
       - backend
       - calendar-backend
