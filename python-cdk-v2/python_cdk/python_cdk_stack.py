@@ -9,6 +9,7 @@ from aws_cdk import (
     CfnOutput
 )
 from constructs import Construct
+import os
 
 class AdminPanelDeploymentStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
@@ -60,27 +61,19 @@ class AdminPanelDeploymentStack(Stack):
         # Task Role
         task_role = iam.Role(self, "AdminPanelTaskRole", assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"))
 
-        # Environment-specific configurations for secrets
-        env_secrets = {
-            'staging': {
-                'NEXT_PUBLIC_PROPELAUTH_API_KEY': '888ea8af8e1d78888fcb15304e2633446516519573b7f6219943b306a4626df95d477061f77b939b8cdadd7a50559a6c',
-                'NEXT_PUBLIC_API_KEY': 'xpectrum-ai@123',
-                'NEXT_PUBLIC_GOOGLE_CLIENT_ID': '441654168539-9tfk7ibkt2r9tbsoohpjjfmjjn8u4lf0.apps.googleusercontent.com',
-                'NEXT_PUBLIC_MONGODB_URL': 'mongodb+srv://mongo_access:3gfaAKMQsCwEjIXG@cluster0.4os5zqa.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
-                'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY': 'pk_test_your_stripe_key',
-                'SECRET_KEY': 'your_secret_key_for_sessions_change_this_in_production'
-            },
-            'production': {
-                'NEXT_PUBLIC_PROPELAUTH_API_KEY': '41f5b65faf738abef77864b5753afd5d7f12231eb4556a14667b6cc3a8e0e103830a9789e8ee5a54773d9f512f11d17a',
-                'NEXT_PUBLIC_API_KEY': 'xpectrum-ai@123',
-                'NEXT_PUBLIC_GOOGLE_CLIENT_ID': '441654168539-9tfk7ibkt2r9tbsoohpjjfmjjn8u4lf0.apps.googleusercontent.com',
-                'NEXT_PUBLIC_MONGODB_URL': 'mongodb+srv://mongo_access:3gfaAKMQsCwEjIXG@cluster0.4os5zqa.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
-                'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY': 'pk_test_your_stripe_key',
-                'SECRET_KEY': 'your_secret_key_for_sessions_change_this_in_production'
-            }
+        # Get secrets from GitHub environment variables
+        # These will be passed from GitHub Actions workflow
+        secrets = {
+            'NEXT_PUBLIC_PROPELAUTH_API_KEY': os.environ.get('NEXT_PUBLIC_PROPELAUTH_API_KEY', ''),
+            'NEXT_PUBLIC_API_KEY': os.environ.get('NEXT_PUBLIC_API_KEY', ''),
+            'NEXT_PUBLIC_GOOGLE_CLIENT_ID': os.environ.get('NEXT_PUBLIC_GOOGLE_CLIENT_ID', ''),
+            'NEXT_PUBLIC_MONGODB_URL': os.environ.get('NEXT_PUBLIC_MONGODB_URL', ''),
+            'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY': os.environ.get('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY', ''),
+            'SECRET_KEY': os.environ.get('SECRET_KEY', ''),
+            'PROPELAUTH_API_KEY': os.environ.get('PROPELAUTH_API_KEY', ''),
+            'PROPELAUTH_VERIFIER_KEY': os.environ.get('PROPELAUTH_VERIFIER_KEY', ''),
+            'PROPELAUTH_REDIRECT_URI': os.environ.get('PROPELAUTH_REDIRECT_URI', f"https://{config['auth_domain']}"),
         }
-        
-        secrets = env_secrets.get(environment, env_secrets['staging'])
 
         # ACM Certificate
         certificate = acm.Certificate.from_certificate_arn(
@@ -103,13 +96,24 @@ class AdminPanelDeploymentStack(Stack):
                 "NEXT_PUBLIC_MONGODB_URL": secrets["NEXT_PUBLIC_MONGODB_URL"],
                 "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY": secrets["NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"],
                 "SECRET_KEY": secrets["SECRET_KEY"],
-                "PROPELAUTH_REDIRECT_URI": f"https://{config['auth_domain']}",
+                "PROPELAUTH_API_KEY": secrets["PROPELAUTH_API_KEY"],
+                "PROPELAUTH_VERIFIER_KEY": secrets["PROPELAUTH_VERIFIER_KEY"],
+                "PROPELAUTH_REDIRECT_URI": secrets["PROPELAUTH_REDIRECT_URI"],
                 "NEXT_PUBLIC_DEFAULT_TIMEZONE": "America/New_York",
                 "NEXT_PUBLIC_TIMEZONE_OPTIONS": "IST:Asia/Kolkata,EST:America/New_York,PST:America/Los_Angeles",
                 "NEXT_PUBLIC_GOOGLE_CALENDAR_API_URL": "https://www.googleapis.com/calendar/v3",
                 "NEXT_PUBLIC_DATABASE_NAME": "google_oauth",
                 "NEXT_PUBLIC_AUTH_URL": f"https://{config['auth_domain']}",
                 "NEXT_PUBLIC_PROPELAUTH_URL": f"https://{config['auth_domain']}",
+                "NEXT_PUBLIC_CALENDAR_API_URL": f"https://{config['domain']}/calendar-api",
+                "NEXT_PUBLIC_API_BASE_URL": f"https://{config['domain']}/calendar-api",
+                "NEXT_PUBLIC_API_URL": f"https://{config['domain']}/api",
+                "NEXT_PUBLIC_APP_TITLE": "Admin Panel Calendar Services",
+                "NEXT_PUBLIC_APP_DESCRIPTION": "Calendar Services Management Dashboard",
+                "NEXT_PUBLIC_AUTH_TOKEN_KEY": "auth_token",
+                "NEXT_PUBLIC_PENDING_FIRST_NAME_KEY": "pending_first_name",
+                "NEXT_PUBLIC_PENDING_LAST_NAME_KEY": "pending_last_name",
+                "NEXT_PUBLIC_TIMEZONE_KEY": "selected_timezone",
                 "NODE_ENV": environment,
                 "PORT": config['frontend_port'],
                 "HOST": "0.0.0.0"
