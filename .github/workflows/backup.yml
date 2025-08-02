@@ -1,68 +1,148 @@
-name: Backup Operations
+name: Database Backup
 
 on:
   schedule:
-    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
   workflow_dispatch:
-    inputs:
-      backup_type:
-        description: 'Type of backup to perform'
-        required: true
-        default: 'full'
-        type: choice
-        options:
-          - full
-          - incremental
-          - database-only
-
-env:
-  AWS_REGION: us-east-1
-  BACKUP_BUCKET: admin-panel-backups
 
 jobs:
-  backup:
+  backup-databases:
     runs-on: ubuntu-latest
+    environment: production
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-             - name: Configure AWS credentials
-         uses: aws-actions/configure-aws-credentials@v4
-         with:
-           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-           aws-region: ${{ env.AWS_REGION }}
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-west-1
 
-      - name: Create backup directory
-        run: |
-          mkdir -p backup
-          echo "Backup started at $(date)" > backup/backup.log
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
 
-      - name: Backup database
-        if: github.event.inputs.backup_type == 'database-only' || github.event.inputs.backup_type == 'full'
-        run: |
-          echo "Backing up database..."
-          # Add your database backup commands here
-          echo "Database backup completed at $(date)" >> backup/backup.log
+    - name: Install MongoDB tools
+      run: |
+        wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
+        echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+        sudo apt-get update
+        sudo apt-get install -y mongodb-database-tools
 
-      - name: Backup application data
-        if: github.event.inputs.backup_type == 'full'
-        run: |
-          echo "Backing up application data..."
-          # Add your application data backup commands here
-          echo "Application data backup completed at $(date)" >> backup/backup.log
+    - name: Create backup timestamp
+      id: timestamp
+      run: echo "timestamp=$(date +'%Y%m%d_%H%M%S')" >> $GITHUB_OUTPUT
 
-      - name: Upload backup to S3
-        run: |
-          BACKUP_NAME="admin-panel-backup-$(date +%Y%m%d-%H%M%S).tar.gz"
-          tar -czf $BACKUP_NAME backup/
-          aws s3 cp $BACKUP_NAME s3://$BACKUP_BUCKET/
-          echo "Backup uploaded: s3://$BACKUP_BUCKET/$BACKUP_NAME"
+    - name: Backup admin_panel database
+      run: |
+        # Create backup directory
+        mkdir -p backups
+        
+        # Backup admin_panel database
+        mongodump \
+          --uri="${{ secrets.MONGODB_URI }}" \
+          --db=admin_panel \
+          --out=backups/admin_panel_${{ steps.timestamp.outputs.timestamp }}
+        
+        # Compress backup
+        tar -czf backups/admin_panel_${{ steps.timestamp.outputs.timestamp }}.tar.gz -C backups admin_panel_${{ steps.timestamp.outputs.timestamp }}
+        
+        # Clean up uncompressed backup
+        rm -rf backups/admin_panel_${{ steps.timestamp.outputs.timestamp }}
 
-      - name: Cleanup local files
-        if: always()
-        run: |
-          rm -rf backup/
-          rm -f *.tar.gz
+    - name: Backup google_oauth database
+      run: |
+        # Backup google_oauth database
+        mongodump \
+          --uri="${{ secrets.MONGODB_URI }}" \
+          --db=google_oauth \
+          --out=backups/google_oauth_${{ steps.timestamp.outputs.timestamp }}
+        
+        # Compress backup
+        tar -czf backups/google_oauth_${{ steps.timestamp.outputs.timestamp }}.tar.gz -C backups google_oauth_${{ steps.timestamp.outputs.timestamp }}
+        
+        # Clean up uncompressed backup
+        rm -rf backups/google_oauth_${{ steps.timestamp.outputs.timestamp }}
+
+    - name: Upload backups to S3
+      run: |
+        # Upload to S3 backup bucket
+        aws s3 cp backups/ s3://${{ secrets.BACKUP_S3_BUCKET }}/database-backups/${{ steps.timestamp.outputs.timestamp }}/ --recursive
+        
+        # Keep only last 30 days of backups
+        aws s3 ls s3://${{ secrets.BACKUP_S3_BUCKET }}/database-backups/ | sort -r | tail -n +31 | awk '{print $2}' | xargs -I {} aws s3 rm s3://${{ secrets.BACKUP_S3_BUCKET }}/database-backups/{} --recursive
+
+    - name: Upload backup artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: database-backups-${{ steps.timestamp.outputs.timestamp }}
+        path: backups/
+        retention-days: 7
+
+    - name: Verify backup integrity
+      run: |
+        # Download and verify one backup file
+        aws s3 cp s3://${{ secrets.BACKUP_S3_BUCKET }}/database-backups/${{ steps.timestamp.outputs.timestamp }}/admin_panel_${{ steps.timestamp.outputs.timestamp }}.tar.gz test_backup.tar.gz
+        
+        # Extract and verify
+        tar -tzf test_backup.tar.gz > /dev/null
+        if [ $? -eq 0 ]; then
+          echo "✅ Backup integrity verified"
+        else
+          echo "❌ Backup integrity check failed"
+          exit 1
+        fi
+        
+        # Clean up test file
+        rm test_backup.tar.gz
+
+  backup-configuration:
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-west-1
+
+    - name: Create configuration backup
+      run: |
+        # Create backup directory
+        mkdir -p config-backups
+        
+        # Backup environment files
+        cp env.production config-backups/env.production.backup
+        cp docker-compose.production.yml config-backups/docker-compose.production.yml.backup
+        
+        # Backup CDK configuration
+        cp python-cdk-v2/python_cdk/python_cdk_stack.py config-backups/cdk_stack.py.backup
+        
+        # Create timestamp
+        echo "$(date +'%Y%m%d_%H%M%S')" > config-backups/backup_timestamp.txt
+
+    - name: Upload configuration backup to S3
+      run: |
+        TIMESTAMP=$(date +'%Y%m%d_%H%M%S')
+        tar -czf config-backups_$TIMESTAMP.tar.gz config-backups/
+        aws s3 cp config-backups_$TIMESTAMP.tar.gz s3://${{ secrets.BACKUP_S3_BUCKET }}/config-backups/
+        rm config-backups_$TIMESTAMP.tar.gz
+
+    - name: Upload config backup artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: config-backups
+        path: config-backups/
+        retention-days: 30
 
  

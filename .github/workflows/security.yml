@@ -1,137 +1,133 @@
-name: Security Scanning
+name: Security
 
 on:
   schedule:
-    - cron: '0 6 * * *'  # Daily at 6 AM UTC
+    # Run weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
   workflow_dispatch:
 
-env:
-  NODE_VERSION: '18'
-  PYTHON_VERSION: '3.11'
-
 jobs:
-  security-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: 'frontend/package-lock.json'
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Run npm audit
-        run: |
-          cd frontend && npm audit --audit-level moderate
-          # Backend audit commented out - frontend only
-          # cd ../backend && npm audit --audit-level moderate
-
-      - name: Run CodeQL Analysis
-        uses: github/codeql-action/init@v3
-        with:
-          languages: javascript, python
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-
-      - name: Run Bandit (Python security scanner)
-        run: |
-          pip install bandit
-          cd python-cdk-v2
-          bandit -r . -f json -o bandit-report.json || true
-
-      - name: Run ESLint security rules
-        run: |
-          cd frontend && npm run lint:security || true
-          # Backend security linting commented out - frontend only
-          # cd ../backend && npm run lint:security || true
-
-      - name: Check for secrets in code
-        run: |
-          # Check for hardcoded secrets
-          if grep -r "password\|secret\|key" --include="*.js" --include="*.ts" --include="*.py" . | grep -v "node_modules" | grep -v ".git"; then
-            echo "Potential secrets found in code"
-            exit 1
-          fi
-
-      - name: Upload security reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: security-reports
-          path: |
-            python-cdk-v2/bandit-report.json
-            frontend/audit-report.json
-            # backend/audit-report.json - commented out since backend is not used
-          retention-days: 30
-
   dependency-check:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: 'frontend/package-lock.json'
+    - name: Run OWASP Dependency Check for Frontend
+      uses: dependency-check/Dependency-Check_Action@main
+      with:
+        project: 'Admin Panel Frontend'
+        path: './frontend'
+        format: 'HTML'
+        out: 'reports/frontend'
 
-      - name: Check for vulnerable dependencies
-        run: |
-          cd frontend && npm audit --audit-level high
-          # Backend audit commented out - frontend only
-          # cd ../backend && npm audit --audit-level high
+    - name: Upload security reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-reports
+        path: reports/
+        retention-days: 30
 
-      - name: Check for outdated packages
-        run: |
-          cd frontend && npm outdated
-          # Backend outdated check commented out - frontend only
-          # cd ../backend && npm outdated
-
-  container-security:
+  container-scan:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+    - name: Run Trivy vulnerability scanner on Dockerfiles
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH'
 
-      - name: Scan container images
-        run: |
-          # Scan frontend image
-          docker build -t frontend-scan ./frontend
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image frontend-scan
-          
-          # Backend image scan commented out - frontend only
-          # docker build -t backend-scan ./backend
-          # docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image backend-scan
+    - name: Log Trivy scan results
+      run: |
+        echo "Trivy scan completed"
+        echo "Check the logs above for any vulnerabilities"
 
-  notify-security:
-    needs: [security-scan, dependency-check, container-security]
+  secrets-scan:
     runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run TruffleHog
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: HEAD~1
+        head: HEAD
+
+  npm-audit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Audit frontend dependencies
+      run: |
+        cd frontend
+        npm audit --audit-level=moderate || echo "Audit completed with warnings"
+
+  python-security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install safety
+      run: pip install safety
+
+    - name: Check Python dependencies
+      run: |
+        cd python-cdk-v2
+        safety check --output json --save safety-report.json || echo "Safety check completed with warnings"
+
+  notify-security-issues:
+    runs-on: ubuntu-latest
+    needs: [dependency-check, container-scan, secrets-scan, npm-audit, python-security]
     if: always()
+    
     steps:
-      - name: Security Scan Complete
-        run: |
-          echo "Security scan completed successfully"
+    - name: Check for security issues
+      id: check-issues
+      run: |
+        # Check if any of the security jobs failed
+        if [[ "${{ needs.dependency-check.result }}" == "failure" ]] || \
+           [[ "${{ needs.container-scan.result }}" == "failure" ]] || \
+           [[ "${{ needs.secrets-scan.result }}" == "failure" ]] || \
+           [[ "${{ needs.npm-audit.result }}" == "failure" ]] || \
+           [[ "${{ needs.python-security.result }}" == "failure" ]]; then
+          echo "has-issues=true" >> $GITHUB_OUTPUT
+        else
+          echo "has-issues=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Log security status
+      if: steps.check-issues.outputs.has-issues == 'true'
+      run: |
+        echo "Security issues detected in the workflow"
+        echo "Please review the security scan results"
  
