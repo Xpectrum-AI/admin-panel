@@ -119,32 +119,8 @@ jobs:
         curl -f -k "https://$HOSTNAME/" || exit 1
         curl -f -k "https://$HOSTNAME/api/health" || exit 1
 
-    - name: Create GitHub release
-      if: success()
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: v${{ github.run_number }}
-        release_name: Release v${{ github.run_number }}
-        body: |
-          Production deployment completed successfully
-          
-          **Changes:**
-          - Commit: ${{ github.sha }}
-          - Branch: ${{ github.ref_name }}
-          
-          **Services:**
-          - Frontend: ✅ Deployed
-          
-          **Infrastructure:**
-          - ECS Cluster: AdminPanelDeploymentStack-AdminPanelCluster
-          - Load Balancer: ${{ steps.alb-dns.outputs.alb-dns }}
-          
-          **Health Checks:**
-          - Frontend: ✅ Healthy
-        draft: false
-        prerelease: false
+    # GitHub release creation removed due to permissions issue
+    # You can manually create releases from GitHub UI if needed
 
   deployment-failure:
     needs: deploy-production
