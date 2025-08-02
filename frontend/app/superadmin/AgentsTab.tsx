@@ -26,13 +26,21 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
     agentId: '', chatbot_api: '', chatbot_key: '',
     tts_config: { voice_id: '', tts_api_key: '', model: '', speed: 0.5, language: '' },
     stt_config: { api_key: '', model: '', language: '' },
-    initial_message: ''
+    initial_message: '',
+    nudge_text: '',
+    nudge_interval: '',
+    max_nudges: '',
+    typing_volume: ''
   });
   const [updateForm, setUpdateForm] = useState({
     agentId: '', chatbot_api: '', chatbot_key: '',
     tts_config: { voice_id: '', tts_api_key: '', model: '', speed: 0.5, language: '' },
     stt_config: { api_key: '', model: '', language: '' },
-    initial_message: ''
+    initial_message: '',
+    nudge_text: '',
+    nudge_interval: '',
+    max_nudges: '',
+    typing_volume: ''
   });
   const [showSetPhoneModal, setShowSetPhoneModal] = useState(false);
   const [setPhoneForm, setSetPhoneForm] = useState({ agentId: '', phone_number: '' });
@@ -72,7 +80,16 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
         return;
       }
       const { agentId, ...rest } = addForm;
-      const data = await updateAgent(agentId, rest);
+      
+      // Convert string values to numbers for numeric fields
+      const processedData = {
+        ...rest,
+        nudge_interval: rest.nudge_interval ? parseInt(rest.nudge_interval) : undefined,
+        max_nudges: rest.max_nudges ? parseInt(rest.max_nudges) : undefined,
+        typing_volume: rest.typing_volume ? parseFloat(rest.typing_volume) : undefined
+      };
+      
+      const data = await updateAgent(agentId, processedData);
       if (data.success) {
         setShowAddModal(false);
         await refreshAgents();
@@ -82,7 +99,11 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
           agentId: '', chatbot_api: '', chatbot_key: '',
           tts_config: { voice_id: '', tts_api_key: '', model: '', speed: 0.5, language: '' },
           stt_config: { api_key: '', model: '', language: '' },
-          initial_message: ''
+          initial_message: '',
+          nudge_text: '',
+          nudge_interval: '',
+          max_nudges: '',
+          typing_volume: ''
         });
       } else {
         showError(data.error || 'Failed to add agent');
@@ -104,7 +125,15 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
       return;
     }
     try {
-      const data = await updateAgent(updateForm.agentId, updateForm);
+      // Convert string values to numbers for numeric fields
+      const processedData = {
+        ...updateForm,
+        nudge_interval: updateForm.nudge_interval ? parseInt(updateForm.nudge_interval) : undefined,
+        max_nudges: updateForm.max_nudges ? parseInt(updateForm.max_nudges) : undefined,
+        typing_volume: updateForm.typing_volume ? parseFloat(updateForm.typing_volume) : undefined
+      };
+      
+      const data = await updateAgent(updateForm.agentId, processedData);
       if (data.success) {
         setShowUpdateModal(false);
         await refreshAgents();
@@ -377,6 +406,70 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                   placeholder="Hello! How can I help you today?"
                 />
               </div>
+              
+              <div className="rounded-lg border border-gray-300 bg-card text-card-foreground shadow-sm">
+                <div className="flex flex-col space-y-1.5 p-6">
+                  <h3 className="text-2xl font-semibold leading-none tracking-tight">Agent Behavior Configuration</h3>
+                </div>
+                <div className="p-6 pt-0 space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none" htmlFor="nudgeText">Nudge Text</label>
+                    <input
+                      className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                      name="nudgeText"
+                      id="nudgeText"
+                      value={addForm.nudge_text}
+                      onChange={e => setAddForm({ ...addForm, nudge_text: e.target.value })}
+                      placeholder="Hello? Are you still there?"
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium leading-none" htmlFor="nudgeInterval">Nudge Interval (seconds)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="300"
+                        className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                        name="nudgeInterval"
+                        id="nudgeInterval"
+                        value={addForm.nudge_interval}
+                        onChange={e => setAddForm({ ...addForm, nudge_interval: e.target.value })}
+                        placeholder="15"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium leading-none" htmlFor="maxNudges">Max Nudges</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="10"
+                        className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                        name="maxNudges"
+                        id="maxNudges"
+                        value={addForm.max_nudges}
+                        onChange={e => setAddForm({ ...addForm, max_nudges: e.target.value })}
+                        placeholder="3"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium leading-none" htmlFor="typingVolume">Typing Volume</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="1"
+                        className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                        name="typingVolume"
+                        id="typingVolume"
+                        value={addForm.typing_volume}
+                        onChange={e => setAddForm({ ...addForm, typing_volume: e.target.value })}
+                        placeholder="0.8"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div className="flex justify-end space-x-2">
                 <button type="button" className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2" onClick={() => setShowAddModal(false)}>
                   Cancel
@@ -585,6 +678,70 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                   placeholder="Hello! How can I help you today?"
                 />
               </div>
+              
+              <div className="rounded-lg border border-gray-300 bg-card text-card-foreground shadow-sm">
+                <div className="flex flex-col space-y-1.5 p-6">
+                  <h3 className="text-2xl font-semibold leading-none tracking-tight">Agent Behavior Configuration</h3>
+                </div>
+                <div className="p-6 pt-0 space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none" htmlFor="updateNudgeText">Nudge Text</label>
+                    <input
+                      className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                      name="updateNudgeText"
+                      id="updateNudgeText"
+                      value={updateForm.nudge_text}
+                      onChange={e => setUpdateForm({ ...updateForm, nudge_text: e.target.value })}
+                      placeholder="Hello? Are you still there?"
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium leading-none" htmlFor="updateNudgeInterval">Nudge Interval (seconds)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="300"
+                        className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                        name="updateNudgeInterval"
+                        id="updateNudgeInterval"
+                        value={updateForm.nudge_interval}
+                        onChange={e => setUpdateForm({ ...updateForm, nudge_interval: e.target.value })}
+                        placeholder="15"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium leading-none" htmlFor="updateMaxNudges">Max Nudges</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="10"
+                        className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                        name="updateMaxNudges"
+                        id="updateMaxNudges"
+                        value={updateForm.max_nudges}
+                        onChange={e => setUpdateForm({ ...updateForm, max_nudges: e.target.value })}
+                        placeholder="3"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium leading-none" htmlFor="updateTypingVolume">Typing Volume</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="1"
+                        className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                        name="updateTypingVolume"
+                        id="updateTypingVolume"
+                        value={updateForm.typing_volume}
+                        onChange={e => setUpdateForm({ ...updateForm, typing_volume: e.target.value })}
+                        placeholder="0.8"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div className="flex justify-end space-x-2">
                 <button type="button" className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2" onClick={() => setShowUpdateModal(false)}>
                   Cancel
@@ -757,7 +914,11 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                                     model: agent.stt_config?.model || '',
                                     language: agent.stt_config?.language || '',
                                   },
-                                  initial_message: agent.initial_message || ''
+                                  initial_message: agent.initial_message || '',
+                                  nudge_text: agent.nudge_text || '',
+                                  nudge_interval: agent.nudge_interval || '',
+                                  max_nudges: agent.max_nudges || '',
+                                  typing_volume: agent.typing_volume || ''
                                 });
                                 setShowUpdateModal(true);
                               },

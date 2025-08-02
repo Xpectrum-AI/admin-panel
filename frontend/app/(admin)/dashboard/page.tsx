@@ -43,52 +43,6 @@ export default function Dashboard() {
     }
   }, [loading, orgHelper]);
 
-  useEffect(() => {
-    const callAuthCallback = async () => {
-      if (!accessToken) {
-        setCallbackCompleted(true);
-        return;
-      }
-      try {
-        const response = await axios.post(`${API_BASE_URL}/auth/callback`, {
-          access_token: accessToken
-        }, {
-          timeout: 10000, // 10 second timeout
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        setCallbackCompleted(true);
-      } catch (error: any) {
-        console.error('Auth callback failed:', error?.response?.data || error?.message || error);
-        // Don't fail the entire app if auth callback fails
-        setCallbackCompleted(true);
-      }
-    };
-    callAuthCallback();
-  }, [accessToken]);
-
-  useEffect(() => {
-    const checkWelcome = async () => {
-      if (!accessToken) {
-        setCallbackCompleted(true);
-        return;
-      }
-      try {
-        const res = await axios.get(`${API_BASE_URL}/welcome-form/status`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-          timeout: 10000 // 10 second timeout
-        });
-        setShowWelcome(!res.data.has_completed_welcome_form);
-      } catch (error: any) {
-        console.error('Welcome form status check failed:', error?.response?.data || error?.message || error);
-        // Default to not showing welcome form if check fails
-        setShowWelcome(false);
-      }
-    };
-    checkWelcome();
-  }, [accessToken]);
-
   // Handler for choosing an org
   const handleChooseOrg = async (chosenOrgId: string) => {
     if (!user?.userId) {
@@ -108,14 +62,6 @@ export default function Dashboard() {
       showError(err?.message || 'Failed to update workspace selection. Please try again.');
     }
   };
-
-  if (!callbackCompleted) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <SyncLoader size={15} color="#000000" />
-      </div>
-    );
-  }
 
   return (
     <ProtectedRoute>

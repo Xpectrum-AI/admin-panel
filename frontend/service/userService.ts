@@ -28,7 +28,7 @@ export async function createUser({ email, password, firstName, lastName, usernam
   lastName: string;
   username: string;
 }) {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com/api';
+  const API_BASE = '/api'; // Changed from external backend to local Next.js API
   const response = await fetch(`${API_BASE}/user/create-user`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -39,7 +39,7 @@ export async function createUser({ email, password, firstName, lastName, usernam
 }
 
 export async function fetchUsersByQuery(query: any) {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com/api';
+  const API_BASE = '/api'; // Changed from external backend to local Next.js API
   const response = await fetch(`${API_BASE}/user/fetch-users-query`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

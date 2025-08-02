@@ -195,7 +195,7 @@ export default function OrganizationsTab({ orgs, totalOrgs, pageNumber, pageSize
   const { showError } = useError();
 
   // Process org data for display
-  const processedOrgs = orgs.map((org: any) => {
+  const processedOrgs = (Array.isArray(orgs) ? orgs : []).map((org: any) => {
     const name = org.metadata?.displayName || org.orgName || org.name || '-';
     const slug = org.urlSlug || org.slug || org.orgId || org.org_id || org.id || '-';
     return {
