@@ -35,7 +35,8 @@ class AdminPanelDeploymentStack(Stack):
         
         config = env_configs.get(environment, env_configs['staging'])
 
-        vpc = ec2.Vpc(self, "AdminPanelVpc", max_azs=2)
+        # Use single AZ to avoid EIP limit issues
+        vpc = ec2.Vpc(self, "AdminPanelVpc", max_azs=1)
         cluster = ecs.Cluster(self, "AdminPanelCluster", vpc=vpc)
 
         # Use single ECR Repository by name
