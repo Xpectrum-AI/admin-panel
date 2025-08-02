@@ -1,6 +1,7 @@
 // AgentService: Handles API calls for agent management
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://admin-test.xpectrum-ai.com';
+// const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
+const API_BASE = '/api';
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'xpectrum-ai@123';
 
 const headers = {
@@ -26,7 +27,7 @@ async function handleApiError(response: Response, defaultMessage: string) {
 }
 
 export async function getAllAgents() {
-  const res = await fetch(`${API_BASE}/api/agents/all`, { headers });
+  const res = await fetch(`${API_BASE}/agents/all`, { headers });
   if (!res.ok) {
     await handleApiError(res, 'Failed to fetch agents');
   }
@@ -34,7 +35,7 @@ export async function getAllAgents() {
 }
 
 export async function getAgentInfo(agentId: string) {
-  const res = await fetch(`${API_BASE}/api/agents/info/${agentId}`, { headers });
+  const res = await fetch(`${API_BASE}/agents/info/${agentId}`, { headers });
   if (!res.ok) {
     await handleApiError(res, 'Failed to fetch agent info');
   }
@@ -42,7 +43,7 @@ export async function getAgentInfo(agentId: string) {
 }
 
 export async function updateAgent(agentId: string, data: any) {
-  const res = await fetch(`${API_BASE}/api/agents/update/${agentId}`, {
+  const res = await fetch(`${API_BASE}/agents/update/${agentId}`, {
     method: 'POST',
     headers,
     body: JSON.stringify(data),
@@ -54,7 +55,7 @@ export async function updateAgent(agentId: string, data: any) {
 }
 
 export async function setAgentPhone(agentId: string, phone_number: string) {
-  const res = await fetch(`${API_BASE}/api/agents/set_phone/${agentId}`, {
+  const res = await fetch(`${API_BASE}/agents/set_phone/${agentId}`, {
     method: 'POST',
     headers,
     body: JSON.stringify({ phone_number }),
@@ -66,7 +67,7 @@ export async function setAgentPhone(agentId: string, phone_number: string) {
 }
 
 export async function getAgentByPhone(phone_number: string) {
-  const res = await fetch(`${API_BASE}/api/agents/by_phone/${phone_number}`, { headers });
+  const res = await fetch(`${API_BASE}/agents/by_phone/${phone_number}`, { headers });
   if (!res.ok) {
     await handleApiError(res, 'Failed to fetch agent by phone');
   }
@@ -74,7 +75,7 @@ export async function getAgentByPhone(phone_number: string) {
 }
 
 export async function deleteAgentPhone(agentId: string) {
-  const res = await fetch(`${API_BASE}/api/agents/delete_phone/${agentId}`, {
+  const res = await fetch(`${API_BASE}/agents/delete_phone/${agentId}`, {
     method: 'DELETE',
     headers,
   });
@@ -85,7 +86,7 @@ export async function deleteAgentPhone(agentId: string) {
 }
 
 export async function getActiveCalls() {
-  const res = await fetch(`${API_BASE}/api/agents/active-calls`, { headers });
+  const res = await fetch(`${API_BASE}/agents/active-calls`, { headers });
   if (!res.ok) {
     await handleApiError(res, 'Failed to fetch active calls');
   }
@@ -93,7 +94,7 @@ export async function getActiveCalls() {
 }
 
 export async function deleteAgent(agentId: string) {
-  const res = await fetch(`${API_BASE}/api/agents/delete/${agentId}`, {
+  const res = await fetch(`${API_BASE}/agents/delete/${agentId}`, {
     method: 'DELETE',
     headers,
   });
@@ -104,7 +105,7 @@ export async function deleteAgent(agentId: string) {
 }
 
 export async function getTrunks() {
-  const res = await fetch(`${API_BASE}/api/agents/trunks`, { headers });
+  const res = await fetch(`${API_BASE}/agents/trunks`, { headers });
   if (!res.ok) {
     await handleApiError(res, 'Failed to fetch trunks');
   }

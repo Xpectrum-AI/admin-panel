@@ -15,7 +15,8 @@ import { getAllAgents, getTrunks } from '@/service/agentService';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { fetchUsersInOrg } from '@/service/orgService';
 
-const SUPER_ADMIN_ORG_ID = process.env.SUPER_ADMIN_ORG_ID;
+const SUPER_ADMIN_ORG_ID = process.env.SUPER_ADMIN_ORG_ID || "7f4f4566-0435-42d0-ab5f-80c6018f625b";
+// const SUPER_ADMIN_ORG_ID = "c53e8731-2ce7-4484-919c-0aba50c2f46a";
 
 const tabs = [
     'Users',
@@ -86,10 +87,14 @@ export default function SuperAdminPanel() {
             try {
                 const res = await fetchOrgByQuery({ pageSize: orgPageSize, pageNumber: orgPageNumber });
                 if (mounted) {
-                    setOrgs(res.data?.orgs || res.data || []);
-                    setTotalOrgs(res.data?.totalOrgs || res.totalOrgs || 0);
+                    // Ensure orgs is always an array
+                    const orgsData = res.data?.orgs;
+                    const orgsArray = Array.isArray(orgsData) ? orgsData : [];
+                    setOrgs(orgsArray);
+                    setTotalOrgs(res.data?.totalOrgs || 0);
                 }
             } catch (error) {
+                console.error('Error fetching orgs:', error);
                 if (mounted) {
                     setOrgs([]);
                     setTotalOrgs(0);
