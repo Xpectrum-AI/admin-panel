@@ -34,19 +34,7 @@ jobs:
         run: |
           cd frontend && npm run lint
 
-      # Slack notifications commented out - optional
-      # - name: Notify Slack - Test Results
-      #   if: always()
-      #   uses: 8398a7/action-slack@v3
-      #   with:
-      #     status: ${{ job.status }}
-      #     channel: '#deployments'
-      #     webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-      #     text: |
-      #       Test Results for Admin Panel
-      #       Branch: ${{ github.ref_name }}
-      #       Commit: ${{ github.sha }}
-      #       Status: ${{ job.status }}
+
 
   build-and-push:
     needs: test
@@ -77,30 +65,6 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-      # Backend image build commented out - frontend only deployment
-      # - name: Build and push Backend image
-      #   env:
-      #     ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-      #     ECR_REPOSITORY: admin-panel-backend
-      #     IMAGE_TAG: ${{ github.sha }}
-      #   run: |
-      #     docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./backend
-      #     docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest ./backend
-      #     docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-      #     docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
-
-      # Slack notifications commented out - optional
-      # - name: Notify Slack - Build Complete
-      #   uses: 8398a7/action-slack@v3
-      #   with:
-      #     status: success
-      #     channel: '#deployments'
-      #     webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-      #     text: |
-      #       ✅ Build Complete
-      #       Images pushed to ECR
-      #       Frontend: admin-panel-frontend:${{ github.sha }}
-      #       Backend: Commented out - frontend only deployment
 
   deploy:
     needs: build-and-push
@@ -145,35 +109,12 @@ jobs:
           LOAD_BALANCER_DNS=$(aws cloudformation describe-stacks --stack-name AdminPanelProduction --query 'Stacks[0].Outputs[?OutputKey==`LoadBalancerDNS`].OutputValue' --output text)
           echo "loadBalancerDNS=$LOAD_BALANCER_DNS" >> $GITHUB_OUTPUT
 
-      # Slack notifications commented out - optional
-      # - name: Notify Slack - Deployment Success
-      #   uses: 8398a7/action-slack@v3
-      #   with:
-      #     status: success
-      #     channel: '#deployments'
-      #     webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-      #     text: |
-      #       🚀 Deployment Successful
-      #       Environment: Production
-      #       Branch: ${{ github.ref_name }}
-      #       Commit: ${{ github.sha }}
-      #       Load Balancer: ${{ steps.cdk-output.outputs.loadBalancerDNS }}
 
   deploy-failure:
     needs: deploy
     runs-on: ubuntu-latest
     if: failure()
     steps:
-      # Slack notifications commented out - optional
-      # - name: Notify Slack - Deployment Failed
-      #   uses: 8398a7/action-slack@v3
-      #   with:
-      #     status: failure
-      #     channel: '#deployments'
-      #     webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-      #     text: |
-      #       ❌ Deployment Failed
-      #       Environment: Production
-      #       Branch: ${{ github.ref_name }}
-      #       Commit: ${{ github.sha }}
-      #       Please check the logs for details. 
+      - name: Deployment Failed
+        run: |
+          echo "Deployment failed - check the logs for details" 

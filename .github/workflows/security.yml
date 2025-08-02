@@ -127,18 +127,4 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      # Slack notifications commented out - optional
-      # - name: Notify Slack - Security Scan Results
-      #   uses: 8398a7/action-slack@v3
-      #   with:
-      #     status: ${{ job.status }}
-      #     channel: '#security'
-      #     webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-      #     text: |
-      #       🔒 Security Scan Results
-      #       Branch: ${{ github.ref_name }}
-      #       Commit: ${{ github.sha }}
-      #       CodeQL: ${{ needs.security-scan.result }}
-      #       Dependencies: ${{ needs.dependency-check.result }}
-      #       Containers: ${{ needs.container-security.result }}
-      #       Details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} 
+ 
