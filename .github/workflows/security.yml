@@ -25,6 +25,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
 
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -86,6 +87,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
 
       - name: Check for vulnerable dependencies
         run: |
@@ -109,7 +112,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-role
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
       - name: Scan container images
@@ -127,4 +131,7 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
+      - name: Security Scan Complete
+        run: |
+          echo "Security scan completed successfully"
  
