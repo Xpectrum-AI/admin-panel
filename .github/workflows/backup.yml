@@ -64,28 +64,4 @@ jobs:
           rm -rf backup/
           rm -f *.tar.gz
 
-      # Slack notifications commented out - optional
-      # - name: Notify Slack - Backup Complete
-      #   if: success()
-      #   uses: 8398a7/action-slack@v3
-      #   with:
-      #     status: success
-      #     channel: '#backups'
-      #     webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-      #     text: |
-      #       ✅ Backup Completed
-      #       Type: ${{ github.event.inputs.backup_type || 'scheduled' }}
-      #       Timestamp: $(date)
-      #       Location: s3://$BACKUP_BUCKET/
-
-      # - name: Notify Slack - Backup Failed
-      #   if: failure()
-      #   uses: 8398a7/action-slack@v3
-      #   with:
-      #     status: failure
-      #     channel: '#backups'
-      #     webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-      #     text: |
-      #       ❌ Backup Failed
-      #       Type: ${{ github.event.inputs.backup_type || 'scheduled' }}
-      #       Please check the logs for details. 
+ 

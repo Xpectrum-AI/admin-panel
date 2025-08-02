@@ -66,36 +66,12 @@ jobs:
           # Add your integration test commands here
           echo "Integration tests completed"
 
-      # Slack notifications commented out - optional
-      # - name: Notify Slack - Staging Deployment Success
-      #   uses: 8398a7/action-slack@v3
-      #   with:
-      #     status: success
-      #     channel: '#deployments'
-      #     webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-      #     text: |
-      #       🚀 Staging Deployment Successful
-      #       Environment: Staging
-      #       Branch: ${{ github.ref_name }}
-      #       Commit: ${{ github.sha }}
-      #       Load Balancer: ${{ steps.deployment-outputs.outputs.loadBalancerDNS }}
-      #       URL: https://${{ steps.deployment-outputs.outputs.loadBalancerDNS }}
 
   deployment-failure:
     needs: deploy-staging
     runs-on: ubuntu-latest
     if: failure()
     steps:
-      # Slack notifications commented out - optional
-      # - name: Notify Slack - Staging Deployment Failed
-      #   uses: 8398a7/action-slack@v3
-      #   with:
-      #     status: failure
-      #     channel: '#deployments'
-      #     webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-      #     text: |
-      #       ❌ Staging Deployment Failed
-      #       Environment: Staging
-      #       Branch: ${{ github.ref_name }}
-      #       Commit: ${{ github.sha }}
-      #       Please check the logs for details. 
+      - name: Staging Deployment Failed
+        run: |
+          echo "Staging deployment failed - check the logs for details" 

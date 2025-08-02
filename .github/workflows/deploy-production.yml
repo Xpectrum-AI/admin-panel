@@ -66,37 +66,12 @@ jobs:
           # Add your smoke test commands here
           echo "Smoke tests completed"
 
-      # Slack notifications commented out - optional
-      # - name: Notify Slack - Deployment Success
-      #   uses: 8398a7/action-slack@v3
-      #   with:
-      #     status: success
-      #     channel: '#deployments'
-      #     webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-      #     text: |
-      #       🚀 Production Deployment Successful
-      #       Environment: Production
-      #       Branch: ${{ github.ref_name }}
-      #       Commit: ${{ github.sha }}
-      #       Load Balancer: ${{ steps.deployment-outputs.outputs.loadBalancerDNS }}
-      #       URL: https://${{ steps.deployment-outputs.outputs.loadBalancerDNS }}
 
   deployment-failure:
     needs: deploy-production
     runs-on: ubuntu-latest
     if: failure()
     steps:
-      # Slack notifications commented out - optional
-      # - name: Notify Slack - Deployment Failed
-      #   uses: 8398a7/action-slack@v3
-      #   with:
-      #     status: failure
-      #     channel: '#deployments'
-      #     webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-      #     text: |
-      #       ❌ Production Deployment Failed
-      #       Environment: Production
-      #       Branch: ${{ github.ref_name }}
-      #       Commit: ${{ github.sha }}
-      #       Please check the logs for details.
-      #       Rollback may be required. 
+      - name: Production Deployment Failed
+        run: |
+          echo "Production deployment failed - check the logs for details" 
