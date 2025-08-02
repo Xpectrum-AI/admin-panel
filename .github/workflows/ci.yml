@@ -1,0 +1,147 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: Frontend
+            directory: frontend
+            commands: |
+              npm ci
+              npm run lint
+              npm run build
+              npm run test
+          # Backend commented out - frontend only
+          # - name: Backend
+          #   directory: backend
+          #   commands: |
+          #     npm ci
+          #     npm run lint
+          #     npm test
+          - name: Python CDK
+            directory: python-cdk-v2
+            commands: |
+              python -m pip install --upgrade pip
+              pip install -r requirements.txt
+              pip install -r requirements-dev.txt
+              python -m pytest tests/
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies and run tests
+        run: |
+          cd ${{ matrix.directory }}
+          ${{ matrix.commands }}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.name }}
+          path: ${{ matrix.directory }}/coverage/
+          retention-days: 7
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run security scan
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript, python
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+      - name: Run npm audit
+        run: |
+          cd frontend && npm audit --audit-level moderate
+          # Backend audit commented out - frontend only
+          # cd ../backend && npm audit --audit-level moderate
+
+  build-images:
+    needs: [lint-and-test, security-scan]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-role
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Frontend image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: admin-panel-frontend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./frontend
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest ./frontend
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      # Backend image build commented out - frontend only deployment
+      # - name: Build and push Backend image
+      #   env:
+      #     ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      #     ECR_REPOSITORY: admin-panel-backend
+      #     IMAGE_TAG: ${{ github.sha }}
+      #   run: |
+      #     docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./backend
+      #     docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest ./backend
+      #     docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      #     docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+  notify:
+    needs: [lint-and-test, security-scan, build-images]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      # Slack notifications commented out - optional
+      # - name: Notify Slack - CI Results
+      #   uses: 8398a7/action-slack@v3
+      #   with:
+      #     status: ${{ job.status }}
+      #     channel: '#ci-cd'
+      #     webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+      #     text: |
+      #       CI/CD Pipeline Results
+      #       Branch: ${{ github.ref_name }}
+      #       Commit: ${{ github.sha }}
+      #       Status: ${{ needs.lint-and-test.result }} | ${{ needs.security-scan.result }} | ${{ needs.build-images.result }}
+      #       Details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} 
