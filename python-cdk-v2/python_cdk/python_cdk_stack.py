@@ -78,6 +78,7 @@ class AdminPanelDeploymentStack(Stack):
             'PROPELAUTH_REDIRECT_URI': os.environ.get(f'{prefix}PROPELAUTH_REDIRECT_URI', f"https://{config['auth_domain']}"),
             'NEXT_PUBLIC_LIVE_API_URL': os.environ.get(f'{prefix}NEXT_PUBLIC_LIVE_API_URL', ''),
             'SUPER_ADMIN_ORG_ID': os.environ.get(f'{prefix}SUPER_ADMIN_ORG_ID', ''),
+            'PROPELAUTH_URL': os.environ.get(f'{prefix}PROPELAUTH_URL', f"https://{config['auth_domain']}")
         }
 
         # ACM Certificate
