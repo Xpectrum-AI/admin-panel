@@ -1,26 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateApiKey } from '@/lib/middleware/auth';
-const { initBaseAuth } = require('@propelauth/nextjs/server');
-
-const API_KEY = process.env.NEXT_PUBLIC_PROPELAUTH_API_KEY || process.env.PROPELAUTH_API_KEY || "";
-const AUTH_URL = process.env.NEXT_PUBLIC_PROPELAUTH_URL || process.env.NEXT_PUBLIC_AUTH_URL || "";
-
-if (!API_KEY) {
-  throw new Error('PropelAuth API key is missing');
-}
-if (!AUTH_URL) {
-  throw new Error('PropelAuth AUTH_URL is missing');
-}
-
-console.log('Initializing PropelAuth with:', {
-  authUrl: AUTH_URL,
-  apiKeyLength: API_KEY.length
-});
-
-const auth = initBaseAuth({
-  authUrl: AUTH_URL,
-  apiKey: API_KEY,
-});
+import { getAuth } from '@/lib/config/propelAuth';
 
 // GET /api/user/fetch-user-mail
 export async function getUserByEmail(request: NextRequest) {
@@ -37,7 +17,8 @@ export async function getUserByEmail(request: NextRequest) {
       return NextResponse.json({ error: 'Missing email parameter' }, { status: 400 });
     }
 
-    const data = await auth.fetchUserByEmail(email, { includeOrgs: true });
+    const authInstance = getAuth();
+    const data = await authInstance.fetchUserByEmail(email, { includeOrgs: true });
 
     return NextResponse.json({
       success: true,
@@ -70,7 +51,8 @@ export async function signup(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const data = await auth.createUser({ email, password, firstName, lastName, username });
+    const authInstance = getAuth();
+    const data = await authInstance.createUser({ email, password, firstName, lastName, username });
 
     return NextResponse.json({
       success: true,
@@ -101,7 +83,8 @@ export async function fetchUsersByQuery(request: NextRequest) {
       return NextResponse.json({ error: 'Missing query' }, { status: 400 });
     }
 
-    const data = await auth.fetchUsersByQuery(query);
+    const authInstance = getAuth();
+    const data = await authInstance.fetchUsersByQuery(query);
 
     // Handle the nested response structure from PropelAuth
     const users = data.users || data;
