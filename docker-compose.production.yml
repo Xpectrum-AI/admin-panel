@@ -11,10 +11,10 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_CALENDAR_API_URL=https://admin-test.xpectrum-ai.com/calendar-api
-      - NEXT_PUBLIC_API_URL=https://admin-test.xpectrum-ai.com/api
-      - NEXT_PUBLIC_PROPELAUTH_URL=https://auth.admin-test.xpectrum-ai.com
-      - NEXT_PUBLIC_AUTH_URL=https://auth.admin-test.xpectrum-ai.com
+      - NEXT_PUBLIC_CALENDAR_API_URL=https://admin.xpectrum-ai.com/calendar-api
+      - NEXT_PUBLIC_API_URL=https://admin.xpectrum-ai.com/api
+      - NEXT_PUBLIC_PROPELAUTH_URL=https://auth.admin.xpectrum-ai.com
+      - NEXT_PUBLIC_AUTH_URL=https://auth.admin.xpectrum-ai.com
       - PROPELAUTH_URL=${PROPELAUTH_URL}
       - PROPELAUTH_API_KEY=${PROPELAUTH_API_KEY}
       - SUPER_ADMIN_ORG_ID=${SUPER_ADMIN_ORG_ID}
@@ -48,9 +48,9 @@ services:
       # Google OAuth Configuration
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - REDIRECT_URI=https://admin-test.xpectrum-ai.com/calendar-api/oauth2callback
-      - CALENDAR_REDIRECT_URI=https://admin-test.xpectrum-ai.com/calendar-api/calendar/oauth2callback
-      - FRONTEND_URL=https://admin-test.xpectrum-ai.com
+      - REDIRECT_URI=https://admin.xpectrum-ai.com/calendar-api/oauth2callback
+      - CALENDAR_REDIRECT_URI=https://admin.xpectrum-ai.com/calendar-api/calendar/oauth2callback
+      - FRONTEND_URL=https://admin.xpectrum-ai.com
       - SECRET_KEY=${SECRET_KEY}
       
       # MongoDB Configuration
@@ -83,7 +83,7 @@ services:
       - MAX_CALENDAR_EVENTS=${MAX_CALENDAR_EVENTS:-10}
       
       # CORS Configuration
-      - CORS_ORIGINS=https://admin-test.xpectrum-ai.com,https://auth.admin-test.xpectrum-ai.com
+      - CORS_ORIGINS=https://admin.xpectrum-ai.com,https://auth.admin.xpectrum-ai.com
       
       # PropelAuth Configuration
       - PROPELAUTH_URL=${PROPELAUTH_URL}
