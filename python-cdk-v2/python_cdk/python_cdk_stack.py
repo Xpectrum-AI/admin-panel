@@ -87,12 +87,12 @@ class AdminPanelDeploymentStack(Stack):
         if environment == 'staging':
             certificate = acm.Certificate.from_certificate_arn(
                 self, f"{config['stack_name']}Cert",
-                "arn:aws:acm:us-west-1:641623447164:certificate/staging-certificate-arn"  # Replace with actual staging certificate ARN
+                "arn:aws:acm:us-west-1:641623447164:certificate/99850dcb-97a8-4bed-bbed-6038e2c25e90"
             )
         else:
             certificate = acm.Certificate.from_certificate_arn(
                 self, f"{config['stack_name']}Cert",
-                "arn:aws:acm:us-west-1:641623447164:certificate/ab2020ef-9a74-4e25-b59e-3e29066dd0a0"
+                "arn:aws:acm:us-west-1:641623447164:certificate/887e5136-d78f-4a0b-aad0-7e9c2b74238b"
             )
 
         # Fargate Task Definition - Frontend only
