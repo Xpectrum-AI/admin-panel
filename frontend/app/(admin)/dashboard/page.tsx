@@ -4,27 +4,62 @@ import { useEffect, useState } from 'react';
 import { useAuthInfo } from '@propelauth/react';
 import { ProtectedRoute } from "../../(admin)/auth/ProtectedRoute";
 import Header from './Header';
-import StatCard from './StatCard';
-import RecentActivity from './RecentActivity';
-import QuickActions from './QuickActions';
-import { Users, DollarSign, BarChart, Zap } from 'lucide-react';
-import { SyncLoader } from 'react-spinners';
-import axios from 'axios';
-import WelcomeSetupModal from '../components/WelcomeSetupModel';
-import OrgSetup from '../components/OrgSetup';
-import { removeUserFromOrg } from '@/service/orgService';
-import { useErrorHandler } from '@/hooks/useErrorHandler';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_CALENDAR_API_URL || ''; 
+import { 
+  DocInfoModal, 
+  OrgSetup, 
+  OrgChoiceModal,
+  CalendarEventsList,
+  AgentsSection,
+  DoctorsSection,
+  CalendarAssignmentModal,
+  DoctorCalendars,
+  CreateCalendarModal,
+  ShareCalendarModal,
+  CreateEventModal,
+  ShowDocInfoModal
+} from '../components';
+import { Calendar } from '../components/calendar';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { removeUserFromOrg } from '@/service/orgService';
+import { CalendarEvent } from '../components/calendar/types';
+import { Agent } from '../components/common/types';
+import { doctorApiService } from '@/service/doctorService';
+import { calendarService } from '@/service/calendarService';
+import { eventService } from '@/service/eventService';
+import { agentApiService } from '@/service/agentService';
+
+// Import CalendarData type
+interface CalendarData {
+  name: string;
+  timezone: string;
+}
 
 export default function Dashboard() {
   const { accessToken, user, loading, orgHelper } = useAuthInfo();
-  const [callbackCompleted, setCallbackCompleted] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [showOrgSetup, setShowOrgSetup] = useState(false);
   const [showOrgChoice, setShowOrgChoice] = useState(false);
   const [orgs, setOrgs] = useState<any[]>([]);
-  const { showError, showSuccess } = useErrorHandler();
+  const [activeTab, setActiveTab] = useState<'calendar' | 'agents' | 'doctors'>('calendar');
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [agent, setAgent] = useState<Agent | null>(null);
+  const [agentLoading, setAgentLoading] = useState(false);
+  const [doctors, setDoctors] = useState<any[]>([]);
+  const [doctorsLoading, setDoctorsLoading] = useState(false);
+  const [calendars, setCalendars] = useState<any[]>([]);
+  const [calendarsLoading, setCalendarsLoading] = useState(false);
+  const [selectedCalendar, setSelectedCalendar] = useState<any>(null);
+  const [showDocInfoModal, setShowDocInfoModal] = useState(false);
+  const [showShowDocInfoModal, setShowShowDocInfoModal] = useState(false);
+  const [showCalendarAssignmentModal, setShowCalendarAssignmentModal] = useState(false);
+  const [showShareCalendarModal, setShowShareCalendarModal] = useState(false);
+  const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
+  const [showCreateCalendarModal, setShowCreateCalendarModal] = useState(false);
+  const [createdCalendarId, setCreatedCalendarId] = useState<string | null>(null);
+  const [showCreateEventModal, setShowCreateEventModal] = useState(false);
+  const { showError, showSuccess, showWarning } = useErrorHandler();
 
   useEffect(() => {
     if (!loading && orgHelper) {
@@ -42,6 +77,145 @@ export default function Dashboard() {
       }
     }
   }, [loading, orgHelper]);
+
+
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      if (!orgHelper?.getOrgs()?.[0]?.orgId){ 
+        return;
+      }
+      
+      setDoctorsLoading(true);
+      try {
+        const orgId = orgHelper.getOrgs()[0].orgId;
+        const response = await doctorApiService.getDoctorsByOrg(orgId);
+        if (response.doctors.length === 0){
+          showWarning('No doctors found. Please add a doctor first.');
+        }
+        setDoctors(response.doctors || []);
+      } catch (error) {
+        showError('Failed to load doctors');
+        setDoctors([]);
+      } finally {
+        setDoctorsLoading(false);
+      }
+    };
+
+    fetchDoctors();
+  }, [orgHelper?.getOrgs()?.[0]?.orgId]);
+
+  useEffect(() => {
+    const fetchCalendars = async () => {
+      if (!orgHelper?.getOrgs()?.[0]?.orgId){ 
+        return;
+      }
+      
+      setCalendarsLoading(true);
+      try {
+        const orgId = orgHelper.getOrgs()[0].orgId;
+        const response = await calendarService.getOrgCalendars(orgId);
+        setCalendars(response.calendars || []);
+      } catch (error) {
+        showError('Failed to load calendars');
+        setCalendars([]);
+      } finally {
+        setCalendarsLoading(false);
+      }
+    };
+
+    fetchCalendars();
+  }, [orgHelper?.getOrgs()?.[0]?.orgId]);
+
+  const handleAddDoctor = () => {
+    // Show the DocInfoModal for doctor setup
+    setShowDocInfoModal(true);
+  };
+
+  const handleSearchDoctors = (query: string) => {
+  };
+
+  const handleEditDoctor = (doctor: any) => {
+    setSelectedDoctor(doctor);
+    setShowDocInfoModal(true);
+  };
+
+  const handleAssignCalendar = (doctor: any) => {
+    // Check if doctor already has a calendar assigned
+    const doctorCalendar = calendars?.find((calendar) => calendar.doctor_id === doctor.doctor_id);
+    if (doctorCalendar) {
+      showWarning('Only 1 calendar is allowed per doctor for now.');
+      return;
+    }
+    
+    setSelectedDoctor(doctor);
+    setShowCreateCalendarModal(true);
+  };
+
+  const handleCalendarAssignmentClose = () => {
+    setShowCreateCalendarModal(false);
+    setSelectedDoctor(null);
+  };
+  const handleCreateCalendarForDoctor = async (doctorId: string, calendarData: any) => {
+    try {
+      const res = await calendarService.createCalendar({
+        doctor_id: doctorId,
+        user_name: calendarData.name,
+        timezone: calendarData.timezone
+      });
+
+      showSuccess('Calendar created successfully!');
+
+      // Refresh calendars after creating a new one
+      if (orgHelper?.getOrgs()?.[0]?.orgId) {
+        const orgId = orgHelper.getOrgs()[0].orgId;
+        const calendarsResponse = await calendarService.getOrgCalendars(orgId);
+        setCalendars(calendarsResponse.calendars || []);
+      }
+      
+      return res.calendar_id; // Return the calendar ID
+      
+    } catch (error) {
+      showError('Failed to create calendar for doctor');
+      return null;
+    }
+  };
+
+  const handleCreateCalendarSubmit = async (calendarData: CalendarData) => {
+    if (selectedDoctor) {
+      const calendarId = await handleCreateCalendarForDoctor(selectedDoctor.doctor_id, calendarData);
+      if (calendarId) {
+        setCreatedCalendarId(calendarId);
+        setShowCreateCalendarModal(false);
+        setShowShareCalendarModal(true);
+      }
+    }
+  };
+
+  const handleAssignExistingCalendar = async (doctorId: string, calendarId: string) => {
+    try {
+
+      setDoctors(prevDoctors => 
+        prevDoctors.map(doctor => 
+          doctor._id === doctorId 
+            ? { ...doctor, calendarId: calendarId }
+            : doctor
+        )
+      );
+      
+      showSuccess('Calendar assigned successfully!');
+    } catch (error) {
+      showError('Failed to assign calendar to doctor');
+    }
+  };
+
+  // Mock data for agent - replace with actual API call
+  useEffect(() => {
+    setAgentLoading(true);
+    agentApiService.getAllAgents().then((res) => {
+      setAgent(res.agents[0]);
+      setAgentLoading(false);
+    });
+  }, []);
 
   // Handler for choosing an org
   const handleChooseOrg = async (chosenOrgId: string) => {
@@ -63,64 +237,219 @@ export default function Dashboard() {
     }
   };
 
+  const handleNewEvent = async () => {
+    setShowCreateEventModal(true);
+    setSelectedCalendar(selectedCalendar);
+  };
+
+  const handleCreateEventClose = () => {
+    setShowCreateEventModal(false);
+    setSelectedCalendar(null);
+  };
+
+  const handleDateSelect = (date: Date) => {
+  };
+
+  const handleDeleteDoctor = async (doctor: any) => {
+    // Handle delete doctor functionality
+    await doctorApiService.deleteDoctor(doctor.doctor_id);
+    showSuccess('Doctor deleted successfully'); 
+    doctorApiService.getDoctorsByOrg(orgHelper?.getOrgs()?.[0]?.orgId || '').then((res) => {
+      setDoctors(res.doctors);
+    });
+  };
+
+  const handleNewCalendar = () => {
+    setShowCreateCalendarModal(true);
+  };
+
+  const handleCreateCalendarClose = () => {
+    setShowCreateCalendarModal(false);
+  };
+
+  const handleShareCalendarClose = () => {
+    setShowShareCalendarModal(false);
+    setCreatedCalendarId(null);
+    window.location.reload();
+  };
+
+  const handleCalendarSelect = async (calendar: any) => {
+    setSelectedCalendar(calendar);
+    setEventsLoading(true);
+    try {
+      // Fetch events for the selected calendar
+      const response = await eventService.listEvents(calendar.calendar_id);
+      setEvents(response.events || []);
+    } catch (error) {
+      showError('Failed to load calendar events');
+      setEvents([]);
+    } finally {
+      setEventsLoading(false);
+    }
+  };
+
+  const handleViewDetails = (doctor: any) => {
+    setSelectedDoctor(doctor);
+    setShowShowDocInfoModal(true);
+  };
+
   return (
     <ProtectedRoute>
       {showOrgSetup && <OrgSetup onOrgCreated={() => setShowOrgSetup(false)} />}
       {showOrgChoice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 bg-opacity-40">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg relative animate-fade-in max-h-[90vh] flex flex-col border border-gray-200">
-            <h2 className="text-2xl font-bold mb-4">Choose Your Workspace</h2>
-            <ul className="space-y-4">
-              {orgs.map((org: any) => (
-                <li
-                  key={org.orgId || org.id}
-                  className="border border-gray-300 rounded-xl p-4 flex flex-col bg-gray-50"
-                >
-                  <div className="font-semibold text-lg text-gray-900">{org.orgName || org.name}</div>
-                  <div className="text-gray-600 text-sm mb-2">{org.description || org.metadata?.description || ''}</div>
-                  <button
-                    className="mt-2 px-4 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition min-w-[160px]"
-                    onClick={() => handleChooseOrg(org.orgId || org.id)}
-                  >
-                    Choose this workspace
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <div className="text-sm text-gray-500 mt-4">
-              You can only be part of one workspace. Choosing one will remove you from the others.
-            </div>
-          </div>
-        </div>
+        <OrgChoiceModal 
+          orgs={orgs} 
+          onOrgChosen={() => {
+            setShowOrgChoice(false);
+          }} 
+          userId={user?.userId}
+          handleChooseOrg={handleChooseOrg}
+        />
       )}
-      {!showOrgSetup && !showOrgChoice && showWelcome && <WelcomeSetupModal onComplete={() => setShowWelcome(false)} />}
-      <div className="flex flex-col min-h-screen ">
-        <Header />
-        <main className="flex-1 p-8">
-          <div className="max-w-7xl mx-auto">
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="mt-1 text-lg text-gray-600">
-              Welcome back! Here&apos;s what&apos;s happening with your business today.
-            </p>
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
-              <StatCard title="Total Users" value="2,345" percentage="+12% from last month" Icon={Users} trend="up" />
-              <StatCard title="Revenue" value="$45,231" percentage="+8% from last month" Icon={DollarSign} trend="up" />
-              <StatCard title="Active Sessions" value="1,234" percentage="+2% from last hour" Icon={Zap} trend="up" />
-              <StatCard title="Growth Rate" value="12.5%" percentage="+4% from last quarter" Icon={BarChart} trend="up" />
-            </div>
+      <div className="flex flex-col min-h-screen">
+        <Header activeTab={activeTab} onTabChange={setActiveTab} />
+        <main className="flex-1 p-6">
+          <div>
+
             {/* Main Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-              <div className="lg:col-span-2">
-                <RecentActivity />
+            {activeTab === 'calendar' && (
+              <div className="grid grid-cols-1 gap-8 mb-8">
+                <DoctorCalendars 
+                  calendars={calendars} 
+                  loading={calendarsLoading} 
+                  selectedCalendar={selectedCalendar}
+                  onCalendarSelect={handleCalendarSelect}
+                  onNewCalendar={handleNewCalendar}
+                />
               </div>
-              <div>
-                <QuickActions />
+            )}
+            {activeTab === 'calendar' && (
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                {/* Left Column - Calendar */}
+                <div className="lg:col-span-2 flex">
+                  <div className="w-full">
+                    <Calendar
+                      events={events}
+                      onDateSelect={handleDateSelect}
+                      className="w-full h-full"
+                    />
+                  </div>
+                </div>
+
+                {/* Right Column - Today's Events */}
+                <div className="lg:col-span-3 flex">
+                  <div className="w-full">
+                    <CalendarEventsList
+                      events={events}
+                      loading={eventsLoading}
+                      selectedCalendar={selectedCalendar}
+                      onNewEvent={handleNewEvent}
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
+
+            {activeTab === 'agents' && (
+              <div className="grid grid-cols-1 gap-8">
+                <AgentsSection 
+                  agent={agent} 
+                  loading={agentLoading} 
+                />
+              </div>
+            )}
+
+{activeTab === 'doctors' && (
+              <div className="grid grid-cols-1 gap-8">
+                <DoctorsSection 
+                  doctors={doctors} 
+                  loading={doctorsLoading}
+                  calendars={calendars}
+                  onAddDoctor={handleAddDoctor}
+                  onSearch={handleSearchDoctors}
+                  onEditDoctor={handleEditDoctor}
+                  onAssignCalendar={handleAssignCalendar}
+                  onDeleteDoctor={handleDeleteDoctor}
+                  onViewDetails={handleViewDetails}
+                />
+              </div>
+            )}
+
+            
           </div>
         </main>
       </div>
-    </ProtectedRoute>
+            {showDocInfoModal && (
+         <DocInfoModal 
+           isEdit={!!selectedDoctor}
+           doctorData={selectedDoctor}
+           onComplete={() => {
+            setShowDocInfoModal(false);
+            setSelectedDoctor(null);
+            try{
+              doctorApiService.getDoctorsByOrg(orgHelper?.getOrgs()?.[0]?.orgId || '').then((res) => {
+                setDoctors(res.doctors);
+                // After fetching updated doctors, trigger calendar assignment for the newly created doctor
+                if (!selectedDoctor) { // Only for new doctors, not when editing
+                  const newDoctor = res.doctors.find((doc: any) => 
+                    !doctors.some((existingDoc: any) => existingDoc.doctor_id === doc.doctor_id)
+                  );
+                  if (newDoctor) {
+                    setSelectedDoctor(newDoctor);
+                    setShowCreateCalendarModal(true);
+                  }
+                }
+              });
+            }catch(error){
+              showError('Failed to fetch doctors');
+            }finally{
+              setDoctorsLoading(false);
+            }
+
+           }}
+         />
+       )}
+
+      {showCalendarAssignmentModal && (
+        <CalendarAssignmentModal
+          isOpen={showCalendarAssignmentModal}
+          onClose={handleCalendarAssignmentClose}
+          doctor={selectedDoctor}
+          calendars={calendars}
+          onCreateCalendar={handleCreateCalendarForDoctor}
+          onAssignCalendar={handleAssignExistingCalendar}
+        />
+      )}
+      {showCreateCalendarModal && (
+        <CreateCalendarModal
+          isOpen={showCreateCalendarModal}
+          onClose={handleCreateCalendarClose}
+          onSubmit={handleCreateCalendarSubmit}
+        />
+      )}
+      {showShareCalendarModal && (
+        <ShareCalendarModal
+          isOpen={showShareCalendarModal}
+          onClose={handleShareCalendarClose}
+          calendarId={createdCalendarId}
+          onComplete={handleShareCalendarClose}
+        />
+      )}
+      {showCreateEventModal && (
+        <CreateEventModal
+          isOpen={showCreateEventModal}
+          onClose={handleCreateEventClose}
+          calendarId={selectedCalendar?.calendar_id}
+        />
+      )}
+      {showShowDocInfoModal && (
+        <ShowDocInfoModal
+          isOpen={showShowDocInfoModal}
+          onClose={() => setShowShowDocInfoModal(false)}
+          doctor={selectedDoctor}
+        />
+      )}
+      </ProtectedRoute>
   );
 } 
+
