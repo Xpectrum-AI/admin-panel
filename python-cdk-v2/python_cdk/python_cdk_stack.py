@@ -21,23 +21,25 @@ class AdminPanelDeploymentStack(Stack):
         # Environment-specific configurations
         env_configs = {
             'staging': {
-                'domain': 'localhost',
-                'auth_domain': '181249979.propelauthtest.com',
-                'frontend_tag': 'frontend-staging',
-                'frontend_port': '3000'
-            },
-            'production': {
                 'domain': 'admin-test.xpectrum-ai.com',
                 'auth_domain': 'auth.admin-test.xpectrum-ai.com',
+                'frontend_tag': 'frontend-staging',
+                'frontend_port': '3000',
+                'stack_name': 'AdminPanelStagingStack'
+            },
+            'production': {
+                'domain': 'admin.xpectrum-ai.com',
+                'auth_domain': 'auth.admin.xpectrum-ai.com',
                 'frontend_tag': 'frontend-latest',
-                'frontend_port': '3000'
+                'frontend_port': '3000',
+                'stack_name': 'AdminPanelProductionStack'
             }
         }
         
         config = env_configs.get(environment, env_configs['staging'])
 
         # Use 2 AZs but disable EIP allocation to avoid EIP limit issues
-        vpc = ec2.Vpc(self, "AdminPanelVpc", 
+        vpc = ec2.Vpc(self, f"{config['stack_name']}Vpc", 
             max_azs=2,
             nat_gateways=0,  # Don't create NAT gateways (which require EIPs)
             subnet_configuration=[
@@ -53,13 +55,13 @@ class AdminPanelDeploymentStack(Stack):
                 )
             ]
         )
-        cluster = ecs.Cluster(self, "AdminPanelCluster", vpc=vpc)
+        cluster = ecs.Cluster(self, f"{config['stack_name']}Cluster", vpc=vpc)
 
         # Use single ECR Repository by name
-        repo = ecr.Repository.from_repository_name(self, "AdminPanelRepo", "admin-panel")
+        repo = ecr.Repository.from_repository_name(self, f"{config['stack_name']}Repo", "admin-panel")
 
         # Task Role
-        task_role = iam.Role(self, "AdminPanelTaskRole", assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"))
+        task_role = iam.Role(self, f"{config['stack_name']}TaskRole", assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"))
 
         # Get secrets from GitHub environment variables
         # These will be passed from GitHub Actions workflow
@@ -81,14 +83,20 @@ class AdminPanelDeploymentStack(Stack):
             'PROPELAUTH_URL': os.environ.get(f'{prefix}PROPELAUTH_URL', f"https://{config['auth_domain']}")
         }
 
-        # ACM Certificate
-        certificate = acm.Certificate.from_certificate_arn(
-            self, "AdminPanelCert",
-            "arn:aws:acm:us-west-1:641623447164:certificate/ab2020ef-9a74-4e25-b59e-3e29066dd0a0"
-        )
+        # ACM Certificate - Use different certificates for staging and production
+        if environment == 'staging':
+            certificate = acm.Certificate.from_certificate_arn(
+                self, f"{config['stack_name']}Cert",
+                "arn:aws:acm:us-west-1:641623447164:certificate/99850dcb-97a8-4bed-bbed-6038e2c25e90"
+            )
+        else:
+            certificate = acm.Certificate.from_certificate_arn(
+                self, f"{config['stack_name']}Cert",
+                "arn:aws:acm:us-west-1:641623447164:certificate/887e5136-d78f-4a0b-aad0-7e9c2b74238b"
+            )
 
         # Fargate Task Definition - Frontend only
-        task = ecs.FargateTaskDefinition(self, "AdminPanelTask", memory_limit_mib=1024, cpu=512)
+        task = ecs.FargateTaskDefinition(self, f"{config['stack_name']}Task", memory_limit_mib=1024, cpu=512)
 
         # Frontend container only
         task.add_container(
@@ -131,7 +139,7 @@ class AdminPanelDeploymentStack(Stack):
 
         # Fargate Service (2 tasks)
         service = ecs.FargateService(
-            self, "AdminPanelService", 
+            self, f"{config['stack_name']}Service", 
             cluster=cluster, 
             task_definition=task, 
             desired_count=2, 
@@ -142,7 +150,7 @@ class AdminPanelDeploymentStack(Stack):
         )
 
         # ALB
-        lb = elbv2.ApplicationLoadBalancer(self, "AdminPanelALB", vpc=vpc, internet_facing=True)
+        lb = elbv2.ApplicationLoadBalancer(self, f"{config['stack_name']}ALB", vpc=vpc, internet_facing=True)
         https_listener = lb.add_listener(
             "HttpsListener",
             port=443,
@@ -174,3 +182,4 @@ class AdminPanelDeploymentStack(Stack):
 
         CfnOutput(self, "FrontendURL", value=f"https://{lb.load_balancer_dns_name}")
         CfnOutput(self, "LoadBalancerDNS", value=lb.load_balancer_dns_name)
+        CfnOutput(self, "Environment", value=environment)
