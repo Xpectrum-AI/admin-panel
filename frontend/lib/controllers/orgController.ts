@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateApiKey } from '@/lib/middleware/auth';
-import { getAuth } from '@/lib/config/propelAuth';
+import { initAuth } from '@propelauth/express';
+
+const API_KEY= process.env.PROPELAUTH_API_KEY || "";
+const AUTH_URL= process.env.NEXT_PUBLIC_PROPELAUTH_URL || "";
+
+const auth = initAuth({
+  authUrl: AUTH_URL,
+  apiKey: API_KEY,
+});
 
 // POST /api/org/create-org
 export async function createOrg(request: NextRequest) {
@@ -17,8 +25,7 @@ export async function createOrg(request: NextRequest) {
       return NextResponse.json({ error: 'Missing orgName' }, { status: 400 });
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.createOrg({ name: orgName });
+    const data = await auth.createOrg({ name: orgName });
 
     return NextResponse.json({
       success: true,
@@ -49,8 +56,7 @@ export async function addUserToOrg(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields: orgId, userId, role' }, { status: 400 });
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.addUserToOrg({ userId, orgId, role });
+    const data = await auth.addUserToOrg({ userId, orgId, role });
 
     return NextResponse.json({
       success: true,
@@ -81,8 +87,7 @@ export async function inviteUserToOrg(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields: orgId, email, role' }, { status: 400 });
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.inviteUserToOrg({ orgId, email, role });
+    const data = await auth.inviteUserToOrg({ orgId, email, role });
 
     return NextResponse.json({
       success: true,
@@ -113,8 +118,7 @@ export async function fetchUsersInOrg(request: NextRequest) {
       return NextResponse.json({ error: 'Missing orgId' }, { status: 400 });
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.fetchUsersInOrg( orgId );
+    const data = await auth.fetchUsersInOrg( {orgId} );
     return NextResponse.json({
       success: true,
       data: data,
@@ -144,8 +148,7 @@ export async function fetchPendingInvites(request: NextRequest) {
       return NextResponse.json({ error: 'Missing orgId' }, { status: 400 });
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.fetchPendingInvites( orgId );
+    const data = await auth.fetchPendingInvites( orgId );
     return NextResponse.json({
       success: true,
       data: data,
@@ -175,8 +178,7 @@ export async function removeUserFromOrg(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields: orgId, userId' }, { status: 400 });
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.removeUserFromOrg({ orgId, userId });
+    const data = await auth.removeUserFromOrg({ orgId, userId });
 
     return NextResponse.json({
       success: true,
@@ -207,8 +209,7 @@ export async function changeUserRoleInOrg(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields: orgId, userId, role' }, { status: 400 });
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.changeUserRoleInOrg({ orgId, userId, role });
+    const data = await auth.changeUserRoleInOrg({ orgId, userId, role });
 
     return NextResponse.json({
       success: true,
@@ -243,8 +244,7 @@ export async function updateOrg(request: NextRequest) {
       return NextResponse.json({ error: 'No updates provided' }, { status: 400 });
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.updateOrg({ orgId, updates });
+    const data = await auth.updateOrg({ orgId, updates });
 
     return NextResponse.json({
       success: true,
@@ -275,8 +275,7 @@ export async function fetchOrgDetails(request: NextRequest) {
       return NextResponse.json({ error: 'Missing orgId' }, { status: 400 });
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.fetchOrg(orgId);
+    const data = await auth.fetchOrg(orgId);
 
     return NextResponse.json({
       success: true,
@@ -306,8 +305,7 @@ export async function fetchOrgByQuery(request: NextRequest) {
       return NextResponse.json({ error: 'Missing query' }, { status: 400 });
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.fetchOrgByQuery(query);
+    const data = await auth.fetchOrgByQuery(query);
 
     // Handle the nested response structure from PropelAuth
     const orgs = data.orgs || data;

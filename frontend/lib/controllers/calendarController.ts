@@ -1,0 +1,133 @@
+const LIVE_API_BASE_URL = process.env.NEXT_PUBLIC_LIVE_API_URL || 'https://multiagents.livekit.xpectrum-ai.com';
+const LIVE_API_KEY = process.env.NEXT_PUBLIC_API_KEY || '';
+
+export interface CreateCalendarRequest {
+  doctor_id: string;
+  user_name: string;
+  timezone: string;
+}
+
+export interface ShareCalendarRequest {
+  calendar_id: string;
+  share_email: string;
+  role: string;
+}
+
+export interface GoogleCalendarResponse {
+  message: string;
+  calendar_id: string;
+}
+
+export interface DoctorCalendarResponse {
+  calendar: any;
+}
+
+export interface OrgCalendarsResponse {
+  organization_id: string;
+  total_doctors: number;
+  calendars: any[];
+}
+
+export interface ShareCalendarResponse {
+  message: string;
+  google_calendar_shared: boolean;
+  local_database_updated: boolean;
+}
+
+export const calendarController = {
+  async createCalendar(data: CreateCalendarRequest) {
+    // Validate required fields
+    if (!data.doctor_id || !data.user_name || !data.timezone) {
+      throw new Error('Missing required fields: doctor_id, user_name, timezone');
+    }
+
+    const url = `${LIVE_API_BASE_URL}/calendar/create`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+      (error as any).status = response.status;
+      throw error;
+    }
+
+    return response.json();
+  },
+
+  async getDoctorCalendar(doctorId: string) {
+    if (!doctorId) {
+      throw new Error('Doctor ID is required');
+    }
+
+    const url = `${LIVE_API_BASE_URL}/calendar/doctor/${doctorId}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+      (error as any).status = response.status;
+      throw error;
+    }
+
+    return response.json();
+  },
+
+  async getOrgCalendars(organizationId: string) {
+    if (!organizationId) {
+      throw new Error('Organization ID is required');
+    }
+
+    const url = `${LIVE_API_BASE_URL}/calendar/organization/${organizationId}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+      (error as any).status = response.status;
+      throw error;
+    }
+
+    return response.json();
+  },
+
+  async shareCalendar(data: ShareCalendarRequest) {
+    // Validate required fields
+    if (!data.calendar_id || !data.share_email || !data.role) {
+      throw new Error('Missing required fields: calendar_id, share_email, role');
+    }
+
+    const url = `${LIVE_API_BASE_URL}/calendar/share`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+      (error as any).status = response.status;
+      throw error;
+    }
+
+    return response.json();
+  }
+}; 

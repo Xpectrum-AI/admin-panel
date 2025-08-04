@@ -4,8 +4,7 @@ import { useState } from 'react';
 import { Mail, Eye, EyeOff, User, Lock } from 'lucide-react';
 import { createUser } from "@/service/userService";
 import { useErrorHandler } from '@/hooks/useErrorHandler';
-import { SocialLoginProvider } from '@propelauth/frontend-apis'
-import { useAuthFrontendApis } from '@propelauth/frontend-apis-react';
+
 
 export default function SignUp() {
   const [formData, setFormData] = useState({

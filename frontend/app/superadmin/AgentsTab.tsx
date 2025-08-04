@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Search, Filter, Plus, UserRound, Settings, Ban } from 'lucide-react';
 import ActionMenu from './ActionMenu';
 import Pagination from './Pagination';
-import { updateAgent, setAgentPhone, deleteAgentPhone, deleteAgent } from '@/service/agentService';
+import { agentApiService } from '@/service/agentService';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 interface AgentsTabProps {
@@ -89,7 +89,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
         typing_volume: rest.typing_volume ? parseFloat(rest.typing_volume) : undefined
       };
       
-      const data = await updateAgent(agentId, processedData);
+      const data = await agentApiService.updateAgent(agentId, processedData);
       if (data.success) {
         setShowAddModal(false);
         await refreshAgents();
@@ -133,7 +133,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
         typing_volume: updateForm.typing_volume ? parseFloat(updateForm.typing_volume) : undefined
       };
       
-      const data = await updateAgent(updateForm.agentId, processedData);
+      const data = await agentApiService.updateAgent(updateForm.agentId, processedData);
       if (data.success) {
         setShowUpdateModal(false);
         await refreshAgents();
@@ -153,7 +153,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
     e.preventDefault();
     setModalLoading(true);
     try {
-      const data = await setAgentPhone(setPhoneForm.agentId, setPhoneForm.phone_number);
+      const data = await agentApiService.setAgentPhone(setPhoneForm.agentId, setPhoneForm.phone_number);
       if (data.success) {
         setShowSetPhoneModal(false);
         await refreshAgents();
@@ -856,7 +856,6 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                       </td>
                       <td className="py-4 px-4 text-gray-700">
                         {(() => {
-                          console.log(orgs);
                           
                           const org = orgs.find(o => o.orgId === agent.agentId);
                           return org ? org.name : '-';
@@ -884,7 +883,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                               icon: <UserRound className="w-5 h-5 text-red-500" />,
                               onClick: async () => {
                                 try {
-                                  await deleteAgentPhone(agent.agentId);
+                                  await agentApiService.deleteAgentPhone(agent.agentId);
                                   // Optionally refresh agent data or show a success message
                                   if (typeof refreshAgents === 'function') refreshAgents();
                                   if (typeof showSuccess === 'function') showSuccess('Phone number deleted');
@@ -928,7 +927,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                               icon: <Ban className="w-5 h-5" />,
                               onClick: async () => {
                                 try {
-                                  await deleteAgent(agent.agentId);
+                                  await agentApiService.deleteAgent(agent.agentId);
                                   if (typeof refreshAgents === 'function') refreshAgents();
                                   if (typeof showSuccess === 'function') showSuccess('Agent suspended (deleted) successfully');
                                 } catch (err) {

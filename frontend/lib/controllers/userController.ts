@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateApiKey } from '@/lib/middleware/auth';
-import { getAuth } from '@/lib/config/propelAuth';
+import { initAuth } from '@propelauth/express';
+
+const API_KEY= process.env.PROPELAUTH_API_KEY || "";
+const AUTH_URL= process.env.NEXT_PUBLIC_PROPELAUTH_URL || "";
+
+const auth = initAuth({
+  authUrl: AUTH_URL,
+  apiKey: API_KEY,
+});
 
 // GET /api/user/fetch-user-mail
 export async function getUserByEmail(request: NextRequest) {
@@ -17,8 +25,7 @@ export async function getUserByEmail(request: NextRequest) {
       return NextResponse.json({ error: 'Missing email parameter' }, { status: 400 });
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.fetchUserByEmail(email, { includeOrgs: true });
+    const data = await auth.fetchUserMetadataByEmail(email, true);
 
     return NextResponse.json({
       success: true,
@@ -51,8 +58,7 @@ export async function signup(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.createUser({ email, password, firstName, lastName, username });
+    const data = await auth.createUser({ email, password, firstName, lastName, username });
 
     return NextResponse.json({
       success: true,
@@ -83,8 +89,7 @@ export async function fetchUsersByQuery(request: NextRequest) {
       return NextResponse.json({ error: 'Missing query' }, { status: 400 });
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.fetchUsersByQuery(query);
+    const data = await auth.fetchUsersByQuery(query);
 
     // Handle the nested response structure from PropelAuth
     const users = data.users || data;
