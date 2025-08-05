@@ -120,7 +120,7 @@ class AdminPanelDeploymentStack(Stack):
                 "NEXT_PUBLIC_GOOGLE_CALENDAR_API_URL": "https://www.googleapis.com/calendar/v3",
                 "NEXT_PUBLIC_DATABASE_NAME": "google_oauth",
                 "NEXT_PUBLIC_AUTH_URL": f"https://{config['auth_domain']}",
-                "NEXT_PUBLIC_PROPELAUTH_URL": f"https://{config['auth_domain']}",
+                "NEXT_PUBLIC_PROPELAUTH_URL": secrets["PROPELAUTH_URL"],
                 "NEXT_PUBLIC_CALENDAR_API_URL": f"https://{config['domain']}/calendar-api",
                 "NEXT_PUBLIC_API_BASE_URL": f"https://{config['domain']}/calendar-api",
                 "NEXT_PUBLIC_API_URL": f"https://{config['domain']}/api",
