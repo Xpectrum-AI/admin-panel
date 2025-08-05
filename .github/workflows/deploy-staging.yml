@@ -55,6 +55,14 @@ jobs:
       run: |
         npm install -g aws-cdk
 
+    - name: Log Environment Variables (Staging)
+      run: |
+        echo "=== STAGING ENVIRONMENT VARIABLES ==="
+        echo "STAGING_PROPELAUTH_URL: ${{ secrets.STAGING_PROPELAUTH_URL }}"
+        echo "STAGING_PROPELAUTH_REDIRECT_URI: ${{ secrets.STAGING_PROPELAUTH_REDIRECT_URI }}"
+        echo "STAGING_NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_PROPELAUTH_API_KEY }}"
+        echo "====================================="
+
     - name: Deploy CDK stack (staging)
       env:
         # Pass GitHub environment variables to CDK
@@ -133,6 +141,26 @@ jobs:
         # Health checks for frontend only (skip SSL verification)
         curl -f -k "https://$HOSTNAME/" || exit 1
         curl -f -k "https://$HOSTNAME/api/health" || exit 1
+        
+        echo "=== VERIFYING DEPLOYED ENVIRONMENT VARIABLES ==="
+        # Get ECS task details to verify environment variables
+        TASK_ARN=$(aws ecs list-tasks \
+          --cluster AdminPanelStagingStack-AdminPanelStagingStackCluster354587DC-WMnszSmI30dz \
+          --region ${{ env.AWS_REGION }} \
+          --query 'taskArns[0]' \
+          --output text 2>/dev/null || echo "")
+        
+        if [ ! -z "$TASK_ARN" ] && [ "$TASK_ARN" != "None" ]; then
+          echo "Checking environment variables in deployed container..."
+          aws ecs describe-tasks \
+            --cluster AdminPanelStagingStack-AdminPanelStagingStackCluster354587DC-WMnszSmI30dz \
+            --tasks $TASK_ARN \
+            --region ${{ env.AWS_REGION }} \
+            --query 'tasks[0].overrides.containerOverrides[0].environment[?name==`NEXT_PUBLIC_PROPELAUTH_URL`].{name:name,value:value}' \
+            --output table || echo "Could not get environment variables"
+        else
+          echo "No tasks found to verify environment variables"
+        fi
 
     - name: Debug deployment status
       run: |

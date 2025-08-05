@@ -55,6 +55,14 @@ jobs:
       run: |
         npm install -g aws-cdk
 
+    - name: Log Environment Variables (Production)
+      run: |
+        echo "=== PRODUCTION ENVIRONMENT VARIABLES ==="
+        echo "PRODUCTION_PROPELAUTH_URL: ${{ secrets.PRODUCTION_PROPELAUTH_URL }}"
+        echo "PRODUCTION_PROPELAUTH_REDIRECT_URI: ${{ secrets.PRODUCTION_PROPELAUTH_REDIRECT_URI }}"
+        echo "PRODUCTION_NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_NEXT_PUBLIC_PROPELAUTH_API_KEY }}"
+        echo "========================================"
+
     - name: Deploy CDK stack (production)
       env:
         # Pass GitHub environment variables to CDK
