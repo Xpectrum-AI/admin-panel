@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authenticateApiKey } from '@/lib/middleware/auth';
 import { initAuth } from '@propelauth/express';
 
-const API_KEY= process.env.PROPELAUTH_API_KEY || "";
-const AUTH_URL= process.env.NEXT_PUBLIC_PROPELAUTH_URL || "";
+const API_KEY= process.env.NEXT_PUBLIC_PROPELAUTH_API_KEY || process.env.PROPELAUTH_API_KEY || "";
+const AUTH_URL= process.env.NEXT_PUBLIC_PROPELAUTH_URL || process.env.NEXT_PUBLIC_AUTH_URL || "";
 
 const auth = initAuth({
   authUrl: AUTH_URL,
