@@ -51,6 +51,7 @@ export const eventController = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-api-key': LIVE_API_KEY,
       },
       body: JSON.stringify(data),
     });
@@ -75,6 +76,7 @@ export const eventController = {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'x-api-key': LIVE_API_KEY,
       },
     });
 
@@ -98,6 +100,7 @@ export const eventController = {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        'x-api-key': LIVE_API_KEY,
       },
       body: JSON.stringify(data),
     });
@@ -122,6 +125,7 @@ export const eventController = {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
+        'x-api-key': LIVE_API_KEY,
       },
     });
 
