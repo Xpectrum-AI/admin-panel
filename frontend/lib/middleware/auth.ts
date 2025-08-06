@@ -1,33 +1,38 @@
 import { NextRequest } from 'next/server';
 
 export async function authenticateApiKey(request: NextRequest) {
-  // try {
-  //   // Get API key from headers
-  //   const apiKey = request.headers.get('x-api-key') || 
-  //                  request.headers.get('authorization')?.replace('Bearer ', '');
+  try {
+    // Skip authentication in development
+    if (process.env.NODE_ENV === 'development') {
+      return { success: true };
+    }
 
-  //   // Check if API key exists
-  //   if (!apiKey) {
-  //     return { success: false, error: 'API key missing' };
-  //   }
+    // Get API key from headers
+    const apiKey = request.headers.get('x-api-key') || 
+                   request.headers.get('authorization')?.replace('Bearer ', '');
 
-  //   // Validate API key (you can implement your own validation logic)
-  //   const validApiKeys = [
-  //     'xpectrum-ai@123',
-  //     process.env.API_KEY,
-  //     process.env.LIVE_API_KEY
-  //   ].filter(Boolean);
+    // Check if API key exists
+    if (!apiKey) {
+      return { success: false, error: 'API key missing' };
+    }
 
-  //   if (!validApiKeys.includes(apiKey)) {
-  //     return { success: false, error: 'Invalid API key' };
-  //   }
+    // Validate API key (you can implement your own validation logic)
+    const validApiKeys = [
+      'xpectrum-ai@123',
+      process.env.API_KEY,
+      process.env.LIVE_API_KEY,
+      process.env.NEXT_PUBLIC_API_KEY
+    ].filter(Boolean);
 
-  //   return { success: true };
-  // } catch (error) {
-  //   console.error('Authentication error:', error);
-  //   return { success: false, error: 'Authentication failed' };
-  // }
-  return { success: true };
+    if (!validApiKeys.includes(apiKey)) {
+      return { success: false, error: 'Invalid API key' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Authentication error:', error);
+    return { success: false, error: 'Authentication failed' };
+  }
 }
 
 export async function authenticateUser(request: NextRequest) {
