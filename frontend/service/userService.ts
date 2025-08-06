@@ -40,9 +40,16 @@ export async function createUser({ email, password, firstName, lastName, usernam
 
 export async function fetchUsersByQuery(query: any) {
   const API_BASE = '/api'; // Changed from external backend to local Next.js API
+  const API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'xpectrum-ai@123';
+  
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-API-Key': API_KEY,
+  };
+  
   const response = await fetch(`${API_BASE}/user/fetch-users-query`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: headers,
     body: JSON.stringify(query),
   });
   if (!response.ok) {

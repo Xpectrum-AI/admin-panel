@@ -37,13 +37,18 @@ export interface DeleteEventResponse {
   google_calendar_id: string;
 }
 
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'xpectrum-ai@123';
+
+const headers = {
+  'Content-Type': 'application/json',
+  'X-API-Key': API_KEY,
+};
+
 export const eventService = {
   async createEvent(data: CreateEventRequest): Promise<EventResponse> {
     const response = await fetch(`/api/event/create`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: headers,
       body: JSON.stringify(data),
     });
 
@@ -60,9 +65,7 @@ export const eventService = {
   async listEvents(calendarId: string, upcomingOnly: boolean = true): Promise<ListEventsResponse> {
     const response = await fetch(`/api/event/list?calendar_id=${encodeURIComponent(calendarId)}&upcoming_only=${upcomingOnly}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: headers,
     });
 
     if (!response.ok) {
@@ -78,9 +81,7 @@ export const eventService = {
   async updateEvent(data: UpdateEventRequest): Promise<EventResponse> {
     const response = await fetch(`/api/event/update`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: headers,
       body: JSON.stringify(data),
     });
 
@@ -97,9 +98,7 @@ export const eventService = {
   async deleteEvent(calendarId: string, eventId: string): Promise<DeleteEventResponse> {
     const response = await fetch(`/api/event/delete?calendar_id=${encodeURIComponent(calendarId)}&event_id=${encodeURIComponent(eventId)}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: headers,
     });
 
     if (!response.ok) {

@@ -70,13 +70,16 @@ class AdminPanelDeploymentStack(Stack):
         
         secrets = {
             'NEXT_PUBLIC_PROPELAUTH_API_KEY': os.environ.get(f'{prefix}NEXT_PUBLIC_PROPELAUTH_API_KEY', ''),
-            'NEXT_PUBLIC_API_KEY': os.environ.get(f'{prefix}NEXT_PUBLIC_API_KEY', ''),
+            'NEXT_PUBLIC_API_KEY': os.environ.get(f'{prefix}NEXT_PUBLIC_API_KEY', 'xpectrum-ai@123'),
             'SECRET_KEY': os.environ.get(f'{prefix}SECRET_KEY', ''),
             'PROPELAUTH_API_KEY': os.environ.get(f'{prefix}PROPELAUTH_API_KEY', ''),
             'PROPELAUTH_REDIRECT_URI': os.environ.get(f'{prefix}PROPELAUTH_REDIRECT_URI', f"https://{config['auth_domain']}"),
             'NEXT_PUBLIC_LIVE_API_URL': os.environ.get(f'{prefix}NEXT_PUBLIC_LIVE_API_URL', ''),
             'SUPER_ADMIN_ORG_ID': os.environ.get(f'{prefix}SUPER_ADMIN_ORG_ID', ''),
-            'NEXT_PUBLIC_PROPELAUTH_URL': os.environ.get(f'{prefix}NEXT_PUBLIC_PROPELAUTH_URL', f"https://{config['auth_domain']}")
+            'NEXT_PUBLIC_PROPELAUTH_URL': os.environ.get(f'{prefix}NEXT_PUBLIC_PROPELAUTH_URL', f"https://{config['auth_domain']}"),
+            'API_KEY': os.environ.get(f'{prefix}API_KEY', 'xpectrum-ai@123'),
+            'LIVE_API_KEY': os.environ.get(f'{prefix}LIVE_API_KEY', 'xpectrum-ai@123'),
+            
         }
 
         # ACM Certificate - Use different certificates for staging and production
@@ -124,7 +127,9 @@ class AdminPanelDeploymentStack(Stack):
                 "NEXT_PUBLIC_TIMEZONE_KEY": "selected_timezone",
                 "NODE_ENV": environment,
                 "PORT": config['frontend_port'],
-                "HOST": "0.0.0.0"
+                "HOST": "0.0.0.0",
+                "API_KEY": secrets["API_KEY"],
+                "LIVE_API_KEY": secrets["LIVE_API_KEY"]
             },
             port_mappings=[ecs.PortMapping(container_port=int(config['frontend_port']))]
         )
