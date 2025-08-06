@@ -1,5 +1,12 @@
 // Example: User service API calls
 
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'xpectrum-ai@123';
+
+const headers = {
+  'Content-Type': 'application/json',
+  'x-api-key': API_KEY,
+};
+
 export async function getUser(userId: string) {
   // Placeholder for user fetching logic
   // return fetch(`/api/users/${userId}`)
@@ -14,6 +21,7 @@ export async function fetchUserMailApi(email: string, includeOrgs: boolean) {
   });
   const res = await fetch(`/api/user/fetch-user-mail?${params.toString()}`, {
     method: 'GET',
+    headers,
   });
   if (!res.ok) {
     throw new Error('Failed to fetch user mail');
@@ -31,7 +39,7 @@ export async function createUser({ email, password, firstName, lastName, usernam
   const API_BASE = '/api'; // Changed from external backend to local Next.js API
   const response = await fetch(`${API_BASE}/user/create-user`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ email, password, firstName, lastName, username }),
   });
   const data = await response.json();
@@ -42,7 +50,7 @@ export async function fetchUsersByQuery(query: any) {
   const API_BASE = '/api'; // Changed from external backend to local Next.js API
   const response = await fetch(`${API_BASE}/user/fetch-users-query`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(query),
   });
   if (!response.ok) {

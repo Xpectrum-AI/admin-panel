@@ -1,11 +1,17 @@
 import type { UpdateOrgInput } from './type';
 
 const API_BASE = '/api'; // Changed from external backend to local Next.js API
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'xpectrum-ai@123';
+
+const headers = {
+  'Content-Type': 'application/json',
+  'x-api-key': API_KEY,
+};
 
 export async function createOrg(orgName: string) {
   const response = await fetch(`${API_BASE}/org/create-org`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ orgName }),
   });
   if (!response.ok) {
@@ -19,7 +25,7 @@ export async function createOrg(orgName: string) {
 export async function addUserToOrg(orgId: string, userId: string, role: string) {
   const response = await fetch(`${API_BASE}/org/add-user`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ orgId, userId, role }),
   });
   if (!response.ok) {
@@ -33,7 +39,7 @@ export async function addUserToOrg(orgId: string, userId: string, role: string) 
 export async function inviteUserToOrg(orgId: string, email: string, role: string) {
   const response = await fetch(`${API_BASE}/org/invite-user`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ orgId, email, role }),
   });
   if (!response.ok) {
@@ -47,7 +53,7 @@ export async function inviteUserToOrg(orgId: string, email: string, role: string
 export async function fetchUsersInOrg(orgId: string) {
   const response = await fetch(`${API_BASE}/org/fetch-users`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ orgId }),
   });
   if (!response.ok) {
@@ -61,7 +67,7 @@ export async function fetchUsersInOrg(orgId: string) {
 export async function fetchPendingInvites(orgId: string) {
   const response = await fetch(`${API_BASE}/org/fetch-pending-invites`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ orgId }),
   });
   if (!response.ok) {
@@ -75,7 +81,7 @@ export async function fetchPendingInvites(orgId: string) {
 export async function removeUserFromOrg(orgId: string, userId: string) {
   const response = await fetch(`${API_BASE}/org/remove-user`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ orgId, userId }),
   });
   if (!response.ok) {
@@ -89,7 +95,7 @@ export async function removeUserFromOrg(orgId: string, userId: string) {
 export async function changeUserRoleInOrg(orgId: string, userId: string, role: string) {
   const response = await fetch(`${API_BASE}/org/change-user-role`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ orgId, userId, role }),
   });
   if (!response.ok) {
@@ -139,7 +145,7 @@ export async function updateOrg(orgId: string, updates: UpdateOrgInput): Promise
 
   const response = await fetch(`${API_BASE}/org/update-org`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(body),
   });
 
@@ -156,7 +162,7 @@ export async function updateOrg(orgId: string, updates: UpdateOrgInput): Promise
 export async function fetchOrgDetails(orgId: string) {
   const response = await fetch(`${API_BASE}/org/fetch-org-details`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ orgId }),
   });
   if (!response.ok) {
@@ -170,7 +176,7 @@ export async function fetchOrgDetails(orgId: string) {
 export async function fetchOrgByQuery(query: any) {
   const response = await fetch(`${API_BASE}/org/fetch-orgs-query`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(query),
   });
   if (!response.ok) {
