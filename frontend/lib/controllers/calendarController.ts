@@ -46,6 +46,7 @@ export const calendarController = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-api-key': LIVE_API_KEY,
       },
       body: JSON.stringify(data),
     });
@@ -70,6 +71,7 @@ export const calendarController = {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'x-api-key': LIVE_API_KEY,
       },
     });
 
@@ -93,6 +95,7 @@ export const calendarController = {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'x-api-key': LIVE_API_KEY,
       },
     });
 
@@ -117,6 +120,7 @@ export const calendarController = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-api-key': LIVE_API_KEY,
       },
       body: JSON.stringify(data),
     });

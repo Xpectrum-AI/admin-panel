@@ -1,3 +1,10 @@
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'xpectrum-ai@123';
+
+const headers = {
+  'Content-Type': 'application/json',
+  'x-api-key': API_KEY,
+};
+
 export interface CreateCalendarRequest {
   doctor_id: string;
   user_name: string;
@@ -36,18 +43,11 @@ export interface CalendarEventsResponse {
   events: any[];
 }
 
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'xpectrum-ai@123';
-
-const headers = {
-  'Content-Type': 'application/json',
-  'X-API-Key': API_KEY,
-};
-
 export const calendarService = {
   async createCalendar(data: CreateCalendarRequest): Promise<GoogleCalendarResponse> {
     const response = await fetch(`/api/calendar/create`, {
       method: 'POST',
-      headers: headers,
+      headers,
       body: JSON.stringify(data),
     });
 
@@ -64,7 +64,7 @@ export const calendarService = {
   async getDoctorCalendar(doctorId: string): Promise<DoctorCalendarResponse> {
     const response = await fetch(`/api/calendar/doctor/${doctorId}`, {
       method: 'GET',
-      headers: headers,
+      headers,
     });
 
     if (!response.ok) {
@@ -80,7 +80,7 @@ export const calendarService = {
   async getOrgCalendars(organizationId: string): Promise<OrgCalendarsResponse> {
     const response = await fetch(`/api/calendar/organization/${organizationId}`, {
       method: 'GET',
-      headers: headers,
+      headers,
     });
 
     if (!response.ok) {
@@ -96,7 +96,7 @@ export const calendarService = {
   async shareCalendar(data: ShareCalendarRequest): Promise<ShareCalendarResponse> {
     const response = await fetch(`/api/calendar/share`, {
       method: 'POST',
-      headers: headers,
+      headers,
       body: JSON.stringify(data),
     });
 
@@ -109,4 +109,4 @@ export const calendarService = {
 
     return response.json();
   },
-}
+};

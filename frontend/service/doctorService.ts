@@ -10,7 +10,7 @@ const API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'xpectrum-ai@123';
 
 const headers = {
   'Content-Type': 'application/json',
-  'X-API-Key': API_KEY,
+  'x-api-key': API_KEY,
 };
 
 // Frontend service for React components
@@ -19,7 +19,7 @@ export const doctorApiService = {
   async createDoctor(data: DoctorCreateRequest): Promise<{ doctor: any }> {
     const response = await fetch('/api/doctor', {
       method: 'POST',
-      headers: headers,
+      headers,
       body: JSON.stringify(data)
     });
 
@@ -34,7 +34,7 @@ export const doctorApiService = {
   // Get a single doctor by ID
   async getDoctor(doctorId: string): Promise<DoctorResponse> {
     const response = await fetch(`/api/doctor/${doctorId}`, {
-      headers: headers,
+      headers,
     });
 
     if (!response.ok) {
@@ -49,7 +49,7 @@ export const doctorApiService = {
   async updateDoctor(doctorId: string, data: DoctorUpdateRequest): Promise<{ updated_doctor: any }> {
     const response = await fetch(`/api/doctor/${doctorId}`, {
       method: 'PUT',
-      headers: headers,
+      headers,
       body: JSON.stringify(data)
     });
 
@@ -64,7 +64,7 @@ export const doctorApiService = {
   // Get all doctors in an organization
   async getDoctorsByOrg(orgId: string): Promise<OrganizationDoctorsResponse> {
     const response = await fetch(`/api/doctor/organization/${orgId}`, {
-      headers: headers,
+      headers,
     });
 
     if (!response.ok) {
@@ -78,7 +78,7 @@ export const doctorApiService = {
   // Get doctors by organization (alternative method using query params)
   async getDoctorsByOrgQuery(orgId: string): Promise<OrganizationDoctorsResponse> {
     const response = await fetch(`/api/doctor?organization_id=${orgId}`, {
-      headers: headers,
+      headers,
     });
 
     if (!response.ok) {
@@ -93,7 +93,7 @@ export const doctorApiService = {
   async deleteDoctor(doctorId: string): Promise<DeleteDoctorResponse> {
     const response = await fetch(`/api/doctor/${doctorId}`, {
       method: 'DELETE',
-      headers: headers,
+      headers,
     });
 
     if (!response.ok) {
@@ -107,7 +107,7 @@ export const doctorApiService = {
   // Get all doctors (admin functionality)
   async getAllDoctors(): Promise<{ doctors: any[] }> {
     const response = await fetch('/api/doctor', {
-      headers: headers,
+      headers,
     });
 
     if (!response.ok) {

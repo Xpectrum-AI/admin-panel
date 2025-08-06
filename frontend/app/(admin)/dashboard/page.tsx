@@ -41,7 +41,7 @@ export default function Dashboard() {
   const [showOrgSetup, setShowOrgSetup] = useState(false);
   const [showOrgChoice, setShowOrgChoice] = useState(false);
   const [orgs, setOrgs] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'calendar' | 'agents' | 'doctors'>('calendar');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'agents' | 'doctors'>('doctors');
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [agent, setAgent] = useState<Agent | null>(null);
