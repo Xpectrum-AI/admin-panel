@@ -7,8 +7,9 @@ export async function authenticateApiKey(request: NextRequest) {
       return { success: true };
     }
 
-    // Get API key from headers
+    // Get API key from headers (check both lowercase and uppercase)
     const apiKey = request.headers.get('x-api-key') || 
+                   request.headers.get('X-API-Key') ||
                    request.headers.get('authorization')?.replace('Bearer ', '');
 
     // Check if API key exists
