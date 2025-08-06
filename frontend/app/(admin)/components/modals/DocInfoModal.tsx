@@ -228,6 +228,7 @@ export default function WelcomeSetupModal({
                     className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     value={doctorProfile.first_name}
                     onChange={e => handleChange('first_name', e.target.value)}
+                    required
                   />
                 </div>
                 <div>
@@ -238,6 +239,7 @@ export default function WelcomeSetupModal({
                     className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     value={doctorProfile.last_name}
                     onChange={e => handleChange('last_name', e.target.value)}
+                    required
                   />
                 </div>
                 <div>
@@ -247,6 +249,7 @@ export default function WelcomeSetupModal({
                     className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     value={doctorProfile.doctor_data.gender}
                     onChange={e => handleChange('gender', e.target.value)}
+                    required
                   >
                     <option value="">Select gender</option>
                     <option>Male</option>
@@ -263,6 +266,7 @@ export default function WelcomeSetupModal({
                     className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     value={doctorProfile.doctor_data.age}
                     onChange={e => handleChange('age', e.target.value)}
+                    required
                   />
                 </div>
                 <div>
@@ -284,6 +288,7 @@ export default function WelcomeSetupModal({
                     className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     value={doctorProfile.doctor_data.experience}
                     onChange={e => handleChange('experience', e.target.value)}
+                    required
                   />
                 </div>
               </div>

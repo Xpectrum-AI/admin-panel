@@ -79,7 +79,6 @@ class AdminPanelDeploymentStack(Stack):
             'NEXT_PUBLIC_PROPELAUTH_URL': os.environ.get(f'{prefix}NEXT_PUBLIC_PROPELAUTH_URL', f"https://{config['auth_domain']}"),
             'API_KEY': os.environ.get(f'{prefix}API_KEY', 'xpectrum-ai@123'),
             'LIVE_API_KEY': os.environ.get(f'{prefix}LIVE_API_KEY', 'xpectrum-ai@123'),
-            
         }
 
         # ACM Certificate - Use different certificates for staging and production
