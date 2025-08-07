@@ -3,7 +3,7 @@ import { authenticateApiKey } from '@/lib/middleware/auth';
 import { initAuth } from '@propelauth/express';
 import { createSuccessResponse, handleApiError } from '@/lib/utils/apiResponse';
 
-const API_KEY= "888ea8af8e1d78888fcb15304e2633446516519573b7f6219943b306a4626df95d477061f77b939b8cdadd7a50559a6c" //process.env.NEXT_PUBLIC_PROPELAUTH_API_KEY || "";
+const API_KEY= process.env.NEXT_PUBLIC_PROPELAUTH_API_KEY || "";
 const AUTH_URL= process.env.NEXT_PUBLIC_PROPELAUTH_URL || "";
 
 const auth = initAuth({
