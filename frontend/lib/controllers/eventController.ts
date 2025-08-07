@@ -1,5 +1,5 @@
-const LIVE_API_BASE_URL = "http://voice-integration-alb-test-883972788.us-west-1.elb.amazonaws.com" //process.env.NEXT_PUBLIC_LIVE_API_URL || 'https://multiagents.livekit.xpectrum-ai.com';
-const LIVE_API_KEY = "xpectrum-ai@123" //process.env.NEXT_PUBLIC_API_KEY || '';
+const LIVE_API_BASE_URL = process.env.NEXT_PUBLIC_LIVE_API_URL || '';
+const LIVE_API_KEY = process.env.NEXT_PUBLIC_API_KEY || '';
 
 export interface CreateEventRequest {
   calendar_id: string;
