@@ -3,11 +3,19 @@
 import { withAuthInfo, WithAuthInfoProps } from "@propelauth/react";
 import React from "react";
 
-const SUPER_ADMIN_ORG_ID = process.env.SUPER_ADMIN_ORG_ID || "";
+const SUPER_ADMIN_ORG_ID = process.env.NEXT_PUBLIC_SUPER_ADMIN_ORG_ID || "";
 
 const SuperAdminGuard = withAuthInfo((props: WithAuthInfoProps & { children?: React.ReactNode }) => {
   const orgs = props.orgHelper?.getOrgs() || [];
   const isSuperAdmin = orgs.some((org: { orgId: string }) => org.orgId === SUPER_ADMIN_ORG_ID);
+  
+  // Debug logging
+  console.log('SuperAdminGuard Debug:', {
+    SUPER_ADMIN_ORG_ID,
+    userOrgs: orgs,
+    isSuperAdmin,
+    user: props.user?.email
+  });
 
   if (isSuperAdmin) {
     return <>{props.children}</>;
