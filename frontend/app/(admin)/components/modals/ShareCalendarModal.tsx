@@ -79,7 +79,7 @@ export default function ShareCalendarModal({ isOpen, onClose, calendarName = "My
               />
             </div>
 
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" htmlFor="permission">
                 Permission
               </label>
@@ -119,7 +119,7 @@ export default function ShareCalendarModal({ isOpen, onClose, calendarName = "My
                   </div>
                 )}
               </div>
-            </div>
+            </div> */}
 
             <button
               className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-foreground text-background hover:bg-foreground/90 h-10 px-4 py-2 w-full"

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eventController } from '@/lib/controllers/eventController';
+import { createSuccessResponse, handleApiError } from '@/lib/utils/apiResponse';
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -8,19 +9,12 @@ export async function DELETE(request: NextRequest) {
     const eventId = searchParams.get('event_id');
 
     if (!calendarId || !eventId) {
-      return NextResponse.json(
-        { error: 'Calendar ID and Event ID are required' },
-        { status: 400 }
-      );
+      return handleApiError(new Error('Calendar ID and Event ID are required'), 'Event Delete API');
     }
 
     const result = await eventController.deleteEvent(calendarId, eventId);
-    return NextResponse.json(result);
+    return createSuccessResponse(result, 'Event deleted successfully');
   } catch (error: any) {
-    console.error('Delete event error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete event' },
-      { status: error.status || 500 }
-    );
+    return handleApiError(error, 'Event Delete API');
   }
 } 

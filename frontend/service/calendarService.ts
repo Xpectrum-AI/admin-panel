@@ -5,46 +5,8 @@ const headers = {
   'x-api-key': API_KEY,
 };
 
-export interface CreateCalendarRequest {
-  doctor_id: string;
-  user_name: string;
-  timezone: string;
-}
-
-export interface ShareCalendarRequest {
-  calendar_id: string;
-  share_email: string;
-  role: string;
-}
-
-export interface GoogleCalendarResponse {
-  message: string;
-  calendar_id: string;
-}
-
-export interface DoctorCalendarResponse {
-  calendar: any;
-}
-
-export interface OrgCalendarsResponse {
-  organization_id: string;
-  total_doctors: number;
-  calendars: any[];
-}
-
-export interface ShareCalendarResponse {
-  message: string;
-  google_calendar_shared: boolean;
-  local_database_updated: boolean;
-}
-
-export interface CalendarEventsResponse {
-  calendar_id: string;
-  events: any[];
-}
-
 export const calendarService = {
-  async createCalendar(data: CreateCalendarRequest): Promise<GoogleCalendarResponse> {
+  async createCalendar(data: any): Promise<any> {
     const response = await fetch(`/api/calendar/create`, {
       method: 'POST',
       headers,
@@ -52,48 +14,43 @@ export const calendarService = {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const error = new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      (error as any).status = response.status;
-      throw error;
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to create calendar');
     }
 
-    return response.json();
+    const result = await response.json();
+    return result.data || result;
   },
 
-  async getDoctorCalendar(doctorId: string): Promise<DoctorCalendarResponse> {
+  async getDoctorCalendar(doctorId: string): Promise<any> {
     const response = await fetch(`/api/calendar/doctor/${doctorId}`, {
-      method: 'GET',
       headers,
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const error = new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      (error as any).status = response.status;
-      throw error;
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to get doctor calendar');
     }
 
-    return response.json();
+    const result = await response.json();
+    return result.data || result;
   },
 
-  async getOrgCalendars(organizationId: string): Promise<OrgCalendarsResponse> {
+  async getOrgCalendars(organizationId: string): Promise<any> {
     const response = await fetch(`/api/calendar/organization/${organizationId}`, {
-      method: 'GET',
       headers,
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const error = new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      (error as any).status = response.status;
-      throw error;
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to get organization calendars');
     }
 
-    return response.json();
+    const result = await response.json();
+    return result.data || result;
   },
 
-  async shareCalendar(data: ShareCalendarRequest): Promise<ShareCalendarResponse> {
+  async shareCalendar(data: any): Promise<any> {
     const response = await fetch(`/api/calendar/share`, {
       method: 'POST',
       headers,
@@ -101,12 +58,16 @@ export const calendarService = {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const error = new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      (error as any).status = response.status;
-      throw error;
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to share calendar');
     }
 
+<<<<<<< Updated upstream
     return response.json();
   },
+=======
+    const result = await response.json();
+    return result.data || result;
+  }
+>>>>>>> Stashed changes
 };

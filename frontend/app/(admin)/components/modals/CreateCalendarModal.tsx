@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, Clock, X, ChevronDown } from 'lucide-react';
+import { Calendar, Clock, ChevronDown } from 'lucide-react';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 interface CreateCalendarModalProps {
@@ -165,16 +165,6 @@ export default function CreateCalendarModal({ isOpen, onClose, onSubmit }: Creat
             </button>
           </div>
         </div>
-
-        {/* Close Button */}
-        <button
-          type="button"
-          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
-          onClick={handleClose}
-        >
-          <X className="h-4 w-4" />
-          <span className="sr-only">Close</span>
-        </button>
       </div>
     </div>
   );

@@ -1,51 +1,11 @@
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'xpectrum-ai@123';
-
 const headers = {
   'Content-Type': 'application/json',
   'x-api-key': API_KEY,
 };
 
-export interface CreateEventRequest {
-  calendar_id: string;
-  summary: string;
-  start: string;
-  end: string;
-  attendee_email?: string;
-}
-
-export interface UpdateEventRequest {
-  calendar_id: string;
-  event_id: string;
-  summary: string;
-  start: string;
-  end: string;
-}
-
-export interface EventResponse {
-  event_id: string;
-  summary: string;
-  start: string;
-  end: string;
-  attendee_email?: string;
-  created_at: string;
-  updated_at: string;
-  status: string;
-}
-
-export interface ListEventsResponse {
-  events: any[];
-  total_count: number;
-  source: string;
-  calendar_id: string;
-}
-
-export interface DeleteEventResponse {
-  status: string;
-  google_calendar_id: string;
-}
-
 export const eventService = {
-  async createEvent(data: CreateEventRequest): Promise<EventResponse> {
+  async createEvent(data: any): Promise<any> {
     const response = await fetch(`/api/event/create`, {
       method: 'POST',
       headers,
@@ -53,32 +13,34 @@ export const eventService = {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const error = new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      (error as any).status = response.status;
-      throw error;
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to create event');
     }
 
-    return response.json();
+    const result = await response.json();
+    return result.data || result;
   },
 
-  async listEvents(calendarId: string, upcomingOnly: boolean = true): Promise<ListEventsResponse> {
-    const response = await fetch(`/api/event/list?calendar_id=${encodeURIComponent(calendarId)}&upcoming_only=${upcomingOnly}`, {
-      method: 'GET',
+  async listEvents(calendarId: string, upcomingOnly: boolean = true): Promise<any> {
+    const params = new URLSearchParams({
+      calendar_id: calendarId,
+      upcoming_only: upcomingOnly.toString()
+    });
+
+    const response = await fetch(`/api/event/list?${params.toString()}`, {
       headers,
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const error = new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      (error as any).status = response.status;
-      throw error;
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to list events');
     }
 
-    return response.json();
+    const result = await response.json();
+    return result.data || result;
   },
 
-  async updateEvent(data: UpdateEventRequest): Promise<EventResponse> {
+  async updateEvent(data: any): Promise<any> {
     const response = await fetch(`/api/event/update`, {
       method: 'PUT',
       headers,
@@ -86,28 +48,31 @@ export const eventService = {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const error = new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      (error as any).status = response.status;
-      throw error;
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to update event');
     }
 
-    return response.json();
+    const result = await response.json();
+    return result.data || result;
   },
 
-  async deleteEvent(calendarId: string, eventId: string): Promise<DeleteEventResponse> {
-    const response = await fetch(`/api/event/delete?calendar_id=${encodeURIComponent(calendarId)}&event_id=${encodeURIComponent(eventId)}`, {
+  async deleteEvent(calendarId: string, eventId: string): Promise<any> {
+    const params = new URLSearchParams({
+      calendar_id: calendarId,
+      event_id: eventId
+    });
+
+    const response = await fetch(`/api/event/delete?${params.toString()}`, {
       method: 'DELETE',
       headers,
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const error = new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      (error as any).status = response.status;
-      throw error;
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to delete event');
     }
 
-    return response.json();
-  },
+    const result = await response.json();
+    return result.data || result;
+  }
 }; 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { calendarController } from '@/lib/controllers/calendarController';
+import { createSuccessResponse, handleApiError } from '@/lib/utils/apiResponse';
 
 export async function GET(
   request: NextRequest,
@@ -8,12 +9,8 @@ export async function GET(
   try {
     const { doctor_id } = await params;
     const result = await calendarController.getDoctorCalendar(doctor_id);
-    return NextResponse.json(result);
+    return createSuccessResponse(result, 'Doctor calendar retrieved successfully');
   } catch (error: any) {
-    console.error('Get doctor calendar error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to get doctor calendar' },
-      { status: error.status || 500 }
-    );
+    return handleApiError(error, 'Doctor Calendar API');
   }
 } 

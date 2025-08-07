@@ -3,10 +3,10 @@ import { doctorController } from '@/lib/controllers/doctorController';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { doctorId: string } }
+  { params }: { params: Promise<{ doctorId: string }> }
 ) {
   try {
-    const { doctorId } = params;
+    const { doctorId } = await params;
     
     if (!doctorId) {
       return NextResponse.json(
@@ -36,10 +36,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { doctorId: string } }
+  { params }: { params: Promise<{ doctorId: string }> }
 ) {
   try {
-    const { doctorId } = params;
+    const { doctorId } = await params;
     const data = await request.json();
     
     if (!doctorId) {
@@ -77,10 +77,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { doctorId: string } }
+  { params }: { params: Promise<{ doctorId: string }> }
 ) {
   try {
-    const { doctorId } = params;
+    const { doctorId } = await params;
     
     if (!doctorId) {
       return NextResponse.json(
