@@ -14,8 +14,20 @@ const SuperAdminGuard = withAuthInfo((props: WithAuthInfoProps & { children?: Re
     SUPER_ADMIN_ORG_ID,
     userOrgs: orgs,
     isSuperAdmin,
-    user: props.user?.email
+    user: props.user?.email,
+    orgHelper: !!props.orgHelper,
+    orgsLength: orgs.length
   });
+  
+  // Additional detailed logging
+  if (orgs.length > 0) {
+    console.log('User Organizations:', orgs.map(org => ({ orgId: org.orgId })));
+  } else {
+    console.log('No organizations found for user');
+  }
+  
+  console.log('Super Admin Org ID from env:', process.env.NEXT_PUBLIC_SUPER_ADMIN_ORG_ID);
+  console.log('Super Admin Org ID constant:', SUPER_ADMIN_ORG_ID);
 
   if (isSuperAdmin) {
     return <>{props.children}</>;
@@ -36,6 +48,18 @@ const SuperAdminGuard = withAuthInfo((props: WithAuthInfoProps & { children?: Re
 });
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
+  // Force refresh on mount to clear any cached data
+  React.useEffect(() => {
+    // Clear any cached authentication data
+    if (typeof window !== 'undefined') {
+      console.log('SuperAdminLayout: Clearing cache and forcing refresh');
+      // Force a hard refresh if needed
+      if (window.location.search.includes('force-refresh')) {
+        window.location.reload();
+      }
+    }
+  }, []);
+
   return (
     <SuperAdminGuard>
       {children}
