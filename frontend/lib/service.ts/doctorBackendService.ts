@@ -17,89 +17,143 @@ class DoctorBackendService {
     };
   }
 
-  async createDoctor(data: DoctorCreateRequest): Promise<{ doctor: any }> {
-    const response = await fetch(`${LIVE_API_BASE_URL}/doctor/create`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `Failed to create doctor: ${response.statusText}`);
+  async createDoctor(data: DoctorCreateRequest): Promise<{ status: string; message: string; data?: any }> {
+    try {
+      const response = await fetch(`${LIVE_API_BASE_URL}/doctor/create`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to create doctor: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      return {
+        status: 'success',
+        message: 'Doctor created successfully',
+        data: result
+      };
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to create doctor');
     }
-    
-    return await response.json();
   }
 
-  async getDoctor(doctorId: string): Promise<DoctorResponse> {
-    const response = await fetch(`${LIVE_API_BASE_URL}/doctor/${doctorId}`, {
-      headers: this.getHeaders()
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `Failed to get doctor: ${response.statusText}`);
+  async getDoctor(doctorId: string): Promise<{ status: string; message: string; data?: any }> {
+    try {
+      const response = await fetch(`${LIVE_API_BASE_URL}/doctor/${doctorId}`, {
+        headers: this.getHeaders()
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to get doctor: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      return {
+        status: 'success',
+        message: 'Doctor retrieved successfully',
+        data: result
+      };
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to get doctor');
     }
-    
-    return await response.json();
   }
 
-  async updateDoctor(doctorId: string, data: DoctorUpdateRequest): Promise<{ updated_doctor: any }> {
-    const response = await fetch(`${LIVE_API_BASE_URL}/doctor/${doctorId}`, {
-      method: 'PUT',
-      headers: this.getHeaders(),
-      body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `Failed to update doctor: ${response.statusText}`);
+  async updateDoctor(doctorId: string, data: DoctorUpdateRequest): Promise<{ status: string; message: string; data?: any }> {
+    try {
+      const response = await fetch(`${LIVE_API_BASE_URL}/doctor/${doctorId}`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to update doctor: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      return {
+        status: 'success',
+        message: 'Doctor updated successfully',
+        data: result
+      };
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to update doctor');
     }
-    
-    return await response.json();
   }
 
-  async patchDoctor(doctorId: string, data: Partial<DoctorUpdateRequest>): Promise<DoctorResponse> {
-    const response = await fetch(`${LIVE_API_BASE_URL}/doctor/${doctorId}`, {
-      method: 'PATCH',
-      headers: this.getHeaders(),
-      body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `Failed to patch doctor: ${response.statusText}`);
+  async patchDoctor(doctorId: string, data: Partial<DoctorUpdateRequest>): Promise<{ status: string; message: string; data?: any }> {
+    try {
+      const response = await fetch(`${LIVE_API_BASE_URL}/doctor/${doctorId}`, {
+        method: 'PATCH',
+        headers: this.getHeaders(),
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to patch doctor: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      return {
+        status: 'success',
+        message: 'Doctor patched successfully',
+        data: result
+      };
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to patch doctor');
     }
-    
-    return await response.json();
   }
 
-  async getDoctorsByOrg(orgId: string): Promise<OrganizationDoctorsResponse> {
-    const response = await fetch(`${LIVE_API_BASE_URL}/doctor/organization/${orgId}`, {
-      headers: this.getHeaders()
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `Failed to get organization doctors: ${response.statusText}`);
+  async getDoctorsByOrg(orgId: string): Promise<{ status: string; message: string; data?: any }> {
+    try {
+      const response = await fetch(`${LIVE_API_BASE_URL}/doctor/organization/${orgId}`, {
+        headers: this.getHeaders()
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to get organization doctors: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      return {
+        status: 'success',
+        message: 'Organization doctors retrieved successfully',
+        data: result
+      };
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to get organization doctors');
     }
-    
-    return await response.json();
   }
 
-  async deleteDoctor(doctorId: string): Promise<DeleteDoctorResponse> {
-    const response = await fetch(`${LIVE_API_BASE_URL}/doctor/${doctorId}`, {
-      method: 'DELETE',
-      headers: this.getHeaders()
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `Failed to delete doctor: ${response.statusText}`);
+  async deleteDoctor(doctorId: string): Promise<{ status: string; message: string; data?: any }> {
+    try {
+      const response = await fetch(`${LIVE_API_BASE_URL}/doctor/${doctorId}`, {
+        method: 'DELETE',
+        headers: this.getHeaders()
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to delete doctor: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      return {
+        status: 'success',
+        message: 'Doctor deleted successfully',
+        data: result
+      };
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to delete doctor');
     }
-    
-    return await response.json();
   }
 }
 

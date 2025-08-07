@@ -3,34 +3,19 @@
 import { withAuthInfo, WithAuthInfoProps } from "@propelauth/react";
 import React from "react";
 
-const SUPER_ADMIN_ORG_ID = process.env.NEXT_PUBLIC_SUPER_ADMIN_ORG_ID || "";
+const SUPER_ADMIN_ORG_ID = process.env.SUPER_ADMIN_ORG_ID || "";
 
-const SuperAdminGuard = withAuthInfo((props: WithAuthInfoProps & { children?: React.ReactNode }) => {
-  const orgs = props.orgHelper?.getOrgs() || [];
-  const isSuperAdmin = orgs.some((org: { orgId: string }) => org.orgId === SUPER_ADMIN_ORG_ID);
-  
-  // Debug logging
-  console.log('SuperAdminGuard Debug:', {
-    SUPER_ADMIN_ORG_ID,
-    userOrgs: orgs,
-    isSuperAdmin,
-    user: props.user?.email,
-    orgHelper: !!props.orgHelper,
-    orgsLength: orgs.length
-  });
-  
-  // Additional detailed logging
-  if (orgs.length > 0) {
-    console.log('User Organizations:', orgs.map(org => ({ orgId: org.orgId })));
-  } else {
-    console.log('No organizations found for user');
-  }
-  
-  console.log('Super Admin Org ID from env:', process.env.NEXT_PUBLIC_SUPER_ADMIN_ORG_ID);
-  console.log('Super Admin Org ID constant:', SUPER_ADMIN_ORG_ID);
+const SuperAdminGuard = withAuthInfo(
+  ({ orgHelper, children }: WithAuthInfoProps & { children?: React.ReactNode }) => {
+  const orgs = orgHelper?.getOrgs() ?? [];
+  const isSuperAdmin = orgs.some(org => org.orgId === SUPER_ADMIN_ORG_ID);
+
+  console.log(orgs);
+  console.log(SUPER_ADMIN_ORG_ID);
+  console.log(isSuperAdmin);
 
   if (isSuperAdmin) {
-    return <>{props.children}</>;
+    return <>{children}</>;
   } else {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateApiKey } from '@/lib/middleware/auth';
 import { initAuth } from '@propelauth/express';
+import { createSuccessResponse, handleApiError } from '@/lib/utils/apiResponse';
 
-const API_KEY= process.env.NEXT_PUBLIC_PROPELAUTH_API_KEY || "";
+const API_KEY= "888ea8af8e1d78888fcb15304e2633446516519573b7f6219943b306a4626df95d477061f77b939b8cdadd7a50559a6c" //process.env.NEXT_PUBLIC_PROPELAUTH_API_KEY || "";
 const AUTH_URL= process.env.NEXT_PUBLIC_PROPELAUTH_URL || "";
 
 const auth = initAuth({
@@ -15,29 +16,21 @@ export async function createOrg(request: NextRequest) {
   try {
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return handleApiError(new Error('Unauthorized'), 'Organization Create API');
     }
 
     const body = await request.json();
     const { orgName } = body;
 
     if (!orgName) {
-      return NextResponse.json({ error: 'Missing orgName' }, { status: 400 });
+      return handleApiError(new Error('Missing orgName'), 'Organization Create API');
     }
 
     const data = await auth.createOrg({ name: orgName });
 
-    return NextResponse.json({
-      success: true,
-      message: 'Organization created successfully',
-      data: data
-    });
+    return createSuccessResponse(data, 'Organization created successfully', 201);
   } catch (error) {
-    console.error('createOrg error:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return handleApiError(error, 'Organization Create API');
   }
 }
 
@@ -46,29 +39,21 @@ export async function addUserToOrg(request: NextRequest) {
   try {
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return handleApiError(new Error('Unauthorized'), 'Add User to Organization API');
     }
 
     const body = await request.json();
     const { orgId, userId, role } = body;
 
     if (!orgId || !userId || !role) {
-      return NextResponse.json({ error: 'Missing required fields: orgId, userId, role' }, { status: 400 });
+      return handleApiError(new Error('Missing required fields: orgId, userId, role'), 'Add User to Organization API');
     }
 
     const data = await auth.addUserToOrg({ userId, orgId, role });
 
-    return NextResponse.json({
-      success: true,
-      message: 'User added to organization successfully',
-      data: data
-    });
+    return createSuccessResponse(data, 'User added to organization successfully');
   } catch (error) {
-    console.error('addUserToOrg error:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return handleApiError(error, 'Add User to Organization API');
   }
 }
 
@@ -77,29 +62,21 @@ export async function inviteUserToOrg(request: NextRequest) {
   try {
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return handleApiError(new Error('Unauthorized'), 'Invite User to Organization API');
     }
 
     const body = await request.json();
     const { orgId, email, role } = body;
 
     if (!orgId || !email || !role) {
-      return NextResponse.json({ error: 'Missing required fields: orgId, email, role' }, { status: 400 });
+      return handleApiError(new Error('Missing required fields: orgId, email, role'), 'Invite User to Organization API');
     }
 
     const data = await auth.inviteUserToOrg({ orgId, email, role });
 
-    return NextResponse.json({
-      success: true,
-      message: `User ${email} invited to organization`,
-      data: data
-    });
+    return createSuccessResponse(data, `User ${email} invited to organization`);
   } catch (error) {
-    console.error('inviteUserToOrg error:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return handleApiError(error, 'Invite User to Organization API');
   }
 }
 

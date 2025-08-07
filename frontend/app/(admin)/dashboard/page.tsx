@@ -59,6 +59,7 @@ export default function Dashboard() {
   const [showCreateCalendarModal, setShowCreateCalendarModal] = useState(false);
   const [createdCalendarId, setCreatedCalendarId] = useState<string | null>(null);
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
+  const [orgSetupComplete, setOrgSetupComplete] = useState(false);
   const { showError, showSuccess, showWarning } = useErrorHandler();
 
   useEffect(() => {
@@ -68,20 +69,32 @@ export default function Dashboard() {
       if (orgs.length === 0) {
         setShowOrgSetup(true);
         setShowOrgChoice(false);
+        setOrgSetupComplete(false);
       } else if (orgs.length > 1) {
         setShowOrgSetup(false);
         setShowOrgChoice(true);
+        setOrgSetupComplete(false);
       } else {
         setShowOrgSetup(false);
         setShowOrgChoice(false);
+        setOrgSetupComplete(true);
       }
+    }
+  }, [loading, orgHelper]);
+
+  // Handle initial state when organization setup is already complete
+  useEffect(() => {
+    if (!loading && orgHelper && orgHelper.getOrgs?.()?.length === 1) {
+      setOrgSetupComplete(true);
     }
   }, [loading, orgHelper]);
 
 
   useEffect(() => {
+    let isMounted = true;
     const fetchDoctors = async () => {
-      if (!orgHelper?.getOrgs()?.[0]?.orgId){ 
+      // Only fetch doctors if organization setup is complete
+      if (!orgSetupComplete || !orgHelper?.getOrgs()?.[0]?.orgId){ 
         return;
       }
       
@@ -89,24 +102,29 @@ export default function Dashboard() {
       try {
         const orgId = orgHelper.getOrgs()[0].orgId;
         const response = await doctorApiService.getDoctorsByOrg(orgId);
-        if (response.doctors.length === 0){
+        if (response.doctors.length === 0 && orgSetupComplete){
           showWarning('No doctors found. Please add a doctor first.');
         }
-        setDoctors(response.doctors || []);
+        if (isMounted) setDoctors(response.doctors || []);
       } catch (error) {
-        showError('Failed to load doctors');
-        setDoctors([]);
+        if (isMounted) {
+          showError('Failed to load doctors');
+          setDoctors([]);
+        }
       } finally {
-        setDoctorsLoading(false);
+        if (isMounted) setDoctorsLoading(false);
       }
     };
 
     fetchDoctors();
-  }, [orgHelper?.getOrgs()?.[0]?.orgId]);
+    return () => { isMounted = false; };
+  }, [orgSetupComplete, orgHelper?.getOrgs()?.[0]?.orgId]);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchCalendars = async () => {
-      if (!orgHelper?.getOrgs()?.[0]?.orgId){ 
+      // Only fetch calendars if organization setup is complete
+      if (!orgSetupComplete || !orgHelper?.getOrgs()?.[0]?.orgId){ 
         return;
       }
       
@@ -114,17 +132,28 @@ export default function Dashboard() {
       try {
         const orgId = orgHelper.getOrgs()[0].orgId;
         const response = await calendarService.getOrgCalendars(orgId);
-        setCalendars(response.calendars || []);
+        
+        // Unwrap the nested response structure
+        const calendars = 
+          response?.data?.data?.calendars ||
+          response?.data?.calendars ||
+          response?.calendars ||
+          [];
+          
+        if (isMounted) setCalendars(calendars);
       } catch (error) {
-        showError('Failed to load calendars');
-        setCalendars([]);
+        if (isMounted) {
+          showError('Failed to load calendars');
+          setCalendars([]);
+        }
       } finally {
-        setCalendarsLoading(false);
+        if (isMounted) setCalendarsLoading(false);
       }
     };
 
     fetchCalendars();
-  }, [orgHelper?.getOrgs()?.[0]?.orgId]);
+    return () => { isMounted = false; };
+  }, [orgSetupComplete, orgHelper?.getOrgs()?.[0]?.orgId]);
 
   const handleAddDoctor = () => {
     // Show the DocInfoModal for doctor setup
@@ -155,6 +184,7 @@ export default function Dashboard() {
     setShowCreateCalendarModal(false);
     setSelectedDoctor(null);
   };
+  
   const handleCreateCalendarForDoctor = async (doctorId: string, calendarData: any) => {
     try {
       const res = await calendarService.createCalendar({
@@ -169,11 +199,25 @@ export default function Dashboard() {
       if (orgHelper?.getOrgs()?.[0]?.orgId) {
         const orgId = orgHelper.getOrgs()[0].orgId;
         const calendarsResponse = await calendarService.getOrgCalendars(orgId);
-        setCalendars(calendarsResponse.calendars || []);
+        
+        // Unwrap the nested response structure
+        const calendars = 
+          calendarsResponse?.data?.data?.calendars ||
+          calendarsResponse?.data?.calendars ||
+          calendarsResponse?.calendars ||
+          [];
+          
+        setCalendars(calendars);
       }
-      
-      return res.calendar_id; // Return the calendar ID
-      
+
+      // UNWRAP the calendar_id from the nested response
+      const calendarId =
+        res?.data?.data?.calendar_id ||
+        res?.data?.calendar_id ||
+        res?.calendar_id ||
+        null;
+
+      return calendarId;
     } catch (error) {
       showError('Failed to create calendar for doctor');
       return null;
@@ -210,11 +254,15 @@ export default function Dashboard() {
 
   // Mock data for agent - replace with actual API call
   useEffect(() => {
+    let isMounted = true;
     setAgentLoading(true);
     agentApiService.getAllAgents().then((res) => {
-      setAgent(res.agents[0]);
-      setAgentLoading(false);
+      if (isMounted) {
+        setAgent(res.agents[0]);
+        setAgentLoading(false);
+      }
     });
+    return () => { isMounted = false; };
   }, []);
 
   // Handler for choosing an org
@@ -231,6 +279,7 @@ export default function Dashboard() {
       ));
       showSuccess('Workspace selected successfully!');
       setShowOrgChoice(false);
+      setOrgSetupComplete(true);
       window.location.reload();
     } catch (err: any) {
       showError(err?.message || 'Failed to update workspace selection. Please try again.');
@@ -295,12 +344,16 @@ export default function Dashboard() {
 
   return (
     <ProtectedRoute>
-      {showOrgSetup && <OrgSetup onOrgCreated={() => setShowOrgSetup(false)} />}
+      {showOrgSetup && <OrgSetup onOrgCreated={() => {
+        setShowOrgSetup(false);
+        setOrgSetupComplete(true);
+      }} />}
       {showOrgChoice && (
         <OrgChoiceModal 
           orgs={orgs} 
           onOrgChosen={() => {
             setShowOrgChoice(false);
+            setOrgSetupComplete(true);
           }} 
           userId={user?.userId}
           handleChooseOrg={handleChooseOrg}
@@ -312,7 +365,7 @@ export default function Dashboard() {
           <div>
 
             {/* Main Content */}
-            {activeTab === 'calendar' && (
+            {activeTab === 'calendar' && orgSetupComplete && (
               <div className="grid grid-cols-1 gap-8 mb-8">
                 <DoctorCalendars 
                   calendars={calendars} 
@@ -323,7 +376,7 @@ export default function Dashboard() {
                 />
               </div>
             )}
-            {activeTab === 'calendar' && (
+            {activeTab === 'calendar' && orgSetupComplete && (
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
                 {/* Left Column - Calendar */}
                 <div className="lg:col-span-2 flex">
@@ -350,6 +403,15 @@ export default function Dashboard() {
               </div>
             )}
 
+            {activeTab === 'calendar' && !orgSetupComplete && (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <p className="text-gray-600 mb-4">Please complete organization setup first</p>
+                  <p className="text-sm text-gray-500">You need to create or select an organization before managing calendars.</p>
+                </div>
+              </div>
+            )}
+
             {activeTab === 'agents' && (
               <div className="grid grid-cols-1 gap-8">
                 <AgentsSection 
@@ -359,7 +421,7 @@ export default function Dashboard() {
               </div>
             )}
 
-{activeTab === 'doctors' && (
+{activeTab === 'doctors' && orgSetupComplete && (
               <div className="grid grid-cols-1 gap-8">
                 <DoctorsSection 
                   doctors={doctors} 
@@ -372,6 +434,15 @@ export default function Dashboard() {
                   onDeleteDoctor={handleDeleteDoctor}
                   onViewDetails={handleViewDetails}
                 />
+              </div>
+            )}
+
+            {activeTab === 'doctors' && !orgSetupComplete && (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <p className="text-gray-600 mb-4">Please complete organization setup first</p>
+                  <p className="text-sm text-gray-500">You need to create or select an organization before managing doctors.</p>
+                </div>
               </div>
             )}
 

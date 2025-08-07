@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eventController } from '@/lib/controllers/eventController';
+import { createSuccessResponse, handleApiError } from '@/lib/utils/apiResponse';
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,19 +9,17 @@ export async function GET(request: NextRequest) {
     const upcomingOnly = searchParams.get('upcoming_only') === 'true';
 
     if (!calendarId) {
-      return NextResponse.json(
-        { error: 'Calendar ID is required' },
-        { status: 400 }
-      );
+      return handleApiError(new Error('Calendar ID is required'), 'Event List API');
     }
 
-    const result = await eventController.listEvents(calendarId, upcomingOnly);
-    return NextResponse.json(result);
+    const data = {
+      calendar_id: calendarId,
+      upcoming_only: upcomingOnly
+    };
+
+    const result = await eventController.listEvents(data);
+    return createSuccessResponse(result, 'Events retrieved successfully');
   } catch (error: any) {
-    console.error('List events error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to list events' },
-      { status: error.status || 500 }
-    );
+    return handleApiError(error, 'Event List API');
   }
 } 

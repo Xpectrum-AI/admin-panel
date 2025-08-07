@@ -35,103 +35,139 @@ export interface ShareCalendarResponse {
 }
 
 export const calendarController = {
-  async createCalendar(data: CreateCalendarRequest) {
-    // Validate required fields
-    if (!data.doctor_id || !data.user_name || !data.timezone) {
-      throw new Error('Missing required fields: doctor_id, user_name, timezone');
+  async createCalendar(data: CreateCalendarRequest): Promise<{ status: string; message: string; data?: any }> {
+    try {
+      // Validate required fields
+      if (!data.doctor_id || !data.user_name || !data.timezone) {
+        throw new Error('Missing required fields: doctor_id, user_name, timezone');
+      }
+
+      const url = `${LIVE_API_BASE_URL}/calendar/create`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': LIVE_API_KEY,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        (error as any).status = response.status;
+        throw error;
+      }
+
+      const result = await response.json();
+      return {
+        status: 'success',
+        message: 'Calendar created successfully',
+        data: result
+      };
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to create calendar');
     }
-
-    const url = `${LIVE_API_BASE_URL}/calendar/create`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': LIVE_API_KEY,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-      (error as any).status = response.status;
-      throw error;
-    }
-
-    return response.json();
   },
 
-  async getDoctorCalendar(doctorId: string) {
-    if (!doctorId) {
-      throw new Error('Doctor ID is required');
+  async getDoctorCalendar(doctorId: string): Promise<{ status: string; message: string; data?: any }> {
+    try {
+      if (!doctorId) {
+        throw new Error('Doctor ID is required');
+      }
+
+      const url = `${LIVE_API_BASE_URL}/calendar/doctor/${doctorId}`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': LIVE_API_KEY,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        (error as any).status = response.status;
+        throw error;
+      }
+
+      const result = await response.json();
+      return {
+        status: 'success',
+        message: 'Doctor calendar retrieved successfully',
+        data: result
+      };
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to get doctor calendar');
     }
-
-    const url = `${LIVE_API_BASE_URL}/calendar/doctor/${doctorId}`;
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': LIVE_API_KEY,
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-      (error as any).status = response.status;
-      throw error;
-    }
-
-    return response.json();
   },
 
-  async getOrgCalendars(organizationId: string) {
-    if (!organizationId) {
-      throw new Error('Organization ID is required');
+  async getOrgCalendars(organizationId: string): Promise<{ status: string; message: string; data?: any }> {
+    try {
+      if (!organizationId) {
+        throw new Error('Organization ID is required');
+      }
+
+      const url = `${LIVE_API_BASE_URL}/calendar/organization/${organizationId}`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': LIVE_API_KEY,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        (error as any).status = response.status;
+        throw error;
+      }
+
+      const result = await response.json();
+      return {
+        status: 'success',
+        message: 'Organization calendars retrieved successfully',
+        data: result
+      };
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to get organization calendars');
     }
-
-    const url = `${LIVE_API_BASE_URL}/calendar/organization/${organizationId}`;
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': LIVE_API_KEY,
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-      (error as any).status = response.status;
-      throw error;
-    }
-
-    return response.json();
   },
 
-  async shareCalendar(data: ShareCalendarRequest) {
-    // Validate required fields
-    if (!data.calendar_id || !data.share_email || !data.role) {
-      throw new Error('Missing required fields: calendar_id, share_email, role');
+  async shareCalendar(data: ShareCalendarRequest): Promise<{ status: string; message: string; data?: any }> {
+    try {
+      // Validate required fields
+      if (!data.calendar_id || !data.share_email || !data.role) {
+        throw new Error('Missing required fields: calendar_id, share_email, role');
+      }
+
+      const url = `${LIVE_API_BASE_URL}/calendar/share`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': LIVE_API_KEY,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        (error as any).status = response.status;
+        throw error;
+      }
+
+      const result = await response.json();
+      return {
+        status: 'success',
+        message: 'Calendar shared successfully',
+        data: result
+      };
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to share calendar');
     }
-
-    const url = `${LIVE_API_BASE_URL}/calendar/share`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': LIVE_API_KEY,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-      (error as any).status = response.status;
-      throw error;
-    }
-
-    return response.json();
   }
 }; 

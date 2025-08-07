@@ -6,136 +6,188 @@ export interface CreateEventRequest {
   summary: string;
   start: string;
   end: string;
-  attendee_email?: string;
+  description?: string;
+  location?: string;
 }
 
 export interface UpdateEventRequest {
   calendar_id: string;
   event_id: string;
-  summary: string;
-  start: string;
-  end: string;
+  summary?: string;
+  start?: string;
+  end?: string;
+  description?: string;
+  location?: string;
 }
 
 export interface EventResponse {
   event_id: string;
-  summary: string;
-  start: string;
-  end: string;
-  attendee_email?: string;
-  created_at: string;
-  updated_at: string;
-  status: string;
+  message: string;
+}
+
+export interface ListEventsRequest {
+  calendar_id: string;
+  upcoming_only?: boolean;
 }
 
 export interface ListEventsResponse {
   events: any[];
-  total_count: number;
-  source: string;
-  calendar_id: string;
-}
-
-export interface DeleteEventResponse {
-  status: string;
-  google_calendar_id: string;
 }
 
 export const eventController = {
-  async createEvent(data: CreateEventRequest): Promise<EventResponse> {
-    if (!data.calendar_id || !data.summary || !data.start || !data.end) {
-      throw new Error('Missing required fields: calendar_id, summary, start, end');
+  async createEvent(data: CreateEventRequest): Promise<{ status: string; message: string; data?: any }> {
+    try {
+      // Validate required fields
+      if (!data.calendar_id || !data.summary || !data.start || !data.end) {
+        throw new Error('Missing required fields: calendar_id, summary, start, end');
+      }
+
+      const url = `${LIVE_API_BASE_URL}/event/create`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': LIVE_API_KEY,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        (error as any).status = response.status;
+        throw error;
+      }
+
+      const result = await response.json();
+      return {
+        status: 'success',
+        message: 'Event created successfully',
+        data: result
+      };
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to create event');
     }
-
-    const url = `${LIVE_API_BASE_URL}/event/create`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': LIVE_API_KEY,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-      (error as any).status = response.status;
-      throw error;
-    }
-
-    return response.json();
   },
 
-  async listEvents(calendarId: string, upcomingOnly: boolean = true): Promise<ListEventsResponse> {
-    if (!calendarId) {
-      throw new Error('Calendar ID is required');
+  async listEvents(data: ListEventsRequest): Promise<{ status: string; message: string; data?: any }> {
+    try {
+      // Validate required fields
+      if (!data.calendar_id) {
+        throw new Error('Missing required field: calendar_id');
+      }
+
+      const params = new URLSearchParams({
+        calendar_id: data.calendar_id,
+        upcoming_only: data.upcoming_only ? 'true' : 'false'
+      });
+
+      const url = `${LIVE_API_BASE_URL}/event/list?${params.toString()}`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': LIVE_API_KEY,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        (error as any).status = response.status;
+        throw error;
+      }
+
+      const result = await response.json();
+      return {
+        status: 'success',
+        message: 'Events retrieved successfully',
+        data: result
+      };
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to list events');
     }
-
-    const url = `${LIVE_API_BASE_URL}/event/list?calendar_id=${encodeURIComponent(calendarId)}&upcoming_only=${upcomingOnly}`;
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': LIVE_API_KEY,
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-      (error as any).status = response.status;
-      throw error;
-    }
-
-    return response.json();
   },
 
-  async updateEvent(data: UpdateEventRequest): Promise<EventResponse> {
-    if (!data.calendar_id || !data.event_id || !data.summary || !data.start || !data.end) {
-      throw new Error('Missing required fields: calendar_id, event_id, summary, start, end');
+  async updateEvent(data: UpdateEventRequest): Promise<{ status: string; message: string; data?: any }> {
+    try {
+      // Validate required fields
+      if (!data.calendar_id || !data.event_id) {
+        throw new Error('Missing required fields: calendar_id, event_id');
+      }
+
+      // Validate at least one field is provided for update
+      const hasUpdates = Object.keys(data).some(key => 
+        key !== 'calendar_id' && key !== 'event_id' && data[key as keyof UpdateEventRequest] !== undefined
+      );
+      if (!hasUpdates) {
+        throw new Error('At least one field must be provided for update');
+      }
+
+      const url = `${LIVE_API_BASE_URL}/event/update`;
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': LIVE_API_KEY,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        (error as any).status = response.status;
+        throw error;
+      }
+
+      const result = await response.json();
+      return {
+        status: 'success',
+        message: 'Event updated successfully',
+        data: result
+      };
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to update event');
     }
-
-    const url = `${LIVE_API_BASE_URL}/event/update`;
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': LIVE_API_KEY,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-      (error as any).status = response.status;
-      throw error;
-    }
-
-    return response.json();
   },
 
-  async deleteEvent(calendarId: string, eventId: string): Promise<DeleteEventResponse> {
-    if (!calendarId || !eventId) {
-      throw new Error('Calendar ID and Event ID are required');
+  async deleteEvent(calendarId: string, eventId: string): Promise<{ status: string; message: string; data?: any }> {
+    try {
+      // Validate required fields
+      if (!calendarId || !eventId) {
+        throw new Error('Missing required fields: calendar_id, event_id');
+      }
+
+      const params = new URLSearchParams({
+        calendar_id: calendarId,
+        event_id: eventId
+      });
+
+      const url = `${LIVE_API_BASE_URL}/event/delete?${params.toString()}`;
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': LIVE_API_KEY,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        (error as any).status = response.status;
+        throw error;
+      }
+
+      const result = await response.json();
+      return {
+        status: 'success',
+        message: 'Event deleted successfully',
+        data: result
+      };
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to delete event');
     }
-
-    const url = `${LIVE_API_BASE_URL}/event/delete?calendar_id=${encodeURIComponent(calendarId)}&event_id=${encodeURIComponent(eventId)}`;
-    const response = await fetch(url, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': LIVE_API_KEY,
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-      (error as any).status = response.status;
-      throw error;
-    }
-
-    return response.json();
-  },
+  }
 }; 

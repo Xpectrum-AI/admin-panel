@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateApiKey } from '@/lib/middleware/auth';
 import { initAuth } from '@propelauth/express';
+import { createSuccessResponse, handleApiError } from '@/lib/utils/apiResponse';
 
-const API_KEY= process.env.NEXT_PUBLIC_PROPELAUTH_API_KEY || "";
+const API_KEY= "888ea8af8e1d78888fcb15304e2633446516519573b7f6219943b306a4626df95d477061f77b939b8cdadd7a50559a6c" //process.env.NEXT_PUBLIC_PROPELAUTH_API_KEY || "";
 const AUTH_URL= process.env.NEXT_PUBLIC_PROPELAUTH_URL || "";
 
 const auth = initAuth({
@@ -15,28 +16,21 @@ export async function getUserByEmail(request: NextRequest) {
   try {
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return handleApiError(new Error('Unauthorized'), 'Get User by Email API');
     }
 
     const { searchParams } = new URL(request.url);
     const email = searchParams.get('email');
 
     if (!email) {
-      return NextResponse.json({ error: 'Missing email parameter' }, { status: 400 });
+      return handleApiError(new Error('Missing email parameter'), 'Get User by Email API');
     }
 
     const data = await auth.fetchUserMetadataByEmail(email, true);
 
-    return NextResponse.json({
-      success: true,
-      data: data
-    });
+    return createSuccessResponse(data, 'User retrieved successfully');
   } catch (error) {
-    console.error('getUserByEmail error:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return handleApiError(error, 'Get User by Email API');
   }
 }
 
@@ -45,7 +39,7 @@ export async function signup(request: NextRequest) {
   try {
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return handleApiError(new Error('Unauthorized'), 'User Signup API');
     }
 
     const body = await request.json();
@@ -53,24 +47,14 @@ export async function signup(request: NextRequest) {
 
     // Validate required fields
     if (!email || !password || !firstName || !lastName || !username) {
-      return NextResponse.json({ 
-        error: 'Missing required fields' 
-      }, { status: 400 });
+      return handleApiError(new Error('Missing required fields'), 'User Signup API');
     }
 
     const data = await auth.createUser({ email, password, firstName, lastName, username });
 
-    return NextResponse.json({
-      success: true,
-      message: 'User created successfully',
-      data: data
-    });
+    return createSuccessResponse(data, 'User created successfully', 201);
   } catch (error) {
-    console.error('signup error:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return handleApiError(error, 'User Signup API');
   }
 }
 
@@ -79,14 +63,14 @@ export async function fetchUsersByQuery(request: NextRequest) {
   try {
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return handleApiError(new Error('Unauthorized'), 'Fetch Users by Query API');
     }
 
     const body = await request.json();
     const query = body;
 
     if (!query) {
-      return NextResponse.json({ error: 'Missing query' }, { status: 400 });
+      return handleApiError(new Error('Missing query'), 'Fetch Users by Query API');
     }
 
     const data = await auth.fetchUsersByQuery(query);
@@ -98,21 +82,16 @@ export async function fetchUsersByQuery(request: NextRequest) {
     const pageSize = data.pageSize || 10;
     const hasMoreResults = data.hasMoreResults || false;
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        users: users,
-        totalUsers: totalUsers,
-        currentPage: currentPage,
-        pageSize: pageSize,
-        hasMoreResults: hasMoreResults
-      }
-    });
+    const responseData = {
+      users,
+      totalUsers,
+      currentPage,
+      pageSize,
+      hasMoreResults
+    };
+
+    return createSuccessResponse(responseData, 'Users retrieved successfully');
   } catch (error) {
-    console.error('fetchUsersByQuery error:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return handleApiError(error, 'Fetch Users by Query API');
   }
 } 

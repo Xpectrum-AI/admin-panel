@@ -137,8 +137,8 @@ export default function SuperAdminPanel() {
     useEffect(() => {
         const fetchTrunks = async () => {
             try {
-                const res = await agentApiService.getTrunks();
-                setTrunks(res.trunks || []);
+                const res = await agentApiService.getAgentTrunks();
+                setTrunks(res.data?.trunks || []);
             } catch (error) {
                 setTrunks([]);
                 showError('Failed to fetch trunks');

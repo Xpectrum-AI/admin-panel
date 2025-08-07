@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { calendarController } from '@/lib/controllers/calendarController';
+import { createSuccessResponse, handleApiError } from '@/lib/utils/apiResponse';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const result = await calendarController.createCalendar(body);
-    return NextResponse.json(result);
+    return createSuccessResponse(result, 'Calendar created successfully', 201);
   } catch (error: any) {
-    console.error('Calendar creation error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create calendar' },
-      { status: error.status || 500 }
-    );
+    return handleApiError(error, 'Calendar Create API');
   }
 } 
