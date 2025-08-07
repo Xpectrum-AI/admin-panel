@@ -62,12 +62,7 @@ export const calendarService = {
       throw new Error(errorData.error || 'Failed to share calendar');
     }
 
-<<<<<<< Updated upstream
-    return response.json();
-  },
-=======
     const result = await response.json();
     return result.data || result;
   }
->>>>>>> Stashed changes
 };
