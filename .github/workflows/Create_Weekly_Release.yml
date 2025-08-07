@@ -1,0 +1,60 @@
+name: Create Weekly Release Branch
+
+on:
+  schedule:
+    - cron: '29 18 * * 0' 
+  workflow_dispatch:  
+
+jobs:
+  create-release-branch:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout develop branch
+      uses: actions/checkout@v4
+      with:
+        ref: develop
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Configure Git
+      run: |
+        git config user.name "GitHub Actions Bot"
+        git config user.email "actions@github.com"
+
+    - name: Calculate week number and create branch
+      id: week-number
+      run: |
+        YEAR=$(date +%Y)
+        WEEK=$(date +%V)
+        
+
+        BRANCH_NAME="release-${YEAR}${WEEK}"
+        
+        echo "Creating branch: $BRANCH_NAME"
+        echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+        echo "year_week=${YEAR}${WEEK}" >> $GITHUB_OUTPUT
+
+        git checkout -b $BRANCH_NAME
+        git push origin $BRANCH_NAME
+
+    - name: Trigger deployment workflow
+      uses: actions/github-script@v7
+      with:
+        script: |
+          await github.rest.actions.createWorkflowDispatch({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            workflow_id: 'deploy-release.yml',
+            ref: '${{ steps.week-number.outputs.branch_name }}',
+            inputs: {
+              image_tag_suffix: '${{ steps.week-number.outputs.year_week }}'
+            }
+          });
+          
+    - name: Create summary
+      run: |
+        echo "## Weekly Release Created! 🎉" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Branch Name**: ${{ steps.week-number.outputs.branch_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Week Number**: ${{ steps.week-number.outputs.year_week }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Created At**: $(date)" >> $GITHUB_STEP_SUMMARY
