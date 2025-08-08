@@ -10,6 +10,9 @@ interface CalendarEventsListProps {
 }
 
 export default function CalendarEventsList({ events, loading, selectedCalendar, onNewEvent }: CalendarEventsListProps) {
+  console.log('CalendarEventsList received events:', events);
+  console.log('CalendarEventsList events length:', events?.length);
+  
   if (loading) {
     return (
       <div className="flex justify-center py-8">
@@ -24,7 +27,7 @@ export default function CalendarEventsList({ events, loading, selectedCalendar, 
       <div className="rounded-lg border bg-card text-card-foreground border-gray-300 flex flex-col h-full">
         {/* Header */}
         <div className="space-y-1.5 p-6 flex flex-row items-center justify-between">
-          <h3 className="text-2xl font-semibold leading-none tracking-tight">Today's Events</h3>
+          <h3 className="text-2xl font-semibold leading-none tracking-tight">All Events</h3>
         </div>
 
         {/* Content */}
@@ -50,7 +53,7 @@ export default function CalendarEventsList({ events, loading, selectedCalendar, 
     <div className="rounded-lg border bg-card text-card-foreground border-gray-300 flex flex-col h-full">
       {/* Header */}
       <div className="space-y-1.5 p-6 flex flex-row items-center justify-between">
-        <h3 className="text-2xl font-semibold leading-none tracking-tight">Today's Events</h3>
+        <h3 className="text-2xl font-semibold leading-none tracking-tight">All Events</h3>
         <button
           className="justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-foreground text-background hover:bg-foreground/90 h-9 rounded-md px-3 flex items-center gap-2"
           onClick={onNewEvent}
@@ -62,9 +65,36 @@ export default function CalendarEventsList({ events, loading, selectedCalendar, 
 
       {/* Content */}
       <div className="p-6 pt-0 space-y-4 flex-1 overflow-y-auto">
+        {(() => { console.log('Rendering events section, events:', events); return null; })()}
         {events.length > 0 ? (
-          events.slice(0, 5).map((event) => {
+          events.slice(0, 5).map((event, index) => {
+            console.log(`Processing event ${index + 1}/${events.length}:`, event);
+            console.log('Processing event:', event);
             const eventType = getEventType(event);
+            console.log('Event start dateTime:', event.start.dateTime);
+            console.log('Event end dateTime:', event.end.dateTime);
+            
+            try {
+              const startDate = new Date(event.start.dateTime);
+              const endDate = new Date(event.end.dateTime);
+              console.log('Parsed start date:', startDate);
+              console.log('Parsed end date:', endDate);
+              
+              const startTime = startDate.toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              });
+              const endTime = endDate.toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              });
+              
+              console.log('Formatted start time:', startTime);
+              console.log('Formatted end time:', endTime);
+            } catch (error) {
+              console.error('Error parsing dates:', error);
+            }
+            
             const startTime = new Date(event.start.dateTime).toLocaleTimeString([], { 
               hour: '2-digit', 
               minute: '2-digit' 
@@ -103,7 +133,7 @@ export default function CalendarEventsList({ events, loading, selectedCalendar, 
           })
         ) : (
           <div className="text-center py-8">
-            <p className="text-muted-foreground">No events scheduled for today</p>
+            <p className="text-muted-foreground">No events found</p>
           </div>
         )}
       </div>

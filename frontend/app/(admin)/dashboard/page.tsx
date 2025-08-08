@@ -327,9 +327,13 @@ export default function Dashboard() {
     setEventsLoading(true);
     try {
       // Fetch events for the selected calendar
-      const response = await eventService.listEvents(calendar.calendar_id);
+      console.log('Fetching events for calendar:', calendar.calendar_id);
+      const response = await eventService.listEvents(calendar.calendar_id, false); // Set upcomingOnly to false to get all events
+      console.log('Calendar events response:', response);
+      console.log('Events array:', response.events);
       setEvents(response.events || []);
     } catch (error) {
+      console.error('Error loading calendar events:', error);
       showError('Failed to load calendar events');
       setEvents([]);
     } finally {
