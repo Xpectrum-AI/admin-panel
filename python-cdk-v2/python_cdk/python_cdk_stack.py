@@ -33,6 +33,13 @@ class AdminPanelDeploymentStack(Stack):
                 'frontend_tag': 'frontend-latest',
                 'frontend_port': '3000',
                 'stack_name': 'AdminPanelProductionStack'
+            },
+            'release': {
+                'domain': 'release.placeholder.com',  # 占位符，实际会使用 ALB DNS
+                'auth_domain': 'auth-release.placeholder.com',  # 占位符
+                'frontend_tag': os.environ.get('RELEASE_IMAGE_TAG', 'frontend-release-latest'),
+                'frontend_port': '3000',
+                'stack_name': 'AdminPanelReleaseStack'
             }
         }
         
@@ -65,12 +72,18 @@ class AdminPanelDeploymentStack(Stack):
 
         # Get secrets from GitHub environment variables
         # These will be passed from GitHub Actions workflow
-        # Use environment-specific prefix
-        prefix = 'PRODUCTION_' if environment == 'production' else 'STAGING_'
+        # Use environment-specific prefix (保留原有的三环境支持)
+        if environment == 'production':
+            prefix = 'PRODUCTION_'
+        elif environment == 'release':
+            prefix = 'PRODUCTION_'
+        else:
+            prefix = 'STAGING_'
         
+        # 合并新旧版本的环境变量，保留更完整的配置
         secrets = {
             'NEXT_PUBLIC_PROPELAUTH_API_KEY': os.environ.get(f'{prefix}NEXT_PUBLIC_PROPELAUTH_API_KEY', ''),
-            'NEXT_PUBLIC_API_KEY': os.environ.get(f'{prefix}NEXT_PUBLIC_API_KEY', ''),
+            'NEXT_PUBLIC_API_KEY': os.environ.get(f'{prefix}NEXT_PUBLIC_API_KEY', 'xpectrum-ai@123'),
             'NEXT_PUBLIC_GOOGLE_CLIENT_ID': os.environ.get(f'{prefix}GOOGLE_CLIENT_ID', ''),
             'NEXT_PUBLIC_MONGODB_URL': os.environ.get(f'{prefix}MONGODB_URL', ''),
             'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY': os.environ.get(f'{prefix}STRIPE_PUBLISHABLE_KEY', ''),
@@ -80,20 +93,30 @@ class AdminPanelDeploymentStack(Stack):
             'PROPELAUTH_REDIRECT_URI': os.environ.get(f'{prefix}PROPELAUTH_REDIRECT_URI', f"https://{config['auth_domain']}"),
             'NEXT_PUBLIC_LIVE_API_URL': os.environ.get(f'{prefix}NEXT_PUBLIC_LIVE_API_URL', ''),
             'SUPER_ADMIN_ORG_ID': os.environ.get(f'{prefix}SUPER_ADMIN_ORG_ID', ''),
-            'PROPELAUTH_URL': os.environ.get(f'{prefix}PROPELAUTH_URL', f"https://{config['auth_domain']}")
+            'NEXT_PUBLIC_PROPELAUTH_URL': os.environ.get(f'{prefix}NEXT_PUBLIC_PROPELAUTH_URL', f"https://{config['auth_domain']}"),
+            # 新增的环境变量
+            'API_KEY': os.environ.get(f'{prefix}API_KEY', 'xpectrum-ai@123'),
+            'LIVE_API_KEY': os.environ.get(f'{prefix}LIVE_API_KEY', 'xpectrum-ai@123'),
         }
 
-        # ACM Certificate - Use different certificates for staging and production
-        if environment == 'staging':
-            certificate = acm.Certificate.from_certificate_arn(
-                self, f"{config['stack_name']}Cert",
-                "arn:aws:acm:us-west-1:641623447164:certificate/99850dcb-97a8-4bed-bbed-6038e2c25e90"
-            )
-        else:
-            certificate = acm.Certificate.from_certificate_arn(
-                self, f"{config['stack_name']}Cert",
-                "arn:aws:acm:us-west-1:641623447164:certificate/887e5136-d78f-4a0b-aad0-7e9c2b74238b"
-            )
+        # ========== 关键逻辑：检查是否是新账户或 release 环境 ==========
+        current_account = os.environ.get('CDK_DEFAULT_ACCOUNT', '')
+        is_new_account = current_account == '503561436224'
+        is_release_env = environment == 'release'
+        
+        # 只有旧账户的非 release 环境才配置 HTTPS 证书
+        if not is_new_account and not is_release_env:
+            # ACM Certificate - Use different certificates for staging and production
+            if environment == 'staging':
+                certificate = acm.Certificate.from_certificate_arn(
+                    self, f"{config['stack_name']}Cert",
+                    "arn:aws:acm:us-west-1:641623447164:certificate/99850dcb-97a8-4bed-bbed-6038e2c25e90"
+                )
+            else:
+                certificate = acm.Certificate.from_certificate_arn(
+                    self, f"{config['stack_name']}Cert",
+                    "arn:aws:acm:us-west-1:641623447164:certificate/887e5136-d78f-4a0b-aad0-7e9c2b74238b"
+                )
 
         # Fargate Task Definition - Frontend only
         task = ecs.FargateTaskDefinition(self, f"{config['stack_name']}Task", memory_limit_mib=1024, cpu=512)
@@ -120,7 +143,7 @@ class AdminPanelDeploymentStack(Stack):
                 "NEXT_PUBLIC_GOOGLE_CALENDAR_API_URL": "https://www.googleapis.com/calendar/v3",
                 "NEXT_PUBLIC_DATABASE_NAME": "google_oauth",
                 "NEXT_PUBLIC_AUTH_URL": f"https://{config['auth_domain']}",
-                "NEXT_PUBLIC_PROPELAUTH_URL": f"https://{config['auth_domain']}",
+                "NEXT_PUBLIC_PROPELAUTH_URL": secrets["NEXT_PUBLIC_PROPELAUTH_URL"],
                 "NEXT_PUBLIC_CALENDAR_API_URL": f"https://{config['domain']}/calendar-api",
                 "NEXT_PUBLIC_API_BASE_URL": f"https://{config['domain']}/calendar-api",
                 "NEXT_PUBLIC_API_URL": f"https://{config['domain']}/api",
@@ -132,7 +155,10 @@ class AdminPanelDeploymentStack(Stack):
                 "NEXT_PUBLIC_TIMEZONE_KEY": "selected_timezone",
                 "NODE_ENV": environment,
                 "PORT": config['frontend_port'],
-                "HOST": "0.0.0.0"
+                "HOST": "0.0.0.0",
+                # 新增的环境变量
+                "API_KEY": secrets["API_KEY"],
+                "LIVE_API_KEY": secrets["LIVE_API_KEY"]
             },
             port_mappings=[ecs.PortMapping(container_port=int(config['frontend_port']))]
         )
@@ -151,35 +177,63 @@ class AdminPanelDeploymentStack(Stack):
 
         # ALB
         lb = elbv2.ApplicationLoadBalancer(self, f"{config['stack_name']}ALB", vpc=vpc, internet_facing=True)
-        https_listener = lb.add_listener(
-            "HttpsListener",
-            port=443,
-            certificates=[certificate],
-            protocol=elbv2.ApplicationProtocol.HTTPS,
-            open=True
-        )
-        # HTTP redirect
-        lb.add_listener(
-            "HttpListener",
-            port=80,
-            protocol=elbv2.ApplicationProtocol.HTTP,
-            default_action=elbv2.ListenerAction.redirect(
-                protocol="HTTPS",
-                port="443",
-                permanent=True
+        
+        # ========== 关键逻辑：根据账户和环境配置监听器 ==========
+        if not is_new_account and not is_release_env:
+            # 旧账户非 release：配置 HTTPS
+            https_listener = lb.add_listener(
+                "HttpsListener",
+                port=443,
+                certificates=[certificate],
+                protocol=elbv2.ApplicationProtocol.HTTPS,
+                open=True
             )
-        )
+            # HTTP redirect
+            lb.add_listener(
+                "HttpListener",
+                port=80,
+                protocol=elbv2.ApplicationProtocol.HTTP,
+                default_action=elbv2.ListenerAction.redirect(
+                    protocol="HTTPS",
+                    port="443",
+                    permanent=True
+                )
+            )
+            # Add targets to HTTPS listener
+            https_listener.add_targets(
+                "FrontendDefault",
+                port=int(config['frontend_port']),
+                protocol=elbv2.ApplicationProtocol.HTTP,
+                targets=[service],
+                health_check=elbv2.HealthCheck(path="/api/health", port=str(config['frontend_port']), healthy_http_codes="200-399")
+            )
+        else:
+            # 新账户或 release 环境：只配置 HTTP
+            http_listener = lb.add_listener(
+                "HttpListener",
+                port=80,
+                protocol=elbv2.ApplicationProtocol.HTTP,
+                open=True
+            )
+            http_listener.add_targets(
+                "FrontendDefault",
+                port=int(config['frontend_port']),
+                protocol=elbv2.ApplicationProtocol.HTTP,
+                targets=[service],
+                health_check=elbv2.HealthCheck(path="/api/health", port=str(config['frontend_port']), healthy_http_codes="200-399")
+            )
 
-        # Listener rules for frontend only
-        # Frontend (default)
-        https_listener.add_targets(
-            "FrontendDefault",
-            port=int(config['frontend_port']),
-            protocol=elbv2.ApplicationProtocol.HTTP,
-            targets=[service],
-            health_check=elbv2.HealthCheck(path="/api/health", port=str(config['frontend_port']), healthy_http_codes="200-399")
-        )
-
-        CfnOutput(self, "FrontendURL", value=f"https://{lb.load_balancer_dns_name}")
+        # 输出配置
+        if not is_new_account and not is_release_env:
+            CfnOutput(self, "FrontendURL", value=f"https://{lb.load_balancer_dns_name}")
+        else:
+            CfnOutput(self, "FrontendURL", value=f"http://{lb.load_balancer_dns_name}")
+            
         CfnOutput(self, "LoadBalancerDNS", value=lb.load_balancer_dns_name)
         CfnOutput(self, "Environment", value=environment)
+        CfnOutput(self, "AccountID", value=current_account)
+        
+        # 如果是 release 环境，输出额外信息
+        if is_release_env:
+            CfnOutput(self, "ReleaseInfo", value=f"Release environment deployed without custom domain")
+            CfnOutput(self, "NextStep", value="Update domain configuration with ALB DNS after deployment")

@@ -1,0 +1,265 @@
+name: Deploy to Release
+
+on:
+  push:
+    branches: [ 'release-*' ] 
+  workflow_dispatch:
+    inputs:
+      image_tag_suffix:
+        description: 'Image tag suffix (e.g., 2025w01)'
+        required: false
+        type: string
+
+env:
+  AWS_REGION: us-west-1
+  ACCOUNT_ID: 503561436224
+
+jobs:
+  deploy-release:
+    runs-on: ubuntu-latest
+    environment: release
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_RELEASE_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_RELEASE_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Determine image tag
+      id: image-tag
+      run: |
+        # 如果提供了 image_tag_suffix，使用它
+        if [ -n "${{ inputs.image_tag_suffix }}" ]; then
+          TAG_SUFFIX="${{ inputs.image_tag_suffix }}"
+        # 如果是 release 分支，从分支名提取周数
+        elif [[ "${{ github.ref_name }}" == release-* ]]; then
+          TAG_SUFFIX=$(echo "${{ github.ref_name }}" | sed 's/release-//')
+        else
+          # 默认使用时间戳
+          TAG_SUFFIX=$(date +%Y%m%d-%H%M%S)
+        fi
+        
+        # 设置完整的标签
+        IMAGE_TAG="frontend-release-${TAG_SUFFIX}"
+        
+        echo "Using image tag: $IMAGE_TAG"
+        echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+    - name: Build and push Frontend image to ECR
+      run: |
+        # Set ECR repository URI
+        REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
+        IMAGE_TAG="${{ steps.image-tag.outputs.image_tag }}"
+        
+        # Build, tag, and push frontend
+        cd frontend
+        docker build -t admin-panel:$IMAGE_TAG .
+        docker tag admin-panel:$IMAGE_TAG $REPO:$IMAGE_TAG
+        docker push $REPO:$IMAGE_TAG
+        
+        # Also tag as latest release
+        docker tag admin-panel:$IMAGE_TAG $REPO:frontend-release-latest
+        docker push $REPO:frontend-release-latest
+        cd ..
+
+    - name: Setup Python for CDK
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install CDK dependencies
+      run: |
+        cd python-cdk-v2
+        pip install -r requirements.txt
+
+    - name: Install AWS CDK
+      run: |
+        npm install -g aws-cdk
+
+    - name: Deploy CDK stack (release)
+      env:
+        # 传递镜像标签给 CDK
+        RELEASE_IMAGE_TAG: ${{ steps.image-tag.outputs.image_tag }}
+        # Pass GitHub environment variables to CDK (using production secrets)
+        RELEASE_NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_NEXT_PUBLIC_PROPELAUTH_API_KEY }}
+        RELEASE_NEXT_PUBLIC_API_KEY: ${{ secrets.PRODUCTION_NEXT_PUBLIC_API_KEY }}
+        RELEASE_GOOGLE_CLIENT_ID: ${{ secrets.PRODUCTION_GOOGLE_CLIENT_ID }}
+        RELEASE_MONGODB_URL: ${{ secrets.PRODUCTION_MONGODB_URL }}
+        RELEASE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.PRODUCTION_STRIPE_PUBLISHABLE_KEY }}
+        RELEASE_SECRET_KEY: ${{ secrets.PRODUCTION_SECRET_KEY }}
+        RELEASE_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_PROPELAUTH_API_KEY }}
+        RELEASE_PROPELAUTH_VERIFIER_KEY: ${{ secrets.PRODUCTION_PROPELAUTH_VERIFIER_KEY }}
+        RELEASE_PROPELAUTH_REDIRECT_URI: ${{ secrets.PRODUCTION_PROPELAUTH_REDIRECT_URI }}
+        RELEASE_NEXT_PUBLIC_LIVE_API_URL: ${{ secrets.PRODUCTION_NEXT_PUBLIC_LIVE_API_URL }}
+        RELEASE_SUPER_ADMIN_ORG_ID: ${{ secrets.PRODUCTION_SUPER_ADMIN_ORG_ID }}
+      run: |
+        cd python-cdk-v2
+        # Deploy to release environment
+        # Add timeout to prevent hanging
+        timeout 30m cdk deploy AdminPanelReleaseStack --require-approval never --context environment=release || {
+          echo "CDK deployment timed out or failed"
+          echo "Checking ECS service status..."
+          aws ecs describe-services \
+            --cluster AdminPanelReleaseStack-AdminPanelReleaseStackCluster* \
+            --services AdminPanelReleaseStack-AdminPanelReleaseStackService* \
+            --region ${{ env.AWS_REGION }} || echo "Could not check ECS status"
+          exit 1
+        }
+
+    - name: Wait for deployment to complete
+      run: |
+        # Check if stack exists first
+        if aws cloudformation describe-stacks --stack-name AdminPanelReleaseStack --region ${{ env.AWS_REGION }} 2>/dev/null; then
+          echo "Waiting for services to stabilize..."
+          # 注意：这里需要在第一次部署后更新实际的集群和服务名称
+          # aws ecs wait services-stable \
+          #   --cluster AdminPanelReleaseStack-AdminPanelReleaseStackCluster* \
+          #   --services AdminPanelReleaseStack-AdminPanelReleaseStackService* \
+          #   --region ${{ env.AWS_REGION }} || echo "Services not stable yet"
+        else
+          echo "Stack does not exist yet, skipping wait"
+        fi
+
+    - name: Get ALB DNS name
+      id: alb-dns
+      run: |
+        DNS_NAME=$(aws cloudformation describe-stacks \
+          --stack-name AdminPanelReleaseStack \
+          --query 'Stacks[0].Outputs[?OutputKey==`FrontendURL`].OutputValue' \
+          --output text \
+          --region ${{ env.AWS_REGION }})
+        echo "alb-dns=$DNS_NAME" >> $GITHUB_OUTPUT
+        echo "Frontend URL: $DNS_NAME"
+
+    - name: Health check
+      run: |
+        # Wait for services to be fully ready
+        sleep 60
+        
+        # Get ALB DNS name
+        DNS_NAME=$(aws cloudformation describe-stacks \
+          --stack-name AdminPanelReleaseStack \
+          --query 'Stacks[0].Outputs[?OutputKey==`FrontendURL`].OutputValue' \
+          --output text \
+          --region ${{ env.AWS_REGION }})
+        
+        # Check if DNS_NAME is not empty
+        if [ -z "$DNS_NAME" ] || [ "$DNS_NAME" = "None" ]; then
+          echo "Error: Could not get DNS name from CloudFormation stack"
+          exit 1
+        fi
+        
+        echo "Frontend URL: $DNS_NAME"
+        
+        # Extract protocol and hostname from URL
+        if [[ "$DNS_NAME" == https://* ]]; then
+          PROTOCOL="https"
+          HOSTNAME=$(echo $DNS_NAME | sed 's|https://||')
+        else
+          PROTOCOL="http"
+          HOSTNAME=$(echo $DNS_NAME | sed 's|http://||')
+        fi
+        
+        echo "Testing health endpoints on: $PROTOCOL://$HOSTNAME"
+        
+        # Health checks for frontend
+        if [ "$PROTOCOL" = "https" ]; then
+          curl -f -k "https://$HOSTNAME/" || exit 1
+          curl -f -k "https://$HOSTNAME/api/health" || exit 1
+        else
+          curl -f "http://$HOSTNAME/" || exit 1
+          curl -f "http://$HOSTNAME/api/health" || exit 1
+        fi
+
+    - name: Debug deployment status
+      run: |
+        echo "=== Checking CloudFormation stack status ==="
+        aws cloudformation describe-stacks \
+          --stack-name AdminPanelReleaseStack \
+          --region ${{ env.AWS_REGION }} \
+          --query 'Stacks[0].StackStatus' \
+          --output text || echo "Stack not found"
+        
+        echo "=== Getting actual ECS resources ==="
+        # 获取实际的集群名称
+        CLUSTER_NAME=$(aws ecs list-clusters --region ${{ env.AWS_REGION }} | grep AdminPanelReleaseStack | head -1 | awk -F'/' '{print $NF}' | tr -d '",' || echo "")
+        if [ ! -z "$CLUSTER_NAME" ]; then
+          echo "Found cluster: $CLUSTER_NAME"
+          
+          # 获取服务名称
+          SERVICE_NAME=$(aws ecs list-services --cluster $CLUSTER_NAME --region ${{ env.AWS_REGION }} | grep arn | head -1 | awk -F'/' '{print $NF}' | tr -d '",' || echo "")
+          if [ ! -z "$SERVICE_NAME" ]; then
+            echo "Found service: $SERVICE_NAME"
+            
+            # 检查服务状态
+            aws ecs describe-services \
+              --cluster $CLUSTER_NAME \
+              --services $SERVICE_NAME \
+              --region ${{ env.AWS_REGION }} \
+              --query 'services[0].{status:status,desiredCount:desiredCount,runningCount:runningCount,pendingCount:pendingCount}' \
+              --output table || echo "Could not check ECS status"
+          fi
+        fi
+
+    - name: Debug ECS task failures
+      if: always()
+      run: |
+        echo "=== Checking for ECS tasks ==="
+        # 获取集群名称
+        CLUSTER_NAME=$(aws ecs list-clusters --region ${{ env.AWS_REGION }} | grep AdminPanelReleaseStack | head -1 | awk -F'/' '{print $NF}' | tr -d '",' || echo "")
+        
+        if [ ! -z "$CLUSTER_NAME" ]; then
+          TASK_ARNS=$(aws ecs list-tasks \
+            --cluster $CLUSTER_NAME \
+            --region ${{ env.AWS_REGION }} \
+            --query 'taskArns' \
+            --output text 2>/dev/null || echo "")
+          
+          if [ ! -z "$TASK_ARNS" ]; then
+            echo "=== Task Details ==="
+            aws ecs describe-tasks \
+              --cluster $CLUSTER_NAME \
+              --tasks $TASK_ARNS \
+              --region ${{ env.AWS_REGION }} \
+              --query 'tasks[].{taskArn:taskArn,lastStatus:lastStatus,desiredStatus:desiredStatus,stoppedReason:stoppedReason,healthStatus:healthStatus}' \
+              --output table || echo "Could not get task details"
+          else
+            echo "No tasks found"
+          fi
+        fi
+
+    - name: Create deployment summary
+      if: success()
+      run: |
+        echo "## Release Deployment Successful! 🚀" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Image Tag**: ${{ steps.image-tag.outputs.image_tag }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Frontend URL**: ${{ steps.alb-dns.outputs.alb-dns }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Deployed At**: $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Release Information" >> $GITHUB_STEP_SUMMARY
+        echo "- **Week Number**: $(echo ${{ github.ref_name }} | sed 's/release-//')" >> $GITHUB_STEP_SUMMARY
+        echo "- **Release Tag**: frontend-release-latest" >> $GITHUB_STEP_SUMMARY
+
+  deployment-failure:
+    needs: deploy-release
+    runs-on: ubuntu-latest
+    if: failure()
+    steps:
+      - name: Release Deployment Failed
+        run: |
+          echo "Release deployment failed - check the logs for details"
+          echo "## Release Deployment Failed! ❌" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Failed At**: $(date)" >> $GITHUB_STEP_SUMMARY
