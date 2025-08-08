@@ -230,6 +230,8 @@ class AdminPanelDeploymentStack(Stack):
         CfnOutput(self, "LoadBalancerDNS", value=lb.load_balancer_dns_name)
         CfnOutput(self, "Environment", value=environment)
         CfnOutput(self, "AccountID", value=current_account)
+        CfnOutput(self, "ClusterName", value=cluster.cluster_name)
+        CfnOutput(self, "ServiceName", value=service.service_name)
         
       
         if is_release_env:
