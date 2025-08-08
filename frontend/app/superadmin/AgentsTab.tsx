@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Filter, Plus, UserRound, Settings, Ban } from 'lucide-react';
+import { Search, Filter, Plus, UserRound, Settings, Ban, RefreshCw } from 'lucide-react';
 import ActionMenu from './ActionMenu';
 import Pagination from './Pagination';
 import { agentApiService } from '@/service/agentService';
@@ -152,8 +152,24 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
   async function handleSetPhone(e: React.FormEvent) {
     e.preventDefault();
     setModalLoading(true);
+    
+    // Validate phone number format
+    const phoneNumber = setPhoneForm.phone_number.trim();
+    if (!phoneNumber) {
+      showError('Phone number is required');
+      setModalLoading(false);
+      return;
+    }
+    
+    // Basic phone number validation (should start with + and have at least 10 digits)
+    if (!phoneNumber.match(/^\+[1-9]\d{1,14}$/)) {
+      showError('Please enter a valid phone number in international format (e.g., +1234567890)');
+      setModalLoading(false);
+      return;
+    }
+    
     try {
-      const data = await agentApiService.setAgentPhone(setPhoneForm.agentId, setPhoneForm.phone_number);
+      const data = await agentApiService.setAgentPhone(setPhoneForm.agentId, { phone_number: phoneNumber });
       if (data.success) {
         setShowSetPhoneModal(false);
         await refreshAgents();
@@ -164,7 +180,8 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
         showError(data.error || 'Failed to set phone number');
       }
     } catch (err: any) {
-      showError(err.message || 'Failed to set phone number');
+      console.error('Set phone error:', err);
+      showError(err.message || 'Failed to set phone number. Please check the phone number format and try again.');
     } finally {
       setModalLoading(false);
     }
@@ -199,6 +216,14 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
+            <button 
+              className="ml-2 p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50"
+              onClick={refreshAgents}
+              disabled={loading}
+              title="Refresh agents"
+            >
+              <RefreshCw className={`h-5 w-5 text-gray-500 ${loading ? 'animate-spin' : ''}`} />
+            </button>
             <button className="ml-2 p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50">
               <Filter className="h-5 w-5 text-gray-500" />
             </button>
@@ -765,6 +790,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
           <div className="fixed left-1/2 top-1/2 z-50 grid w-full translate-x-[-50%] translate-y-[-50%] max-w-md max-h-[90vh] overflow-y-auto border border-gray-300 bg-white p-6 shadow-lg sm:rounded-lg" style={{ pointerEvents: 'auto' }}>
             <div className="flex flex-col space-y-1.5 text-center sm:text-left mb-6">
               <h2 className="text-lg font-semibold leading-none tracking-tight">Set Phone Number</h2>
+              <p className="text-sm text-gray-500">Update phone number for agent</p>
             </div>
             <form className="space-y-6" onSubmit={handleSetPhone}>
               <div className="space-y-2">
@@ -777,15 +803,46 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                   disabled
                 />
               </div>
+              
+              {/* Show current phone number if exists */}
+              {(() => {
+                const agent = agents.find(a => a.agentId === setPhoneForm.agentId);
+                const currentPhone = agent?.phone_number;
+                const trunk = trunks.find(t => t.name === setPhoneForm.agentId || t.name === agent?.id);
+                const trunkPhone = trunk?.numbers?.[0];
+                
+                if (currentPhone || trunkPhone) {
+                  return (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium leading-none">Current Phone Number</label>
+                      <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-md">
+                        <span className="text-sm text-gray-600">
+                          {currentPhone ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              {currentPhone} (Direct)
+                            </span>
+                          ) : trunkPhone ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {trunkPhone} (Trunk)
+                            </span>
+                          ) : 'Not set'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+              
               <div className="space-y-2">
-                <label className="text-sm font-medium leading-none" htmlFor="setPhoneNumber">Phone Number</label>
+                <label className="text-sm font-medium leading-none" htmlFor="setPhoneNumber">New Phone Number</label>
                 <input
                   className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
                   name="setPhoneNumber"
                   id="setPhoneNumber"
                   value={setPhoneForm.phone_number}
                   onChange={e => setSetPhoneForm({ ...setPhoneForm, phone_number: e.target.value })}
-                  placeholder="Enter phone number"
+                  placeholder="Enter new phone number (e.g., +1234567890)"
                 />
               </div>
               <div className="flex justify-end space-x-2">
@@ -839,19 +896,30 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                       <td className="py-4 px-4 font-bold text-gray-900">{agent.agentId}</td>
                       <td className="py-4 px-4">
                         {(() => {
-                          // Find trunk by agentId/id and show first number
-                          const trunk = trunks.find(t => t.name === agent.agentId || t.name === agent.id);
-                          return trunk && trunk.numbers && trunk.numbers.length > 0
-                            ? (
-                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-900 text-white">
-                                {trunk.numbers[0]}
-                              </span>
-                            )
-                            : (
-                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                                Not set
+                          // First check if agent has a phone number directly
+                          if (agent.phone_number) {
+                            return (
+                              <span className="text-sm font-medium text-green-700">
+                                {agent.phone_number}
                               </span>
                             );
+                          }
+                          
+                          // Fallback to checking trunks by agentId/id
+                          const trunk = trunks.find(t => t.name === agent.agentId || t.name === agent.id);
+                          if (trunk && trunk.numbers && trunk.numbers.length > 0) {
+                            return (
+                              <span className="text-sm font-medium text-blue-700">
+                                {trunk.numbers[0]}
+                              </span>
+                            );
+                          }
+                          
+                          return (
+                            <span className="text-sm text-gray-500">
+                              Not set
+                            </span>
+                          );
                         })()}
                       </td>
                       <td className="py-4 px-4 text-gray-700">
@@ -874,7 +942,15 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                               label: 'Set Phone',
                               icon: <UserRound className="w-5 h-5" />,
                               onClick: () => {
-                                setSetPhoneForm({ agentId: agent.agentId, phone_number: agent.phone_number || '' });
+                                // Get current phone number from agent or trunk
+                                const currentPhone = agent.phone_number;
+                                const trunk = trunks.find(t => t.name === agent.agentId || t.name === agent.id);
+                                const trunkPhone = trunk?.numbers?.[0];
+                                
+                                setSetPhoneForm({ 
+                                  agentId: agent.agentId, 
+                                  phone_number: currentPhone || trunkPhone || '' 
+                                });
                                 setShowSetPhoneModal(true);
                               },
                             },
