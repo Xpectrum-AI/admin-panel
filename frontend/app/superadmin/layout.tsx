@@ -3,7 +3,7 @@
 import { withAuthInfo, WithAuthInfoProps } from "@propelauth/react";
 import React from "react";
 
-const SUPER_ADMIN_ORG_ID = process.env.SUPER_ADMIN_ORG_ID || "";
+const SUPER_ADMIN_ORG_ID = process.env.NEXT_PUBLIC_SUPER_ADMIN_ORG_ID || "";
 
 const SuperAdminGuard = withAuthInfo(
   ({ orgHelper, children }: WithAuthInfoProps & { children?: React.ReactNode }) => {
