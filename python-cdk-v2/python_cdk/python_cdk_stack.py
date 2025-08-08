@@ -104,19 +104,22 @@ class AdminPanelDeploymentStack(Stack):
         is_new_account = current_account == '503561436224'
         is_release_env = environment == 'release'
         
-        # 只有旧账户的非 release 环境才配置 HTTPS 证书
-        if not is_new_account and not is_release_env:
-            # ACM Certificate - Use different certificates for staging and production
-            if environment == 'staging':
-                certificate = acm.Certificate.from_certificate_arn(
-                    self, f"{config['stack_name']}Cert",
-                    "arn:aws:acm:us-west-1:641623447164:certificate/99850dcb-97a8-4bed-bbed-6038e2c25e90"
-                )
-            else:
-                certificate = acm.Certificate.from_certificate_arn(
-                    self, f"{config['stack_name']}Cert",
-                    "arn:aws:acm:us-west-1:641623447164:certificate/887e5136-d78f-4a0b-aad0-7e9c2b74238b"
-                )
+        # 所有环境都配置 HTTPS 证书
+        if environment == 'staging':
+            certificate = acm.Certificate.from_certificate_arn(
+                self, f"{config['stack_name']}Cert",
+                "arn:aws:acm:us-west-1:641623447164:certificate/99850dcb-97a8-4bed-bbed-6038e2c25e90"
+            )
+        elif environment == 'production':
+            certificate = acm.Certificate.from_certificate_arn(
+                self, f"{config['stack_name']}Cert",
+                "arn:aws:acm:us-west-1:641623447164:certificate/887e5136-d78f-4a0b-aad0-7e9c2b74238b"
+            )
+        elif environment == 'release':
+            certificate = acm.Certificate.from_certificate_arn(
+                self, f"{config['stack_name']}Cert",
+                "arn:aws:acm:us-west-1:503561436224:certificate/e4c6c688-9d4f-48ce-b3fa-5972d8fe2b57"
+            )
 
         # Fargate Task Definition - Frontend only
         task = ecs.FargateTaskDefinition(self, f"{config['stack_name']}Task", memory_limit_mib=1024, cpu=512)
@@ -178,56 +181,37 @@ class AdminPanelDeploymentStack(Stack):
         # ALB
         lb = elbv2.ApplicationLoadBalancer(self, f"{config['stack_name']}ALB", vpc=vpc, internet_facing=True)
         
-        # ========== 关键逻辑：根据账户和环境配置监听器 ==========
-        if not is_new_account and not is_release_env:
-            # 旧账户非 release：配置 HTTPS
-            https_listener = lb.add_listener(
-                "HttpsListener",
-                port=443,
-                certificates=[certificate],
-                protocol=elbv2.ApplicationProtocol.HTTPS,
-                open=True
+        # ========== 所有环境都配置 HTTPS 监听器 ==========
+        # HTTPS listener
+        https_listener = lb.add_listener(
+            "HttpsListener",
+            port=443,
+            certificates=[certificate],
+            protocol=elbv2.ApplicationProtocol.HTTPS,
+            open=True
+        )
+        # HTTP redirect to HTTPS
+        lb.add_listener(
+            "HttpListener",
+            port=80,
+            protocol=elbv2.ApplicationProtocol.HTTP,
+            default_action=elbv2.ListenerAction.redirect(
+                protocol="HTTPS",
+                port="443",
+                permanent=True
             )
-            # HTTP redirect
-            lb.add_listener(
-                "HttpListener",
-                port=80,
-                protocol=elbv2.ApplicationProtocol.HTTP,
-                default_action=elbv2.ListenerAction.redirect(
-                    protocol="HTTPS",
-                    port="443",
-                    permanent=True
-                )
-            )
-            # Add targets to HTTPS listener
-            https_listener.add_targets(
-                "FrontendDefault",
-                port=int(config['frontend_port']),
-                protocol=elbv2.ApplicationProtocol.HTTP,
-                targets=[service],
-                health_check=elbv2.HealthCheck(path="/api/health", port=str(config['frontend_port']), healthy_http_codes="200-399")
-            )
-        else:
-            # 新账户或 release 环境：只配置 HTTP
-            http_listener = lb.add_listener(
-                "HttpListener",
-                port=80,
-                protocol=elbv2.ApplicationProtocol.HTTP,
-                open=True
-            )
-            http_listener.add_targets(
-                "FrontendDefault",
-                port=int(config['frontend_port']),
-                protocol=elbv2.ApplicationProtocol.HTTP,
-                targets=[service],
-                health_check=elbv2.HealthCheck(path="/api/health", port=str(config['frontend_port']), healthy_http_codes="200-399")
-            )
+        )
+        # Add targets to HTTPS listener
+        https_listener.add_targets(
+            "FrontendDefault",
+            port=int(config['frontend_port']),
+            protocol=elbv2.ApplicationProtocol.HTTP,
+            targets=[service],
+            health_check=elbv2.HealthCheck(path="/api/health", port=str(config['frontend_port']), healthy_http_codes="200-399")
+        )
 
-        # 输出配置
-        if not is_new_account and not is_release_env:
-            CfnOutput(self, "FrontendURL", value=f"https://{lb.load_balancer_dns_name}")
-        else:
-            CfnOutput(self, "FrontendURL", value=f"http://{lb.load_balancer_dns_name}")
+        # 输出配置 - 所有环境都使用 HTTPS
+        CfnOutput(self, "FrontendURL", value=f"https://{lb.load_balancer_dns_name}")
             
         CfnOutput(self, "LoadBalancerDNS", value=lb.load_balancer_dns_name)
         CfnOutput(self, "Environment", value=environment)
