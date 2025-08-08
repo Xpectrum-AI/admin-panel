@@ -3,17 +3,34 @@ import { authenticateApiKey } from '@/lib/middleware/auth';
 import { initAuth } from '@propelauth/express';
 import { createSuccessResponse, handleApiError } from '@/lib/utils/apiResponse';
 
-const API_KEY= process.env.NEXT_PUBLIC_PROPELAUTH_API_KEY || "";
-const AUTH_URL= process.env.NEXT_PUBLIC_PROPELAUTH_URL || "";
+const API_KEY= process.env.NEXT_PUBLIC_PROPELAUTH_API_KEY || process.env.PROPELAUTH_API_KEY || "";
+const AUTH_URL= process.env.NEXT_PUBLIC_PROPELAUTH_URL || process.env.PROPELAUTH_URL || "";
 
-const auth = initAuth({
-  authUrl: AUTH_URL,
-  apiKey: API_KEY,
-});
+// Only initialize auth if we have the required environment variables
+let auth: any = null;
+if (API_KEY && AUTH_URL) {
+  try {
+    auth = initAuth({
+      authUrl: AUTH_URL,
+      apiKey: API_KEY,
+    });
+  } catch (error) {
+    console.error('Failed to initialize PropelAuth:', error);
+  }
+}
+
+// Helper function to check if auth is available
+function isAuthAvailable() {
+  return auth !== null;
+}
 
 // POST /api/org/create-org
 export async function createOrg(request: NextRequest) {
   try {
+    if (!isAuthAvailable()) {
+      return NextResponse.json({ error: 'Authentication service not available' }, { status: 503 });
+    }
+
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
       return handleApiError(new Error('Unauthorized'), 'Organization Create API');
@@ -37,6 +54,10 @@ export async function createOrg(request: NextRequest) {
 // POST /api/org/add-user
 export async function addUserToOrg(request: NextRequest) {
   try {
+    if (!isAuthAvailable()) {
+      return NextResponse.json({ error: 'Authentication service not available' }, { status: 503 });
+    }
+
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
       return handleApiError(new Error('Unauthorized'), 'Add User to Organization API');
@@ -60,6 +81,10 @@ export async function addUserToOrg(request: NextRequest) {
 // POST /api/org/invite-user
 export async function inviteUserToOrg(request: NextRequest) {
   try {
+    if (!isAuthAvailable()) {
+      return NextResponse.json({ error: 'Authentication service not available' }, { status: 503 });
+    }
+
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
       return handleApiError(new Error('Unauthorized'), 'Invite User to Organization API');
@@ -83,6 +108,10 @@ export async function inviteUserToOrg(request: NextRequest) {
 // POST /api/org/fetch-users
 export async function fetchUsersInOrg(request: NextRequest) {
   try {
+    if (!isAuthAvailable()) {
+      return NextResponse.json({ error: 'Authentication service not available' }, { status: 503 });
+    }
+
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -113,6 +142,10 @@ export async function fetchUsersInOrg(request: NextRequest) {
 // POST /api/org/fetch-pending-invites
 export async function fetchPendingInvites(request: NextRequest) {
   try {
+    if (!isAuthAvailable()) {
+      return NextResponse.json({ error: 'Authentication service not available' }, { status: 503 });
+    }
+
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -143,6 +176,10 @@ export async function fetchPendingInvites(request: NextRequest) {
 // POST /api/org/remove-user
 export async function removeUserFromOrg(request: NextRequest) {
   try {
+    if (!isAuthAvailable()) {
+      return NextResponse.json({ error: 'Authentication service not available' }, { status: 503 });
+    }
+
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -174,6 +211,10 @@ export async function removeUserFromOrg(request: NextRequest) {
 // POST /api/org/change-user-role
 export async function changeUserRoleInOrg(request: NextRequest) {
   try {
+    if (!isAuthAvailable()) {
+      return NextResponse.json({ error: 'Authentication service not available' }, { status: 503 });
+    }
+
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -205,6 +246,10 @@ export async function changeUserRoleInOrg(request: NextRequest) {
 // POST /api/org/update-org
 export async function updateOrg(request: NextRequest) {
   try {
+    if (!isAuthAvailable()) {
+      return NextResponse.json({ error: 'Authentication service not available' }, { status: 503 });
+    }
+
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -240,6 +285,10 @@ export async function updateOrg(request: NextRequest) {
 // POST /api/org/fetch-org-details
 export async function fetchOrgDetails(request: NextRequest) {
   try {
+    if (!isAuthAvailable()) {
+      return NextResponse.json({ error: 'Authentication service not available' }, { status: 503 });
+    }
+
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -270,6 +319,10 @@ export async function fetchOrgDetails(request: NextRequest) {
 // POST /api/org/fetch-orgs-query
 export async function fetchOrgByQuery(request: NextRequest) {
   try {
+    if (!isAuthAvailable()) {
+      return NextResponse.json({ error: 'Authentication service not available' }, { status: 503 });
+    }
+
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
