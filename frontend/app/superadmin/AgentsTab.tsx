@@ -224,6 +224,23 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
             >
               <RefreshCw className={`h-5 w-5 text-gray-500 ${loading ? 'animate-spin' : ''}`} />
             </button>
+            <button 
+              className="ml-2 p-2 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100"
+              onClick={async () => {
+                try {
+                  const response = await fetch('/api/debug/agent-data');
+                  const data = await response.json();
+                  console.log('Debug Agent Data:', data);
+                  alert('Check console for debug data');
+                } catch (error) {
+                  console.error('Debug error:', error);
+                  alert('Debug failed - check console');
+                }
+              }}
+              title="Debug agent data"
+            >
+              <Settings className="h-5 w-5 text-blue-500" />
+            </button>
             <button className="ml-2 p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50">
               <Filter className="h-5 w-5 text-gray-500" />
             </button>
@@ -894,34 +911,52 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                   return (
                     <tr key={agent.agentId} className="bg-white rounded-xl shadow-sm">
                       <td className="py-4 px-4 font-bold text-gray-900">{agent.agentId}</td>
-                      <td className="py-4 px-4">
-                        {(() => {
-                          // First check if agent has a phone number directly
-                          if (agent.phone_number) {
-                            return (
-                              <span className="text-sm font-medium text-green-700">
-                                {agent.phone_number}
-                              </span>
-                            );
-                          }
-                          
-                          // Fallback to checking trunks by agentId/id
-                          const trunk = trunks.find(t => t.name === agent.agentId || t.name === agent.id);
-                          if (trunk && trunk.numbers && trunk.numbers.length > 0) {
-                            return (
-                              <span className="text-sm font-medium text-blue-700">
-                                {trunk.numbers[0]}
-                              </span>
-                            );
-                          }
-                          
-                          return (
-                            <span className="text-sm text-gray-500">
-                              Not set
-                            </span>
-                          );
-                        })()}
-                      </td>
+                            <td className="py-4 px-4">
+        {(() => {
+          // Debug logging
+          console.log('Agent:', agent);
+          console.log('Trunks:', trunks);
+          
+          // First check if agent has a phone number directly
+          if (agent.phone_number) {
+            console.log('Using direct phone number:', agent.phone_number);
+            return (
+              <span className="text-sm font-medium text-green-700">
+                {agent.phone_number}
+              </span>
+            );
+          }
+          
+          // Try to find trunk by agent name/id - check multiple possible matches
+          const trunk = trunks.find(t => 
+            t.name === agent.agentId || 
+            t.name === agent.id || 
+            t.name === agent.name ||
+            t.name === agent.agentName ||
+            agent.agentId?.includes(t.name) ||
+            agent.id?.includes(t.name) ||
+            agent.name?.includes(t.name)
+          );
+          
+          console.log('Found trunk for agent:', trunk);
+          
+          if (trunk && trunk.numbers && trunk.numbers.length > 0) {
+            console.log('Using trunk phone number:', trunk.numbers[0]);
+            return (
+              <span className="text-sm font-medium text-blue-700">
+                {trunk.numbers[0]}
+              </span>
+            );
+          }
+          
+          console.log('No phone number found for agent');
+          return (
+            <span className="text-sm text-gray-500">
+              Not set
+            </span>
+          );
+        })()}
+      </td>
                       <td className="py-4 px-4 text-gray-700">
                         {(() => {
                           
