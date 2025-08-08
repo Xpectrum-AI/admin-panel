@@ -140,10 +140,26 @@ jobs:
       run: |
         # Check if stack exists first
         if aws cloudformation describe-stacks --stack-name AdminPanelStagingStack --region ${{ env.AWS_REGION }} 2>/dev/null; then
+          # Get the actual cluster and service names from CloudFormation outputs
+          CLUSTER_NAME=$(aws cloudformation describe-stacks \
+            --stack-name AdminPanelStagingStack \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`ClusterName`].OutputValue' \
+            --output text 2>/dev/null || echo "AdminPanelStagingStackCluster")
+          
+          SERVICE_NAME=$(aws cloudformation describe-stacks \
+            --stack-name AdminPanelStagingStack \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`ServiceName`].OutputValue' \
+            --output text 2>/dev/null || echo "AdminPanelStagingStackService")
+          
+          echo "Using cluster: $CLUSTER_NAME"
+          echo "Using service: $SERVICE_NAME"
+          
           # Wait for ECS services to be stable
           aws ecs wait services-stable \
-            --cluster AdminPanelStagingStack-AdminPanelStagingStackCluster354587DC-WMnszSmI30dz \
-            --services AdminPanelStagingStack-AdminPanelStagingStackService167ECF01-mGcKXTWR0Ntv \
+            --cluster $CLUSTER_NAME \
+            --services $SERVICE_NAME \
             --region ${{ env.AWS_REGION }} || echo "Services not stable yet"
         else
           echo "Stack does not exist yet, skipping wait"
@@ -188,8 +204,14 @@ jobs:
         
         echo "=== VERIFYING DEPLOYED ENVIRONMENT VARIABLES ==="
         # Get ECS task details to verify environment variables
+        CLUSTER_NAME=$(aws cloudformation describe-stacks \
+          --stack-name AdminPanelStagingStack \
+          --region ${{ env.AWS_REGION }} \
+          --query 'Stacks[0].Outputs[?OutputKey==`ClusterName`].OutputValue' \
+          --output text 2>/dev/null || echo "AdminPanelStagingStackCluster")
+        
         TASK_ARN=$(aws ecs list-tasks \
-          --cluster AdminPanelStagingStack-AdminPanelStagingStackCluster354587DC-WMnszSmI30dz \
+          --cluster $CLUSTER_NAME \
           --region ${{ env.AWS_REGION }} \
           --query 'taskArns[0]' \
           --output text 2>/dev/null || echo "")
@@ -199,7 +221,7 @@ jobs:
           
           echo "=== SUPER ADMIN ENVIRONMENT VARIABLES VERIFICATION ==="
           aws ecs describe-tasks \
-            --cluster AdminPanelStagingStack-AdminPanelStagingStackCluster354587DC-WMnszSmI30dz \
+            --cluster $CLUSTER_NAME \
             --tasks $TASK_ARN \
             --region ${{ env.AWS_REGION }} \
             --query 'tasks[0].overrides.containerOverrides[0].environment[?contains(name, `SUPER_ADMIN`) || contains(name, `PROPELAUTH`)].{name:name,value:value}' \
@@ -207,7 +229,7 @@ jobs:
           
           echo "=== ALL ENVIRONMENT VARIABLES ==="
           aws ecs describe-tasks \
-            --cluster AdminPanelStagingStack-AdminPanelStagingStackCluster354587DC-WMnszSmI30dz \
+            --cluster $CLUSTER_NAME \
             --tasks $TASK_ARN \
             --region ${{ env.AWS_REGION }} \
             --query 'tasks[0].overrides.containerOverrides[0].environment[].{name:name,value:value}' \
@@ -225,25 +247,44 @@ jobs:
           --query 'Stacks[0].StackStatus' \
           --output text || echo "Stack not found"
         
+        # Get actual cluster and service names
+        CLUSTER_NAME=$(aws cloudformation describe-stacks \
+          --stack-name AdminPanelStagingStack \
+          --region ${{ env.AWS_REGION }} \
+          --query 'Stacks[0].Outputs[?OutputKey==`ClusterName`].OutputValue' \
+          --output text 2>/dev/null || echo "AdminPanelStagingStackCluster")
+        
+        SERVICE_NAME=$(aws cloudformation describe-stacks \
+          --stack-name AdminPanelStagingStack \
+          --region ${{ env.AWS_REGION }} \
+          --query 'Stacks[0].Outputs[?OutputKey==`ServiceName`].OutputValue' \
+          --output text 2>/dev/null || echo "AdminPanelStagingStackService")
+        
         echo "=== Checking ECS service status ==="
         aws ecs describe-services \
-          --cluster AdminPanelStagingStack-AdminPanelStagingStackCluster354587DC-WMnszSmI30dz \
-          --services AdminPanelStagingStack-AdminPanelStagingStackService167ECF01-mGcKXTWR0Ntv \
+          --cluster $CLUSTER_NAME \
+          --services $SERVICE_NAME \
           --region ${{ env.AWS_REGION }} \
           --query 'services[0].{status:status,desiredCount:desiredCount,runningCount:runningCount,pendingCount:pendingCount}' \
           --output table || echo "Could not check ECS status"
         
         echo "=== Checking ECS tasks ==="
         aws ecs list-tasks \
-          --cluster AdminPanelStagingStack-AdminPanelStagingStackCluster354587DC-WMnszSmI30dz \
+          --cluster $CLUSTER_NAME \
           --region ${{ env.AWS_REGION }} || echo "Could not list tasks"
 
     - name: Debug ECS task failures
       if: always()
       run: |
         echo "=== Checking for failed ECS tasks ==="
+        CLUSTER_NAME=$(aws cloudformation describe-stacks \
+          --stack-name AdminPanelStagingStack \
+          --region ${{ env.AWS_REGION }} \
+          --query 'Stacks[0].Outputs[?OutputKey==`ClusterName`].OutputValue' \
+          --output text 2>/dev/null || echo "AdminPanelStagingStackCluster")
+        
         TASK_ARNS=$(aws ecs list-tasks \
-          --cluster AdminPanelStagingStack-AdminPanelStagingStackCluster354587DC-WMnszSmI30dz \
+          --cluster $CLUSTER_NAME \
           --region ${{ env.AWS_REGION }} \
           --query 'taskArns' \
           --output text 2>/dev/null || echo "")
@@ -251,7 +292,7 @@ jobs:
         if [ ! -z "$TASK_ARNS" ]; then
           echo "=== Task Details ==="
           aws ecs describe-tasks \
-            --cluster AdminPanelStagingStack-AdminPanelStagingStackCluster354587DC-WMnszSmI30dz \
+            --cluster $CLUSTER_NAME \
             --tasks $TASK_ARNS \
             --region ${{ env.AWS_REGION }} \
             --query 'tasks[].{taskArn:taskArn,lastStatus:lastStatus,desiredStatus:desiredStatus,stoppedReason:stoppedReason,healthStatus:healthStatus}' \
