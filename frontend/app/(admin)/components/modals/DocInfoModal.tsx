@@ -254,6 +254,7 @@ export default function WelcomeSetupModal({
     // Validate current step before proceeding
     const currentStepErrors = validateCurrentStep();
     if (Object.keys(currentStepErrors).length > 0) {
+      console.log('Validation errors preventing next step:', currentStepErrors);
       setValidationErrors(prev => ({ ...prev, ...currentStepErrors }));
       return;
     }
@@ -264,8 +265,12 @@ export default function WelcomeSetupModal({
   const validateCurrentStep = () => {
     const errors: {[key: string]: string} = {};
 
-    if (currentStep === 1 || (currentStep === 0 && isDoctor === true)) {
+    console.log('Validating step:', currentStep, 'isDoctor:', isDoctor);
+
+    // Only validate the current step, not multiple steps
+    if (currentStep === 1) {
       // Step 1: Basic Info validation
+      console.log('Validating Step 1 - Basic Info');
       if (!doctorProfile.first_name.trim()) errors.first_name = 'First name is required';
       if (!doctorProfile.last_name.trim()) errors.last_name = 'Last name is required';
       if (!doctorProfile.doctor_data.gender) errors.gender = 'Gender is required';
@@ -281,20 +286,26 @@ export default function WelcomeSetupModal({
         errors.age = ageVsExpError;
         errors.experience = ageVsExpError;
       }
+      
+      console.log('Step 1 validation errors:', errors);
     }
 
-    if (currentStep === 2 || (currentStep === 1 && isDoctor === true)) {
+    if (currentStep === 2) {
       // Step 2: Registration Details validation
+      console.log('Validating Step 2 - Registration Details');
       if (!doctorProfile.doctor_data.registration_number.trim()) {
         errors.registration_number = 'Registration number is required';
       }
       if (!doctorProfile.doctor_data.registration_year) {
         errors.registration_year = 'Registration year is required';
       }
+      
+      console.log('Step 2 validation errors:', errors);
     }
 
-    if (currentStep === 3 || (currentStep === 2 && isDoctor === true)) {
+    if (currentStep === 3) {
       // Step 3: Qualifications validation
+      console.log('Validating Step 3 - Qualifications');
       const qualifications = doctorProfile.doctor_data.qualifications;
       qualifications.forEach((qual: any, idx: number) => {
         if (!qual.degree.trim()) {
@@ -318,8 +329,11 @@ export default function WelcomeSetupModal({
           }
         }
       });
+      
+      console.log('Step 3 validation errors:', errors);
     }
 
+    console.log('Total validation errors:', errors);
     return errors;
   };
 
@@ -375,8 +389,8 @@ export default function WelcomeSetupModal({
 
   // Doctor steps
   if (isDoctor) {
-    // Step 1: Basic Info (or step 0 if we skipped role selection)
-    if (currentStep === 1 || (currentStep === 0 && isDoctor === true)) {
+    // Step 1: Basic Info
+    if (currentStep === 1) {
       return (
         <Modal>
           <div
@@ -400,7 +414,7 @@ export default function WelcomeSetupModal({
           {/* Header */}
           <div className="flex flex-col space-y-1.5 text-center sm:text-left">
             <h2 className="text-lg font-semibold leading-none tracking-tight">
-              Doctor Profile Setup - Step {currentStep === 0 ? 1 : currentStep} of 5
+              Doctor Profile Setup - Step {currentStep} of 5
             </h2>
           </div>
 
@@ -525,8 +539,8 @@ export default function WelcomeSetupModal({
         </Modal>
       );
     }
-    // Step 2: Registration Details (or step 1 if we skipped role selection)
-    if (currentStep === 2 || (currentStep === 1 && isDoctor === true)) {
+    // Step 2: Registration Details
+    if (currentStep === 2) {
       return (
         <Modal>
           <div
@@ -550,7 +564,7 @@ export default function WelcomeSetupModal({
             {/* Header */}
             <div className="flex flex-col space-y-1.5 text-center sm:text-left">
               <h2 className="text-lg font-semibold leading-none tracking-tight">
-                Doctor Profile Setup - Step {currentStep === 1 ? 2 : currentStep} of 5
+                Doctor Profile Setup - Step {currentStep} of 5
               </h2>
             </div>
     
@@ -645,8 +659,8 @@ export default function WelcomeSetupModal({
         </Modal>
       );
     }
-    // Step 3: Qualifications (or step 2 if we skipped role selection)
-    if (currentStep === 3 || (currentStep === 2 && isDoctor === true)) {
+    // Step 3: Qualifications
+    if (currentStep === 3) {
       return (
         <Modal>
           <div
@@ -669,7 +683,7 @@ export default function WelcomeSetupModal({
             {/* Header */}
             <div className="flex flex-col space-y-1.5 text-center sm:text-left">
               <h2 className="text-lg font-semibold leading-none tracking-tight">
-                Doctor Profile Setup - Step {currentStep === 2 ? 3 : currentStep} of 5
+                Doctor Profile Setup - Step {currentStep} of 5
               </h2>
             </div>
     
@@ -807,7 +821,7 @@ export default function WelcomeSetupModal({
             {/* Header */}
             <div className="flex flex-col space-y-1.5 text-center sm:text-left">
               <h2 className="text-lg font-semibold leading-none tracking-tight">
-                Doctor Profile Setup - Step 4 of 5
+                Doctor Profile Setup - Step {currentStep} of 5
               </h2>
             </div>
     
