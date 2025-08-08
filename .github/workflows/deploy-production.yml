@@ -78,6 +78,8 @@ jobs:
         PRODUCTION_PROPELAUTH_URL: ${{ secrets.PRODUCTION_PROPELAUTH_URL }}
         PRODUCTION_NEXT_PUBLIC_LIVE_API_URL: ${{ secrets.PRODUCTION_NEXT_PUBLIC_LIVE_API_URL }}
         PRODUCTION_SUPER_ADMIN_ORG_ID: ${{ secrets.PRODUCTION_SUPER_ADMIN_ORG_ID }}
+        # Add the missing NEXT_PUBLIC_PROPELAUTH_URL variable
+        PRODUCTION_NEXT_PUBLIC_PROPELAUTH_URL: ${{ secrets.PRODUCTION_PROPELAUTH_URL }}
       run: |
         cd python-cdk-v2
         # Deploy to production environment
