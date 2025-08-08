@@ -9,14 +9,15 @@ from python_cdk.python_cdk_stack import AdminPanelDeploymentStack
 app = cdk.App()
 
 # Get environment from context or default to staging
-environment = app.node.try_get_context('environment') or 'staging'
+environment = app.node.try_get_context('environment')
 
 # Use different stack names for staging and production
 if environment == 'staging':
     stack_name = "AdminPanelStagingStack"
-else:
+elif environment == 'production':
     stack_name = "AdminPanelProductionStack"
-
+else:
+    stack_name = "AdminPanelReleaseStack"
 # Deploy AdminPanelDeploymentStack with appropriate stack name
 AdminPanelDeploymentStack(app, stack_name,
     # If you don't specify 'env', this stack will be environment-agnostic.

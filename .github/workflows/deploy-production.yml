@@ -1,13 +1,11 @@
 name: Deploy to Production
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 env:
   AWS_REGION: us-west-1
-  ACCOUNT_ID: 641623447164
+  ACCOUNT_ID: 503561436224
 
 jobs:
   deploy-production:
@@ -29,17 +27,17 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Build and push Frontend image to ECR
+    - name: Pull and retag Frontend image from Release
       run: |
         # Set ECR repository URI
         REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
         
-        # Build, tag, and push frontend only
-        cd frontend
-        docker build -t admin-panel:frontend-latest .
-        docker tag admin-panel:frontend-latest $REPO:frontend-latest
+        # Pull the latest release image
+        docker pull $REPO:frontend-release-latest
+        
+        # Retag as production latest and push
+        docker tag $REPO:frontend-release-latest $REPO:frontend-latest
         docker push $REPO:frontend-latest
-        cd ..
 
     - name: Setup Python for CDK
       uses: actions/setup-python@v4
