@@ -70,9 +70,14 @@ export default function CreateEventModal({ isOpen, onClose, calendarId }: Create
 
     setIsSubmitting(true);
     try {
-      // Format date and time for API
-      const startDateTime = `${formData.date}T${formData.startTime}:00`;
-      const endDateTime = `${formData.date}T${formData.endTime}:00`;
+      // Format date and time for API with timezone
+      const startDateTime = `${formData.date}T${formData.startTime}:00-07:00`; // Add timezone offset
+      const endDateTime = `${formData.date}T${formData.endTime}:00-07:00`; // Add timezone offset
+
+      console.log('Creating event with calendar ID:', calendarId);
+      console.log('Event form data:', formData);
+      console.log('Formatted start datetime:', startDateTime);
+      console.log('Formatted end datetime:', endDateTime);
 
       // Create event data with all form fields
       const eventData = {
@@ -83,10 +88,19 @@ export default function CreateEventModal({ isOpen, onClose, calendarId }: Create
         attendee_email: formData.attendees || undefined,
       };
 
-      await eventService.createEvent(eventData);
+      console.log('Sending event data to API:', eventData);
+      const result = await eventService.createEvent(eventData);
+      console.log('Event creation result:', result);
 
       showSuccess('Event created successfully!');
+      console.log('Event created successfully, closing modal');
       onClose();
+      
+      // Refresh the page to show the new event
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+      
       // Reset form
       setFormData({
         title: '',
