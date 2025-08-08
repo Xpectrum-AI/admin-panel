@@ -37,12 +37,16 @@ export interface ListEventsResponse {
 export const eventController = {
   async createEvent(data: CreateEventRequest): Promise<{ status: string; message: string; data?: any }> {
     try {
+      console.log('EventController: Creating event with data:', data);
+      
       // Validate required fields
       if (!data.calendar_id || !data.summary || !data.start || !data.end) {
         throw new Error('Missing required fields: calendar_id, summary, start, end');
       }
 
       const url = `${LIVE_API_BASE_URL}/event/create`;
+      console.log('EventController: Sending request to:', url);
+      
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -52,14 +56,19 @@ export const eventController = {
         body: JSON.stringify(data),
       });
 
+      console.log('EventController: Response status:', response.status);
+      console.log('EventController: Response ok:', response.ok);
+      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error('EventController: Error response:', errorData);
         const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
         (error as any).status = response.status;
         throw error;
       }
 
       const result = await response.json();
+      console.log('EventController: Success response:', result);
       return {
         status: 'success',
         message: 'Event created successfully',

@@ -6,18 +6,25 @@ const headers = {
 
 export const eventService = {
   async createEvent(data: any): Promise<any> {
+    console.log('EventService: Creating event with data:', data);
+    
     const response = await fetch(`/api/event/create`, {
       method: 'POST',
       headers,
       body: JSON.stringify(data),
     });
 
+    console.log('EventService: Response status:', response.status);
+    console.log('EventService: Response ok:', response.ok);
+
     if (!response.ok) {
       const errorData = await response.json();
+      console.error('EventService: Error response:', errorData);
       throw new Error(errorData.error || 'Failed to create event');
     }
 
     const result = await response.json();
+    console.log('EventService: Success response:', result);
     return result.data || result;
   },
 
@@ -41,6 +48,7 @@ export const eventService = {
     // Handle nested response structure
     let eventsData;
     console.log('Raw API response:', result);
+    console.log('Events count in response:', result.data?.data?.events?.length || result.data?.events?.length || result.events?.length || 'No events array found');
     
     // Check for the specific nested structure from your API
     if (result.data && result.data.data && result.data.data.events) {
@@ -58,6 +66,7 @@ export const eventService = {
     }
     
     console.log('Extracted events data:', eventsData);
+    console.log('Final events count:', eventsData.events?.length || 0);
     
     // Transform event_id to id for frontend compatibility
     if (eventsData.events && Array.isArray(eventsData.events)) {
