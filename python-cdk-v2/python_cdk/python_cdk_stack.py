@@ -10,6 +10,7 @@ from aws_cdk import (
 )
 from constructs import Construct
 import os
+import time
 
 class AdminPanelDeploymentStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
@@ -170,7 +171,9 @@ class AdminPanelDeploymentStack(Stack):
             assign_public_ip=True,
             # Add deployment configuration to prevent warnings
             min_healthy_percent=100,
-            max_healthy_percent=200
+            max_healthy_percent=200,
+            # Force recreation by adding a unique identifier
+            service_name=f"{config['stack_name']}Service-{int(time.time())}"
         )
 
         # ALB
