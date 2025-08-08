@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import {SyncLoader} from "react-spinners";
 
-const SUPER_ADMIN_ORG_ID = process.env.SUPER_ADMIN_ORG_ID || "";
+const SUPER_ADMIN_ORG_ID = process.env.NEXT_PUBLIC_SUPER_ADMIN_ORG_ID || "";
 
 export default function Home() {
   const { userClass, loading } = useAuthInfo();
