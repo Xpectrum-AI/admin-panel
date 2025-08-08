@@ -62,6 +62,8 @@ export default function WelcomeSetupModal({
   const [currentStep, setCurrentStep] = useState(1);
   const [isDoctor, setIsDoctor] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+  
   const [doctorProfile, setDoctorProfile] = useState<any>(
     isEdit && doctorData ? {
       doctor_id: doctorData.doctor_id || '',
@@ -86,7 +88,67 @@ export default function WelcomeSetupModal({
     } : initialDoctorProfile
   );
 
-  // Handlers for dynamic fields
+  // Validation functions
+  const validateAgeVsExperience = (age: string, experience: string) => {
+    const ageNum = parseInt(age);
+    const expNum = parseInt(experience);
+    
+    if (age && experience && expNum > ageNum) {
+      return `Experience (${expNum} years) cannot be greater than age (${ageNum} years)`;
+    }
+    return '';
+  };
+
+  const validateRegistrationVsQualification = (regYear: string, qualYear: string) => {
+    const regYearNum = parseInt(regYear);
+    const qualYearNum = parseInt(qualYear);
+    
+    if (regYear && qualYear && qualYearNum >= regYearNum) {
+      return `Qualification year (${qualYearNum}) must be before registration year (${regYearNum})`;
+    }
+    return '';
+  };
+
+  const validateYearRange = (year: string, fieldName: string) => {
+    const yearNum = parseInt(year);
+    const currentYear = new Date().getFullYear();
+    
+    if (year && (yearNum < 1900 || yearNum > currentYear)) {
+      return `${fieldName} must be between 1900 and ${currentYear}`;
+    }
+    return '';
+  };
+
+  const validateAge = (age: string) => {
+    const ageNum = parseInt(age);
+    
+    if (age && (ageNum < 18 || ageNum > 100)) {
+      return 'Age must be between 18 and 100 years';
+    }
+    return '';
+  };
+
+  const validateExperience = (experience: string) => {
+    const expNum = parseInt(experience);
+    
+    if (experience && (expNum < 0 || expNum > 50)) {
+      return 'Experience must be between 0 and 50 years';
+    }
+    return '';
+  };
+
+  // Helper function to get error message for a field
+  const getFieldError = (fieldName: string) => {
+    return validationErrors[fieldName] || '';
+  };
+
+  // Helper function to get error message for array field
+  const getArrayFieldError = (fieldName: string, idx: number, subfield: string) => {
+    const errorKey = `${fieldName}_${idx}_${subfield}`;
+    return validationErrors[errorKey] || '';
+  };
+
+  // Handlers for dynamic fields with validation
   const handleChange = (field: string, value: any) => {
     if (field === 'first_name' || field === 'last_name') {
       setDoctorProfile((prev: any) => ({ ...prev, [field]: value }));
@@ -96,9 +158,36 @@ export default function WelcomeSetupModal({
         doctor_data: { ...prev.doctor_data, [field]: value } 
       }));
     }
+
+    // Clear validation errors when user starts typing
+    if (validationErrors[field]) {
+      setValidationErrors(prev => ({ ...prev, [field]: '' }));
+    }
+
+    // Validate age vs experience
+    if (field === 'age' || field === 'experience') {
+      const age = field === 'age' ? value : doctorProfile.doctor_data.age;
+      const experience = field === 'experience' ? value : doctorProfile.doctor_data.experience;
+      
+      const ageError = field === 'age' ? validateAge(value) : '';
+      const expError = field === 'experience' ? validateExperience(value) : '';
+      const ageVsExpError = validateAgeVsExperience(age, experience);
+      
+      setValidationErrors(prev => ({
+        ...prev,
+        age: ageError || ageVsExpError,
+        experience: expError || ageVsExpError
+      }));
+    }
+
+    // Validate registration year
+    if (field === 'registration_year') {
+      const yearError = validateYearRange(value, 'Registration year');
+      setValidationErrors(prev => ({ ...prev, registration_year: yearError }));
+    }
   };
 
-  // For array fields (qualifications, specializations, aliases, facilities)
+  // For array fields (qualifications, specializations, aliases, facilities) with validation
   const handleArrayChange = (field: string, idx: number, subfield: string, value: any) => {
     setDoctorProfile((prev: any) => {
       const arr = [...prev.doctor_data[field]];
@@ -108,6 +197,28 @@ export default function WelcomeSetupModal({
         doctor_data: { ...prev.doctor_data, [field]: arr } 
       };
     });
+
+    // Clear validation errors when user starts typing
+    const errorKey = `${field}_${idx}_${subfield}`;
+    if (validationErrors[errorKey]) {
+      setValidationErrors(prev => ({ ...prev, [errorKey]: '' }));
+    }
+
+    // Validate qualification year vs registration year
+    if (field === 'qualifications' && subfield === 'year') {
+      const regYear = doctorProfile.doctor_data.registration_year;
+      const qualYear = value;
+      
+      if (regYear && qualYear) {
+        const yearError = validateYearRange(qualYear, 'Qualification year');
+        const regVsQualError = validateRegistrationVsQualification(regYear, qualYear);
+        
+        setValidationErrors(prev => ({
+          ...prev,
+          [`qualifications_${idx}_year`]: yearError || regVsQualError
+        }));
+      }
+    }
   };
 
   const addArrayItem = (field: string, template: any) => {
@@ -134,14 +245,84 @@ export default function WelcomeSetupModal({
     });
   };
 
-  // Step navigation
+  // Step navigation with validation
   const next = () => {
     if (currentStep === 0 && isDoctor === null) {
-      // If we're on step 0 and isDoctor is null, we need to select a role first
       return;
     }
+
+    // Validate current step before proceeding
+    const currentStepErrors = validateCurrentStep();
+    if (Object.keys(currentStepErrors).length > 0) {
+      setValidationErrors(prev => ({ ...prev, ...currentStepErrors }));
+      return;
+    }
+
     setCurrentStep((s) => s + 1);
   };
+
+  const validateCurrentStep = () => {
+    const errors: {[key: string]: string} = {};
+
+    if (currentStep === 1 || (currentStep === 0 && isDoctor === true)) {
+      // Step 1: Basic Info validation
+      if (!doctorProfile.first_name.trim()) errors.first_name = 'First name is required';
+      if (!doctorProfile.last_name.trim()) errors.last_name = 'Last name is required';
+      if (!doctorProfile.doctor_data.gender) errors.gender = 'Gender is required';
+      if (!doctorProfile.doctor_data.age) errors.age = 'Age is required';
+      if (!doctorProfile.doctor_data.experience) errors.experience = 'Experience is required';
+      
+      // Validate age vs experience
+      const ageVsExpError = validateAgeVsExperience(
+        doctorProfile.doctor_data.age, 
+        doctorProfile.doctor_data.experience
+      );
+      if (ageVsExpError) {
+        errors.age = ageVsExpError;
+        errors.experience = ageVsExpError;
+      }
+    }
+
+    if (currentStep === 2 || (currentStep === 1 && isDoctor === true)) {
+      // Step 2: Registration Details validation
+      if (!doctorProfile.doctor_data.registration_number.trim()) {
+        errors.registration_number = 'Registration number is required';
+      }
+      if (!doctorProfile.doctor_data.registration_year) {
+        errors.registration_year = 'Registration year is required';
+      }
+    }
+
+    if (currentStep === 3 || (currentStep === 2 && isDoctor === true)) {
+      // Step 3: Qualifications validation
+      const qualifications = doctorProfile.doctor_data.qualifications;
+      qualifications.forEach((qual: any, idx: number) => {
+        if (!qual.degree.trim()) {
+          errors[`qualifications_${idx}_degree`] = 'Degree name is required';
+        }
+        if (!qual.year) {
+          errors[`qualifications_${idx}_year`] = 'Qualification year is required';
+        }
+        if (!qual.university.trim()) {
+          errors[`qualifications_${idx}_university`] = 'University name is required';
+        }
+        
+        // Validate qualification year vs registration year
+        if (qual.year && doctorProfile.doctor_data.registration_year) {
+          const regVsQualError = validateRegistrationVsQualification(
+            doctorProfile.doctor_data.registration_year, 
+            qual.year
+          );
+          if (regVsQualError) {
+            errors[`qualifications_${idx}_year`] = regVsQualError;
+          }
+        }
+      });
+    }
+
+    return errors;
+  };
+
   const prev = () => setCurrentStep((s) => s - 1);
 
   // Submit handler
@@ -149,6 +330,14 @@ export default function WelcomeSetupModal({
     const orgId = orgHelper?.getOrgs()?.[0]?.orgId;
     if (!orgId) {
       showError('No organization selected');
+      return;
+    }
+
+    // Final validation before submit
+    const finalErrors = validateCurrentStep();
+    if (Object.keys(finalErrors).length > 0) {
+      setValidationErrors(finalErrors);
+      showError('Please fix the validation errors before submitting');
       return;
     }
 
@@ -225,28 +414,40 @@ export default function WelcomeSetupModal({
                   <input
                     id="first_name"
                     placeholder="Enter first name"
-                    className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                      getFieldError('first_name') ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     value={doctorProfile.first_name}
                     onChange={e => handleChange('first_name', e.target.value)}
                     required
                   />
+                  {getFieldError('first_name') && (
+                    <p className="text-sm text-red-500 mt-1">{getFieldError('first_name')}</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-sm font-medium leading-none" htmlFor="last_name">Last Name</label>
                   <input
                     id="last_name"
                     placeholder="Enter last name"
-                    className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                      getFieldError('last_name') ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     value={doctorProfile.last_name}
                     onChange={e => handleChange('last_name', e.target.value)}
                     required
                   />
+                  {getFieldError('last_name') && (
+                    <p className="text-sm text-red-500 mt-1">{getFieldError('last_name')}</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-sm font-medium leading-none" htmlFor="gender">Gender</label>
                   <select
                     id="gender"
-                    className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                      getFieldError('gender') ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     value={doctorProfile.doctor_data.gender}
                     onChange={e => handleChange('gender', e.target.value)}
                     required
@@ -256,6 +457,9 @@ export default function WelcomeSetupModal({
                     <option>Female</option>
                     <option>Other</option>
                   </select>
+                  {getFieldError('gender') && (
+                    <p className="text-sm text-red-500 mt-1">{getFieldError('gender')}</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-sm font-medium leading-none" htmlFor="age">Age</label>
@@ -263,11 +467,16 @@ export default function WelcomeSetupModal({
                     id="age"
                     type="number"
                     placeholder="Enter age"
-                    className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                      getFieldError('age') ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     value={doctorProfile.doctor_data.age}
                     onChange={e => handleChange('age', e.target.value)}
                     required
                   />
+                  {getFieldError('age') && (
+                    <p className="text-sm text-red-500 mt-1">{getFieldError('age')}</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-sm font-medium leading-none" htmlFor="phone">Phone Number</label>
@@ -285,11 +494,16 @@ export default function WelcomeSetupModal({
                     id="experience"
                     type="number"
                     placeholder="Years of experience"
-                    className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                      getFieldError('experience') ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     value={doctorProfile.doctor_data.experience}
                     onChange={e => handleChange('experience', e.target.value)}
                     required
                   />
+                  {getFieldError('experience') && (
+                    <p className="text-sm text-red-500 mt-1">{getFieldError('experience')}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -350,10 +564,15 @@ export default function WelcomeSetupModal({
                     <input
                       id="reg_number"
                       placeholder="Registration number"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                        getFieldError('registration_number') ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       value={doctorProfile.doctor_data.registration_number}
                       onChange={e => handleChange('registration_number', e.target.value)}
                     />
+                    {getFieldError('registration_number') && (
+                      <p className="text-sm text-red-500 mt-1">{getFieldError('registration_number')}</p>
+                    )}
                   </div>
                   <div>
                     <label className="text-sm font-medium leading-none" htmlFor="reg_year">Registration Year</label>
@@ -361,10 +580,15 @@ export default function WelcomeSetupModal({
                       id="reg_year"
                       type="number"
                       placeholder="Year"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                        getFieldError('registration_year') ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       value={doctorProfile.doctor_data.registration_year}
                       onChange={e => handleChange('registration_year', e.target.value)}
                     />
+                    {getFieldError('registration_year') && (
+                      <p className="text-sm text-red-500 mt-1">{getFieldError('registration_year')}</p>
+                    )}
                   </div>
                   <div>
                     <label className="text-sm font-medium leading-none" htmlFor="reg_state">State</label>
@@ -482,10 +706,15 @@ export default function WelcomeSetupModal({
                         <input
                           id={`degree_${idx}`}
                           placeholder="e.g., MBBS, MD"
-                          className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                            getArrayFieldError('qualifications', idx, 'degree') ? 'border-red-500' : 'border-gray-300'
+                          }`}
                           value={q.degree}
                           onChange={e => handleArrayChange('qualifications', idx, 'degree', e.target.value)}
                         />
+                        {getArrayFieldError('qualifications', idx, 'degree') && (
+                          <p className="text-sm text-red-500 mt-1">{getArrayFieldError('qualifications', idx, 'degree')}</p>
+                        )}
                       </div>
                       <div>
                         <label className="text-sm font-medium leading-none" htmlFor={`year_${idx}`}>Year</label>
@@ -493,20 +722,30 @@ export default function WelcomeSetupModal({
                           id={`year_${idx}`}
                           type="number"
                           placeholder="Year"
-                          className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                            getArrayFieldError('qualifications', idx, 'year') ? 'border-red-500' : 'border-gray-300'
+                          }`}
                           value={q.year}
                           onChange={e => handleArrayChange('qualifications', idx, 'year', e.target.value)}
                         />
+                        {getArrayFieldError('qualifications', idx, 'year') && (
+                          <p className="text-sm text-red-500 mt-1">{getArrayFieldError('qualifications', idx, 'year')}</p>
+                        )}
                       </div>
                       <div>
                         <label className="text-sm font-medium leading-none" htmlFor={`university_${idx}`}>University</label>
                         <input
                           id={`university_${idx}`}
                           placeholder="University name"
-                          className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                            getArrayFieldError('qualifications', idx, 'university') ? 'border-red-500' : 'border-gray-300'
+                          }`}
                           value={q.university}
                           onChange={e => handleArrayChange('qualifications', idx, 'university', e.target.value)}
                         />
+                        {getArrayFieldError('qualifications', idx, 'university') && (
+                          <p className="text-sm text-red-500 mt-1">{getArrayFieldError('qualifications', idx, 'university')}</p>
+                        )}
                       </div>
                       <div>
                         <label className="text-sm font-medium leading-none" htmlFor={`place_${idx}`}>Place</label>
