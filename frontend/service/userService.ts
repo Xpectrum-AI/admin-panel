@@ -27,7 +27,7 @@ export async function createUser(email: string, password: string, firstName: str
     throw new Error(err.error || 'Failed to create user');
   }
   const result = await response.json();
-  return result.data;
+  return result;
 }
 
 export async function fetchUserByEmail(email: string) {
