@@ -60,7 +60,30 @@ export default function Dashboard() {
   const [createdCalendarId, setCreatedCalendarId] = useState<string | null>(null);
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
   const [orgSetupComplete, setOrgSetupComplete] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const { showError, showSuccess, showWarning } = useErrorHandler();
+
+  const fetchDoctors = async () => {
+    // Only fetch doctors if organization setup is complete
+    if (!orgSetupComplete || !orgHelper?.getOrgs()?.[0]?.orgId){ 
+      return;
+    }
+    
+    setDoctorsLoading(true);
+    try {
+      const orgId = orgHelper.getOrgs()[0].orgId;
+      const response = await doctorApiService.getDoctorsByOrg(orgId);
+      if (response.doctors.length === 0 && orgSetupComplete){
+        showWarning('No doctors found. Please add a doctor first.');
+      }
+      setDoctors(response.doctors || []);
+    } catch (error) {
+      showError('Failed to load doctors');
+      setDoctors([]);
+    } finally {
+      setDoctorsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!loading && orgHelper) {
@@ -91,33 +114,7 @@ export default function Dashboard() {
 
 
   useEffect(() => {
-    let isMounted = true;
-    const fetchDoctors = async () => {
-      // Only fetch doctors if organization setup is complete
-      if (!orgSetupComplete || !orgHelper?.getOrgs()?.[0]?.orgId){ 
-        return;
-      }
-      
-      setDoctorsLoading(true);
-      try {
-        const orgId = orgHelper.getOrgs()[0].orgId;
-        const response = await doctorApiService.getDoctorsByOrg(orgId);
-        if (response.doctors.length === 0 && orgSetupComplete){
-          showWarning('No doctors found. Please add a doctor first.');
-        }
-        if (isMounted) setDoctors(response.doctors || []);
-      } catch (error) {
-        if (isMounted) {
-          showError('Failed to load doctors');
-          setDoctors([]);
-        }
-      } finally {
-        if (isMounted) setDoctorsLoading(false);
-      }
-    };
-
     fetchDoctors();
-    return () => { isMounted = false; };
   }, [orgSetupComplete, orgHelper?.getOrgs()?.[0]?.orgId]);
 
   useEffect(() => {
@@ -140,7 +137,13 @@ export default function Dashboard() {
           response?.calendars ||
           [];
           
-        if (isMounted) setCalendars(calendars);
+        if (isMounted) {
+          setCalendars(calendars);
+          // Auto-select the first calendar if there are calendars and no calendar is currently selected
+          if (calendars.length > 0 && !selectedCalendar) {
+            handleCalendarSelect(calendars[0]);
+          }
+        }
       } catch (error) {
         if (isMounted) {
           showError('Failed to load calendars');
@@ -208,6 +211,10 @@ export default function Dashboard() {
           [];
           
         setCalendars(calendars);
+        // Auto-select the first calendar if there are calendars and no calendar is currently selected
+        if (calendars.length > 0 && !selectedCalendar) {
+          handleCalendarSelect(calendars[0]);
+        }
       }
 
       // UNWRAP the calendar_id from the nested response
@@ -300,12 +307,21 @@ export default function Dashboard() {
   };
 
   const handleDeleteDoctor = async (doctor: any) => {
-    // Handle delete doctor functionality
-    await doctorApiService.deleteDoctor(doctor.doctor_id);
-    showSuccess('Doctor deleted successfully'); 
-    doctorApiService.getDoctorsByOrg(orgHelper?.getOrgs()?.[0]?.orgId || '').then((res) => {
-      setDoctors(res.doctors);
-    });
+    // Show confirmation first
+    const confirmed = window.confirm(`Are you sure you want to delete Dr. ${doctor.first_name} ${doctor.last_name}? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    setDeleteLoading(true);
+    try {
+      await doctorApiService.deleteDoctor(doctor.doctor_id);
+      showSuccess('Doctor deleted successfully'); 
+      // Reload the page to ensure all related data (calendars, events) are properly cleaned up
+      window.location.reload();
+    } catch (error) {
+      showError('Failed to delete doctor. Please try again.');
+      console.error('Delete doctor error:', error);
+      setDeleteLoading(false);
+    }
   };
 
   const handleNewCalendar = () => {
@@ -523,8 +539,23 @@ export default function Dashboard() {
           onClose={() => setShowShowDocInfoModal(false)}
           doctor={selectedDoctor}
         />
+            )}
+
+      {/* Delete Loading Overlay */}
+      {deleteLoading && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-6 shadow-xl border">
+            <div className="flex items-center space-x-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-2 border-red-500 border-t-transparent"></div>
+              <div>
+                <p className="font-medium text-gray-900">Deleting Doctor</p>
+                <p className="text-sm text-gray-500">Please wait, this may take a moment...</p>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
-      </ProtectedRoute>
+    </ProtectedRoute>
   );
 } 
 

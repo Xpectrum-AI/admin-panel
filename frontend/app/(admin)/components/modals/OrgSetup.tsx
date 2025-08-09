@@ -2,12 +2,11 @@
 
 import { useState } from 'react';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
-import { createOrg, updateOrg, addUserToOrg } from '@/service/orgService';
+import { createOrg, addUserToOrg } from '@/service/orgService';
 import { useAuthInfo } from '@propelauth/react';
 
 export default function OrgCreationModal({ onOrgCreated }: { onOrgCreated: () => void }) {
   const [orgName, setOrgName] = useState('');
-  const [orgDesc, setOrgDesc] = useState('');
   const [loading, setLoading] = useState(false);
   const { showError, showSuccess } = useErrorHandler();
   const { user } = useAuthInfo();
@@ -26,9 +25,6 @@ export default function OrgCreationModal({ onOrgCreated }: { onOrgCreated: () =>
       // Add user as owner
       if (!user?.userId) throw new Error('User not found');
       await addUserToOrg(org.orgId, user.userId, 'Owner');
-      if (orgDesc.trim()) {
-        await updateOrg(org.orgId, { description: orgDesc });
-      }
       showSuccess('Organization created');
       onOrgCreated();
       window.location.reload();
@@ -53,16 +49,6 @@ export default function OrgCreationModal({ onOrgCreated }: { onOrgCreated: () =>
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
       <div className="grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-border bg-background p-6 shadow-lg duration-200 sm:rounded-lg sm:max-w-md bg-white left-1/2 top-1/2 fixed" role="dialog" aria-modal="true" style={{ left: '50%', top: '50%' }}>
-        <button
-          type="button"
-          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-          aria-label="Close"
-          onClick={onOrgCreated}
-          disabled={loading}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x h-4 w-4"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
-          <span className="sr-only">Close</span>
-        </button>
         <div className="flex flex-col space-y-1.5 text-center sm:text-left">
           <h2 className="tracking-tight text-xl font-semibold text-foreground text-center">Create Your Organization</h2>
         </div>
@@ -76,18 +62,6 @@ export default function OrgCreationModal({ onOrgCreated }: { onOrgCreated: () =>
               value={orgName}
               onChange={e => setOrgName(e.target.value)}
               required
-              disabled={loading}
-            />
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="org-description" className="text-sm font-medium text-foreground">Description (optional)</label>
-            <textarea
-              id="org-description"
-              className="flex min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 w-full resize-none"
-              placeholder="What does your organization do?"
-              rows={4}
-              value={orgDesc}
-              onChange={e => setOrgDesc(e.target.value)}
               disabled={loading}
             />
           </div>

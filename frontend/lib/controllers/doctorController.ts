@@ -1,4 +1,3 @@
-import { doctorBackendService } from '@/lib/service.ts/doctorBackendService';
 import { 
   DoctorCreateRequest, 
   DoctorUpdateRequest, 
@@ -7,7 +6,19 @@ import {
   DeleteDoctorResponse 
 } from '@/types/doctor';
 
+const LIVE_API_BASE_URL = process.env.NEXT_PUBLIC_LIVE_API_URL || 'https://diwz9dcb62ek1.cloudfront.net';
+const LIVE_API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'xpectrum-ai@123';
+
+// Helper function to get headers
+const getHeaders = () => {
+  return {
+    'Content-Type': 'application/json',
+    'x-api-key': LIVE_API_KEY
+  };
+};
+
 export const doctorController = {
+
   // Create doctor
   async createDoctor(data: DoctorCreateRequest): Promise<{ status: string; message: string; data?: any }> {
     try {
@@ -35,7 +46,19 @@ export const doctorController = {
         throw new Error('Organization ID is required');
       }
 
-      const result = await doctorBackendService.createDoctor(data);
+      // API call
+      const response = await fetch(`${LIVE_API_BASE_URL}/doctor/create`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to create doctor: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
       return {
         status: 'success',
         message: 'Doctor created successfully',
@@ -53,7 +76,17 @@ export const doctorController = {
         throw new Error('Doctor ID is required');
       }
 
-      const result = await doctorBackendService.getDoctor(doctorId);
+      // API call
+      const response = await fetch(`${LIVE_API_BASE_URL}/doctor/${doctorId}`, {
+        headers: getHeaders()
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to get doctor: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
       return {
         status: 'success',
         message: 'Doctor retrieved successfully',
@@ -90,7 +123,19 @@ export const doctorController = {
         throw new Error('Organization ID cannot be empty');
       }
 
-      const result = await doctorBackendService.updateDoctor(doctorId, data);
+      // API call
+      const response = await fetch(`${LIVE_API_BASE_URL}/doctor/${doctorId}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to update doctor: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
       return {
         status: 'success',
         message: 'Doctor updated successfully',
@@ -101,6 +146,42 @@ export const doctorController = {
     }
   },
 
+  // Patch doctor
+  async patchDoctor(doctorId: string, data: Partial<DoctorUpdateRequest>): Promise<{ status: string; message: string; data?: any }> {
+    try {
+      if (!doctorId || doctorId.trim() === '') {
+        throw new Error('Doctor ID is required');
+      }
+
+      // Validate at least one field is provided
+      const hasUpdates = Object.keys(data).some(key => data[key as keyof DoctorUpdateRequest] !== undefined);
+      if (!hasUpdates) {
+        throw new Error('At least one field must be provided for update');
+      }
+
+      // API call
+      const response = await fetch(`${LIVE_API_BASE_URL}/doctor/${doctorId}`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to patch doctor: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      return {
+        status: 'success',
+        message: 'Doctor patched successfully',
+        data: result
+      };
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to patch doctor');
+    }
+  },
+
   // Get doctors by organization
   async getDoctorsByOrg(orgId: string): Promise<{ status: string; message: string; data?: any }> {
     try {
@@ -108,7 +189,17 @@ export const doctorController = {
         throw new Error('Organization ID is required');
       }
 
-      const result = await doctorBackendService.getDoctorsByOrg(orgId);
+      // API call
+      const response = await fetch(`${LIVE_API_BASE_URL}/doctor/organization/${orgId}`, {
+        headers: getHeaders()
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to get organization doctors: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
       return {
         status: 'success',
         message: 'Organization doctors retrieved successfully',
@@ -126,7 +217,18 @@ export const doctorController = {
         throw new Error('Doctor ID is required');
       }
 
-      const result = await doctorBackendService.deleteDoctor(doctorId);
+      // API call
+      const response = await fetch(`${LIVE_API_BASE_URL}/doctor/${doctorId}`, {
+        method: 'DELETE',
+        headers: getHeaders()
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to delete doctor: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
       return {
         status: 'success',
         message: 'Doctor deleted successfully',
