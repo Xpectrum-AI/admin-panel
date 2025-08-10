@@ -45,7 +45,7 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
     const currentYear = new Date().getFullYear();
     
     if (age && (ageNum < 18 || ageNum > 100)) {
-      return 'Age must be between 18 and 100 years';
+      return 'Age must be between 18 and 100 years (doctor must be at least 23 when starting practice)';
     }
     return '';
   };
@@ -60,6 +60,19 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
       if (qualYearNum < minQualYear) {
         return `Qualification year must be at least ${minQualYear} (doctor must be at least 23 when qualifying)`;
       }
+    }
+    return '';
+  };
+
+  const validateQualificationYearConsistency = (qualifications: any[]) => {
+    if (qualifications.length < 2) return '';
+    
+    const years = qualifications.map(q => q.year).filter(year => year.trim() !== '');
+    if (years.length < 2) return '';
+    
+    const uniqueYears = [...new Set(years)];
+    if (uniqueYears.length > 1) {
+      return 'All qualification years must be the same';
     }
     return '';
   };
@@ -151,6 +164,23 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
       arr[idx][subfield] = value;
       return { ...prev, [field]: arr };
     });
+
+    // Validate qualification year consistency when qualification years change
+    if (field === 'qualifications' && subfield === 'year') {
+      const updatedQualifications = [...doctorProfile.qualifications];
+      updatedQualifications[idx][subfield] = value;
+      const consistencyError = validateQualificationYearConsistency(updatedQualifications);
+      
+      if (consistencyError) {
+        setValidationErrors(prev => ({ ...prev, qualification_consistency: consistencyError }));
+      } else {
+        setValidationErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.qualification_consistency;
+          return newErrors;
+        });
+      }
+    }
   };
 
   const addArrayItem = (field: string, template: any) => {
@@ -202,6 +232,22 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
         if (expError) {
           errors.experience = expError;
         }
+      }
+    }
+
+    if (step === 3) {
+      // Step 3: Qualifications validation
+      const qualifications = doctorProfile.qualifications;
+      qualifications.forEach((qual: any, idx: number) => {
+        if (!qual.degree.trim()) errors[`qualifications_${idx}_degree`] = 'Degree name is required';
+        if (!qual.year.trim()) errors[`qualifications_${idx}_year`] = 'Qualification year is required';
+        if (!qual.university.trim()) errors[`qualifications_${idx}_university`] = 'University name is required';
+      });
+
+      // Validate qualification year consistency
+      const consistencyError = validateQualificationYearConsistency(qualifications);
+      if (consistencyError) {
+        errors.qualification_consistency = consistencyError;
       }
     }
     return errors;
@@ -701,10 +747,15 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
                         <input
                           id={`degree_${idx}`}
                           placeholder="e.g., MBBS, MD"
-                          className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                            validationErrors[`qualifications_${idx}_degree`] ? 'border-red-500' : 'border-gray-300'
+                          }`}
                           value={q.degree}
                           onChange={e => handleArrayChange('qualifications', idx, 'degree', e.target.value)}
                         />
+                        {validationErrors[`qualifications_${idx}_degree`] && (
+                          <p className="text-sm text-red-500 mt-1">{validationErrors[`qualifications_${idx}_degree`]}</p>
+                        )}
                       </div>
                       <div>
                         <label className="text-sm font-medium leading-none" htmlFor={`year_${idx}`}>Year</label>
@@ -712,20 +763,30 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
                           id={`year_${idx}`}
                           type="number"
                           placeholder="Year"
-                          className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                            validationErrors[`qualifications_${idx}_year`] ? 'border-red-500' : 'border-gray-300'
+                          }`}
                           value={q.year}
                           onChange={e => handleArrayChange('qualifications', idx, 'year', e.target.value)}
                         />
+                        {validationErrors[`qualifications_${idx}_year`] && (
+                          <p className="text-sm text-red-500 mt-1">{validationErrors[`qualifications_${idx}_year`]}</p>
+                        )}
                       </div>
                       <div>
                         <label className="text-sm font-medium leading-none" htmlFor={`university_${idx}`}>University</label>
                         <input
                           id={`university_${idx}`}
                           placeholder="University name"
-                          className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                            validationErrors[`qualifications_${idx}_university`] ? 'border-red-500' : 'border-gray-300'
+                          }`}
                           value={q.university}
                           onChange={e => handleArrayChange('qualifications', idx, 'university', e.target.value)}
                         />
+                        {validationErrors[`qualifications_${idx}_university`] && (
+                          <p className="text-sm text-red-500 mt-1">{validationErrors[`qualifications_${idx}_university`]}</p>
+                        )}
                       </div>
                       <div>
                         <label className="text-sm font-medium leading-none" htmlFor={`place_${idx}`}>Place</label>
@@ -740,6 +801,11 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
                     </div>
                   </div>
                 ))}
+                {validationErrors.qualification_consistency && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-600">{validationErrors.qualification_consistency}</p>
+                  </div>
+                )}
               </div>
             </div>
     
