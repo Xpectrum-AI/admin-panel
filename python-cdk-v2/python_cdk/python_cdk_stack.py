@@ -76,7 +76,7 @@ class AdminPanelDeploymentStack(Stack):
         if environment == 'production':
             prefix = 'PRODUCTION_'
         elif environment == 'release':
-            prefix = 'PRODUCTION_'
+            prefix = 'RELEASE_'
         else:
             prefix = 'STAGING_'
         
