@@ -37,10 +37,111 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
 
   // Doctor profile state
   const [doctorProfile, setDoctorProfile] = useState<any>(initialDoctorProfile);
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+
+  // Validation functions
+  const validateAge = (age: string) => {
+    const ageNum = parseInt(age);
+    const currentYear = new Date().getFullYear();
+    
+    if (age && (ageNum < 18 || ageNum > 100)) {
+      return 'Age must be between 18 and 100 years';
+    }
+    return '';
+  };
+
+  const validateQualificationYear = (qualYear: string, age: string) => {
+    const qualYearNum = parseInt(qualYear);
+    const ageNum = parseInt(age);
+    const currentYear = new Date().getFullYear();
+    
+    if (qualYear && age) {
+      const minQualYear = currentYear - ageNum + 23;
+      if (qualYearNum < minQualYear) {
+        return `Qualification year must be at least ${minQualYear} (doctor must be at least 23 when qualifying)`;
+      }
+    }
+    return '';
+  };
+
+  const validateRegistrationYear = (regYear: string, qualYear: string) => {
+    const regYearNum = parseInt(regYear);
+    const qualYearNum = parseInt(qualYear);
+    const currentYear = new Date().getFullYear();
+    
+    if (regYear && qualYear && regYearNum < qualYearNum) {
+      return 'Registration year must be after or equal to qualification year';
+    }
+    
+    if (regYear && regYearNum > currentYear) {
+      return 'Registration year cannot be in the future';
+    }
+    return '';
+  };
+
+  const validateExperience = (experience: string, age: string, regYear: string) => {
+    const expNum = parseInt(experience);
+    const ageNum = parseInt(age);
+    const regYearNum = parseInt(regYear);
+    const currentYear = new Date().getFullYear();
+    
+    if (experience && age && expNum > ageNum - 23) {
+      return `Experience cannot exceed ${ageNum - 23} years (doctor must be at least 23 when starting practice)`;
+    }
+    
+    if (experience && regYear) {
+      const maxExpFromReg = currentYear - regYearNum;
+      if (expNum > maxExpFromReg) {
+        return `Experience cannot exceed ${maxExpFromReg} years based on registration year`;
+      }
+    }
+    return '';
+  };
+
+  // Helper function to get error message for a field
+  const getFieldError = (fieldName: string) => {
+    return validationErrors[fieldName] || '';
+  };
 
   // Handlers for dynamic fields
   const handleChange = (field: string, value: any) => {
     setDoctorProfile((prev: any) => ({ ...prev, [field]: value }));
+    
+    // Clear validation errors when user starts typing
+    if (validationErrors[field]) {
+      setValidationErrors(prev => ({ ...prev, [field]: '' }));
+    }
+    
+    // Validate last name
+    if (field === 'last_name') {
+      if (value.trim().length > 0 && value.trim().length < 2) {
+        setValidationErrors(prev => ({ ...prev, last_name: 'Last name must be at least 2 characters' }));
+      }
+    }
+    
+    // Validate age
+    if (field === 'age') {
+      const ageError = validateAge(value);
+      setValidationErrors(prev => ({
+        ...prev,
+        age: ageError
+      }));
+    }
+    
+    // Validate experience
+    if (field === 'experience') {
+      const expError = validateExperience(value, doctorProfile.age, doctorProfile.registration_year);
+      setValidationErrors(prev => ({
+        ...prev,
+        experience: expError
+      }));
+    }
+    
+    // Validate registration year
+    if (field === 'registration_year') {
+      const yearError = validateRegistrationYear(value, doctorProfile.qualifications?.[0]?.year || '');
+      setValidationErrors(prev => ({ ...prev, registration_year: yearError }));
+    }
   };
 
   // For array fields (qualifications, specializations, aliases, facilities)
@@ -70,8 +171,52 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
     });
   };
 
+  // Step validation function
+  const validateCurrentStep = () => {
+    const errors: {[key: string]: string} = {};
+    
+    if (step === 1) {
+      // Step 1: Basic Info validation
+      if (!doctorProfile.first_name.trim()) errors.first_name = 'First name is required';
+      if (!doctorProfile.last_name.trim()) errors.last_name = 'Last name is required';
+      if (doctorProfile.last_name.trim().length < 2) errors.last_name = 'Last name must be at least 2 characters';
+      if (!doctorProfile.gender) errors.gender = 'Gender is required';
+      if (!doctorProfile.age) errors.age = 'Age is required';
+      
+      // Validate age
+      const ageError = validateAge(doctorProfile.age);
+      if (ageError) {
+        errors.age = ageError;
+      }
+    }
+    
+    if (step === 2) {
+      // Step 2: Registration Details validation
+      if (!doctorProfile.registration_number.trim()) errors.registration_number = 'Registration number is required';
+      if (!doctorProfile.registration_year) errors.registration_year = 'Registration year is required';
+      if (!doctorProfile.experience) errors.experience = 'Experience is required';
+      
+      // Validate experience
+      if (doctorProfile.experience && doctorProfile.age && doctorProfile.registration_year) {
+        const expError = validateExperience(doctorProfile.experience, doctorProfile.age, doctorProfile.registration_year);
+        if (expError) {
+          errors.experience = expError;
+        }
+      }
+    }
+    return errors;
+  };
+
   // Step navigation
-  const next = () => setStep((s) => s + 1);
+  const next = () => {
+    const errors = validateCurrentStep();
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+    setValidationErrors({});
+    setStep((s) => s + 1);
+  };
   const prev = () => setStep((s) => s - 1);
 
   // Submit handler
@@ -258,26 +403,38 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
                   <input
                     id="first_name"
                     placeholder="Enter first name"
-                    className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                      getFieldError('first_name') ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     value={doctorProfile.first_name}
                     onChange={e => handleChange('first_name', e.target.value)}
                   />
+                  {getFieldError('first_name') && (
+                    <p className="text-sm text-red-500 mt-1">{getFieldError('first_name')}</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-sm font-medium leading-none" htmlFor="last_name">Last Name</label>
                   <input
                     id="last_name"
                     placeholder="Enter last name"
-                    className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                      getFieldError('last_name') ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     value={doctorProfile.last_name}
                     onChange={e => handleChange('last_name', e.target.value)}
                   />
+                  {getFieldError('last_name') && (
+                    <p className="text-sm text-red-500 mt-1">{getFieldError('last_name')}</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-sm font-medium leading-none" htmlFor="gender">Gender</label>
                   <select
                     id="gender"
-                    className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                      getFieldError('gender') ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     value={doctorProfile.gender}
                     onChange={e => handleChange('gender', e.target.value)}
                   >
@@ -286,6 +443,9 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
                     <option>Female</option>
                     <option>Other</option>
                   </select>
+                  {getFieldError('gender') && (
+                    <p className="text-sm text-red-500 mt-1">{getFieldError('gender')}</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-sm font-medium leading-none" htmlFor="age">Age</label>
@@ -293,10 +453,15 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
                     id="age"
                     type="number"
                     placeholder="Enter age"
-                    className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                      getFieldError('age') ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     value={doctorProfile.age}
                     onChange={e => handleChange('age', e.target.value)}
                   />
+                  {getFieldError('age') && (
+                    <p className="text-sm text-red-500 mt-1">{getFieldError('age')}</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-sm font-medium leading-none" htmlFor="phone">Phone Number</label>
@@ -308,17 +473,7 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
                     onChange={e => handleChange('phone', e.target.value)}
                   />
                 </div>
-                <div>
-                  <label className="text-sm font-medium leading-none" htmlFor="experience">Experience (Years)</label>
-                  <input
-                    id="experience"
-                    type="number"
-                    placeholder="Years of experience"
-                    className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    value={doctorProfile.experience}
-                    onChange={e => handleChange('experience', e.target.value)}
-                  />
-                </div>
+
               </div>
             </div>
           </div>
@@ -396,10 +551,15 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
                     <input
                       id="reg_number"
                       placeholder="Registration number"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                        getFieldError('registration_number') ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       value={doctorProfile.registration_number}
                       onChange={e => handleChange('registration_number', e.target.value)}
                     />
+                    {getFieldError('registration_number') && (
+                      <p className="text-sm text-red-500 mt-1">{getFieldError('registration_number')}</p>
+                    )}
                   </div>
                   <div>
                     <label className="text-sm font-medium leading-none" htmlFor="reg_year">Registration Year</label>
@@ -407,10 +567,15 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
                       id="reg_year"
                       type="number"
                       placeholder="Year"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                        getFieldError('registration_year') ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       value={doctorProfile.registration_year}
                       onChange={e => handleChange('registration_year', e.target.value)}
                     />
+                    {getFieldError('registration_year') && (
+                      <p className="text-sm text-red-500 mt-1">{getFieldError('registration_year')}</p>
+                    )}
                   </div>
                   <div>
                     <label className="text-sm font-medium leading-none" htmlFor="reg_state">State</label>
@@ -441,6 +606,23 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
                       value={doctorProfile.registration_board}
                       onChange={e => handleChange('registration_board', e.target.value)}
                     />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium leading-none" htmlFor="experience">Experience (Years)</label>
+                    <input
+                      id="experience"
+                      type="number"
+                      placeholder="Years of experience"
+                      className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                        getFieldError('experience') ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      value={doctorProfile.experience}
+                      onChange={e => handleChange('experience', e.target.value)}
+                      required
+                    />
+                    {getFieldError('experience') && (
+                      <p className="text-sm text-red-500 mt-1">{getFieldError('experience')}</p>
+                    )}
                   </div>
                 </div>
               </div>
