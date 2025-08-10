@@ -22,7 +22,7 @@ RUN echo "Build timestamp: $(date +%s)" > .build-timestamp
 COPY . .
 
 # Copy production environment file
-COPY env.production 
+COPY env.production .env.production
 
 # Build with aggressive cleanup and optimization
 RUN npm run build && \
@@ -44,7 +44,7 @@ COPY --from=builder /app/next.config.ts ./
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/.env.production
+COPY --from=builder /app/.env.production ./.env.production
 
 EXPOSE 3000
 
