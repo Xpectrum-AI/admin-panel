@@ -35,8 +35,8 @@ class AdminPanelDeploymentStack(Stack):
                 'stack_name': 'AdminPanelProductionStack'
             },
             'release': {
-                'domain': 'release.placeholder.com',  # 占位符，实际会使用 ALB DNS
-                'auth_domain': 'auth-release.placeholder.com',  # 占位符
+                'domain': 'admin-release.xpectrum-ai.com',  
+                'auth_domain': 'auth.admin-release.xpectrum-ai.com',  
                 'frontend_tag': os.environ.get('RELEASE_IMAGE_TAG', 'frontend-release-latest'),
                 'frontend_port': '3000',
                 'stack_name': 'AdminPanelReleaseStack'
