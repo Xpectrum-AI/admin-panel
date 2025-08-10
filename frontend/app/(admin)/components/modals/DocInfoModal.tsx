@@ -94,7 +94,7 @@ export default function WelcomeSetupModal({
     const currentYear = new Date().getFullYear();
     
     if (age && (ageNum < 18 || ageNum > 100)) {
-      return 'Age must be between 18 and 100 years';
+      return 'Age must be between 18 and 100 years (doctor must be at least 23 when starting practice)';
     }
     return '';
   };
@@ -109,6 +109,19 @@ export default function WelcomeSetupModal({
       if (qualYearNum < minQualYear) {
         return `Qualification year must be at least ${minQualYear} (doctor must be at least 23 when qualifying)`;
       }
+    }
+    return '';
+  };
+
+  const validateQualificationYearConsistency = (qualifications: any[]) => {
+    if (qualifications.length < 2) return '';
+    
+    const years = qualifications.map(q => q.year).filter(year => year.trim() !== '');
+    if (years.length < 2) return '';
+    
+    const uniqueYears = [...new Set(years)];
+    if (uniqueYears.length > 1) {
+      return 'All qualification years must be the same';
     }
     return '';
   };
@@ -237,6 +250,21 @@ export default function WelcomeSetupModal({
           [`qualifications_${idx}_year`]: yearError || regVsQualError
         }));
       }
+
+      // Validate qualification year consistency
+      const updatedQualifications = [...doctorProfile.doctor_data.qualifications];
+      updatedQualifications[idx][subfield] = value;
+      const consistencyError = validateQualificationYearConsistency(updatedQualifications);
+      
+      if (consistencyError) {
+        setValidationErrors(prev => ({ ...prev, qualification_consistency: consistencyError }));
+      } else {
+        setValidationErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.qualification_consistency;
+          return newErrors;
+        });
+      }
     }
   };
 
@@ -361,6 +389,12 @@ export default function WelcomeSetupModal({
           }
         }
       });
+
+      // Validate qualification year consistency
+      const consistencyError = validateQualificationYearConsistency(qualifications);
+      if (consistencyError) {
+        errors.qualification_consistency = consistencyError;
+      }
       
       console.log('Step 3 validation errors:', errors);
     }
@@ -807,6 +841,11 @@ export default function WelcomeSetupModal({
                     </div>
                   </div>
                 ))}
+                {validationErrors.qualification_consistency && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-600">{validationErrors.qualification_consistency}</p>
+                  </div>
+                )}
               </div>
             </div>
     
