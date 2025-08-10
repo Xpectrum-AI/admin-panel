@@ -82,13 +82,9 @@ class AdminPanelDeploymentStack(Stack):
         
         secrets = {
             'NEXT_PUBLIC_PROPELAUTH_API_KEY': os.environ.get(f'{prefix}NEXT_PUBLIC_PROPELAUTH_API_KEY', ''),
-            'NEXT_PUBLIC_API_KEY': os.environ.get(f'{prefix}NEXT_PUBLIC_API_KEY', 'xpectrum-ai@123'),
-            'NEXT_PUBLIC_GOOGLE_CLIENT_ID': os.environ.get(f'{prefix}GOOGLE_CLIENT_ID', ''),
-            'NEXT_PUBLIC_MONGODB_URL': os.environ.get(f'{prefix}MONGODB_URL', ''),
-            'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY': os.environ.get(f'{prefix}STRIPE_PUBLISHABLE_KEY', ''),
+            'NEXT_PUBLIC_API_KEY': os.environ.get(f'{prefix}NEXT_PUBLIC_API_KEY', ''),
             'SECRET_KEY': os.environ.get(f'{prefix}SECRET_KEY', ''),
             'PROPELAUTH_API_KEY': os.environ.get(f'{prefix}PROPELAUTH_API_KEY', ''),
-            'PROPELAUTH_VERIFIER_KEY': os.environ.get(f'{prefix}PROPELAUTH_VERIFIER_KEY', ''),
             'PROPELAUTH_REDIRECT_URI': os.environ.get(f'{prefix}PROPELAUTH_REDIRECT_URI', f"https://{config['auth_domain']}"),
             'NEXT_PUBLIC_LIVE_API_URL': os.environ.get(f'{prefix}NEXT_PUBLIC_LIVE_API_URL', ''),
             'NEXT_PUBLIC_SUPER_ADMIN_ORG_ID': os.environ.get(f'{prefix}SUPER_ADMIN_ORG_ID', ''),
@@ -127,12 +123,8 @@ class AdminPanelDeploymentStack(Stack):
             environment={
                 "NEXT_PUBLIC_PROPELAUTH_API_KEY": secrets["NEXT_PUBLIC_PROPELAUTH_API_KEY"],
                 "NEXT_PUBLIC_API_KEY": secrets["NEXT_PUBLIC_API_KEY"],
-                "NEXT_PUBLIC_GOOGLE_CLIENT_ID": secrets["NEXT_PUBLIC_GOOGLE_CLIENT_ID"],
-                "NEXT_PUBLIC_MONGODB_URL": secrets["NEXT_PUBLIC_MONGODB_URL"],
-                "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY": secrets["NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"],
                 "SECRET_KEY": secrets["SECRET_KEY"],
                 "PROPELAUTH_API_KEY": secrets["PROPELAUTH_API_KEY"],
-                "PROPELAUTH_VERIFIER_KEY": secrets["PROPELAUTH_VERIFIER_KEY"],
                 "PROPELAUTH_REDIRECT_URI": secrets["PROPELAUTH_REDIRECT_URI"],
                 "NEXT_PUBLIC_LIVE_API_URL": secrets["NEXT_PUBLIC_LIVE_API_URL"],
                 "NEXT_PUBLIC_SUPER_ADMIN_ORG_ID": secrets["NEXT_PUBLIC_SUPER_ADMIN_ORG_ID"],

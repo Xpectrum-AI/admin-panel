@@ -89,38 +89,9 @@ export default function WelcomeSetupModal({
   );
 
   // Validation functions
-  const validateAgeVsExperience = (age: string, experience: string) => {
-    const ageNum = parseInt(age);
-    const expNum = parseInt(experience);
-    
-    if (age && experience && expNum > ageNum) {
-      return `Experience (${expNum} years) cannot be greater than age (${ageNum} years)`;
-    }
-    return '';
-  };
-
-  const validateRegistrationVsQualification = (regYear: string, qualYear: string) => {
-    const regYearNum = parseInt(regYear);
-    const qualYearNum = parseInt(qualYear);
-    
-    if (regYear && qualYear && qualYearNum >= regYearNum) {
-      return `Qualification year (${qualYearNum}) must be before registration year (${regYearNum})`;
-    }
-    return '';
-  };
-
-  const validateYearRange = (year: string, fieldName: string) => {
-    const yearNum = parseInt(year);
-    const currentYear = new Date().getFullYear();
-    
-    if (year && (yearNum < 1900 || yearNum > currentYear)) {
-      return `${fieldName} must be between 1900 and ${currentYear}`;
-    }
-    return '';
-  };
-
   const validateAge = (age: string) => {
     const ageNum = parseInt(age);
+    const currentYear = new Date().getFullYear();
     
     if (age && (ageNum < 18 || ageNum > 100)) {
       return 'Age must be between 18 and 100 years';
@@ -128,11 +99,50 @@ export default function WelcomeSetupModal({
     return '';
   };
 
-  const validateExperience = (experience: string) => {
-    const expNum = parseInt(experience);
+  const validateQualificationYear = (qualYear: string, age: string) => {
+    const qualYearNum = parseInt(qualYear);
+    const ageNum = parseInt(age);
+    const currentYear = new Date().getFullYear();
     
-    if (experience && (expNum < 0 || expNum > 50)) {
-      return 'Experience must be between 0 and 50 years';
+    if (qualYear && age) {
+      const minQualYear = currentYear - ageNum + 23;
+      if (qualYearNum < minQualYear) {
+        return `Qualification year must be at least ${minQualYear} (doctor must be at least 23 when qualifying)`;
+      }
+    }
+    return '';
+  };
+
+  const validateRegistrationYear = (regYear: string, qualYear: string) => {
+    const regYearNum = parseInt(regYear);
+    const qualYearNum = parseInt(qualYear);
+    const currentYear = new Date().getFullYear();
+    
+    if (regYear && qualYear && regYearNum < qualYearNum) {
+      return 'Registration year must be after or equal to qualification year';
+    }
+    
+    if (regYear && regYearNum > currentYear) {
+      return 'Registration year cannot be in the future';
+    }
+    return '';
+  };
+
+  const validateExperience = (experience: string, age: string, regYear: string) => {
+    const expNum = parseInt(experience);
+    const ageNum = parseInt(age);
+    const regYearNum = parseInt(regYear);
+    const currentYear = new Date().getFullYear();
+    
+    if (experience && age && expNum > ageNum - 23) {
+      return `Experience cannot exceed ${ageNum - 23} years (doctor must be at least 23 when starting practice)`;
+    }
+    
+    if (experience && regYear) {
+      const maxExpFromReg = currentYear - regYearNum;
+      if (expNum > maxExpFromReg) {
+        return `Experience cannot exceed ${maxExpFromReg} years based on registration year`;
+      }
     }
     return '';
   };
@@ -159,32 +169,41 @@ export default function WelcomeSetupModal({
       }));
     }
 
-    // Clear validation errors when user starts typing
-    if (validationErrors[field]) {
-      setValidationErrors(prev => ({ ...prev, [field]: '' }));
-    }
-
-    // Validate age vs experience
-    if (field === 'age' || field === 'experience') {
-      const age = field === 'age' ? value : doctorProfile.doctor_data.age;
-      const experience = field === 'experience' ? value : doctorProfile.doctor_data.experience;
+          // Clear validation errors when user starts typing
+      if (validationErrors[field]) {
+        setValidationErrors(prev => ({ ...prev, [field]: '' }));
+      }
       
-      const ageError = field === 'age' ? validateAge(value) : '';
-      const expError = field === 'experience' ? validateExperience(value) : '';
-      const ageVsExpError = validateAgeVsExperience(age, experience);
-      
-      setValidationErrors(prev => ({
-        ...prev,
-        age: ageError || ageVsExpError,
-        experience: expError || ageVsExpError
-      }));
-    }
+      // Validate last name
+      if (field === 'last_name') {
+        if (value.trim().length > 0 && value.trim().length < 2) {
+          setValidationErrors(prev => ({ ...prev, last_name: 'Last name must be at least 2 characters' }));
+        }
+      }
 
-    // Validate registration year
-    if (field === 'registration_year') {
-      const yearError = validateYearRange(value, 'Registration year');
-      setValidationErrors(prev => ({ ...prev, registration_year: yearError }));
-    }
+          // Validate age
+      if (field === 'age') {
+        const ageError = validateAge(value);
+        setValidationErrors(prev => ({
+          ...prev,
+          age: ageError
+        }));
+      }
+      
+      // Validate experience
+      if (field === 'experience') {
+        const expError = validateExperience(value, doctorProfile.doctor_data.age, doctorProfile.doctor_data.registration_year);
+        setValidationErrors(prev => ({
+          ...prev,
+          experience: expError
+        }));
+      }
+
+          // Validate registration year
+      if (field === 'registration_year') {
+        const yearError = validateRegistrationYear(value, doctorProfile.doctor_data.qualifications?.[0]?.year || '');
+        setValidationErrors(prev => ({ ...prev, registration_year: yearError }));
+      }
   };
 
   // For array fields (qualifications, specializations, aliases, facilities) with validation
@@ -210,8 +229,8 @@ export default function WelcomeSetupModal({
       const qualYear = value;
       
       if (regYear && qualYear) {
-        const yearError = validateYearRange(qualYear, 'Qualification year');
-        const regVsQualError = validateRegistrationVsQualification(regYear, qualYear);
+        const yearError = validateQualificationYear(qualYear, doctorProfile.doctor_data.age);
+        const regVsQualError = validateRegistrationYear(regYear, qualYear);
         
         setValidationErrors(prev => ({
           ...prev,
@@ -273,18 +292,18 @@ export default function WelcomeSetupModal({
       console.log('Validating Step 1 - Basic Info');
       if (!doctorProfile.first_name.trim()) errors.first_name = 'First name is required';
       if (!doctorProfile.last_name.trim()) errors.last_name = 'Last name is required';
+      if (doctorProfile.last_name.trim().length < 2) errors.last_name = 'Last name must be at least 2 characters';
       if (!doctorProfile.doctor_data.gender) errors.gender = 'Gender is required';
       if (!doctorProfile.doctor_data.age) errors.age = 'Age is required';
-      if (!doctorProfile.doctor_data.experience) errors.experience = 'Experience is required';
       
-      // Validate age vs experience
-      const ageVsExpError = validateAgeVsExperience(
-        doctorProfile.doctor_data.age, 
-        doctorProfile.doctor_data.experience
+      // Validate experience
+      const expError = validateExperience(
+        doctorProfile.doctor_data.experience,
+        doctorProfile.doctor_data.age,
+        doctorProfile.doctor_data.registration_year
       );
-      if (ageVsExpError) {
-        errors.age = ageVsExpError;
-        errors.experience = ageVsExpError;
+      if (expError) {
+        errors.experience = expError;
       }
       
       console.log('Step 1 validation errors:', errors);
@@ -298,6 +317,19 @@ export default function WelcomeSetupModal({
       }
       if (!doctorProfile.doctor_data.registration_year) {
         errors.registration_year = 'Registration year is required';
+      }
+      if (!doctorProfile.doctor_data.experience) {
+        errors.experience = 'Experience is required';
+      }
+      
+      // Validate experience
+      const expError = validateExperience(
+        doctorProfile.doctor_data.experience,
+        doctorProfile.doctor_data.age,
+        doctorProfile.doctor_data.registration_year
+      );
+      if (expError) {
+        errors.experience = expError;
       }
       
       console.log('Step 2 validation errors:', errors);
@@ -320,7 +352,7 @@ export default function WelcomeSetupModal({
         
         // Validate qualification year vs registration year
         if (qual.year && doctorProfile.doctor_data.registration_year) {
-          const regVsQualError = validateRegistrationVsQualification(
+          const regVsQualError = validateRegistrationYear(
             doctorProfile.doctor_data.registration_year, 
             qual.year
           );
@@ -502,23 +534,7 @@ export default function WelcomeSetupModal({
                     onChange={e => handleChange('phone', e.target.value)}
                   />
                 </div>
-                <div>
-                  <label className="text-sm font-medium leading-none" htmlFor="experience">Experience (Years)</label>
-                  <input
-                    id="experience"
-                    type="number"
-                    placeholder="Years of experience"
-                    className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                      getFieldError('experience') ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    value={doctorProfile.doctor_data.experience}
-                    onChange={e => handleChange('experience', e.target.value)}
-                    required
-                  />
-                  {getFieldError('experience') && (
-                    <p className="text-sm text-red-500 mt-1">{getFieldError('experience')}</p>
-                  )}
-                </div>
+
               </div>
             </div>
           </div>
@@ -633,6 +649,23 @@ export default function WelcomeSetupModal({
                       value={doctorProfile.doctor_data.registration_board}
                       onChange={e => handleChange('registration_board', e.target.value)}
                     />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium leading-none" htmlFor="experience">Experience (Years)</label>
+                    <input
+                      id="experience"
+                      type="number"
+                      placeholder="Years of experience"
+                      className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                        getFieldError('experience') ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      value={doctorProfile.doctor_data.experience}
+                      onChange={e => handleChange('experience', e.target.value)}
+                      required
+                    />
+                    {getFieldError('experience') && (
+                      <p className="text-sm text-red-500 mt-1">{getFieldError('experience')}</p>
+                    )}
                   </div>
                 </div>
               </div>
