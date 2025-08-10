@@ -21,8 +21,6 @@ RUN echo "Build timestamp: $(date +%s)" > .build-timestamp
 # Copy source files
 COPY . .
 
-# Copy production environment file
-COPY env.production .env.production
 
 # Build with aggressive cleanup and optimization
 RUN npm run build && \
