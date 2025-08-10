@@ -141,6 +141,20 @@ export default function WelcomeSetupModal({
     return '';
   };
 
+  const validateAgeVsRegistrationYear = (age: string, regYear: string) => {
+    const ageNum = parseInt(age);
+    const regYearNum = parseInt(regYear);
+    const currentYear = new Date().getFullYear();
+    
+    if (age && regYear) {
+      const minRegYear = currentYear - ageNum + 23;
+      if (regYearNum < minRegYear) {
+        return `Registration year must be at least ${minRegYear} (doctor must be at least 23 when registering)`;
+      }
+    }
+    return '';
+  };
+
   const validateExperience = (experience: string, age: string, regYear: string) => {
     const expNum = parseInt(experience);
     const ageNum = parseInt(age);
@@ -201,6 +215,15 @@ export default function WelcomeSetupModal({
           ...prev,
           age: ageError
         }));
+
+        // Also validate registration year against new age
+        if (doctorProfile.doctor_data.registration_year) {
+          const ageVsRegError = validateAgeVsRegistrationYear(value, doctorProfile.doctor_data.registration_year);
+          setValidationErrors(prev => ({
+            ...prev,
+            registration_year: ageVsRegError
+          }));
+        }
       }
       
       // Validate experience
@@ -215,7 +238,9 @@ export default function WelcomeSetupModal({
           // Validate registration year
       if (field === 'registration_year') {
         const yearError = validateRegistrationYear(value, doctorProfile.doctor_data.qualifications?.[0]?.year || '');
-        setValidationErrors(prev => ({ ...prev, registration_year: yearError }));
+        const ageVsRegError = validateAgeVsRegistrationYear(doctorProfile.doctor_data.age, value);
+        const finalError = yearError || ageVsRegError;
+        setValidationErrors(prev => ({ ...prev, registration_year: finalError }));
       }
   };
 
