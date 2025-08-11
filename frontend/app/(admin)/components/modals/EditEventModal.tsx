@@ -1,17 +1,19 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, MapPin, Users, ChevronDown, Plus, Minus } from 'lucide-react';
+import { X, Calendar, Clock, MapPin, Users, ChevronDown, Save } from 'lucide-react';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { eventService } from '@/service/eventService';
 import { getTimezoneLabel } from '@/lib/utils/timezoneUtils';
+import { CalendarEvent } from '../common/types';
 
-interface CreateEventModalProps {
+interface EditEventModalProps {
   isOpen: boolean;
   onClose: () => void;
+  event: CalendarEvent | null;
   calendarId?: string | null;
   selectedCalendar?: any;
-  onEventCreated?: () => void; // Add callback for when event is created
+  onEventUpdated?: () => void; 
 }
 
 interface EventFormData {
@@ -35,7 +37,7 @@ const eventTypes = [
   'Other'
 ];
 
-export default function CreateEventModal({ isOpen, onClose, calendarId, selectedCalendar, onEventCreated }: CreateEventModalProps) {
+export default function EditEventModal({ isOpen, onClose, event, calendarId, selectedCalendar, onEventUpdated }: EditEventModalProps) {
   const { showError, showSuccess } = useErrorHandler();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showEventTypeDropdown, setShowEventTypeDropdown] = useState(false);
@@ -54,6 +56,33 @@ export default function CreateEventModal({ isOpen, onClose, calendarId, selected
     description: ''
   });
 
+  // Initialize form data when event changes
+  useEffect(() => {
+    if (event) {
+      const startDate = new Date(event.start.dateTime);
+      const endDate = new Date(event.end.dateTime);
+      
+      // Format date and times
+      const dateStr = startDate.toISOString().split('T')[0];
+      const startTimeStr = startDate.toTimeString().slice(0, 5);
+      const endTimeStr = endDate.toTimeString().slice(0, 5);
+      
+      // Format attendees
+      const attendeesStr = event.attendees?.map((attendee: any) => attendee.email || attendee).join(', ') || '';
+      
+      setFormData({
+        title: event.summary || '',
+        eventType: event.eventType || 'Meeting',
+        date: dateStr,
+        startTime: startTimeStr,
+        endTime: endTimeStr,
+        location: event.location || '',
+        attendees: attendeesStr,
+        description: event.description || ''
+      });
+    }
+  }, [event]);
+
   const handleInputChange = (field: keyof EventFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -61,8 +90,8 @@ export default function CreateEventModal({ isOpen, onClose, calendarId, selected
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!calendarId) {
-      showError('No calendar selected');
+    if (!calendarId || !event?.id) {
+      showError('Calendar ID and Event ID are required');
       return;
     }
 
@@ -80,6 +109,7 @@ export default function CreateEventModal({ isOpen, onClose, calendarId, selected
 
       const eventData = {
         calendar_id: calendarId,
+        event_id: event.id,
         summary: formData.title,
         start: startDateTime,
         end: endDateTime,
@@ -90,27 +120,16 @@ export default function CreateEventModal({ isOpen, onClose, calendarId, selected
         location: formData.location || undefined,
       };
 
-      const result = await eventService.createEvent(eventData);
-      showSuccess('Event created successfully!');
+      const result = await eventService.updateEvent(eventData);
+      showSuccess('Event updated successfully!');
       onClose();
       
       // Call the refresh callback instead of reloading the page
-      if (onEventCreated) {
-        onEventCreated();
+      if (onEventUpdated) {
+        onEventUpdated();
       }
-      
-      setFormData({
-        title: '',
-        eventType: 'Meeting',
-        date: new Date().toISOString().split('T')[0],
-        startTime: '09:00',
-        endTime: '10:00',
-        location: '',
-        attendees: '',
-        description: ''
-      });
     } catch (error) {
-      showError('Failed to create event');
+      showError('Failed to update event');
     } finally {
       setIsSubmitting(false);
     }
@@ -151,7 +170,7 @@ export default function CreateEventModal({ isOpen, onClose, calendarId, selected
 
   const dateOptions = generateDateOptions();
 
-  if (!isOpen) return null;
+  if (!isOpen || !event) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -165,12 +184,12 @@ export default function CreateEventModal({ isOpen, onClose, calendarId, selected
       <div className="relative z-50 w-full max-w-md mx-auto transform transition-all duration-300 ease-out">
         <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden max-h-[90vh] overflow-y-auto">
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 sm:p-6 text-white sticky top-0 z-10 shadow-lg">
+          <div className="bg-gradient-to-r from-green-600 to-blue-600 p-4 sm:p-6 text-white sticky top-0 z-10 shadow-lg">
             <div className="flex items-center justify-between">
               <div className="min-w-0 flex-1">
-                <h2 className="text-lg sm:text-xl font-bold truncate">Create New Event</h2>
-                <p className="text-blue-100 text-xs sm:text-sm mt-1 truncate">
-                  {selectedCalendar?.name ? `Calendar: ${selectedCalendar.name}` : 'New Event'}
+                <h2 className="text-lg sm:text-xl font-bold truncate">Edit Event</h2>
+                <p className="text-green-100 text-xs sm:text-sm mt-1 truncate">
+                  {selectedCalendar?.name ? `Calendar: ${selectedCalendar.name}` : 'Edit Event'}
                 </p>
               </div>
               <button
@@ -413,19 +432,19 @@ export default function CreateEventModal({ isOpen, onClose, calendarId, selected
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
+                className="flex-1 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl hover:from-green-700 hover:to-blue-700 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
               >
                 {isSubmitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span className="hidden sm:inline">Creating...</span>
+                    <span className="hidden sm:inline">Updating...</span>
                     <span className="sm:hidden">...</span>
                   </>
                 ) : (
                   <>
-                    <Plus className="h-4 w-4" />
-                    <span className="hidden sm:inline">Create Event</span>
-                    <span className="sm:hidden">Create</span>
+                    <Save className="h-4 w-4" />
+                    <span className="hidden sm:inline">Update Event</span>
+                    <span className="sm:hidden">Update</span>
                   </>
                 )}
               </button>
@@ -435,4 +454,4 @@ export default function CreateEventModal({ isOpen, onClose, calendarId, selected
       </div>
     </div>
   );
-} 
+}

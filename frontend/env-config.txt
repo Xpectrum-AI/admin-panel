@@ -22,6 +22,7 @@ NEXT_PUBLIC_DEV_SERVER_URL=http://localhost:3000
 CORS_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:5173
 
 # API Configuration
+NEXT_PUBLIC_LIVE_API_URL=https://d1fs86umxjjz67.cloudfront.net
 NEXT_PUBLIC_API_KEY=xpectrum-ai@123
 
 # Stripe Configuration (if needed)
