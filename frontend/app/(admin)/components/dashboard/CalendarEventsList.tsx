@@ -1,17 +1,89 @@
 import { SyncLoader } from 'react-spinners';
 import { CalendarEvent } from '../common/types';
-import { Plus, Clock, MapPin, Users } from 'lucide-react';
+import { Plus, Clock, MapPin, Users, RefreshCw, Calendar, Edit, Trash2 } from 'lucide-react';
+import { eventService } from '@/service/eventService';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { formatTimeInTimezone, getTimezoneLabel } from '@/lib/utils/timezoneUtils';
+import { useState } from 'react';
 
 interface CalendarEventsListProps {
   events: CalendarEvent[];
   loading: boolean;
   selectedCalendar?: any;
+  selectedDate?: Date | null; // Add selectedDate prop
   onNewEvent?: () => void;
+  onEventsRefresh?: () => void;
+  onShowAllEvents?: () => void; // Add onShowAllEvents prop
+  onEditEvent?: (event: CalendarEvent) => void; // Add onEditEvent prop
 }
 
-export default function CalendarEventsList({ events, loading, selectedCalendar, onNewEvent }: CalendarEventsListProps) {
+export default function CalendarEventsList({ events, loading, selectedCalendar, selectedDate, onNewEvent, onEventsRefresh, onShowAllEvents, onEditEvent }: CalendarEventsListProps) {
+  const { showError, showSuccess } = useErrorHandler();
+  const [isLoading, setIsLoading] = useState(false);
+  
   console.log('CalendarEventsList received events:', events);
   console.log('CalendarEventsList events length:', events?.length);
+  console.log('Selected date:', selectedDate);
+
+  const handleSyncGoogleCalendar = async () => {
+    if (!selectedCalendar?.calendar_id) {
+      showError('No calendar selected');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await eventService.syncGoogleCalendarEvents(selectedCalendar.calendar_id);
+      showSuccess('Events refreshed successfully!');
+      if (onEventsRefresh) {
+        onEventsRefresh();
+      }
+    } catch (error) {
+      showError('Failed to refresh events');
+      console.error('Error refreshing events:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteEvent = async (event: CalendarEvent) => {
+    if (!selectedCalendar?.calendar_id) {
+      showError('No calendar selected');
+      return;
+    }
+
+    if (!event.id) {
+      showError('Event ID is required for deletion');
+      return;
+    }
+
+    if (!confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await eventService.deleteEvent(selectedCalendar.calendar_id, event.id);
+      showSuccess('Event deleted successfully!');
+      if (onEventsRefresh) {
+        onEventsRefresh();
+      }
+    } catch (error) {
+      showError('Failed to delete event');
+      console.error('Error deleting event:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatSelectedDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
   
   if (loading) {
     return (
@@ -53,14 +125,52 @@ export default function CalendarEventsList({ events, loading, selectedCalendar, 
     <div className="rounded-lg border bg-card text-card-foreground border-gray-300 flex flex-col h-full">
       {/* Header */}
       <div className="space-y-1.5 p-6 flex flex-row items-center justify-between">
-        <h3 className="text-2xl font-semibold leading-none tracking-tight">All Events</h3>
-        <button
-          className="justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-foreground text-background hover:bg-foreground/90 h-9 rounded-md px-3 flex items-center gap-2"
-          onClick={onNewEvent}
-        >
-          <Plus className="h-4 w-4" />
-          New Event
-        </button>
+        <div className="flex flex-col">
+          <h3 className="text-2xl font-semibold leading-none tracking-tight">
+            {selectedDate ? `Events for ${formatSelectedDate(selectedDate)}` : 'All Events'}
+          </h3>
+          {selectedCalendar?.timezone && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Timezone: {getTimezoneLabel(selectedCalendar.timezone)}
+            </p>
+          )}
+          {selectedDate && (
+            <p className="text-sm text-blue-600 mt-1">
+              Showing {events.length} event{events.length !== 1 ? 's' : ''} for this date
+            </p>
+          )}
+          <p className="text-xs text-gray-500 mt-1">
+            Note: Events created directly in Google Calendar may not appear here. Only events created through this admin panel are displayed.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          {selectedDate && (
+            <button
+              className="justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-gray-200 bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 flex items-center gap-2"
+              onClick={onShowAllEvents}
+              title="Show All Events"
+            >
+              <Calendar className="h-4 w-4" />
+              All Events
+            </button>
+          )}
+          <button
+            className="justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-gray-200 bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 flex items-center gap-2"
+            onClick={handleSyncGoogleCalendar}
+            disabled={isLoading}
+            title="Refresh Events from Backend"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            {isLoading ? 'Refreshing...' : 'Refresh'}
+          </button>
+          <button
+            className="justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-foreground text-background hover:bg-foreground/90 h-9 rounded-md px-3 flex items-center gap-2"
+            onClick={onNewEvent}
+          >
+            <Plus className="h-4 w-4" />
+            New Event
+          </button>
+        </div>
       </div>
 
       {/* Content */}
@@ -95,39 +205,99 @@ export default function CalendarEventsList({ events, loading, selectedCalendar, 
               console.error('Error parsing dates:', error);
             }
             
-            const startTime = new Date(event.start.dateTime).toLocaleTimeString([], { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            });
-            const endTime = new Date(event.end.dateTime).toLocaleTimeString([], { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            });
+            const startTime = formatTimeInTimezone(event.start.dateTime, selectedCalendar?.timezone || 'Asia/Kolkata');
+            const endTime = formatTimeInTimezone(event.end.dateTime, selectedCalendar?.timezone || 'Asia/Kolkata');
+            const timezoneLabel = getTimezoneLabel(selectedCalendar?.timezone || 'Asia/Kolkata');
 
             return (
-              <div key={event.id || `${event.summary}-${event.start.dateTime}`} className="p-4 border border-gray-300 rounded-lg space-y-2">
+              <div key={event.id || `${event.summary}-${event.start.dateTime}`} className="p-4 border border-gray-300 rounded-lg space-y-3">
+                {/* Event Header */}
                 <div className="flex items-center justify-between">
-                  <h3 className="font-medium">{event.summary}</h3>
-                  <div className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-primary/80 ${eventType.color}`}>
-                    {eventType.type}
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {startTime} - {endTime}
-                  </div>
-                  {event.location && (
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {event.location}
+                  <h3 className="font-medium text-lg">{event.summary}</h3>
+                  <div className="flex items-center gap-2">
+                    <div className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-primary/80 ${eventType.color}`}>
+                      {eventType.type}
                     </div>
-                  )}
-                  <div className="flex items-center gap-1">
-                    <Users className="h-3 w-3" />
-                    {event.attendees?.length || 0}
+                    {/* Edit and Delete Buttons */}
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => onEditEvent && onEditEvent(event)}
+                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors duration-200"
+                        title="Edit event"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteEvent(event)}
+                        className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors duration-200"
+                        title="Delete event"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
+
+                {/* Event Date */}
+                <div className="flex items-center gap-1 text-sm text-gray-600">
+                  <Calendar className="h-4 w-4 text-blue-600" />
+                  <span>{new Date(event.start.dateTime).toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}</span>
+                </div>
+
+                {/* Event Time */}
+                <div className="flex items-center gap-1 text-sm text-gray-600">
+                  <Clock className="h-4 w-4 text-green-600" />
+                  <span>{startTime} - {endTime} ({timezoneLabel})</span>
+                </div>
+
+                {/* Event Location */}
+                {event.location && (
+                  <div className="flex items-start gap-2 text-sm text-gray-600">
+                    <MapPin className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                    <span className="break-words">{event.location}</span>
+                  </div>
+                )}
+
+                {/* Event Attendees */}
+                {event.attendees && event.attendees.length > 0 && (
+                  <div className="flex items-start gap-2 text-sm text-gray-600">
+                    <Users className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium">Attendees ({event.attendees.length}):</span>
+                      <div className="flex flex-wrap gap-1">
+                        {event.attendees.map((attendee: any, idx: number) => (
+                          <span key={idx} className="bg-gray-100 px-2 py-1 rounded text-xs">
+                            {attendee.email || attendee}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Event Description */}
+                {event.description && (
+                  <div className="flex items-start gap-2 text-sm text-gray-600">
+                    <div className="w-2 h-2 bg-indigo-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium">Description:</span>
+                      <p className="text-gray-700 whitespace-pre-wrap break-words">{event.description}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Event Type Badge (if different from default) */}
+                {event.eventType && event.eventType !== 'Meeting' && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                    <span className="font-medium">Type: {event.eventType}</span>
+                  </div>
+                )}
               </div>
             );
           })

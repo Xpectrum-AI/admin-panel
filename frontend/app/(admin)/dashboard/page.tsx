@@ -17,6 +17,7 @@ import {
   CreateCalendarModal,
   ShareCalendarModal,
   CreateEventModal,
+  EditEventModal,
   ShowDocInfoModal
 } from '../components';
 import { Calendar } from '../components/calendar';
@@ -59,8 +60,12 @@ export default function Dashboard() {
   const [showCreateCalendarModal, setShowCreateCalendarModal] = useState(false);
   const [createdCalendarId, setCreatedCalendarId] = useState<string | null>(null);
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
+  const [showEditEventModal, setShowEditEventModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [orgSetupComplete, setOrgSetupComplete] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null); // Add selected date state
+  const [filteredEvents, setFilteredEvents] = useState<any[]>([]); // Add filtered events state
   const { showError, showSuccess, showWarning } = useErrorHandler();
 
   const fetchDoctors = async () => {
@@ -303,7 +308,46 @@ export default function Dashboard() {
     setSelectedCalendar(null);
   };
 
+  const handleEditEvent = (event: CalendarEvent) => {
+    setSelectedEvent(event);
+    setShowEditEventModal(true);
+  };
+
+  const handleEditEventClose = () => {
+    setShowEditEventModal(false);
+    setSelectedEvent(null);
+  };
+
   const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+    
+    if (!events || events.length === 0) {
+      setFilteredEvents([]);
+      return;
+    }
+
+    // Filter events for the selected date
+    const filtered = events.filter((event) => {
+      try {
+        const eventDate = new Date(event.start.dateTime);
+        const selectedDateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+        
+        return eventDateOnly.getTime() === selectedDateOnly.getTime();
+      } catch (error) {
+        console.error('Error filtering event by date:', error);
+        return false;
+      }
+    });
+
+    setFilteredEvents(filtered);
+    console.log('Selected date:', date);
+    console.log('Filtered events for date:', filtered);
+  };
+
+  const handleShowAllEvents = () => {
+    setSelectedDate(null);
+    setFilteredEvents([]);
   };
 
   const handleDeleteDoctor = async (doctor: any) => {
@@ -340,6 +384,8 @@ export default function Dashboard() {
 
   const handleCalendarSelect = async (calendar: any) => {
     setSelectedCalendar(calendar);
+    setSelectedDate(null); // Reset selected date when calendar changes
+    setFilteredEvents([]); // Reset filtered events
     setEventsLoading(true);
     try {
       // Fetch events for the selected calendar
@@ -403,6 +449,7 @@ export default function Dashboard() {
                   <div className="w-full">
                     <Calendar
                       events={events}
+                      selectedDate={selectedDate || undefined} // Convert null to undefined
                       onDateSelect={handleDateSelect}
                       className="w-full h-full"
                     />
@@ -413,10 +460,18 @@ export default function Dashboard() {
                 <div className="lg:col-span-3 flex">
                   <div className="w-full">
                     <CalendarEventsList
-                      events={events}
+                      events={selectedDate ? filteredEvents : events} // Use filtered events if date is selected
                       loading={eventsLoading}
                       selectedCalendar={selectedCalendar}
+                      selectedDate={selectedDate} // Pass selected date to show in header
                       onNewEvent={handleNewEvent}
+                      onEventsRefresh={() => {
+                        if (selectedCalendar) {
+                          handleCalendarSelect(selectedCalendar);
+                        }
+                      }}
+                      onShowAllEvents={handleShowAllEvents}
+                      onEditEvent={handleEditEvent}
                     />
                   </div>
                 </div>
@@ -531,6 +586,26 @@ export default function Dashboard() {
           isOpen={showCreateEventModal}
           onClose={handleCreateEventClose}
           calendarId={selectedCalendar?.calendar_id}
+          selectedCalendar={selectedCalendar}
+          onEventCreated={() => {
+            if (selectedCalendar) {
+              handleCalendarSelect(selectedCalendar);
+            }
+          }}
+        />
+      )}
+      {showEditEventModal && (
+        <EditEventModal
+          isOpen={showEditEventModal}
+          onClose={handleEditEventClose}
+          event={selectedEvent}
+          calendarId={selectedCalendar?.calendar_id}
+          selectedCalendar={selectedCalendar}
+          onEventUpdated={() => {
+            if (selectedCalendar) {
+              handleCalendarSelect(selectedCalendar);
+            }
+          }}
         />
       )}
       {showShowDocInfoModal && (

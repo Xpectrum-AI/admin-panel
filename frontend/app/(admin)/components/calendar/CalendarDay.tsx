@@ -46,19 +46,21 @@ export default function CalendarDay({
 
     if (isSelected) {
       classes.push(
-        'bg-primary',
-        'text-primary-foreground',
-        'hover:bg-primary',
-        'hover:text-primary-foreground',
-        'focus:bg-primary',
-        'focus:text-primary-foreground',
-        'bg-accent',
-        'text-accent-foreground'
+        'bg-blue-600',
+        'text-white',
+        'hover:bg-blue-700',
+        'hover:text-white',
+        'focus:bg-blue-700',
+        'focus:text-white',
+        'font-semibold',
+        'ring-2',
+        'ring-blue-300',
+        'ring-offset-2'
       );
     }
 
     if (isToday && !isSelected) {
-      classes.push('font-semibold');
+      classes.push('font-semibold', 'bg-green-100', 'text-green-800', 'border-2', 'border-green-300');
     }
 
     return classes.join(' ');

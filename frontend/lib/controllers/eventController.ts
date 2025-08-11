@@ -1,4 +1,4 @@
-const LIVE_API_BASE_URL = process.env.NEXT_PUBLIC_LIVE_API_URL || 'https://diwz9dcb62ek1.cloudfront.net';
+const LIVE_API_BASE_URL = process.env.NEXT_PUBLIC_LIVE_API_URL || 'https://d1fs86umxjjz67.cloudfront.net';
 const LIVE_API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'xpectrum-ai@123';
 
 export interface CreateEventRequest {
@@ -18,6 +18,9 @@ export interface UpdateEventRequest {
   end?: string;
   description?: string;
   location?: string;
+  attendee_email?: string;
+  event_type?: string;
+  timezone?: string;
 }
 
 export interface EventResponse {

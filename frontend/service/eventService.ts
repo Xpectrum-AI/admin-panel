@@ -121,5 +121,39 @@ export const eventService = {
 
     const result = await response.json();
     return result.data || result;
+  },
+
+  async syncGoogleCalendarEvents(calendarId: string): Promise<any> {
+    const response = await fetch(`/api/event/sync-google?calendar_id=${calendarId}`, {
+      method: 'POST',
+      headers,
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to refresh events');
+    }
+    const result = await response.json();
+    return result.data || result;
+  },
+
+  async fetchGoogleCalendarEvents(calendarId: string): Promise<any> {
+    try {
+      // Fetch events directly from Google Calendar API
+      const response = await fetch(`/api/event/fetch-google?calendar_id=${calendarId}`, {
+        method: 'GET',
+        headers,
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch Google Calendar events');
+      }
+      
+      const result = await response.json();
+      return result.data || result;
+    } catch (error) {
+      console.error('Error fetching Google Calendar events:', error);
+      throw error;
+    }
   }
 }; 
