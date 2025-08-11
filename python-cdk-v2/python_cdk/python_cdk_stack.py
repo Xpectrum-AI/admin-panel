@@ -162,7 +162,9 @@ class AdminPanelDeploymentStack(Stack):
             assign_public_ip=True,
             # Add deployment configuration to prevent warnings
             min_healthy_percent=100,
-            max_healthy_percent=200
+            max_healthy_percent=200,
+            # Force new deployment with timestamp
+            service_name=f"{config['stack_name']}Service-{int(os.environ.get('BUILD_NUMBER', '1'))}"
         )
 
         # ALB
