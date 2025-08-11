@@ -162,7 +162,13 @@ class AdminPanelDeploymentStack(Stack):
             assign_public_ip=True,
             # Add deployment configuration to prevent warnings
             min_healthy_percent=100,
-            max_healthy_percent=200
+            max_healthy_percent=200,
+            # Add deployment configuration
+            deployment_configuration=ecs.DeploymentConfiguration(
+                max_healthy_percent=200,
+                min_healthy_percent=100,
+                deployment_circuit_breaker=ecs.DeploymentCircuitBreaker(rollback=True)
+            )
         )
 
         # ALB
