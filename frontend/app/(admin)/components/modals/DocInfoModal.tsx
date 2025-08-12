@@ -8,6 +8,7 @@ import {UserPen, UserCheck, Trash, Plus, X} from "lucide-react";
 import Module from 'module';
 import { doctorApiService } from '@/service/doctorService';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { LocationDropdowns } from '../common';
 
 // Helper function to generate unique ID
 const generateUniqueId = () => {
@@ -37,11 +38,12 @@ const initialDoctorProfile = {
     registration_year: '',
     registration_state: '',
     registration_country: '',
+    registration_city: '',
     registration_board: '',
-    qualifications: [{ degree: '', university: '', year: '', place: '' }],
+    qualifications: [{ degree: '', university: '', year: '', place: '', country: '', state: '' }],
     specializations: [{ specialization: '', level: '' }],
     aliases: [''],
-    facilities: [{ name: '', type: '', area: '', city: '', state: '', pincode: '', address: '' }],
+    facilities: [{ name: '', type: '', area: '', city: '', state: '', country: '', pincode: '', address: '' }],
   }
 };
 
@@ -79,6 +81,7 @@ export default function WelcomeSetupModal({
         registration_year: doctorData.doctor_data?.registration_year || '',
         registration_state: doctorData.doctor_data?.registration_state || '',
         registration_country: doctorData.doctor_data?.registration_country || '',
+        registration_city: doctorData.doctor_data?.registration_city || '',
         registration_board: doctorData.doctor_data?.registration_board || '',
         qualifications: doctorData.doctor_data?.qualifications || [],
         specializations: doctorData.doctor_data?.specializations || [],
@@ -679,24 +682,17 @@ export default function WelcomeSetupModal({
                       <p className="text-sm text-red-500 mt-1">{getFieldError('registration_year')}</p>
                     )}
                   </div>
-                  <div>
-                    <label className="text-sm font-medium leading-none" htmlFor="reg_state">State</label>
-                    <input
-                      id="reg_state"
-                      placeholder="State"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      value={doctorProfile.doctor_data.registration_state}
-                      onChange={e => handleChange('registration_state', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium leading-none" htmlFor="reg_country">Country</label>
-                    <input
-                      id="reg_country"
-                      placeholder="Country"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      value={doctorProfile.doctor_data.registration_country}
-                      onChange={e => handleChange('registration_country', e.target.value)}
+                  <div className="col-span-2">
+                    <label className="text-sm font-medium leading-none mb-2 block">Registration Location</label>
+                    <LocationDropdowns
+                      selectedCountry={doctorProfile.doctor_data.registration_country}
+                      selectedState={doctorProfile.doctor_data.registration_state}
+                      selectedCity={doctorProfile.doctor_data.registration_city || ''}
+                      onCountryChange={(country) => handleChange('registration_country', country)}
+                      onStateChange={(state) => handleChange('registration_state', state)}
+                      onCityChange={(city) => handleChange('registration_city', city)}
+                      showLabels={false}
+                      className="grid-cols-3"
                     />
                   </div>
                   <div>
@@ -786,7 +782,7 @@ export default function WelcomeSetupModal({
                   <h3 className="text-lg font-semibold">Qualifications</h3>
                   <button
                     className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-black text-white hover:bg-gray-900 h-9 rounded-md px-3"
-                    onClick={() => addArrayItem('qualifications', { degree: '', university: '', year: '', place: '' })}
+                    onClick={() => addArrayItem('qualifications', { degree: '', university: '', year: '', place: '', country: '', state: '' })}
                   >
                     <Plus />
                     Add Qualification
@@ -853,14 +849,17 @@ export default function WelcomeSetupModal({
                           <p className="text-sm text-red-500 mt-1">{getArrayFieldError('qualifications', idx, 'university')}</p>
                         )}
                       </div>
-                      <div>
-                        <label className="text-sm font-medium leading-none" htmlFor={`place_${idx}`}>Place</label>
-                        <input
-                          id={`place_${idx}`}
-                          placeholder="City"
-                          className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          value={q.place}
-                          onChange={e => handleArrayChange('qualifications', idx, 'place', e.target.value)}
+                      <div className="col-span-2">
+                        <label className="text-sm font-medium leading-none mb-2 block">Location</label>
+                        <LocationDropdowns
+                          selectedCountry={q.country || ''}
+                          selectedState={q.state || ''}
+                          selectedCity={q.place}
+                          onCountryChange={(country) => handleArrayChange('qualifications', idx, 'country', country)}
+                          onStateChange={(state) => handleArrayChange('qualifications', idx, 'state', state)}
+                          onCityChange={(city) => handleArrayChange('qualifications', idx, 'place', city)}
+                          showLabels={false}
+                          className="grid-cols-3"
                         />
                       </div>
                     </div>
@@ -1075,7 +1074,7 @@ export default function WelcomeSetupModal({
                   <h3 className="text-lg font-semibold">Practice Facilities</h3>
                   <button
                     className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-black text-white hover:bg-gray-900 h-9 rounded-md px-3"
-                    onClick={() => addArrayItem('facilities', { name: '', type: '', area: '', city: '', state: '', pincode: '', address: '' })}
+                    onClick={() => addArrayItem('facilities', { name: '', type: '', area: '', city: '', state: '', country: '', pincode: '', address: '' })}
                   >
                     <Plus/>
                     Add Facility
@@ -1127,24 +1126,17 @@ export default function WelcomeSetupModal({
                           onChange={e => handleArrayChange('facilities', idx, 'area', e.target.value)}
                         />
                       </div>
-                      <div>
-                        <label className="text-sm font-medium leading-none" htmlFor={`facility_city_${idx}`}>City</label>
-                        <input
-                          id={`facility_city_${idx}`}
-                          placeholder="City"
-                          className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          value={f.city}
-                          onChange={e => handleArrayChange('facilities', idx, 'city', e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium leading-none" htmlFor={`facility_state_${idx}`}>State</label>
-                        <input
-                          id={`facility_state_${idx}`}
-                          placeholder="State"
-                          className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          value={f.state}
-                          onChange={e => handleArrayChange('facilities', idx, 'state', e.target.value)}
+                      <div className="col-span-2">
+                        <label className="text-sm font-medium leading-none mb-2 block">Location</label>
+                        <LocationDropdowns
+                          selectedCountry={f.country || ''}
+                          selectedState={f.state}
+                          selectedCity={f.city}
+                          onCountryChange={(country) => handleArrayChange('facilities', idx, 'country', country)}
+                          onStateChange={(state) => handleArrayChange('facilities', idx, 'state', state)}
+                          onCityChange={(city) => handleArrayChange('facilities', idx, 'city', city)}
+                          showLabels={false}
+                          className="grid-cols-3"
                         />
                       </div>
                       <div>
