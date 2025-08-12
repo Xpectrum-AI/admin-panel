@@ -1,6 +1,6 @@
 // Example: User service API calls
 
-const API_KEY = process.env.LIVE_API_KEY || "";
+const API_KEY = process.env.NEXT_PUBLIC_LIVE_API_KEY || 'xpectrum-ai@123';
 
 const headers = {
   'Content-Type': 'application/json',

@@ -6,8 +6,8 @@ import {
   DeleteDoctorResponse 
 } from '@/types/doctor';
 
-const LIVE_API_BASE_URL = process.env.LIVE_API_URL || "";
-const LIVE_API_KEY = process.env.LIVE_API_KEY || "";
+const LIVE_API_BASE_URL = process.env.NEXT_PUBLIC_LIVE_API_URL || '';
+const LIVE_API_KEY = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
 
 // Helper function to get headers
 const getHeaders = () => {
