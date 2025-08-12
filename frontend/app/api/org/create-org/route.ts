@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createOrg } from '@/lib/controllers/orgController';
+import { handleApiError } from '@/lib/utils/apiResponse';
 
 export async function POST(request: NextRequest) {
   try {
     return await createOrg(request);
   } catch (error) {
-    console.error('Organization API Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(error, 'Organization Create API');
   }
 } 

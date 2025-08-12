@@ -2,112 +2,151 @@
 
 // const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
 const API_BASE = '/api';
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY || '';
+const API_KEY = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
 
 const headers = {
   'Content-Type': 'application/json',
-  'X-API-Key': API_KEY,
+  'x-api-key': API_KEY,
 };
 
 // Helper function to handle API errors
-async function handleApiError(response: Response, defaultMessage: string) {
-  try {
-    const errorData = await response.json();
-    if (errorData.error) {
-      throw new Error(errorData.error);
-    } else if (errorData.details) {
-      throw new Error(`${defaultMessage}: ${errorData.details}`);
-    } else {
+export const agentApiService = {
+  async handleApiError(response: Response, defaultMessage: string) {
+    try {
+      const errorData = await response.json();
+      if (errorData.error) {
+        throw new Error(errorData.error);
+      } else if (errorData.details) {
+        throw new Error(`${defaultMessage}: ${errorData.details}`);
+      } else {
+        throw new Error(defaultMessage);
+      }
+    } catch (parseError) {
+      // If JSON parsing fails, use the default message
       throw new Error(defaultMessage);
     }
-  } catch (parseError) {
-    // If JSON parsing fails, use the default message
-    throw new Error(defaultMessage);
-  }
-}
+  },
 
-export async function getAllAgents() {
-  const res = await fetch(`${API_BASE}/agents/all`, { headers });
-  if (!res.ok) {
-    await handleApiError(res, 'Failed to fetch agents');
-  }
-  return res.json();
-}
+  // Get all agents
+  async getAllAgents() {
+    const response = await fetch(`${API_BASE}/agents/all`, {
+      headers,
+    });
 
-export async function getAgentInfo(agentId: string) {
-  const res = await fetch(`${API_BASE}/agents/info/${agentId}`, { headers });
-  if (!res.ok) {
-    await handleApiError(res, 'Failed to fetch agent info');
-  }
-  return res.json();
-}
+    if (!response.ok) {
+      await this.handleApiError(response, 'Failed to fetch agents');
+    }
 
-export async function updateAgent(agentId: string, data: any) {
-  const res = await fetch(`${API_BASE}/agents/update/${agentId}`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    await handleApiError(res, 'Failed to update agent');
-  }
-  return res.json();
-}
+    return response.json();
+  },
 
-export async function setAgentPhone(agentId: string, phone_number: string) {
-  const res = await fetch(`${API_BASE}/agents/set_phone/${agentId}`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ phone_number }),
-  });
-  if (!res.ok) {
-    await handleApiError(res, 'Failed to set agent phone');
-  }
-  return res.json();
-}
+  // Get active calls
+  async getActiveCalls() {
+    const response = await fetch(`${API_BASE}/agents/active-calls`, {
+      headers,
+    });
 
-export async function getAgentByPhone(phone_number: string) {
-  const res = await fetch(`${API_BASE}/agents/by_phone/${phone_number}`, { headers });
-  if (!res.ok) {
-    await handleApiError(res, 'Failed to fetch agent by phone');
-  }
-  return res.json();
-}
+    if (!response.ok) {
+      await this.handleApiError(response, 'Failed to fetch active calls');
+    }
 
-export async function deleteAgentPhone(agentId: string) {
-  const res = await fetch(`${API_BASE}/agents/delete_phone/${agentId}`, {
-    method: 'DELETE',
-    headers,
-  });
-  if (!res.ok) {
-    await handleApiError(res, 'Failed to delete agent phone');
-  }
-  return res.json();
-}
+    return response.json();
+  },
 
-export async function getActiveCalls() {
-  const res = await fetch(`${API_BASE}/agents/active-calls`, { headers });
-  if (!res.ok) {
-    await handleApiError(res, 'Failed to fetch active calls');
-  }
-  return res.json();
-}
+  // Get agent trunks
+  async getAgentTrunks() {
+    const response = await fetch(`${API_BASE}/agents/trunks`, {
+      headers,
+    });
 
-export async function deleteAgent(agentId: string) {
-  const res = await fetch(`${API_BASE}/agents/delete/${agentId}`, {
-    method: 'DELETE',
-    headers,
-  });
-  if (!res.ok) {
-    await handleApiError(res, 'Failed to delete agent');
-  }
-  return res.json();
-}
+    if (!response.ok) {
+      await this.handleApiError(response, 'Failed to fetch agent trunks');
+    }
 
-export async function getTrunks() {
-  const res = await fetch(`${API_BASE}/agents/trunks`, { headers });
-  if (!res.ok) {
-    await handleApiError(res, 'Failed to fetch trunks');
-  }
-  return res.json();
-} 
+    return response.json();
+  },
+
+  // Get agent info by ID
+  async getAgentInfo(agentId: string) {
+    const response = await fetch(`${API_BASE}/agents/info/${agentId}`, {
+      headers,
+    });
+
+    if (!response.ok) {
+      await this.handleApiError(response, 'Failed to fetch agent info');
+    }
+
+    return response.json();
+  },
+
+  // Update agent
+  async updateAgent(agentId: string, updateData: any) {
+    const response = await fetch(`${API_BASE}/agents/update/${agentId}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(updateData),
+    });
+
+    if (!response.ok) {
+      await this.handleApiError(response, 'Failed to update agent');
+    }
+
+    return response.json();
+  },
+
+  // Delete agent
+  async deleteAgent(agentId: string) {
+    const response = await fetch(`${API_BASE}/agents/delete/${agentId}`, {
+      method: 'DELETE',
+      headers,
+    });
+
+    if (!response.ok) {
+      await this.handleApiError(response, 'Failed to delete agent');
+    }
+
+    return response.json();
+  },
+
+  // Set agent phone
+  async setAgentPhone(agentId: string, phoneData: any) {
+    const response = await fetch(`${API_BASE}/agents/set_phone/${agentId}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(phoneData),
+    });
+
+    if (!response.ok) {
+      await this.handleApiError(response, 'Failed to set agent phone');
+    }
+
+    return response.json();
+  },
+
+  // Delete agent phone
+  async deleteAgentPhone(agentId: string) {
+    const response = await fetch(`${API_BASE}/agents/delete_phone/${agentId}`, {
+      method: 'DELETE',
+      headers,
+    });
+
+    if (!response.ok) {
+      await this.handleApiError(response, 'Failed to delete agent phone');
+    }
+
+    return response.json();
+  },
+
+  // Get agent by phone number
+  async getAgentByPhone(phoneNumber: string) {
+    const response = await fetch(`${API_BASE}/agents/by_phone/${phoneNumber}`, {
+      headers,
+    });
+
+    if (!response.ok) {
+      await this.handleApiError(response, 'Failed to fetch agent by phone');
+    }
+
+    return response.json();
+  },
+};

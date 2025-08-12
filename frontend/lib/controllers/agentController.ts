@@ -3,8 +3,8 @@ import { authenticateApiKey } from '@/lib/middleware/auth';
 import axios from 'axios';
 
 // Live API configuration
-const LIVE_API_BASE_URL = process.env.NEXT_PUBLIC_LIVE_API_URL || '';
-const LIVE_API_KEY = process.env.NEXT_PUBLIC_API_KEY || '';
+const LIVE_API_BASE_URL = process.env.NEXT_PUBLIC_LIVE_API_URL || ""
+const LIVE_API_KEY = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
 
 // GET /api/agents/all
 export async function getAllAgents(request: NextRequest) {
@@ -223,6 +223,10 @@ export async function setAgentPhone(request: NextRequest, agentId: string) {
     }
 
     // Call live API to add phone number
+    console.log('Setting phone number for agent:', agentId, 'with phone:', phone_number);
+    console.log('Live API URL:', LIVE_API_BASE_URL);
+    console.log('Live API Key:', LIVE_API_KEY ? 'SET' : 'NOT SET');
+    
     const response = await axios.post(`${LIVE_API_BASE_URL}/agents/add_phonenumber/${agentId}`, { phone_number }, {
       headers: {
         'X-API-Key': LIVE_API_KEY,
@@ -238,9 +242,17 @@ export async function setAgentPhone(request: NextRequest, agentId: string) {
   } catch (error) {
     console.error('setAgentPhone error:', error);
     if (axios.isAxiosError(error)) {
+      console.error('Axios error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        url: error.config?.url,
+        method: error.config?.method
+      });
       return NextResponse.json({
         error: 'Failed to add phone number on live API',
-        details: error.response?.data || error.message
+        details: error.response?.data || error.message,
+        status: error.response?.status
       }, { status: error.response?.status || 500 });
     }
     return NextResponse.json({ 

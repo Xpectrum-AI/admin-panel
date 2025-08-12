@@ -26,7 +26,6 @@ export default function ProfileTab({ workspace }: { workspace: any }) {
 
   const handleSave = () => {
     // TODO: Replace with actual save logic (API call, etc.)
-    console.log('Saving workspace profile:', form);
     setEditMode(false);
   };
 

@@ -2,11 +2,16 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Search, Bell, User as UserIcon, Settings, LogOut, Building2, Bot, CreditCard, Calendar } from 'lucide-react';
+import { Bell, User as UserIcon, LogOut, Building2, Bot, CalendarDays, User, Stethoscope } from 'lucide-react';
 import { useAuthInfo, useLogoutFunction } from '@propelauth/react';
 import { SyncLoader } from 'react-spinners';
 
-export default function Header() {
+interface HeaderProps {
+  activeTab?: 'calendar' | 'agents' | 'doctors';
+  onTabChange?: (tab: 'calendar' | 'agents' | 'doctors') => void;
+}
+
+export default function Header({ activeTab = 'calendar', onTabChange }: HeaderProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -45,13 +50,35 @@ export default function Header() {
         </Link>
       </div>
       <div className="flex-1 flex justify-center px-8">
-        <div className="relative w-full max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search..."
-            className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+        <div className="flex items-center space-x-1 border border-gray-300 rounded-lg p-1">
+          <button
+            onClick={() => onTabChange?.('doctors')}
+            className={`justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-9 rounded-md flex items-center gap-2 px-3 py-2 ${
+              activeTab === 'doctors' ? 'bg-gray-200 text-gray-900 hover:bg-gray-300 shadow-sm' : 'hover:bg-accent hover:text-accent-foreground'
+            }`}
+          >
+            <Stethoscope className="h-4 w-4" />
+            Doctors
+          </button>
+          <button
+            onClick={() => onTabChange?.('calendar')}
+            className={`justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-9 rounded-md flex items-center gap-2 px-3 py-2 ${
+              activeTab === 'calendar' ? 'bg-gray-200 text-gray-900 hover:bg-gray-300 shadow-sm' : ''
+            }`}
+          >
+            <CalendarDays className="h-4 w-4" />
+            Calendar
+          </button>
+          <button
+            onClick={() => onTabChange?.('agents')}
+            className={`justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-9 rounded-md flex items-center gap-2 px-3 py-2 ${
+              activeTab === 'agents' ? 'bg-gray-200 text-gray-900 hover:bg-gray-300 shadow-sm' : 'hover:bg-accent hover:text-accent-foreground'
+            }`}
+          >
+            <Bot className="h-4 w-4" />
+            Agents
+          </button>
+         
         </div>
       </div>
       <div className="flex items-center space-x-4">
