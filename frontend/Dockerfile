@@ -21,9 +21,6 @@ RUN echo "Build timestamp: $(date +%s)" > .build-timestamp
 # Copy source files
 COPY . .
 
-# Copy production environment file
-COPY env.production .env.production
-
 # Build with aggressive cleanup and optimization
 RUN npm run build && \
     rm -rf node_modules && \
@@ -44,7 +41,9 @@ COPY --from=builder /app/next.config.ts ./
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/.env.production ./.env.production
+
+# Environment variables will be set by CDK at runtime
+# Remove hardcoded env file copy
 
 EXPOSE 3000
 

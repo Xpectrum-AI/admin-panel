@@ -23,6 +23,7 @@ class AdminPanelDeploymentStack(Stack):
             'staging': {
                 'domain': 'admin-test.xpectrum-ai.com',
                 'auth_domain': 'auth.admin-test.xpectrum-ai.com',
+                'live_url' : "https://diwz9dcb62ek1.cloudfront.net",
                 'frontend_tag': 'frontend-staging',
                 'frontend_port': '3000',
                 'stack_name': 'AdminPanelStagingStack'
@@ -121,34 +122,14 @@ class AdminPanelDeploymentStack(Stack):
             image=ecs.ContainerImage.from_ecr_repository(repo, tag=config['frontend_tag']),
             logging=ecs.LogDriver.aws_logs(stream_prefix="frontend"),
             environment={
-                "NEXT_PUBLIC_PROPELAUTH_API_KEY": secrets["NEXT_PUBLIC_PROPELAUTH_API_KEY"],
-                "NEXT_PUBLIC_API_KEY": secrets["NEXT_PUBLIC_API_KEY"],
-                "SECRET_KEY": secrets["SECRET_KEY"],
+                "LIVE_API_URL": config['live_url'],
+                "LIVE_API_KEY": secrets["LIVE_API_KEY"],
                 "PROPELAUTH_API_KEY": secrets["PROPELAUTH_API_KEY"],
-                "PROPELAUTH_REDIRECT_URI": secrets["PROPELAUTH_REDIRECT_URI"],
-                "NEXT_PUBLIC_LIVE_API_URL": secrets["NEXT_PUBLIC_LIVE_API_URL"],
-                "NEXT_PUBLIC_SUPER_ADMIN_ORG_ID": secrets["NEXT_PUBLIC_SUPER_ADMIN_ORG_ID"],
-                "NEXT_PUBLIC_DEFAULT_TIMEZONE": "America/New_York",
-                "NEXT_PUBLIC_TIMEZONE_OPTIONS": "IST:Asia/Kolkata,EST:America/New_York,PST:America/Los_Angeles",
-                "NEXT_PUBLIC_GOOGLE_CALENDAR_API_URL": "https://www.googleapis.com/calendar/v3",
-                "NEXT_PUBLIC_DATABASE_NAME": "google_oauth",
-                "NEXT_PUBLIC_AUTH_URL": f"https://{config['auth_domain']}",
-                "NEXT_PUBLIC_PROPELAUTH_URL": secrets["NEXT_PUBLIC_PROPELAUTH_URL"],
-                "NEXT_PUBLIC_CALENDAR_API_URL": f"https://{config['domain']}/calendar-api",
-                "NEXT_PUBLIC_API_BASE_URL": f"https://{config['domain']}/calendar-api",
-                "NEXT_PUBLIC_API_URL": f"https://{config['domain']}/api",
-                "NEXT_PUBLIC_APP_TITLE": "Admin Panel Calendar Services",
-                "NEXT_PUBLIC_APP_DESCRIPTION": "Calendar Services Management Dashboard",
-                "NEXT_PUBLIC_AUTH_TOKEN_KEY": "auth_token",
-                "NEXT_PUBLIC_PENDING_FIRST_NAME_KEY": "pending_first_name",
-                "NEXT_PUBLIC_PENDING_LAST_NAME_KEY": "pending_last_name",
-                "NEXT_PUBLIC_TIMEZONE_KEY": "selected_timezone",
+                "PROPELAUTH_URL": f"https://{config['auth_domain']}",
+                "SUPER_ADMIN_ORG_ID": secrets["SUPER_ADMIN_ORG_ID"],
                 "NODE_ENV": environment,
                 "PORT": config['frontend_port'],
                 "HOST": "0.0.0.0",
-                # 新增的环境变量
-                "API_KEY": secrets["API_KEY"],
-                "LIVE_API_KEY": secrets["LIVE_API_KEY"]
             },
             port_mappings=[ecs.PortMapping(container_port=int(config['frontend_port']))]
         )

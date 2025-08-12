@@ -58,15 +58,9 @@ jobs:
     - name: Log Environment Variables (Staging)
       run: |
         echo "=== STAGING ENVIRONMENT VARIABLES ==="
-        echo "STAGING_PROPELAUTH_URL: ${{ secrets.STAGING_PROPELAUTH_URL }}"
-        echo "STAGING_PROPELAUTH_REDIRECT_URI: ${{ secrets.STAGING_PROPELAUTH_REDIRECT_URI }}"
-        echo "STAGING_NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_PROPELAUTH_API_KEY }}"
-        echo "STAGING_SUPER_ADMIN_ORG_ID: ${{ secrets.STAGING_SUPER_ADMIN_ORG_ID }}"
-        echo "STAGING_NEXT_PUBLIC_API_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_API_KEY }}"
-        echo "STAGING_SECRET_KEY: ${{ secrets.STAGING_SECRET_KEY }}"
+        echo "STAGING_LIVE_API_KEY: ${{ secrets.STAGING_LIVE_API_KEY }}"
         echo "STAGING_PROPELAUTH_API_KEY: ${{ secrets.STAGING_PROPELAUTH_API_KEY }}"
-        echo "STAGING_PROPELAUTH_VERIFIER_KEY: ${{ secrets.STAGING_PROPELAUTH_VERIFIER_KEY }}"
-        echo "STAGING_NEXT_PUBLIC_LIVE_API_URL: ${{ secrets.STAGING_NEXT_PUBLIC_LIVE_API_URL }}"
+        echo "STAGING_SUPER_ADMIN_ORG_ID: ${{ secrets.STAGING_SUPER_ADMIN_ORG_ID }}"
         echo "====================================="
         
         echo "=== SUPER ADMIN CONFIGURATION DEBUG ==="
@@ -76,36 +70,19 @@ jobs:
           echo "✅ STAGING_SUPER_ADMIN_ORG_ID is set: ${{ secrets.STAGING_SUPER_ADMIN_ORG_ID }}"
         fi
         
-        if [ -z "${{ secrets.STAGING_PROPELAUTH_URL }}" ]; then
-          echo "❌ ERROR: STAGING_PROPELAUTH_URL is empty or not set!"
+        if [ -z "${{ secrets.STAGING_PROPELAUTH_API_KEY }}" ]; then
+          echo "❌ ERROR: STAGING_PROPELAUTH_API_KEY is empty or not set!"
         else
-          echo "✅ STAGING_PROPELAUTH_URL is set: ${{ secrets.STAGING_PROPELAUTH_URL }}"
-        fi
-        
-        if [ -z "${{ secrets.STAGING_NEXT_PUBLIC_PROPELAUTH_API_KEY }}" ]; then
-          echo "❌ ERROR: STAGING_NEXT_PUBLIC_PROPELAUTH_API_KEY is empty or not set!"
-        else
-          echo "✅ STAGING_NEXT_PUBLIC_PROPELAUTH_API_KEY is set (length: ${#STAGING_NEXT_PUBLIC_PROPELAUTH_API_KEY})"
+          echo "✅ STAGING_PROPELAUTH_API_KEY is set (length: ${#STAGING_PROPELAUTH_API_KEY})"
         fi
         echo "====================================="
 
     - name: Deploy CDK stack (staging)
       env:
-        # Pass GitHub environment variables to CDK
-        STAGING_NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_PROPELAUTH_API_KEY }}
-        STAGING_NEXT_PUBLIC_API_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_API_KEY }}
-        STAGING_GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
-        STAGING_MONGODB_URL: ${{ secrets.STAGING_MONGODB_URL }}
-        STAGING_STRIPE_PUBLISHABLE_KEY: ${{ secrets.STAGING_STRIPE_PUBLISHABLE_KEY }}
-        STAGING_SECRET_KEY: ${{ secrets.STAGING_SECRET_KEY }}
+        # Pass only the configured GitHub environment secrets to CDK
+        STAGING_LIVE_API_KEY: ${{ secrets.STAGING_LIVE_API_KEY }}
         STAGING_PROPELAUTH_API_KEY: ${{ secrets.STAGING_PROPELAUTH_API_KEY }}
-        STAGING_PROPELAUTH_VERIFIER_KEY: ${{ secrets.STAGING_PROPELAUTH_VERIFIER_KEY }}
-        STAGING_PROPELAUTH_REDIRECT_URI: ${{ secrets.STAGING_PROPELAUTH_REDIRECT_URI }}
-        STAGING_PROPELAUTH_URL: ${{ secrets.STAGING_PROPELAUTH_URL }}
-        STAGING_NEXT_PUBLIC_LIVE_API_URL: ${{ secrets.STAGING_NEXT_PUBLIC_LIVE_API_URL }}
         STAGING_SUPER_ADMIN_ORG_ID: ${{ secrets.STAGING_SUPER_ADMIN_ORG_ID }}
-        # Add the missing NEXT_PUBLIC_PROPELAUTH_URL variable
-        STAGING_NEXT_PUBLIC_PROPELAUTH_URL: ${{ secrets.STAGING_PROPELAUTH_URL }}
       run: |
         cd python-cdk-v2
         
@@ -113,15 +90,8 @@ jobs:
         echo "Current directory: $(pwd)"
         echo "Environment variables being passed to CDK:"
         echo "STAGING_SUPER_ADMIN_ORG_ID: $STAGING_SUPER_ADMIN_ORG_ID"
-        echo "STAGING_PROPELAUTH_URL: $STAGING_PROPELAUTH_URL"
-        echo "STAGING_NEXT_PUBLIC_PROPELAUTH_URL: $STAGING_NEXT_PUBLIC_PROPELAUTH_URL"
-        echo "STAGING_NEXT_PUBLIC_PROPELAUTH_API_KEY: $STAGING_NEXT_PUBLIC_PROPELAUTH_API_KEY"
-        echo "STAGING_NEXT_PUBLIC_API_KEY: $STAGING_NEXT_PUBLIC_API_KEY"
-        echo "STAGING_SECRET_KEY: $STAGING_SECRET_KEY"
         echo "STAGING_PROPELAUTH_API_KEY: $STAGING_PROPELAUTH_API_KEY"
-        echo "STAGING_PROPELAUTH_VERIFIER_KEY: $STAGING_PROPELAUTH_VERIFIER_KEY"
-        echo "STAGING_PROPELAUTH_REDIRECT_URI: $STAGING_PROPELAUTH_REDIRECT_URI"
-        echo "STAGING_NEXT_PUBLIC_LIVE_API_URL: $STAGING_NEXT_PUBLIC_LIVE_API_URL"
+        echo "STAGING_LIVE_API_KEY: $STAGING_LIVE_API_KEY"
         echo "====================================="
         
         # Deploy to staging environment with staging context

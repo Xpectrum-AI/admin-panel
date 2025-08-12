@@ -6,8 +6,8 @@ import {
   DeleteDoctorResponse 
 } from '@/types/doctor';
 
-const LIVE_API_BASE_URL = process.env.NEXT_PUBLIC_LIVE_API_URL || 'https://d1fs86umxjjz67.cloudfront.net';
-const LIVE_API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'xpectrum-ai@123';
+const LIVE_API_BASE_URL = process.env.LIVE_API_URL || "";
+const LIVE_API_KEY = process.env.LIVE_API_KEY || "";
 
 // Helper function to get headers
 const getHeaders = () => {

@@ -3,8 +3,8 @@ import { authenticateApiKey } from '@/lib/middleware/auth';
 import { initAuth } from '@propelauth/express';
 import { createSuccessResponse, handleApiError } from '@/lib/utils/apiResponse';
 
-const API_KEY= process.env.NEXT_PUBLIC_PROPELAUTH_API_KEY || "";
-const AUTH_URL= process.env.NEXT_PUBLIC_PROPELAUTH_URL || "";
+const API_KEY= process.env.PROPELAUTH_API_KEY || "";
+const AUTH_URL= process.env.PROPELAUTH_URL || "";
 
 // Only initialize auth if we have the required environment variables
 let auth: any = null;

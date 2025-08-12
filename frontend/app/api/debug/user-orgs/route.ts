@@ -2,14 +2,14 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
   try {
-    const SUPER_ADMIN_ORG_ID = process.env.NEXT_PUBLIC_SUPER_ADMIN_ORG_ID;
+    const SUPER_ADMIN_ORG_ID = process.env.SUPER_ADMIN_ORG_ID;
     
     return NextResponse.json({
       success: true,
       data: {
         superAdminOrgId: SUPER_ADMIN_ORG_ID,
         environment: process.env.NODE_ENV,
-        propelauthUrl: process.env.NEXT_PUBLIC_PROPELAUTH_URL,
+        propelauthUrl: process.env.PROPELAUTH_URL,
         message: 'This endpoint shows environment variables. Check browser console for client-side debug info.',
       },
       timestamp: new Date().toISOString(),

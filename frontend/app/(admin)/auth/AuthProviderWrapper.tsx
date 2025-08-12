@@ -11,7 +11,7 @@ export function AuthProviderWrapper({ children }: { children: React.ReactNode })
     setIsClient(true);
   }, []);
 
-  const AUTH_URL = process.env.NEXT_PUBLIC_PROPELAUTH_URL || "";
+  const AUTH_URL = process.env.PROPELAUTH_URL || "";
 
   // Prevent hydration mismatch by not rendering until client-side
   if (!isClient) {

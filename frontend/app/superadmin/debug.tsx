@@ -3,7 +3,7 @@
 import { useAuthInfo } from "@propelauth/react";
 import { useState } from "react";
 
-const SUPER_ADMIN_ORG_ID = process.env.NEXT_PUBLIC_SUPER_ADMIN_ORG_ID || "";
+const SUPER_ADMIN_ORG_ID = process.env.SUPER_ADMIN_ORG_ID || "";
 
 export default function SuperAdminDebug() {
   const { user, loading, orgHelper } = useAuthInfo();
