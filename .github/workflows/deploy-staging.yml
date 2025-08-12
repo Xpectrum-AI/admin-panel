@@ -30,13 +30,25 @@ jobs:
       uses: aws-actions/amazon-ecr-login@v2
 
     - name: Build and push Frontend image to ECR
+      env:
+        NEXT_PUBLIC_LIVE_API_URL: ${{ vars.STAGING_LIVE_API_URL }}
+        NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.STAGING_PROPELAUTH_URL }}
+        NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.STAGING_LIVE_API_KEY }}
+        NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.STAGING_PROPELAUTH_API_KEY }}
+        NEXT_PUBLIC_SUPER_ADMIN_ORG_ID: ${{ secrets.STAGING_SUPER_ADMIN_ORG_ID }}
       run: |
         # Set ECR repository URI
         REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
         
-        # Build, tag, and push frontend only
+        # Build, tag, and push frontend only with environment variables
         cd frontend
-        docker build -t admin-panel:frontend-staging .
+        docker build \
+          --build-arg NEXT_PUBLIC_LIVE_API_URL=$NEXT_PUBLIC_LIVE_API_URL \
+          --build-arg NEXT_PUBLIC_PROPELAUTH_URL=$NEXT_PUBLIC_PROPELAUTH_URL \
+          --build-arg NEXT_PUBLIC_LIVE_API_KEY=$NEXT_PUBLIC_LIVE_API_KEY \
+          --build-arg NEXT_PUBLIC_PROPELAUTH_API_KEY=$NEXT_PUBLIC_PROPELAUTH_API_KEY \
+          --build-arg NEXT_PUBLIC_SUPER_ADMIN_ORG_ID=$NEXT_PUBLIC_SUPER_ADMIN_ORG_ID \
+          -t admin-panel:frontend-staging .
         docker tag admin-panel:frontend-staging $REPO:frontend-staging
         docker push $REPO:frontend-staging
         cd ..
@@ -92,24 +104,12 @@ jobs:
         echo "====================================="
 
     - name: Deploy CDK stack (staging)
-      env:
-        # Pass only the configured GitHub environment secrets to CDK
-        STAGING_LIVE_API_KEY: ${{ secrets.STAGING_LIVE_API_KEY }}
-        STAGING_PROPELAUTH_API_KEY: ${{ secrets.STAGING_PROPELAUTH_API_KEY }}
-        STAGING_SUPER_ADMIN_ORG_ID: ${{ secrets.STAGING_SUPER_ADMIN_ORG_ID }}
-        STAGING_LIVE_API_URL: ${{ vars.STAGING_LIVE_API_URL }}
-        STAGING_PROPELAUTH_URL: ${{ vars.STAGING_PROPELAUTH_URL }}
       run: |
         cd python-cdk-v2
         
         echo "=== CDK DEPLOYMENT DEBUG ==="
         echo "Current directory: $(pwd)"
-        echo "Environment variables being passed to CDK:"
-        echo "STAGING_SUPER_ADMIN_ORG_ID: $STAGING_SUPER_ADMIN_ORG_ID"
-        echo "STAGING_PROPELAUTH_API_KEY: $STAGING_PROPELAUTH_API_KEY"
-        echo "STAGING_LIVE_API_KEY: $STAGING_LIVE_API_KEY"
-        echo "STAGING_LIVE_API_URL: $STAGING_LIVE_API_URL"
-        echo "STAGING_PROPELAUTH_URL: $STAGING_PROPELAUTH_URL"
+        echo "Environment variables are now handled during Docker build"
         echo "====================================="
         
         # Deploy to staging environment with staging context

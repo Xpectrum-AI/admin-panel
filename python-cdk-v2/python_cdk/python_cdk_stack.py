@@ -70,24 +70,6 @@ class AdminPanelDeploymentStack(Stack):
         # Task Role
         task_role = iam.Role(self, f"{config['stack_name']}TaskRole", assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"))
 
-        # Get secrets from GitHub environment variables
-        # These will be passed from GitHub Actions workflow
-        # Use environment-specific prefix (保留原有的三环境支持)
-        if environment == 'production':
-            prefix = 'PRODUCTION_'
-        elif environment == 'release':
-            prefix = 'RELEASE_'
-        else:
-            prefix = 'STAGING_'
-        
-        secrets = {
-            'PROPELAUTH_API_KEY': os.environ.get(f'{prefix}PROPELAUTH_API_KEY', ''),
-            'LIVE_API_KEY': os.environ.get(f'{prefix}LIVE_API_KEY', ''),
-            'SUPER_ADMIN_ORG_ID': os.environ.get(f'{prefix}SUPER_ADMIN_ORG_ID', ''),
-            'LIVE_API_URL': os.environ.get(f'{prefix}LIVE_API_URL', ''),
-            'PROPELAUTH_URL': os.environ.get(f'{prefix}PROPELAUTH_URL', ''),
-        }
-
         current_account = os.environ.get('CDK_DEFAULT_ACCOUNT', '')
         is_new_account = current_account == '503561436224'
         is_release_env = environment == 'release'
@@ -115,11 +97,6 @@ class AdminPanelDeploymentStack(Stack):
             image=ecs.ContainerImage.from_ecr_repository(repo, tag=config['frontend_tag']),
             logging=ecs.LogDriver.aws_logs(stream_prefix="frontend"),
             environment={
-                "NEXT_PUBLIC_LIVE_API_URL": secrets["LIVE_API_URL"],
-                "NEXT_PUBLIC_LIVE_API_KEY": secrets["LIVE_API_KEY"],
-                "NEXT_PUBLIC_PROPELAUTH_API_KEY": secrets["PROPELAUTH_API_KEY"],
-                "NEXT_PUBLIC_PROPELAUTH_URL": secrets["PROPELAUTH_URL"],
-                "NEXT_PUBLIC_SUPER_ADMIN_ORG_ID": secrets["SUPER_ADMIN_ORG_ID"],
                 "NODE_ENV": environment,
                 "PORT": config['frontend_port'],
                 "HOST": "0.0.0.0",
