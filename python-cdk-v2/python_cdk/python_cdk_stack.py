@@ -82,17 +82,9 @@ class AdminPanelDeploymentStack(Stack):
             prefix = 'STAGING_'
         
         secrets = {
-            'NEXT_PUBLIC_PROPELAUTH_API_KEY': os.environ.get(f'{prefix}NEXT_PUBLIC_PROPELAUTH_API_KEY', ''),
-            'NEXT_PUBLIC_API_KEY': os.environ.get(f'{prefix}NEXT_PUBLIC_API_KEY', ''),
-            'SECRET_KEY': os.environ.get(f'{prefix}SECRET_KEY', ''),
             'PROPELAUTH_API_KEY': os.environ.get(f'{prefix}PROPELAUTH_API_KEY', ''),
-            'PROPELAUTH_REDIRECT_URI': os.environ.get(f'{prefix}PROPELAUTH_REDIRECT_URI', f"https://{config['auth_domain']}"),
-            'NEXT_PUBLIC_LIVE_API_URL': os.environ.get(f'{prefix}NEXT_PUBLIC_LIVE_API_URL', ''),
-            'NEXT_PUBLIC_SUPER_ADMIN_ORG_ID': os.environ.get(f'{prefix}SUPER_ADMIN_ORG_ID', ''),
-            'NEXT_PUBLIC_PROPELAUTH_URL': os.environ.get(f'{prefix}NEXT_PUBLIC_PROPELAUTH_URL', f"https://{config['auth_domain']}"),
-
-            'API_KEY': os.environ.get(f'{prefix}API_KEY', 'xpectrum-ai@123'),
-            'LIVE_API_KEY': os.environ.get(f'{prefix}LIVE_API_KEY', 'xpectrum-ai@123'),
+            'LIVE_API_KEY': os.environ.get(f'{prefix}LIVE_API_KEY', ''),
+            'SUPER_ADMIN_ORG_ID': os.environ.get(f'{prefix}SUPER_ADMIN_ORG_ID', ''),
         }
 
         current_account = os.environ.get('CDK_DEFAULT_ACCOUNT', '')
