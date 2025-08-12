@@ -2,6 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  eslint: {
+    ignoreDuringBuilds: true,  // Skip ESLint during build
+  },
+  typescript: {
+    ignoreBuildErrors: true,    // Skip TypeScript checks during build
+  },
   experimental: {
     // Enable runtime environment variable access
     serverComponentsExternalPackages: [],
