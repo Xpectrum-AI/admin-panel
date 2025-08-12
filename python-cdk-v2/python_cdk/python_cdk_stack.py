@@ -23,7 +23,6 @@ class AdminPanelDeploymentStack(Stack):
             'staging': {
                 'domain': 'admin-test.xpectrum-ai.com',
                 'auth_domain': 'auth.admin-test.xpectrum-ai.com',
-                'live_url' : "https://diwz9dcb62ek1.cloudfront.net",
                 'frontend_tag': 'frontend-staging',
                 'frontend_port': '3000',
                 'stack_name': 'AdminPanelStagingStack'
@@ -85,6 +84,8 @@ class AdminPanelDeploymentStack(Stack):
             'PROPELAUTH_API_KEY': os.environ.get(f'{prefix}PROPELAUTH_API_KEY', ''),
             'LIVE_API_KEY': os.environ.get(f'{prefix}LIVE_API_KEY', ''),
             'SUPER_ADMIN_ORG_ID': os.environ.get(f'{prefix}SUPER_ADMIN_ORG_ID', ''),
+            'LIVE_API_URL': os.environ.get(f'{prefix}LIVE_API_URL', ''),
+            'PROPELAUTH_URL': os.environ.get(f'{prefix}PROPELAUTH_URL', ''),
         }
 
         current_account = os.environ.get('CDK_DEFAULT_ACCOUNT', '')
@@ -114,10 +115,10 @@ class AdminPanelDeploymentStack(Stack):
             image=ecs.ContainerImage.from_ecr_repository(repo, tag=config['frontend_tag']),
             logging=ecs.LogDriver.aws_logs(stream_prefix="frontend"),
             environment={
-                "LIVE_API_URL": config['live_url'],
+                "LIVE_API_URL": secrets["LIVE_API_URL"],
                 "LIVE_API_KEY": secrets["LIVE_API_KEY"],
                 "PROPELAUTH_API_KEY": secrets["PROPELAUTH_API_KEY"],
-                "PROPELAUTH_URL": f"https://{config['auth_domain']}",
+                "PROPELAUTH_URL": secrets["PROPELAUTH_URL"],
                 "SUPER_ADMIN_ORG_ID": secrets["SUPER_ADMIN_ORG_ID"],
                 "NODE_ENV": environment,
                 "PORT": config['frontend_port'],

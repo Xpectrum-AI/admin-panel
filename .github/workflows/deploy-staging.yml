@@ -61,6 +61,8 @@ jobs:
         echo "STAGING_LIVE_API_KEY: ${{ secrets.STAGING_LIVE_API_KEY }}"
         echo "STAGING_PROPELAUTH_API_KEY: ${{ secrets.STAGING_PROPELAUTH_API_KEY }}"
         echo "STAGING_SUPER_ADMIN_ORG_ID: ${{ secrets.STAGING_SUPER_ADMIN_ORG_ID }}"
+        echo "STAGING_LIVE_API_URL: ${{ vars.STAGING_LIVE_API_URL }}"
+        echo "STAGING_PROPELAUTH_URL: ${{ vars.STAGING_PROPELAUTH_URL }}"
         echo "====================================="
         
         echo "=== SUPER ADMIN CONFIGURATION DEBUG ==="
@@ -75,6 +77,18 @@ jobs:
         else
           echo "✅ STAGING_PROPELAUTH_API_KEY is set (length: ${#STAGING_PROPELAUTH_API_KEY})"
         fi
+        
+        if [ -z "${{ vars.STAGING_LIVE_API_URL }}" ]; then
+          echo "❌ ERROR: STAGING_LIVE_API_URL is empty or not set!"
+        else
+          echo "✅ STAGING_LIVE_API_URL is set: ${{ vars.STAGING_LIVE_API_URL }}"
+        fi
+        
+        if [ -z "${{ vars.STAGING_PROPELAUTH_URL }}" ]; then
+          echo "❌ ERROR: STAGING_PROPELAUTH_URL is empty or not set!"
+        else
+          echo "✅ STAGING_PROPELAUTH_URL is set: ${{ vars.STAGING_PROPELAUTH_URL }}"
+        fi
         echo "====================================="
 
     - name: Deploy CDK stack (staging)
@@ -83,6 +97,8 @@ jobs:
         STAGING_LIVE_API_KEY: ${{ secrets.STAGING_LIVE_API_KEY }}
         STAGING_PROPELAUTH_API_KEY: ${{ secrets.STAGING_PROPELAUTH_API_KEY }}
         STAGING_SUPER_ADMIN_ORG_ID: ${{ secrets.STAGING_SUPER_ADMIN_ORG_ID }}
+        STAGING_LIVE_API_URL: ${{ vars.STAGING_LIVE_API_URL }}
+        STAGING_PROPELAUTH_URL: ${{ vars.STAGING_PROPELAUTH_URL }}
       run: |
         cd python-cdk-v2
         
@@ -92,6 +108,8 @@ jobs:
         echo "STAGING_SUPER_ADMIN_ORG_ID: $STAGING_SUPER_ADMIN_ORG_ID"
         echo "STAGING_PROPELAUTH_API_KEY: $STAGING_PROPELAUTH_API_KEY"
         echo "STAGING_LIVE_API_KEY: $STAGING_LIVE_API_KEY"
+        echo "STAGING_LIVE_API_URL: $STAGING_LIVE_API_URL"
+        echo "STAGING_PROPELAUTH_URL: $STAGING_PROPELAUTH_URL"
         echo "====================================="
         
         # Deploy to staging environment with staging context
