@@ -15,7 +15,7 @@ import { agentApiService } from '@/service/agentService';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { fetchUsersInOrg } from '@/service/orgService';
 
-const SUPER_ADMIN_ORG_ID = process.env.NEXT_PUBLIC_SUPER_ADMIN_ORG_ID || "";
+const SUPER_ADMIN_ORG_ID = process.env.SUPER_ADMIN_ORG_ID || "";
 
 const tabs = [
     'Users',

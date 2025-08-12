@@ -20,9 +20,7 @@ export async function authenticateApiKey(request: NextRequest) {
     // Validate API key (you can implement your own validation logic)
     const validApiKeys = [
       'xpectrum-ai@123',
-      process.env.API_KEY,
       process.env.LIVE_API_KEY,
-      process.env.NEXT_PUBLIC_API_KEY
     ].filter(Boolean);
 
     if (!validApiKeys.includes(apiKey)) {

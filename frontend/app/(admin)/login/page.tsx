@@ -126,7 +126,7 @@ export default function Login() {
   // };
 
   const handleGoogleLogin = () => {
-    window.location.href = `${process.env.NEXT_PUBLIC_PROPELAUTH_URL}/google/login?scope=openid+email+profile&external_param_access_type=offline&external_param_prompt=consent`
+    window.location.href = `${process.env.PROPELAUTH_URL}/google/login?scope=openid+email+profile&external_param_access_type=offline&external_param_prompt=consent`
     showSuccess('Redirecting to OAuth login');
   }
 
