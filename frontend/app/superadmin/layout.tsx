@@ -3,14 +3,19 @@
 import { withAuthInfo, WithAuthInfoProps } from "@propelauth/react";
 import React from "react";
 
-const SUPER_ADMIN_ORG_ID = process.env.SUPER_ADMIN_ORG_ID || "";
+const SUPER_ADMIN_ORG_ID = process.env.NEXT_PUBLIC_SUPER_ADMIN_ORG_ID || "";
 
-const SuperAdminGuard = withAuthInfo((props: WithAuthInfoProps & { children?: React.ReactNode }) => {
-  const orgs = props.orgHelper?.getOrgs() || [];
-  const isSuperAdmin = orgs.some((org: { orgId: string }) => org.orgId === SUPER_ADMIN_ORG_ID);
+const SuperAdminGuard = withAuthInfo(
+  ({ orgHelper, children }: WithAuthInfoProps & { children?: React.ReactNode }) => {
+  const orgs = orgHelper?.getOrgs() ?? [];
+  const isSuperAdmin = orgs.some(org => org.orgId === SUPER_ADMIN_ORG_ID);
+
+  console.log(orgs);
+  console.log(SUPER_ADMIN_ORG_ID);
+  console.log(isSuperAdmin);
 
   if (isSuperAdmin) {
-    return <>{props.children}</>;
+    return <>{children}</>;
   } else {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -28,6 +33,18 @@ const SuperAdminGuard = withAuthInfo((props: WithAuthInfoProps & { children?: Re
 });
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
+  // Force refresh on mount to clear any cached data
+  React.useEffect(() => {
+    // Clear any cached authentication data
+    if (typeof window !== 'undefined') {
+      console.log('SuperAdminLayout: Clearing cache and forcing refresh');
+      // Force a hard refresh if needed
+      if (window.location.search.includes('force-refresh')) {
+        window.location.reload();
+      }
+    }
+  }, []);
+
   return (
     <SuperAdminGuard>
       {children}

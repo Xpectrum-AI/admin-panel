@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Filter, Plus, UserRound, Settings, Ban } from 'lucide-react';
+import { Search, Filter, Plus, UserRound, Settings, Ban, RefreshCw } from 'lucide-react';
 import ActionMenu from './ActionMenu';
 import Pagination from './Pagination';
-import { updateAgent, setAgentPhone, deleteAgentPhone, deleteAgent } from '@/service/agentService';
+import { agentApiService } from '@/service/agentService';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 interface AgentsTabProps {
@@ -24,8 +24,16 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [addForm, setAddForm] = useState({
     agentId: '', chatbot_api: '', chatbot_key: '',
-    tts_config: { voice_id: '', tts_api_key: '', model: '', speed: 0.5, language: '' },
-    stt_config: { api_key: '', model: '', language: '' },
+    tts_config: { 
+      provider: 'openai',
+      openai: { api_key: '', voice: 'alloy', response_format: 'mp3', quality: 'standard', speed: 1.0 },
+      cartesian: { voice_id: '', tts_api_key: '', model: 'sonic-english', speed: 0, language: 'en' }
+    },
+    stt_config: { 
+      provider: 'deepgram',
+      deepgram: { api_key: '', model: 'nova-2', language: 'hi', punctuate: true, smart_format: true, interim_results: true },
+      whisper: { api_key: '', model: 'whisper-1', language: null as string | null }
+    },
     initial_message: '',
     nudge_text: '',
     nudge_interval: '',
@@ -34,8 +42,16 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
   });
   const [updateForm, setUpdateForm] = useState({
     agentId: '', chatbot_api: '', chatbot_key: '',
-    tts_config: { voice_id: '', tts_api_key: '', model: '', speed: 0.5, language: '' },
-    stt_config: { api_key: '', model: '', language: '' },
+    tts_config: { 
+      provider: 'openai',
+      openai: { api_key: '', voice: 'alloy', response_format: 'mp3', quality: 'standard', speed: 1.0 },
+      cartesian: { voice_id: '', tts_api_key: '', model: 'sonic-english', speed: 0, language: 'en' }
+    },
+    stt_config: { 
+      provider: 'deepgram',
+      deepgram: { api_key: '', model: 'nova-2', language: 'hi', punctuate: true, smart_format: true, interim_results: true },
+      whisper: { api_key: '', model: 'whisper-1', language: null as string | null }
+    },
     initial_message: '',
     nudge_text: '',
     nudge_interval: '',
@@ -50,17 +66,43 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
 
   // Validation function for agent form
   function validateAgentForm(form: any) {
+    const ttsProvider = form.tts_config.provider;
+    const sttProvider = form.stt_config.provider;
+    
+    let ttsValid = false;
+    let sttValid = false;
+    
+    // Validate TTS based on provider
+    if (ttsProvider === 'openai') {
+      ttsValid = form.tts_config.openai.api_key.trim() && 
+                 form.tts_config.openai.voice.trim() &&
+                 form.tts_config.openai.response_format.trim() &&
+                 form.tts_config.openai.quality.trim() &&
+                 form.tts_config.openai.speed !== undefined && form.tts_config.openai.speed !== null;
+    } else if (ttsProvider === 'cartesian') {
+      ttsValid = form.tts_config.cartesian.voice_id.trim() && 
+                 form.tts_config.cartesian.tts_api_key.trim() &&
+                 form.tts_config.cartesian.model.trim() &&
+                 form.tts_config.cartesian.speed !== undefined && form.tts_config.cartesian.speed !== null &&
+                 form.tts_config.cartesian.language.trim();
+    }
+    
+    // Validate STT based on provider
+    if (sttProvider === 'deepgram') {
+      sttValid = form.stt_config.deepgram.api_key.trim() && 
+                 form.stt_config.deepgram.model.trim() &&
+                 form.stt_config.deepgram.language.trim();
+    } else if (sttProvider === 'whisper') {
+      sttValid = form.stt_config.whisper.api_key.trim() && 
+                 form.stt_config.whisper.model.trim();
+    }
+    
     return (
       form.agentId.trim() &&
       form.chatbot_api.trim() &&
       form.chatbot_key.trim() &&
-      form.tts_config.voice_id.trim() &&
-      form.tts_config.tts_api_key.trim() &&
-      form.tts_config.model.trim() &&
-      form.tts_config.speed !== undefined && form.tts_config.speed !== null &&
-      form.stt_config.api_key.trim() &&
-      form.stt_config.model.trim() &&
-      form.stt_config.language.trim()
+      ttsValid &&
+      sttValid
     );
   }
 
@@ -89,7 +131,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
         typing_volume: rest.typing_volume ? parseFloat(rest.typing_volume) : undefined
       };
       
-      const data = await updateAgent(agentId, processedData);
+      const data = await agentApiService.updateAgent(agentId, processedData);
       if (data.success) {
         setShowAddModal(false);
         await refreshAgents();
@@ -97,8 +139,16 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
         // Reset form
         setAddForm({
           agentId: '', chatbot_api: '', chatbot_key: '',
-          tts_config: { voice_id: '', tts_api_key: '', model: '', speed: 0.5, language: '' },
-          stt_config: { api_key: '', model: '', language: '' },
+          tts_config: { 
+            provider: 'openai',
+            openai: { api_key: '', voice: 'alloy', response_format: 'mp3', quality: 'standard', speed: 1.0 },
+            cartesian: { voice_id: '', tts_api_key: '', model: 'sonic-english', speed: 0, language: 'en' }
+          },
+          stt_config: { 
+            provider: 'deepgram',
+            deepgram: { api_key: '', model: 'nova-2', language: 'hi', punctuate: true, smart_format: true, interim_results: true },
+            whisper: { api_key: '', model: 'whisper-1', language: null }
+          },
           initial_message: '',
           nudge_text: '',
           nudge_interval: '',
@@ -133,7 +183,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
         typing_volume: updateForm.typing_volume ? parseFloat(updateForm.typing_volume) : undefined
       };
       
-      const data = await updateAgent(updateForm.agentId, processedData);
+      const data = await agentApiService.updateAgent(updateForm.agentId, processedData);
       if (data.success) {
         setShowUpdateModal(false);
         await refreshAgents();
@@ -152,8 +202,24 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
   async function handleSetPhone(e: React.FormEvent) {
     e.preventDefault();
     setModalLoading(true);
+    
+    // Validate phone number format
+    const phoneNumber = setPhoneForm.phone_number.trim();
+    if (!phoneNumber) {
+      showError('Phone number is required');
+      setModalLoading(false);
+      return;
+    }
+    
+    // Basic phone number validation (should start with + and have at least 10 digits)
+    if (!phoneNumber.match(/^\+[1-9]\d{1,14}$/)) {
+      showError('Please enter a valid phone number in international format (e.g., +1234567890)');
+      setModalLoading(false);
+      return;
+    }
+    
     try {
-      const data = await setAgentPhone(setPhoneForm.agentId, setPhoneForm.phone_number);
+      const data = await agentApiService.setAgentPhone(setPhoneForm.agentId, { phone_number: phoneNumber });
       if (data.success) {
         setShowSetPhoneModal(false);
         await refreshAgents();
@@ -164,7 +230,8 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
         showError(data.error || 'Failed to set phone number');
       }
     } catch (err: any) {
-      showError(err.message || 'Failed to set phone number');
+      console.error('Set phone error:', err);
+      showError(err.message || 'Failed to set phone number. Please check the phone number format and try again.');
     } finally {
       setModalLoading(false);
     }
@@ -199,6 +266,31 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
+            <button 
+              className="ml-2 p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50"
+              onClick={refreshAgents}
+              disabled={loading}
+              title="Refresh agents"
+            >
+              <RefreshCw className={`h-5 w-5 text-gray-500 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+            <button 
+              className="ml-2 p-2 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100"
+              onClick={async () => {
+                try {
+                  const response = await fetch('/api/debug/agent-data');
+                  const data = await response.json();
+                  console.log('Debug Agent Data:', data);
+                  alert('Check console for debug data');
+                } catch (error) {
+                  console.error('Debug error:', error);
+                  alert('Debug failed - check console');
+                }
+              }}
+              title="Debug agent data"
+            >
+              <Settings className="h-5 w-5 text-blue-500" />
+            </button>
             <button className="ml-2 p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50">
               <Filter className="h-5 w-5 text-gray-500" />
             </button>
@@ -263,84 +355,247 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                   <h3 className="text-2xl font-semibold leading-none tracking-tight">TTS Configuration</h3>
                 </div>
                 <div className="p-6 pt-0 space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none" htmlFor="voiceId">Voice ID</label>
-                      <input
-                        className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
-                        name="voiceId"
-                        id="voiceId"
-                        value={addForm.tts_config.voice_id}
-                        onChange={e => setAddForm({ ...addForm, tts_config: { ...addForm.tts_config, voice_id: e.target.value } })}
-                        placeholder="Voice ID"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none" htmlFor="ttsApiKey">TTS API Key</label>
-                      <input
-                        className="flex h-10 w-full rounded-md border  border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
-                        name="ttsApiKey"
-                        id="ttsApiKey"
-                        value={addForm.tts_config.tts_api_key}
-                        onChange={e => setAddForm({ ...addForm, tts_config: { ...addForm.tts_config, tts_api_key: e.target.value } })}
-                        placeholder="sk_..."
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none" htmlFor="ttsModel">Model</label>
-                      <select
-                        className="flex h-10 w-full rounded-md border border-gray-300 border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
-                        name="ttsModel"
-                        id="ttsModel"
-                        value={addForm.tts_config.model}
-                        onChange={e => setAddForm({ ...addForm, tts_config: { ...addForm.tts_config, model: e.target.value } })}
-                        required
-                      >
-                        <option value="">Select model</option>
-                        <option value="sonic-2">sonic-2</option>
-                        <option value="sonic-2.5">sonic-2.5</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none" htmlFor="ttsSpeed">Speed</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0.1"
-                        max="2.0"
-                        className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
-                        name="ttsSpeed"
-                        id="ttsSpeed"
-                        value={addForm.tts_config.speed}
-                        onChange={e => setAddForm({ ...addForm, tts_config: { ...addForm.tts_config, speed: parseFloat(e.target.value) } })}
-                        placeholder="0.5"
-                        required
-                      />
-                    </div>
-                  </div>
+                  {/* TTS Provider Selection */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium leading-none" htmlFor="ttsLanguage">Language</label>
+                    <label className="text-sm font-medium leading-none" htmlFor="ttsProvider">TTS Provider</label>
                     <select
                       className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
-                      name="ttsLanguage"
-                      id="ttsLanguage"
-                      value={addForm.tts_config.language}
-                      onChange={e => setAddForm({ ...addForm, tts_config: { ...addForm.tts_config, language: e.target.value } })}
+                      name="ttsProvider"
+                      id="ttsProvider"
+                      value={addForm.tts_config.provider}
+                      onChange={e => setAddForm({ ...addForm, tts_config: { ...addForm.tts_config, provider: e.target.value } })}
                       required
                     >
-                      <option value="">Select language</option>
-                      <option value="en">English</option>
-                      <option value="hi">Hindi</option>
-                      <option value="es">Spanish</option>
-                      <option value="fr">French</option>
-                      <option value="de">German</option>
-                      <option value="zh">Chinese</option>
+                      <option value="openai">OpenAI</option>
+                      <option value="cartesian">Cartesian</option>
                     </select>
                   </div>
+
+                  {/* OpenAI TTS Configuration */}
+                  {addForm.tts_config.provider === 'openai' && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="openaiApiKey">OpenAI API Key</label>
+                          <input
+                            className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                            name="openaiApiKey"
+                            id="openaiApiKey"
+                            value={addForm.tts_config.openai.api_key}
+                            onChange={e => setAddForm({ 
+                              ...addForm, 
+                              tts_config: { 
+                                ...addForm.tts_config, 
+                                openai: { ...addForm.tts_config.openai, api_key: e.target.value } 
+                              } 
+                            })}
+                            placeholder="sk-..."
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="openaiVoice">Voice</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="openaiVoice"
+                            id="openaiVoice"
+                            value={addForm.tts_config.openai.voice}
+                            onChange={e => setAddForm({ 
+                              ...addForm, 
+                              tts_config: { 
+                                ...addForm.tts_config, 
+                                openai: { ...addForm.tts_config.openai, voice: e.target.value } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="alloy">Alloy</option>
+                            <option value="echo">Echo</option>
+                            <option value="fable">Fable</option>
+                            <option value="onyx">Onyx</option>
+                            <option value="nova">Nova</option>
+                            <option value="shimmer">Shimmer</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="openaiResponseFormat">Response Format</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="openaiResponseFormat"
+                            id="openaiResponseFormat"
+                            value={addForm.tts_config.openai.response_format}
+                            onChange={e => setAddForm({ 
+                              ...addForm, 
+                              tts_config: { 
+                                ...addForm.tts_config, 
+                                openai: { ...addForm.tts_config.openai, response_format: e.target.value } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="mp3">MP3</option>
+                            <option value="opus">Opus</option>
+                            <option value="aac">AAC</option>
+                            <option value="flac">FLAC</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="openaiQuality">Quality</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="openaiQuality"
+                            id="openaiQuality"
+                            value={addForm.tts_config.openai.quality}
+                            onChange={e => setAddForm({ 
+                              ...addForm, 
+                              tts_config: { 
+                                ...addForm.tts_config, 
+                                openai: { ...addForm.tts_config.openai, quality: e.target.value } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="standard">Standard</option>
+                            <option value="hd">HD</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="openaiSpeed">Speed</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0.1"
+                            max="2.0"
+                            className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                            name="openaiSpeed"
+                            id="openaiSpeed"
+                            value={addForm.tts_config.openai.speed}
+                            onChange={e => setAddForm({ 
+                              ...addForm, 
+                              tts_config: { 
+                                ...addForm.tts_config, 
+                                openai: { ...addForm.tts_config.openai, speed: parseFloat(e.target.value) } 
+                              } 
+                            })}
+                            placeholder="1.0"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Cartesian TTS Configuration */}
+                  {addForm.tts_config.provider === 'cartesian' && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="cartesianVoiceId">Voice ID</label>
+                          <input
+                            className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                            name="cartesianVoiceId"
+                            id="cartesianVoiceId"
+                            value={addForm.tts_config.cartesian.voice_id}
+                            onChange={e => setAddForm({ 
+                              ...addForm, 
+                              tts_config: { 
+                                ...addForm.tts_config, 
+                                cartesian: { ...addForm.tts_config.cartesian, voice_id: e.target.value } 
+                              } 
+                            })}
+                            placeholder="Voice ID"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="cartesianApiKey">Cartesian API Key</label>
+                          <input
+                            className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                            name="cartesianApiKey"
+                            id="cartesianApiKey"
+                            value={addForm.tts_config.cartesian.tts_api_key}
+                            onChange={e => setAddForm({ 
+                              ...addForm, 
+                              tts_config: { 
+                                ...addForm.tts_config, 
+                                cartesian: { ...addForm.tts_config.cartesian, tts_api_key: e.target.value } 
+                              } 
+                            })}
+                            placeholder="API Key"
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="cartesianModel">Model</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="cartesianModel"
+                            id="cartesianModel"
+                            value={addForm.tts_config.cartesian.model}
+                            onChange={e => setAddForm({ 
+                              ...addForm, 
+                              tts_config: { 
+                                ...addForm.tts_config, 
+                                cartesian: { ...addForm.tts_config.cartesian, model: e.target.value } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="sonic-english">Sonic English</option>
+                            <option value="sonic-hindi">Sonic Hindi</option>
+                            <option value="sonic-spanish">Sonic Spanish</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="cartesianSpeed">Speed</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0.1"
+                            max="2.0"
+                            className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                            name="cartesianSpeed"
+                            id="cartesianSpeed"
+                            value={addForm.tts_config.cartesian.speed}
+                            onChange={e => setAddForm({ 
+                              ...addForm, 
+                              tts_config: { 
+                                ...addForm.tts_config, 
+                                cartesian: { ...addForm.tts_config.cartesian, speed: parseFloat(e.target.value) } 
+                              } 
+                            })}
+                            placeholder="0"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="cartesianLanguage">Language</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="cartesianLanguage"
+                            id="cartesianLanguage"
+                            value={addForm.tts_config.cartesian.language}
+                            onChange={e => setAddForm({ 
+                              ...addForm, 
+                              tts_config: { 
+                                ...addForm.tts_config, 
+                                cartesian: { ...addForm.tts_config.cartesian, language: e.target.value } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="en">English</option>
+                            <option value="hi">Hindi</option>
+                            <option value="es">Spanish</option>
+                          </select>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
               
@@ -349,50 +604,224 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                   <h3 className="text-2xl font-semibold leading-none tracking-tight">STT Configuration</h3>
                 </div>
                 <div className="p-6 pt-0 space-y-4">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none" htmlFor="sttApiKey">API Key</label>
-                      <input
-                        className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
-                        name="sttApiKey"
-                        id="sttApiKey"
-                        value={addForm.stt_config.api_key}
-                        onChange={e => setAddForm({ ...addForm, stt_config: { ...addForm.stt_config, api_key: e.target.value } })}
-                        placeholder="API Key"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none" htmlFor="sttModel">Model</label>
-                      <select
-                        className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
-                        name="sttModel"
-                        id="sttModel"
-                        value={addForm.stt_config.model}
-                        onChange={e => setAddForm({ ...addForm, stt_config: { ...addForm.stt_config, model: e.target.value } })}
-                        required
-                      >
-                        <option value="">Select model</option>
-                        <option value="nova-2">nova-2</option>
-                        <option value="nova-3">nova-3</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none" htmlFor="sttLanguage">Language</label>
-                      <select
-                        className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
-                        name="sttLanguage"
-                        id="sttLanguage"
-                        value={addForm.stt_config.language}
-                        onChange={e => setAddForm({ ...addForm, stt_config: { ...addForm.stt_config, language: e.target.value } })}
-                        required
-                      >
-                        <option value="">Select language</option>
-                        <option value="en-US">en-US</option>
-                        <option value="hi">hi</option>
-                      </select>
-                    </div>
+                  {/* STT Provider Selection */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none" htmlFor="sttProvider">STT Provider</label>
+                    <select
+                      className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                      name="sttProvider"
+                      id="sttProvider"
+                      value={addForm.stt_config.provider}
+                      onChange={e => setAddForm({ ...addForm, stt_config: { ...addForm.stt_config, provider: e.target.value } })}
+                      required
+                    >
+                      <option value="deepgram">Deepgram</option>
+                      <option value="whisper">Whisper</option>
+                    </select>
                   </div>
+
+                  {/* Deepgram STT Configuration */}
+                  {addForm.stt_config.provider === 'deepgram' && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="deepgramApiKey">Deepgram API Key</label>
+                          <input
+                            className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                            name="deepgramApiKey"
+                            id="deepgramApiKey"
+                            value={addForm.stt_config.deepgram.api_key}
+                            onChange={e => setAddForm({ 
+                              ...addForm, 
+                              stt_config: { 
+                                ...addForm.stt_config, 
+                                deepgram: { ...addForm.stt_config.deepgram, api_key: e.target.value } 
+                              } 
+                            })}
+                            placeholder="API Key"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="deepgramModel">Model</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="deepgramModel"
+                            id="deepgramModel"
+                            value={addForm.stt_config.deepgram.model}
+                            onChange={e => setAddForm({ 
+                              ...addForm, 
+                              stt_config: { 
+                                ...addForm.stt_config, 
+                                deepgram: { ...addForm.stt_config.deepgram, model: e.target.value } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="nova-2">Nova-2</option>
+                            <option value="nova-3">Nova-3</option>
+                            <option value="enhanced">Enhanced</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="deepgramLanguage">Language</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="deepgramLanguage"
+                            id="deepgramLanguage"
+                            value={addForm.stt_config.deepgram.language}
+                            onChange={e => setAddForm({ 
+                              ...addForm, 
+                              stt_config: { 
+                                ...addForm.stt_config, 
+                                deepgram: { ...addForm.stt_config.deepgram, language: e.target.value } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="hi">Hindi</option>
+                            <option value="hi-IN">Hindi (India)</option>
+                            <option value="en-US">English (US)</option>
+                            <option value="en-GB">English (UK)</option>
+                            <option value="es">Spanish</option>
+                            <option value="fr">French</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="deepgramPunctuate">Punctuate</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="deepgramPunctuate"
+                            id="deepgramPunctuate"
+                            value={addForm.stt_config.deepgram.punctuate.toString()}
+                            onChange={e => setAddForm({ 
+                              ...addForm, 
+                              stt_config: { 
+                                ...addForm.stt_config, 
+                                deepgram: { ...addForm.stt_config.deepgram, punctuate: e.target.value === 'true' } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="deepgramSmartFormat">Smart Format</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="deepgramSmartFormat"
+                            id="deepgramSmartFormat"
+                            value={addForm.stt_config.deepgram.smart_format.toString()}
+                            onChange={e => setAddForm({ 
+                              ...addForm, 
+                              stt_config: { 
+                                ...addForm.stt_config, 
+                                deepgram: { ...addForm.stt_config.deepgram, smart_format: e.target.value === 'true' } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="deepgramInterimResults">Interim Results</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="deepgramInterimResults"
+                            id="deepgramInterimResults"
+                            value={addForm.stt_config.deepgram.interim_results.toString()}
+                            onChange={e => setAddForm({ 
+                              ...addForm, 
+                              stt_config: { 
+                                ...addForm.stt_config, 
+                                deepgram: { ...addForm.stt_config.deepgram, interim_results: e.target.value === 'true' } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                          </select>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Whisper STT Configuration */}
+                  {addForm.stt_config.provider === 'whisper' && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="whisperApiKey">Whisper API Key</label>
+                          <input
+                            className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                            name="whisperApiKey"
+                            id="whisperApiKey"
+                            value={addForm.stt_config.whisper.api_key}
+                            onChange={e => setAddForm({ 
+                              ...addForm, 
+                              stt_config: { 
+                                ...addForm.stt_config, 
+                                whisper: { ...addForm.stt_config.whisper, api_key: e.target.value } 
+                              } 
+                            })}
+                            placeholder="sk-..."
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="whisperModel">Model</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="whisperModel"
+                            id="whisperModel"
+                            value={addForm.stt_config.whisper.model}
+                            onChange={e => setAddForm({ 
+                              ...addForm, 
+                              stt_config: { 
+                                ...addForm.stt_config, 
+                                whisper: { ...addForm.stt_config.whisper, model: e.target.value } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="whisper-1">Whisper-1</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium leading-none" htmlFor="whisperLanguage">Language (Optional)</label>
+                        <select
+                          className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                          name="whisperLanguage"
+                          id="whisperLanguage"
+                          value={addForm.stt_config.whisper.language || ''}
+                                                      onChange={e => setAddForm({ 
+                              ...addForm, 
+                              stt_config: { 
+                                ...addForm.stt_config, 
+                                whisper: { ...addForm.stt_config.whisper, language: e.target.value === '' ? null : e.target.value } 
+                              } 
+                            })}
+                        >
+                          <option value="">Auto-detect</option>
+                          <option value="en">English</option>
+                          <option value="hi">Hindi</option>
+                          <option value="es">Spanish</option>
+                          <option value="fr">French</option>
+                          <option value="de">German</option>
+                        </select>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="space-y-2">
@@ -539,81 +968,247 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                   <h3 className="text-2xl font-semibold leading-none tracking-tight">TTS Configuration</h3>
                 </div>
                 <div className="p-6 pt-0 space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none" htmlFor="updateVoiceId">Voice ID</label>
-                      <input
-                        className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
-                        name="updateVoiceId"
-                        id="updateVoiceId"
-                        value={updateForm.tts_config.voice_id}
-                        onChange={e => setUpdateForm({ ...updateForm, tts_config: { ...updateForm.tts_config, voice_id: e.target.value } })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none" htmlFor="updateTtsApiKey">TTS API Key</label>
-                      <input
-                        className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
-                        name="updateTtsApiKey"
-                        id="updateTtsApiKey"
-                        value={updateForm.tts_config.tts_api_key}
-                        onChange={e => setUpdateForm({ ...updateForm, tts_config: { ...updateForm.tts_config, tts_api_key: e.target.value } })}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none" htmlFor="updateTtsModel">Model</label>
-                      <select
-                        className="flex h-10 w-full rounded-md border border-gray-300 border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
-                        name="updateTtsModel"
-                        id="updateTtsModel"
-                        value={updateForm.tts_config.model}
-                        onChange={e => setUpdateForm({ ...updateForm, tts_config: { ...updateForm.tts_config, model: e.target.value } })}
-                        required
-                      >
-                        <option value="">Select model</option>
-                        <option value="sonic-2">sonic-2</option>
-                        <option value="sonic-2.5">sonic-2.5</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none" htmlFor="updateTtsSpeed">Speed</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0.1"
-                        max="2.0"
-                        className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
-                        name="updateTtsSpeed"
-                        id="updateTtsSpeed"
-                        value={updateForm.tts_config.speed}
-                        onChange={e => setUpdateForm({ ...updateForm, tts_config: { ...updateForm.tts_config, speed: parseFloat(e.target.value) } })}
-                        required
-                      />
-                    </div>
-                  </div>
+                  {/* TTS Provider Selection */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium leading-none" htmlFor="updateTtsLanguage">Language</label>
+                    <label className="text-sm font-medium leading-none" htmlFor="updateTtsProvider">TTS Provider</label>
                     <select
                       className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
-                      name="updateTtsLanguage"
-                      id="updateTtsLanguage"
-                      value={updateForm.tts_config.language}
-                      onChange={e => setUpdateForm({ ...updateForm, tts_config: { ...updateForm.tts_config, language: e.target.value } })}
+                      name="updateTtsProvider"
+                      id="updateTtsProvider"
+                      value={updateForm.tts_config.provider}
+                      onChange={e => setUpdateForm({ ...updateForm, tts_config: { ...updateForm.tts_config, provider: e.target.value } })}
                       required
                     >
-                      <option value="">Select language</option>
-                      <option value="en">English</option>
-                      <option value="hi">Hindi</option>
-                      <option value="es">Spanish</option>
-                      <option value="fr">French</option>
-                      <option value="de">German</option>
-                      <option value="zh">Chinese</option>
+                      <option value="openai">OpenAI</option>
+                      <option value="cartesian">Cartesian</option>
                     </select>
                   </div>
+
+                  {/* OpenAI TTS Configuration */}
+                  {updateForm.tts_config.provider === 'openai' && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="updateOpenaiApiKey">OpenAI API Key</label>
+                          <input
+                            className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                            name="updateOpenaiApiKey"
+                            id="updateOpenaiApiKey"
+                            value={updateForm.tts_config.openai.api_key}
+                            onChange={e => setUpdateForm({ 
+                              ...updateForm, 
+                              tts_config: { 
+                                ...updateForm.tts_config, 
+                                openai: { ...updateForm.tts_config.openai, api_key: e.target.value } 
+                              } 
+                            })}
+                            placeholder="sk-..."
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="updateOpenaiVoice">Voice</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="updateOpenaiVoice"
+                            id="updateOpenaiVoice"
+                            value={updateForm.tts_config.openai.voice}
+                            onChange={e => setUpdateForm({ 
+                              ...updateForm, 
+                              tts_config: { 
+                                ...updateForm.tts_config, 
+                                openai: { ...updateForm.tts_config.openai, voice: e.target.value } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="alloy">Alloy</option>
+                            <option value="echo">Echo</option>
+                            <option value="fable">Fable</option>
+                            <option value="onyx">Onyx</option>
+                            <option value="nova">Nova</option>
+                            <option value="shimmer">Shimmer</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="updateOpenaiResponseFormat">Response Format</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="updateOpenaiResponseFormat"
+                            id="updateOpenaiResponseFormat"
+                            value={updateForm.tts_config.openai.response_format}
+                            onChange={e => setUpdateForm({ 
+                              ...updateForm, 
+                              tts_config: { 
+                                ...updateForm.tts_config, 
+                                openai: { ...updateForm.tts_config.openai, response_format: e.target.value } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="mp3">MP3</option>
+                            <option value="opus">Opus</option>
+                            <option value="aac">AAC</option>
+                            <option value="flac">FLAC</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="updateOpenaiQuality">Quality</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="updateOpenaiQuality"
+                            id="updateOpenaiQuality"
+                            value={updateForm.tts_config.openai.quality}
+                            onChange={e => setUpdateForm({ 
+                              ...updateForm, 
+                              tts_config: { 
+                                ...updateForm.tts_config, 
+                                openai: { ...updateForm.tts_config.openai, quality: e.target.value } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="standard">Standard</option>
+                            <option value="hd">HD</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="updateOpenaiSpeed">Speed</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0.1"
+                            max="2.0"
+                            className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                            name="updateOpenaiSpeed"
+                            id="updateOpenaiSpeed"
+                            value={updateForm.tts_config.openai.speed}
+                            onChange={e => setUpdateForm({ 
+                              ...updateForm, 
+                              tts_config: { 
+                                ...updateForm.tts_config, 
+                                openai: { ...updateForm.tts_config.openai, speed: parseFloat(e.target.value) } 
+                              } 
+                            })}
+                            placeholder="1.0"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Cartesian TTS Configuration */}
+                  {updateForm.tts_config.provider === 'cartesian' && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="updateCartesianVoiceId">Voice ID</label>
+                          <input
+                            className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                            name="updateCartesianVoiceId"
+                            id="updateCartesianVoiceId"
+                            value={updateForm.tts_config.cartesian.voice_id}
+                            onChange={e => setUpdateForm({ 
+                              ...updateForm, 
+                              tts_config: { 
+                                ...updateForm.tts_config, 
+                                cartesian: { ...updateForm.tts_config.cartesian, voice_id: e.target.value } 
+                              } 
+                            })}
+                            placeholder="Voice ID"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="updateCartesianApiKey">Cartesian API Key</label>
+                          <input
+                            className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                            name="updateCartesianApiKey"
+                            id="updateCartesianApiKey"
+                            value={updateForm.tts_config.cartesian.tts_api_key}
+                            onChange={e => setUpdateForm({ 
+                              ...updateForm, 
+                              tts_config: { 
+                                ...updateForm.tts_config, 
+                                cartesian: { ...updateForm.tts_config.cartesian, tts_api_key: e.target.value } 
+                              } 
+                            })}
+                            placeholder="API Key"
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="updateCartesianModel">Model</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="updateCartesianModel"
+                            id="updateCartesianModel"
+                            value={updateForm.tts_config.cartesian.model}
+                            onChange={e => setUpdateForm({ 
+                              ...updateForm, 
+                              tts_config: { 
+                                ...updateForm.tts_config, 
+                                cartesian: { ...updateForm.tts_config.cartesian, model: e.target.value } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="sonic-english">Sonic English</option>
+                            <option value="sonic-hindi">Sonic Hindi</option>
+                            <option value="sonic-spanish">Sonic Spanish</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="updateCartesianSpeed">Speed</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0.1"
+                            max="2.0"
+                            className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                            name="updateCartesianSpeed"
+                            id="updateCartesianSpeed"
+                            value={updateForm.tts_config.cartesian.speed}
+                            onChange={e => setUpdateForm({ 
+                              ...updateForm, 
+                              tts_config: { 
+                                ...updateForm.tts_config, 
+                                cartesian: { ...updateForm.tts_config.cartesian, speed: parseFloat(e.target.value) } 
+                              } 
+                            })}
+                            placeholder="0"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="updateCartesianLanguage">Language</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="updateCartesianLanguage"
+                            id="updateCartesianLanguage"
+                            value={updateForm.tts_config.cartesian.language}
+                            onChange={e => setUpdateForm({ 
+                              ...updateForm, 
+                              tts_config: { 
+                                ...updateForm.tts_config, 
+                                cartesian: { ...updateForm.tts_config.cartesian, language: e.target.value } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="en">English</option>
+                            <option value="hi">Hindi</option>
+                            <option value="es">Spanish</option>
+                          </select>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
               
@@ -622,49 +1217,224 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                   <h3 className="text-2xl font-semibold leading-none tracking-tight">STT Configuration</h3>
                 </div>
                 <div className="p-6 pt-0 space-y-4">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none" htmlFor="updateSttApiKey">API Key</label>
-                      <input
-                        className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
-                        name="updateSttApiKey"
-                        id="updateSttApiKey"
-                        value={updateForm.stt_config.api_key}
-                        onChange={e => setUpdateForm({ ...updateForm, stt_config: { ...updateForm.stt_config, api_key: e.target.value } })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none" htmlFor="updateSttModel">Model</label>
-                      <select
-                        className="flex h-10 w-full rounded-md border border-gray-300 border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
-                        name="updateSttModel"
-                        id="updateSttModel"
-                        value={updateForm.stt_config.model}
-                        onChange={e => setUpdateForm({ ...updateForm, stt_config: { ...updateForm.stt_config, model: e.target.value } })}
-                        required
-                      >
-                        <option value="">Select model</option>
-                        <option value="nova-2">nova-2</option>
-                        <option value="nova-3">nova-3</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none" htmlFor="updateSttLanguage">Language</label>
-                      <select
-                        className="flex h-10 w-full rounded-md border border-gray-300 border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
-                        name="updateSttLanguage"
-                        id="updateSttLanguage"
-                        value={updateForm.stt_config.language}
-                        onChange={e => setUpdateForm({ ...updateForm, stt_config: { ...updateForm.stt_config, language: e.target.value } })}
-                        required
-                      >
-                        <option value="">Select language</option>
-                        <option value="en-US">en-US</option>
-                        <option value="hi">hi</option>
-                      </select>
-                    </div>
+                  {/* STT Provider Selection */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none" htmlFor="updateSttProvider">STT Provider</label>
+                    <select
+                      className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                      name="updateSttProvider"
+                      id="updateSttProvider"
+                      value={updateForm.stt_config.provider}
+                      onChange={e => setUpdateForm({ ...updateForm, stt_config: { ...updateForm.stt_config, provider: e.target.value } })}
+                      required
+                    >
+                      <option value="deepgram">Deepgram</option>
+                      <option value="whisper">Whisper</option>
+                    </select>
                   </div>
+
+                  {/* Deepgram STT Configuration */}
+                  {updateForm.stt_config.provider === 'deepgram' && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="updateDeepgramApiKey">Deepgram API Key</label>
+                          <input
+                            className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                            name="updateDeepgramApiKey"
+                            id="updateDeepgramApiKey"
+                            value={updateForm.stt_config.deepgram.api_key}
+                            onChange={e => setUpdateForm({ 
+                              ...updateForm, 
+                              stt_config: { 
+                                ...updateForm.stt_config, 
+                                deepgram: { ...updateForm.stt_config.deepgram, api_key: e.target.value } 
+                              } 
+                            })}
+                            placeholder="API Key"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="updateDeepgramModel">Model</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="updateDeepgramModel"
+                            id="updateDeepgramModel"
+                            value={updateForm.stt_config.deepgram.model}
+                            onChange={e => setUpdateForm({ 
+                              ...updateForm, 
+                              stt_config: { 
+                                ...updateForm.stt_config, 
+                                deepgram: { ...updateForm.stt_config.deepgram, model: e.target.value } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="nova-2">Nova-2</option>
+                            <option value="nova-3">Nova-3</option>
+                            <option value="enhanced">Enhanced</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="updateDeepgramLanguage">Language</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="updateDeepgramLanguage"
+                            id="updateDeepgramLanguage"
+                            value={updateForm.stt_config.deepgram.language}
+                            onChange={e => setUpdateForm({ 
+                              ...updateForm, 
+                              stt_config: { 
+                                ...updateForm.stt_config, 
+                                deepgram: { ...updateForm.stt_config.deepgram, language: e.target.value } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="hi">Hindi</option>
+                            <option value="hi-IN">Hindi (India)</option>
+                            <option value="en-US">English (US)</option>
+                            <option value="en-GB">English (UK)</option>
+                            <option value="es">Spanish</option>
+                            <option value="fr">French</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="updateDeepgramPunctuate">Punctuate</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="updateDeepgramPunctuate"
+                            id="updateDeepgramPunctuate"
+                            value={updateForm.stt_config.deepgram.punctuate.toString()}
+                            onChange={e => setUpdateForm({ 
+                              ...updateForm, 
+                              stt_config: { 
+                                ...updateForm.stt_config, 
+                                deepgram: { ...updateForm.stt_config.deepgram, punctuate: e.target.value === 'true' } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="updateDeepgramSmartFormat">Smart Format</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="updateDeepgramSmartFormat"
+                            id="updateDeepgramSmartFormat"
+                            value={updateForm.stt_config.deepgram.smart_format.toString()}
+                            onChange={e => setUpdateForm({ 
+                              ...updateForm, 
+                              stt_config: { 
+                                ...updateForm.stt_config, 
+                                deepgram: { ...updateForm.stt_config.deepgram, smart_format: e.target.value === 'true' } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="updateDeepgramInterimResults">Interim Results</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="updateDeepgramInterimResults"
+                            id="updateDeepgramInterimResults"
+                            value={updateForm.stt_config.deepgram.interim_results.toString()}
+                            onChange={e => setUpdateForm({ 
+                              ...updateForm, 
+                              stt_config: { 
+                                ...updateForm.stt_config, 
+                                deepgram: { ...updateForm.stt_config.deepgram, interim_results: e.target.value === 'true' } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                          </select>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Whisper STT Configuration */}
+                  {updateForm.stt_config.provider === 'whisper' && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="updateWhisperApiKey">Whisper API Key</label>
+                          <input
+                            className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                            name="updateWhisperApiKey"
+                            id="updateWhisperApiKey"
+                            value={updateForm.stt_config.whisper.api_key}
+                            onChange={e => setUpdateForm({ 
+                              ...updateForm, 
+                              stt_config: { 
+                                ...updateForm.stt_config, 
+                                whisper: { ...updateForm.stt_config.whisper, api_key: e.target.value } 
+                              } 
+                            })}
+                            placeholder="sk-..."
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="updateWhisperModel">Model</label>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                            name="updateWhisperModel"
+                            id="updateWhisperModel"
+                            value={updateForm.stt_config.whisper.model}
+                            onChange={e => setUpdateForm({ 
+                              ...updateForm, 
+                              stt_config: { 
+                                ...updateForm.stt_config, 
+                                whisper: { ...updateForm.stt_config.whisper, model: e.target.value } 
+                              } 
+                            })}
+                            required
+                          >
+                            <option value="whisper-1">Whisper-1</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium leading-none" htmlFor="updateWhisperLanguage">Language (Optional)</label>
+                        <select
+                          className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                          name="updateWhisperLanguage"
+                          id="updateWhisperLanguage"
+                          value={updateForm.stt_config.whisper.language || ''}
+                          onChange={e => setUpdateForm({ 
+                            ...updateForm, 
+                            stt_config: { 
+                              ...updateForm.stt_config, 
+                              whisper: { ...updateForm.stt_config.whisper, language: e.target.value === '' ? null : e.target.value } 
+                            } 
+                          })}
+                        >
+                          <option value="">Auto-detect</option>
+                          <option value="en">English</option>
+                          <option value="hi">Hindi</option>
+                          <option value="es">Spanish</option>
+                          <option value="fr">French</option>
+                          <option value="de">German</option>
+                        </select>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="space-y-2">
@@ -765,6 +1535,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
           <div className="fixed left-1/2 top-1/2 z-50 grid w-full translate-x-[-50%] translate-y-[-50%] max-w-md max-h-[90vh] overflow-y-auto border border-gray-300 bg-white p-6 shadow-lg sm:rounded-lg" style={{ pointerEvents: 'auto' }}>
             <div className="flex flex-col space-y-1.5 text-center sm:text-left mb-6">
               <h2 className="text-lg font-semibold leading-none tracking-tight">Set Phone Number</h2>
+              <p className="text-sm text-gray-500">Update phone number for agent</p>
             </div>
             <form className="space-y-6" onSubmit={handleSetPhone}>
               <div className="space-y-2">
@@ -777,15 +1548,46 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                   disabled
                 />
               </div>
+              
+              {/* Show current phone number if exists */}
+              {(() => {
+                const agent = agents.find(a => a.agentId === setPhoneForm.agentId);
+                const currentPhone = agent?.phone_number;
+                const trunk = trunks.find(t => t.name === setPhoneForm.agentId || t.name === agent?.id);
+                const trunkPhone = trunk?.numbers?.[0];
+                
+                if (currentPhone || trunkPhone) {
+                  return (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium leading-none">Current Phone Number</label>
+                      <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-md">
+                        <span className="text-sm text-gray-600">
+                          {currentPhone ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              {currentPhone} (Direct)
+                            </span>
+                          ) : trunkPhone ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {trunkPhone} (Trunk)
+                            </span>
+                          ) : 'Not set'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+              
               <div className="space-y-2">
-                <label className="text-sm font-medium leading-none" htmlFor="setPhoneNumber">Phone Number</label>
+                <label className="text-sm font-medium leading-none" htmlFor="setPhoneNumber">New Phone Number</label>
                 <input
                   className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
                   name="setPhoneNumber"
                   id="setPhoneNumber"
                   value={setPhoneForm.phone_number}
                   onChange={e => setSetPhoneForm({ ...setPhoneForm, phone_number: e.target.value })}
-                  placeholder="Enter phone number"
+                  placeholder="Enter new phone number (e.g., +1234567890)"
                 />
               </div>
               <div className="flex justify-end space-x-2">
@@ -837,26 +1639,54 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                   return (
                     <tr key={agent.agentId} className="bg-white rounded-xl shadow-sm">
                       <td className="py-4 px-4 font-bold text-gray-900">{agent.agentId}</td>
-                      <td className="py-4 px-4">
-                        {(() => {
-                          // Find trunk by agentId/id and show first number
-                          const trunk = trunks.find(t => t.name === agent.agentId || t.name === agent.id);
-                          return trunk && trunk.numbers && trunk.numbers.length > 0
-                            ? (
-                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-900 text-white">
-                                {trunk.numbers[0]}
-                              </span>
-                            )
-                            : (
-                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                                Not set
-                              </span>
-                            );
-                        })()}
-                      </td>
+                            <td className="py-4 px-4">
+        {(() => {
+          // Debug logging
+          console.log('Agent:', agent);
+          console.log('Trunks:', trunks);
+          
+          // First check if agent has a phone number directly
+          if (agent.phone_number) {
+            console.log('Using direct phone number:', agent.phone_number);
+            return (
+              <span className="text-sm font-medium text-green-700">
+                {agent.phone_number}
+              </span>
+            );
+          }
+          
+          // Try to find trunk by agent name/id - check multiple possible matches
+          const trunk = trunks.find(t => 
+            t.name === agent.agentId || 
+            t.name === agent.id || 
+            t.name === agent.name ||
+            t.name === agent.agentName ||
+            agent.agentId?.includes(t.name) ||
+            agent.id?.includes(t.name) ||
+            agent.name?.includes(t.name)
+          );
+          
+          console.log('Found trunk for agent:', trunk);
+          
+          if (trunk && trunk.numbers && trunk.numbers.length > 0) {
+            console.log('Using trunk phone number:', trunk.numbers[0]);
+            return (
+              <span className="text-sm font-medium text-blue-700">
+                {trunk.numbers[0]}
+              </span>
+            );
+          }
+          
+          console.log('No phone number found for agent');
+          return (
+            <span className="text-sm text-gray-500">
+              Not set
+            </span>
+          );
+        })()}
+      </td>
                       <td className="py-4 px-4 text-gray-700">
                         {(() => {
-                          console.log(orgs);
                           
                           const org = orgs.find(o => o.orgId === agent.agentId);
                           return org ? org.name : '-';
@@ -875,7 +1705,15 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                               label: 'Set Phone',
                               icon: <UserRound className="w-5 h-5" />,
                               onClick: () => {
-                                setSetPhoneForm({ agentId: agent.agentId, phone_number: agent.phone_number || '' });
+                                // Get current phone number from agent or trunk
+                                const currentPhone = agent.phone_number;
+                                const trunk = trunks.find(t => t.name === agent.agentId || t.name === agent.id);
+                                const trunkPhone = trunk?.numbers?.[0];
+                                
+                                setSetPhoneForm({ 
+                                  agentId: agent.agentId, 
+                                  phone_number: currentPhone || trunkPhone || '' 
+                                });
                                 setShowSetPhoneModal(true);
                               },
                             },
@@ -884,7 +1722,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                               icon: <UserRound className="w-5 h-5 text-red-500" />,
                               onClick: async () => {
                                 try {
-                                  await deleteAgentPhone(agent.agentId);
+                                  await agentApiService.deleteAgentPhone(agent.agentId);
                                   // Optionally refresh agent data or show a success message
                                   if (typeof refreshAgents === 'function') refreshAgents();
                                   if (typeof showSuccess === 'function') showSuccess('Phone number deleted');
@@ -903,16 +1741,37 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                                   chatbot_api: agent.chatbot_api || '',
                                   chatbot_key: agent.chatbot_key || '',
                                   tts_config: {
-                                    voice_id: agent.tts_config?.voice_id || '',
-                                    tts_api_key: agent.tts_config?.tts_api_key || '',
-                                    model: agent.tts_config?.model || '',
-                                    speed: agent.tts_config?.speed ?? 0.5,
-                                    language: agent.tts_config?.language || '',
+                                    provider: agent.tts_config?.provider || 'openai',
+                                    openai: {
+                                      api_key: agent.tts_config?.openai?.api_key || '',
+                                      voice: agent.tts_config?.openai?.voice || 'alloy',
+                                      response_format: agent.tts_config?.openai?.response_format || 'mp3',
+                                      quality: agent.tts_config?.openai?.quality || 'standard',
+                                      speed: agent.tts_config?.openai?.speed ?? 1.0,
+                                    },
+                                    cartesian: {
+                                      voice_id: agent.tts_config?.cartesian?.voice_id || '',
+                                      tts_api_key: agent.tts_config?.cartesian?.tts_api_key || '',
+                                      model: agent.tts_config?.cartesian?.model || 'sonic-english',
+                                      speed: agent.tts_config?.cartesian?.speed ?? 0,
+                                      language: agent.tts_config?.cartesian?.language || 'en',
+                                    },
                                   },
                                   stt_config: {
-                                    api_key: agent.stt_config?.api_key || '',
-                                    model: agent.stt_config?.model || '',
-                                    language: agent.stt_config?.language || '',
+                                    provider: agent.stt_config?.provider || 'deepgram',
+                                    deepgram: {
+                                      api_key: agent.stt_config?.deepgram?.api_key || '',
+                                      model: agent.stt_config?.deepgram?.model || 'nova-2',
+                                      language: agent.stt_config?.deepgram?.language || 'hi',
+                                      punctuate: agent.stt_config?.deepgram?.punctuate ?? true,
+                                      smart_format: agent.stt_config?.deepgram?.smart_format ?? true,
+                                      interim_results: agent.stt_config?.deepgram?.interim_results ?? true,
+                                    },
+                                    whisper: {
+                                      api_key: agent.stt_config?.whisper?.api_key || '',
+                                      model: agent.stt_config?.whisper?.model || 'whisper-1',
+                                      language: agent.stt_config?.whisper?.language || null,
+                                    },
                                   },
                                   initial_message: agent.initial_message || '',
                                   nudge_text: agent.nudge_text || '',
@@ -928,7 +1787,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                               icon: <Ban className="w-5 h-5" />,
                               onClick: async () => {
                                 try {
-                                  await deleteAgent(agent.agentId);
+                                  await agentApiService.deleteAgent(agent.agentId);
                                   if (typeof refreshAgents === 'function') refreshAgents();
                                   if (typeof showSuccess === 'function') showSuccess('Agent suspended (deleted) successfully');
                                 } catch (err) {

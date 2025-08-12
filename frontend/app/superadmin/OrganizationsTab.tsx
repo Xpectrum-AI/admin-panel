@@ -296,7 +296,6 @@ export default function OrganizationsTab({ orgs, totalOrgs, pageNumber, pageSize
                         label: 'View Details',
                         icon: <Eye className="w-5 h-5" />,
                         onClick: () => {
-                          console.log('View Details clicked', org);
                           handleViewDetails(org);
                         },
                       },

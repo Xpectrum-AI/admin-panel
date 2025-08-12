@@ -22,6 +22,7 @@ NEXT_PUBLIC_DEV_SERVER_URL=http://localhost:3000
 CORS_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:5173
 
 # API Configuration
+NEXT_PUBLIC_LIVE_API_URL=https://d1fs86umxjjz67.cloudfront.net
 NEXT_PUBLIC_API_KEY=xpectrum-ai@123
 
 # Stripe Configuration (if needed)
@@ -43,4 +44,7 @@ NEXT_PUBLIC_MAX_CALENDAR_EVENTS=10
 
 # Database Configuration (if needed)
 NEXT_PUBLIC_MONGODB_URL=mongodb+srv://mongo_access:3gfaAKMQsCwEjIXG@cluster0.4os5zqa.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
-NEXT_PUBLIC_DATABASE_NAME=google_oauth 
+NEXT_PUBLIC_DATABASE_NAME=google_oauth
+
+# Super Admin Configuration
+NEXT_PUBLIC_SUPER_ADMIN_ORG_ID=7f4f4566-0435-42d0-ab5f-80c6018f625b 

@@ -11,11 +11,11 @@ import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { fetchUsersByQuery } from '@/service/userService';
 import { fetchOrgByQuery, inviteUserToOrg, removeUserFromOrg, changeUserRoleInOrg } from '@/service/orgService';
-import { getAllAgents, getTrunks } from '@/service/agentService';
+import { agentApiService } from '@/service/agentService';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { fetchUsersInOrg } from '@/service/orgService';
 
-const SUPER_ADMIN_ORG_ID = process.env.SUPER_ADMIN_ORG_ID || "";
+const SUPER_ADMIN_ORG_ID = process.env.NEXT_PUBLIC_SUPER_ADMIN_ORG_ID || "";
 
 const tabs = [
     'Users',
@@ -111,7 +111,7 @@ export default function SuperAdminPanel() {
         const fetchAgents = async () => {
             setAgentsLoading(true);
             try {
-                const data = await getAllAgents();
+                const data = await agentApiService.getAllAgents();
                 if (mounted) {
                     const agentsArray = Array.isArray(data.agents) ? data.agents : [];
                     setAgents(agentsArray);
@@ -137,8 +137,8 @@ export default function SuperAdminPanel() {
     useEffect(() => {
         const fetchTrunks = async () => {
             try {
-                const res = await getTrunks();
-                setTrunks(res.trunks || []);
+                const res = await agentApiService.getAgentTrunks();
+                setTrunks(res.data?.trunks || []);
             } catch (error) {
                 setTrunks([]);
                 showError('Failed to fetch trunks');
@@ -153,7 +153,7 @@ export default function SuperAdminPanel() {
         
         setAgentsLoading(true);
         try {
-            const data = await getAllAgents();
+            const data = await agentApiService.getAllAgents();
             if (mounted) {
                 const agentsArray = Array.isArray(data.agents) ? data.agents : [];
                 setAgents(agentsArray);

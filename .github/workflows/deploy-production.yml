@@ -53,6 +53,14 @@ jobs:
       run: |
         npm install -g aws-cdk
 
+    - name: Log Environment Variables (Production)
+      run: |
+        echo "=== PRODUCTION ENVIRONMENT VARIABLES ==="
+        echo "PRODUCTION_PROPELAUTH_URL: ${{ secrets.PRODUCTION_PROPELAUTH_URL }}"
+        echo "PRODUCTION_PROPELAUTH_REDIRECT_URI: ${{ secrets.PRODUCTION_PROPELAUTH_REDIRECT_URI }}"
+        echo "PRODUCTION_NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_NEXT_PUBLIC_PROPELAUTH_API_KEY }}"
+        echo "========================================"
+
     - name: Deploy CDK stack (production)
       env:
         # Pass GitHub environment variables to CDK
@@ -65,17 +73,34 @@ jobs:
         PRODUCTION_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_PROPELAUTH_API_KEY }}
         PRODUCTION_PROPELAUTH_VERIFIER_KEY: ${{ secrets.PRODUCTION_PROPELAUTH_VERIFIER_KEY }}
         PRODUCTION_PROPELAUTH_REDIRECT_URI: ${{ secrets.PRODUCTION_PROPELAUTH_REDIRECT_URI }}
+        PRODUCTION_PROPELAUTH_URL: ${{ secrets.PRODUCTION_PROPELAUTH_URL }}
         PRODUCTION_NEXT_PUBLIC_LIVE_API_URL: ${{ secrets.PRODUCTION_NEXT_PUBLIC_LIVE_API_URL }}
         PRODUCTION_SUPER_ADMIN_ORG_ID: ${{ secrets.PRODUCTION_SUPER_ADMIN_ORG_ID }}
+        # Add the missing NEXT_PUBLIC_PROPELAUTH_URL variable
+        PRODUCTION_NEXT_PUBLIC_PROPELAUTH_URL: ${{ secrets.PRODUCTION_PROPELAUTH_URL }}
       run: |
         cd python-cdk-v2
         # Deploy to production environment
         timeout 30m cdk deploy AdminPanelProductionStack --require-approval never --context environment=production || {
           echo "CDK deployment timed out or failed"
           echo "Checking ECS service status..."
+          
+          # Get the actual cluster and service names
+          CLUSTER_NAME=$(aws cloudformation describe-stacks \
+            --stack-name AdminPanelProductionStack \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`ClusterName`].OutputValue' \
+            --output text 2>/dev/null || echo "AdminPanelProductionStackCluster")
+          
+          SERVICE_NAME=$(aws cloudformation describe-stacks \
+            --stack-name AdminPanelProductionStack \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`ServiceName`].OutputValue' \
+            --output text 2>/dev/null || echo "AdminPanelProductionStackService")
+          
           aws ecs describe-services \
-            --cluster AdminPanelProductionStack-AdminPanelCluster354587DC-WMnszSmI30dz \
-            --services AdminPanelProductionStack-AdminPanelService167ECF01-mGcKXTWR0Ntv \
+            --cluster $CLUSTER_NAME \
+            --services $SERVICE_NAME \
             --region ${{ env.AWS_REGION }} || echo "Could not check ECS status"
           exit 1
         }
@@ -84,10 +109,26 @@ jobs:
       run: |
         # Check if stack exists first
         if aws cloudformation describe-stacks --stack-name AdminPanelProductionStack --region ${{ env.AWS_REGION }} 2>/dev/null; then
+          # Get the actual cluster and service names from CloudFormation outputs
+          CLUSTER_NAME=$(aws cloudformation describe-stacks \
+            --stack-name AdminPanelProductionStack \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`ClusterName`].OutputValue' \
+            --output text 2>/dev/null || echo "AdminPanelProductionStackCluster")
+          
+          SERVICE_NAME=$(aws cloudformation describe-stacks \
+            --stack-name AdminPanelProductionStack \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`ServiceName`].OutputValue' \
+            --output text 2>/dev/null || echo "AdminPanelProductionStackService")
+          
+          echo "Using cluster: $CLUSTER_NAME"
+          echo "Using service: $SERVICE_NAME"
+          
           # Wait for ECS services to be stable
           aws ecs wait services-stable \
-            --cluster AdminPanelProductionStack-AdminPanelCluster354587DC-WMnszSmI30dz \
-            --services AdminPanelProductionStack-AdminPanelService167ECF01-mGcKXTWR0Ntv \
+            --cluster $CLUSTER_NAME \
+            --services $SERVICE_NAME \
             --region ${{ env.AWS_REGION }} || echo "Services not stable yet"
         else
           echo "Stack does not exist yet, skipping wait"

@@ -1,106 +1,117 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateApiKey } from '@/lib/middleware/auth';
-import { getAuth } from '@/lib/config/propelAuth';
+import { initAuth } from '@propelauth/express';
+import { createSuccessResponse, handleApiError } from '@/lib/utils/apiResponse';
+
+const API_KEY= process.env.NEXT_PUBLIC_PROPELAUTH_API_KEY || "";
+const AUTH_URL= process.env.NEXT_PUBLIC_PROPELAUTH_URL || "";
+
+// Only initialize auth if we have the required environment variables
+let auth: any = null;
+if (API_KEY && AUTH_URL) {
+  try {
+    auth = initAuth({
+      authUrl: AUTH_URL,
+      apiKey: API_KEY,
+    });
+  } catch (error) {
+    console.error('Failed to initialize PropelAuth:', error);
+  }
+}
+
+// Helper function to check if auth is available
+function isAuthAvailable() {
+  return auth !== null;
+}
 
 // POST /api/org/create-org
 export async function createOrg(request: NextRequest) {
   try {
+    if (!isAuthAvailable()) {
+      return NextResponse.json({ error: 'Authentication service not available' }, { status: 503 });
+    }
+
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return handleApiError(new Error('Unauthorized'), 'Organization Create API');
     }
 
     const body = await request.json();
     const { orgName } = body;
 
     if (!orgName) {
-      return NextResponse.json({ error: 'Missing orgName' }, { status: 400 });
+      return handleApiError(new Error('Missing orgName'), 'Organization Create API');
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.createOrg({ name: orgName });
+    const data = await auth.createOrg({ name: orgName });
 
-    return NextResponse.json({
-      success: true,
-      message: 'Organization created successfully',
-      data: data
-    });
+    return createSuccessResponse(data, 'Organization created successfully', 201);
   } catch (error) {
-    console.error('createOrg error:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return handleApiError(error, 'Organization Create API');
   }
 }
 
 // POST /api/org/add-user
 export async function addUserToOrg(request: NextRequest) {
   try {
+    if (!isAuthAvailable()) {
+      return NextResponse.json({ error: 'Authentication service not available' }, { status: 503 });
+    }
+
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return handleApiError(new Error('Unauthorized'), 'Add User to Organization API');
     }
 
     const body = await request.json();
     const { orgId, userId, role } = body;
 
     if (!orgId || !userId || !role) {
-      return NextResponse.json({ error: 'Missing required fields: orgId, userId, role' }, { status: 400 });
+      return handleApiError(new Error('Missing required fields: orgId, userId, role'), 'Add User to Organization API');
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.addUserToOrg({ userId, orgId, role });
+    const data = await auth.addUserToOrg({ userId, orgId, role });
 
-    return NextResponse.json({
-      success: true,
-      message: 'User added to organization successfully',
-      data: data
-    });
+    return createSuccessResponse(data, 'User added to organization successfully');
   } catch (error) {
-    console.error('addUserToOrg error:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return handleApiError(error, 'Add User to Organization API');
   }
 }
 
 // POST /api/org/invite-user
 export async function inviteUserToOrg(request: NextRequest) {
   try {
+    if (!isAuthAvailable()) {
+      return NextResponse.json({ error: 'Authentication service not available' }, { status: 503 });
+    }
+
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return handleApiError(new Error('Unauthorized'), 'Invite User to Organization API');
     }
 
     const body = await request.json();
     const { orgId, email, role } = body;
 
     if (!orgId || !email || !role) {
-      return NextResponse.json({ error: 'Missing required fields: orgId, email, role' }, { status: 400 });
+      return handleApiError(new Error('Missing required fields: orgId, email, role'), 'Invite User to Organization API');
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.inviteUserToOrg({ orgId, email, role });
+    const data = await auth.inviteUserToOrg({ orgId, email, role });
 
-    return NextResponse.json({
-      success: true,
-      message: `User ${email} invited to organization`,
-      data: data
-    });
+    return createSuccessResponse(data, `User ${email} invited to organization`);
   } catch (error) {
-    console.error('inviteUserToOrg error:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return handleApiError(error, 'Invite User to Organization API');
   }
 }
 
 // POST /api/org/fetch-users
 export async function fetchUsersInOrg(request: NextRequest) {
   try {
+    if (!isAuthAvailable()) {
+      return NextResponse.json({ error: 'Authentication service not available' }, { status: 503 });
+    }
+
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -113,8 +124,7 @@ export async function fetchUsersInOrg(request: NextRequest) {
       return NextResponse.json({ error: 'Missing orgId' }, { status: 400 });
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.fetchUsersInOrg( orgId );
+    const data = await auth.fetchUsersInOrg( {orgId} );
     return NextResponse.json({
       success: true,
       data: data,
@@ -132,6 +142,10 @@ export async function fetchUsersInOrg(request: NextRequest) {
 // POST /api/org/fetch-pending-invites
 export async function fetchPendingInvites(request: NextRequest) {
   try {
+    if (!isAuthAvailable()) {
+      return NextResponse.json({ error: 'Authentication service not available' }, { status: 503 });
+    }
+
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -144,8 +158,7 @@ export async function fetchPendingInvites(request: NextRequest) {
       return NextResponse.json({ error: 'Missing orgId' }, { status: 400 });
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.fetchPendingInvites( orgId );
+    const data = await auth.fetchPendingInvites( orgId );
     return NextResponse.json({
       success: true,
       data: data,
@@ -163,6 +176,10 @@ export async function fetchPendingInvites(request: NextRequest) {
 // POST /api/org/remove-user
 export async function removeUserFromOrg(request: NextRequest) {
   try {
+    if (!isAuthAvailable()) {
+      return NextResponse.json({ error: 'Authentication service not available' }, { status: 503 });
+    }
+
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -175,8 +192,7 @@ export async function removeUserFromOrg(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields: orgId, userId' }, { status: 400 });
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.removeUserFromOrg({ orgId, userId });
+    const data = await auth.removeUserFromOrg({ orgId, userId });
 
     return NextResponse.json({
       success: true,
@@ -195,6 +211,10 @@ export async function removeUserFromOrg(request: NextRequest) {
 // POST /api/org/change-user-role
 export async function changeUserRoleInOrg(request: NextRequest) {
   try {
+    if (!isAuthAvailable()) {
+      return NextResponse.json({ error: 'Authentication service not available' }, { status: 503 });
+    }
+
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -207,8 +227,7 @@ export async function changeUserRoleInOrg(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields: orgId, userId, role' }, { status: 400 });
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.changeUserRoleInOrg({ orgId, userId, role });
+    const data = await auth.changeUserRoleInOrg({ orgId, userId, role });
 
     return NextResponse.json({
       success: true,
@@ -227,6 +246,10 @@ export async function changeUserRoleInOrg(request: NextRequest) {
 // POST /api/org/update-org
 export async function updateOrg(request: NextRequest) {
   try {
+    if (!isAuthAvailable()) {
+      return NextResponse.json({ error: 'Authentication service not available' }, { status: 503 });
+    }
+
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -243,8 +266,7 @@ export async function updateOrg(request: NextRequest) {
       return NextResponse.json({ error: 'No updates provided' }, { status: 400 });
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.updateOrg({ orgId, updates });
+    const data = await auth.updateOrg({ orgId, updates });
 
     return NextResponse.json({
       success: true,
@@ -263,6 +285,10 @@ export async function updateOrg(request: NextRequest) {
 // POST /api/org/fetch-org-details
 export async function fetchOrgDetails(request: NextRequest) {
   try {
+    if (!isAuthAvailable()) {
+      return NextResponse.json({ error: 'Authentication service not available' }, { status: 503 });
+    }
+
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -275,8 +301,7 @@ export async function fetchOrgDetails(request: NextRequest) {
       return NextResponse.json({ error: 'Missing orgId' }, { status: 400 });
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.fetchOrg(orgId);
+    const data = await auth.fetchOrg(orgId);
 
     return NextResponse.json({
       success: true,
@@ -294,6 +319,10 @@ export async function fetchOrgDetails(request: NextRequest) {
 // POST /api/org/fetch-orgs-query
 export async function fetchOrgByQuery(request: NextRequest) {
   try {
+    if (!isAuthAvailable()) {
+      return NextResponse.json({ error: 'Authentication service not available' }, { status: 503 });
+    }
+
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -306,8 +335,7 @@ export async function fetchOrgByQuery(request: NextRequest) {
       return NextResponse.json({ error: 'Missing query' }, { status: 400 });
     }
 
-    const authInstance = getAuth();
-    const data = await authInstance.fetchOrgByQuery(query);
+    const data = await auth.fetchOrgByQuery(query);
 
     // Handle the nested response structure from PropelAuth
     const orgs = data.orgs || data;
