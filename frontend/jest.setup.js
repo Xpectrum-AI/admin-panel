@@ -50,3 +50,22 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: jest.fn(),
   })),
 })
+
+// Suppress console.error during tests
+const originalError = console.error
+beforeEach(() => {
+  jest.spyOn(console, 'error').mockImplementation((...args) => {
+    if (
+      typeof args[0] === 'string' &&
+      (args[0].includes('Error in Database:') ||
+       args[0].includes('Error in Validation:'))
+    ) {
+      return // Suppress expected test errors
+    }
+    originalError.call(console, ...args)
+  })
+})
+
+afterEach(() => {
+  jest.restoreAllMocks()
+})
