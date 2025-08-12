@@ -6,7 +6,7 @@ import {
   DeleteDoctorResponse 
 } from '@/types/doctor';
 
-const API_KEY = process.env.LIVE_API_KEY || "";
+const API_KEY = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
 
 const headers = {
   'Content-Type': 'application/json',

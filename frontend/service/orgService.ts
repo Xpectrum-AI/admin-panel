@@ -1,7 +1,7 @@
 import type { UpdateOrgInput } from './type';
 
 const API_BASE = '/api'; // Changed from external backend to local Next.js API
-const API_KEY = process.env.LIVE_API_KEY || "";
+const API_KEY = process.env.NEXT_PUBLIC_LIVE_API_KEY || 'xpectrum-ai@123';
 
 const headers = {
   'Content-Type': 'application/json',
