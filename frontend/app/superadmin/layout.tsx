@@ -10,9 +10,7 @@ const SuperAdminGuard = withAuthInfo(
   const orgs = orgHelper?.getOrgs() ?? [];
   const isSuperAdmin = orgs.some(org => org.orgId === SUPER_ADMIN_ORG_ID);
 
-  console.log(orgs);
-  console.log(SUPER_ADMIN_ORG_ID);
-  console.log(isSuperAdmin);
+  
 
   if (isSuperAdmin) {
     return <>{children}</>;
@@ -37,7 +35,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   React.useEffect(() => {
     // Clear any cached authentication data
     if (typeof window !== 'undefined') {
-      console.log('SuperAdminLayout: Clearing cache and forcing refresh');
+      
       // Force a hard refresh if needed
       if (window.location.search.includes('force-refresh')) {
         window.location.reload();

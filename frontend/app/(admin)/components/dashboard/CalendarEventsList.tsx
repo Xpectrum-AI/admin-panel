@@ -21,9 +21,7 @@ export default function CalendarEventsList({ events, loading, selectedCalendar, 
   const { showError, showSuccess } = useErrorHandler();
   const [isLoading, setIsLoading] = useState(false);
   
-  console.log('CalendarEventsList received events:', events);
-  console.log('CalendarEventsList events length:', events?.length);
-  console.log('Selected date:', selectedDate);
+  
 
   const handleSyncGoogleCalendar = async () => {
     if (!selectedCalendar?.calendar_id) {
@@ -175,20 +173,17 @@ export default function CalendarEventsList({ events, loading, selectedCalendar, 
 
       {/* Content */}
       <div className="p-6 pt-0 space-y-4 flex-1 overflow-y-auto">
-        {(() => { console.log('Rendering events section, events:', events); return null; })()}
+    
         {events.length > 0 ? (
           events.slice(0, 5).map((event, index) => {
-            console.log(`Processing event ${index + 1}/${events.length}:`, event);
-            console.log('Processing event:', event);
+            
             const eventType = getEventType(event);
-            console.log('Event start dateTime:', event.start.dateTime);
-            console.log('Event end dateTime:', event.end.dateTime);
+            
             
             try {
               const startDate = new Date(event.start.dateTime);
               const endDate = new Date(event.end.dateTime);
-              console.log('Parsed start date:', startDate);
-              console.log('Parsed end date:', endDate);
+              
               
               const startTime = startDate.toLocaleTimeString([], { 
                 hour: '2-digit', 
@@ -199,8 +194,7 @@ export default function CalendarEventsList({ events, loading, selectedCalendar, 
                 minute: '2-digit' 
               });
               
-              console.log('Formatted start time:', startTime);
-              console.log('Formatted end time:', endTime);
+              
             } catch (error) {
               console.error('Error parsing dates:', error);
             }

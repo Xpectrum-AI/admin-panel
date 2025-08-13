@@ -8,3 +8,5 @@ export { default as EditEventModal } from './EditEventModal';
 export { default as ShowDocInfoModal } from './ShowDocInfoModal';   
 export { default as OrgSetup } from './OrgSetup';
 export { default as OrgChoiceModal } from './OrgChoiceModal';
+export { default as EmailVerificationDialog } from './EmailVerificationDialog';
+export { default as EmailVerificationNotification } from './EmailVerificationNotification';

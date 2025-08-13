@@ -54,7 +54,7 @@ export const useLocationData = () => {
   }, []);
 
   const handleCountryChange = useCallback(async (country: string) => {
-    console.log('handleCountryChange called with:', country);
+
     
     setSelection(prev => ({
       country,
@@ -77,9 +77,9 @@ export const useLocationData = () => {
 
     try {
       // Try to get states first
-      console.log('Attempting to get states for:', country);
+
       const states = await locationService.getStates(country);
-      console.log('States received for', country, ':', states);
+      
       
       setLocationData(prev => ({
         ...prev,
@@ -87,12 +87,12 @@ export const useLocationData = () => {
         loading: false,
       }));
     } catch (error: any) {
-      console.log('States API failed for', country, ', trying cities fallback:', error.message);
+      
       
       // If states fail, try to get cities directly
       try {
         const cities = await locationService.getCitiesByCountry(country);
-        console.log('Cities fallback received for', country, ':', cities);
+
         
         setLocationData(prev => ({
           ...prev,
@@ -111,8 +111,9 @@ export const useLocationData = () => {
     }
   }, []);
 
-  const handleStateChange = useCallback(async (state: string) => {
-    console.log('handleStateChange called with:', state, 'for country:', selection.country);
+  const handleStateChange = useCallback(async (state: string, country?: string) => {
+    const targetCountry = country || selection.country;
+
     
     setSelection(prev => ({
       ...prev,
@@ -127,15 +128,15 @@ export const useLocationData = () => {
       error: null,
     }));
 
-    if (!state || !selection.country) {
+    if (!state || !targetCountry) {
       setLocationData(prev => ({ ...prev, loading: false }));
       return;
     }
 
     try {
-      console.log('Attempting to get cities for country:', selection.country, 'state:', state);
-      const cities = await locationService.getCities(selection.country, state);
-      console.log('Cities received for', selection.country, state, ':', cities);
+
+      const cities = await locationService.getCities(targetCountry, state);
+      
       
       setLocationData(prev => ({
         ...prev,
@@ -143,14 +144,16 @@ export const useLocationData = () => {
         loading: false,
       }));
     } catch (error: any) {
-      console.error('Cities API failed for', selection.country, state, ':', error.message);
+      console.error('Cities API failed for', targetCountry, state, ':', error.message);
       setLocationData(prev => ({
         ...prev,
-        error: `Cities not available for ${state}, ${selection.country}. Please try another state.`,
+        error: `Cities not available for ${state}, ${targetCountry}. Please try another state.`,
         loading: false,
       }));
     }
   }, [selection.country]);
+
+
 
   const handleCityChange = useCallback((city: string) => {
     setSelection(prev => ({

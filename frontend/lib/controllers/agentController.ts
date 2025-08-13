@@ -223,9 +223,7 @@ export async function setAgentPhone(request: NextRequest, agentId: string) {
     }
 
     // Call live API to add phone number
-    console.log('Setting phone number for agent:', agentId, 'with phone:', phone_number);
-    console.log('Live API URL:', LIVE_API_BASE_URL);
-    console.log('Live API Key:', LIVE_API_KEY ? 'SET' : 'NOT SET');
+
     
     const response = await axios.post(`${LIVE_API_BASE_URL}/agents/add_phonenumber/${agentId}`, { phone_number }, {
       headers: {

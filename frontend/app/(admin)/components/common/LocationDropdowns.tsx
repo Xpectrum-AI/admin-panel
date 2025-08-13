@@ -39,28 +39,44 @@ export default function LocationDropdowns({
   const prevCountryRef = useRef(selectedCountry);
   const prevStateRef = useRef(selectedState);
 
+  // Initial load effect - handle existing data when component mounts
+  useEffect(() => {
+    if (selectedCountry && locationData.countries.length > 0) {
+      // If we have a country selected and countries are loaded, ensure states are loaded
+      const currentCountry = locationData.countries.find(c => c.country === selectedCountry);
+      if (currentCountry && locationData.states.length === 0) {
+        handleCountryChange(selectedCountry);
+      }
+    }
+  }, [locationData.countries.length, selectedCountry, handleCountryChange, locationData.states.length]);
+
+  // Initial load effect for states - handle existing state data when component mounts
+  useEffect(() => {
+    if (selectedState && selectedCountry && locationData.states.length > 0) {
+      // If we have a state selected and states are loaded, ensure cities are loaded
+      const currentState = locationData.states.find(s => s.name === selectedState);
+      if (currentState && locationData.cities.length === 0) {
+        handleStateChange(selectedState, selectedCountry);
+      }
+    }
+  }, [locationData.states.length, selectedState, selectedCountry, handleStateChange, locationData.cities.length]);
+
   // Sync external state with internal state - only when values actually change
   useEffect(() => {
     if (selectedCountry && selectedCountry !== prevCountryRef.current) {
       prevCountryRef.current = selectedCountry;
-      // Only trigger if the country is not already loaded in the internal state
-      const currentCountry = locationData.countries.find(c => c.country === selectedCountry);
-      if (!currentCountry) {
-        handleCountryChange(selectedCountry);
-      }
+      // Always trigger country change to ensure states are loaded
+      handleCountryChange(selectedCountry);
     }
-  }, [selectedCountry, handleCountryChange, locationData.countries]);
+  }, [selectedCountry, handleCountryChange]);
 
   useEffect(() => {
-    if (selectedState && selectedState !== prevStateRef.current) {
+    if (selectedState && selectedState !== prevStateRef.current && selectedCountry) {
       prevStateRef.current = selectedState;
-      // Only trigger if the state is not already loaded in the internal state
-      const currentState = locationData.states.find(s => s.name === selectedState);
-      if (!currentState) {
-        handleStateChange(selectedState);
-      }
+      // Always trigger state change to ensure cities are loaded
+      handleStateChange(selectedState, selectedCountry);
     }
-  }, [selectedState, handleStateChange, locationData.states]);
+  }, [selectedState, selectedCountry, handleStateChange]);
 
   const handleCountrySelect = (country: string) => {
     handleCountryChange(country);
@@ -87,7 +103,7 @@ export default function LocationDropdowns({
   const labelStyle = "text-sm font-semibold text-gray-700 mb-2 block";
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`${className.includes('grid') ? 'grid gap-4' : 'space-y-4'} ${className}`}>
       {/* Country Dropdown */}
       <div className="space-y-2">
         {showLabels && (
