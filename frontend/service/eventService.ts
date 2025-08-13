@@ -6,7 +6,7 @@ const headers = {
 
 export const eventService = {
   async createEvent(data: any): Promise<any> {
-    console.log('EventService: Creating event with data:', data);
+
     
     const response = await fetch(`/api/event/create`, {
       method: 'POST',
@@ -14,8 +14,7 @@ export const eventService = {
       body: JSON.stringify(data),
     });
 
-    console.log('EventService: Response status:', response.status);
-    console.log('EventService: Response ok:', response.ok);
+    
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -24,7 +23,7 @@ export const eventService = {
     }
 
     const result = await response.json();
-    console.log('EventService: Success response:', result);
+    
     return result.data || result;
   },
 
@@ -47,41 +46,39 @@ export const eventService = {
     
     // Handle nested response structure
     let eventsData;
-    console.log('Raw API response:', result);
-    console.log('Events count in response:', result.data?.data?.events?.length || result.data?.events?.length || result.events?.length || 'No events array found');
+
     
     // Check for the specific nested structure from your API
     if (result.data && result.data.data && result.data.data.events) {
       eventsData = result.data.data;
-      console.log('Found nested structure level 2');
+      
     } else if (result.data && result.data.events) {
       eventsData = result.data;
-      console.log('Found nested structure level 1');
+      
     } else if (result.events) {
       eventsData = result;
-      console.log('Found flat structure');
+      
     } else {
       eventsData = result.data || result;
-      console.log('Using fallback structure');
+      
     }
     
-    console.log('Extracted events data:', eventsData);
-    console.log('Final events count:', eventsData.events?.length || 0);
+    
     
     // Transform event_id to id for frontend compatibility
     if (eventsData.events && Array.isArray(eventsData.events)) {
-      console.log('Original events:', eventsData.events);
+      
       eventsData.events = eventsData.events.map((event: any) => {
         const transformedEvent = {
           ...event,
           id: event.event_id || event.id
         };
-        console.log('Transformed event:', transformedEvent);
+        
         return transformedEvent;
       });
-      console.log('Final transformed events:', eventsData.events);
+      
     } else {
-      console.log('No events array found in eventsData:', eventsData);
+      
     }
     
     return eventsData;

@@ -280,7 +280,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                 try {
                   const response = await fetch('/api/debug/agent-data');
                   const data = await response.json();
-                  console.log('Debug Agent Data:', data);
+          
                   alert('Check console for debug data');
                 } catch (error) {
                   console.error('Debug error:', error);
@@ -374,11 +374,11 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                   {/* OpenAI TTS Configuration */}
                   {addForm.tts_config.provider === 'openai' && (
                     <>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="openaiApiKey">OpenAI API Key</label>
-                          <input
-                            className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                      <input
+                        className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
                             name="openaiApiKey"
                             id="openaiApiKey"
                             value={addForm.tts_config.openai.api_key}
@@ -390,10 +390,10 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                               } 
                             })}
                             placeholder="sk-..."
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="openaiVoice">Voice</label>
                           <select
                             className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
@@ -463,7 +463,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                         </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="openaiSpeed">Speed</label>
-                          <input
+                      <input
                             type="number"
                             step="0.1"
                             min="0.1"
@@ -480,18 +480,18 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                               } 
                             })}
                             placeholder="1.0"
-                            required
-                          />
-                        </div>
-                      </div>
+                        required
+                      />
+                    </div>
+                  </div>
                     </>
                   )}
 
                   {/* Cartesian TTS Configuration */}
                   {addForm.tts_config.provider === 'cartesian' && (
                     <>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="cartesianVoiceId">Voice ID</label>
                           <input
                             className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
@@ -531,7 +531,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                       <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="cartesianModel">Model</label>
-                          <select
+                      <select
                             className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
                             name="cartesianModel"
                             id="cartesianModel"
@@ -543,21 +543,21 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                                 cartesian: { ...addForm.tts_config.cartesian, model: e.target.value } 
                               } 
                             })}
-                            required
-                          >
+                        required
+                      >
                             <option value="sonic-english">Sonic English</option>
                             <option value="sonic-hindi">Sonic Hindi</option>
                             <option value="sonic-spanish">Sonic Spanish</option>
-                          </select>
-                        </div>
-                        <div className="space-y-2">
+                      </select>
+                    </div>
+                    <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="cartesianSpeed">Speed</label>
-                          <input
-                            type="number"
-                            step="0.1"
-                            min="0.1"
-                            max="2.0"
-                            className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        max="2.0"
+                        className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
                             name="cartesianSpeed"
                             id="cartesianSpeed"
                             value={addForm.tts_config.cartesian.speed}
@@ -569,13 +569,13 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                               } 
                             })}
                             placeholder="0"
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
+                        required
+                      />
+                  </div>
+                  <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="cartesianLanguage">Language</label>
-                          <select
-                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                    <select
+                      className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
                             name="cartesianLanguage"
                             id="cartesianLanguage"
                             value={addForm.tts_config.cartesian.language}
@@ -586,13 +586,13 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                                 cartesian: { ...addForm.tts_config.cartesian, language: e.target.value } 
                               } 
                             })}
-                            required
-                          >
-                            <option value="en">English</option>
-                            <option value="hi">Hindi</option>
-                            <option value="es">Spanish</option>
-                          </select>
-                        </div>
+                      required
+                    >
+                      <option value="en">English</option>
+                      <option value="hi">Hindi</option>
+                      <option value="es">Spanish</option>
+                    </select>
+                  </div>
                       </div>
                     </>
                   )}
@@ -605,7 +605,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                 </div>
                 <div className="p-6 pt-0 space-y-4">
                   {/* STT Provider Selection */}
-                  <div className="space-y-2">
+                    <div className="space-y-2">
                     <label className="text-sm font-medium leading-none" htmlFor="sttProvider">STT Provider</label>
                     <select
                       className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
@@ -626,8 +626,8 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="deepgramApiKey">Deepgram API Key</label>
-                          <input
-                            className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                      <input
+                        className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
                             name="deepgramApiKey"
                             id="deepgramApiKey"
                             value={addForm.stt_config.deepgram.api_key}
@@ -638,14 +638,14 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                                 deepgram: { ...addForm.stt_config.deepgram, api_key: e.target.value } 
                               } 
                             })}
-                            placeholder="API Key"
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
+                        placeholder="API Key"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="deepgramModel">Model</label>
-                          <select
-                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                      <select
+                        className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
                             name="deepgramModel"
                             id="deepgramModel"
                             value={addForm.stt_config.deepgram.model}
@@ -656,19 +656,19 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                                 deepgram: { ...addForm.stt_config.deepgram, model: e.target.value } 
                               } 
                             })}
-                            required
-                          >
+                        required
+                      >
                             <option value="nova-2">Nova-2</option>
                             <option value="nova-3">Nova-3</option>
                             <option value="enhanced">Enhanced</option>
-                          </select>
-                        </div>
+                      </select>
+                    </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
+                    <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="deepgramLanguage">Language</label>
-                          <select
-                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                      <select
+                        className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
                             name="deepgramLanguage"
                             id="deepgramLanguage"
                             value={addForm.stt_config.deepgram.language}
@@ -679,16 +679,16 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                                 deepgram: { ...addForm.stt_config.deepgram, language: e.target.value } 
                               } 
                             })}
-                            required
-                          >
+                        required
+                      >
                             <option value="hi">Hindi</option>
                             <option value="hi-IN">Hindi (India)</option>
                             <option value="en-US">English (US)</option>
                             <option value="en-GB">English (UK)</option>
                             <option value="es">Spanish</option>
                             <option value="fr">French</option>
-                          </select>
-                        </div>
+                      </select>
+                    </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="deepgramPunctuate">Punctuate</label>
                           <select
@@ -708,7 +708,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                             <option value="true">Yes</option>
                             <option value="false">No</option>
                           </select>
-                        </div>
+                  </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -987,10 +987,10 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                   {/* OpenAI TTS Configuration */}
                   {updateForm.tts_config.provider === 'openai' && (
                     <>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="updateOpenaiApiKey">OpenAI API Key</label>
-                          <input
+                      <input
                             className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
                             name="updateOpenaiApiKey"
                             id="updateOpenaiApiKey"
@@ -1003,10 +1003,10 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                               } 
                             })}
                             placeholder="sk-..."
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="updateOpenaiVoice">Voice</label>
                           <select
                             className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
@@ -1076,7 +1076,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                         </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="updateOpenaiSpeed">Speed</label>
-                          <input
+                      <input
                             type="number"
                             step="0.1"
                             min="0.1"
@@ -1093,18 +1093,18 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                               } 
                             })}
                             placeholder="1.0"
-                            required
-                          />
-                        </div>
-                      </div>
+                        required
+                      />
+                    </div>
+                  </div>
                     </>
                   )}
 
                   {/* Cartesian TTS Configuration */}
                   {updateForm.tts_config.provider === 'cartesian' && (
                     <>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="updateCartesianVoiceId">Voice ID</label>
                           <input
                             className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
@@ -1144,7 +1144,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                       <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="updateCartesianModel">Model</label>
-                          <select
+                      <select
                             className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
                             name="updateCartesianModel"
                             id="updateCartesianModel"
@@ -1156,20 +1156,20 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                                 cartesian: { ...updateForm.tts_config.cartesian, model: e.target.value } 
                               } 
                             })}
-                            required
-                          >
+                        required
+                      >
                             <option value="sonic-english">Sonic English</option>
                             <option value="sonic-hindi">Sonic Hindi</option>
                             <option value="sonic-spanish">Sonic Spanish</option>
-                          </select>
-                        </div>
-                        <div className="space-y-2">
+                      </select>
+                    </div>
+                    <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="updateCartesianSpeed">Speed</label>
-                          <input
-                            type="number"
-                            step="0.1"
-                            min="0.1"
-                            max="2.0"
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        max="2.0"
                             className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
                             name="updateCartesianSpeed"
                             id="updateCartesianSpeed"
@@ -1182,13 +1182,13 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                               } 
                             })}
                             placeholder="0"
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
+                        required
+                      />
+                  </div>
+                  <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="updateCartesianLanguage">Language</label>
-                          <select
-                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
+                    <select
+                      className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
                             name="updateCartesianLanguage"
                             id="updateCartesianLanguage"
                             value={updateForm.tts_config.cartesian.language}
@@ -1199,13 +1199,13 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                                 cartesian: { ...updateForm.tts_config.cartesian, language: e.target.value } 
                               } 
                             })}
-                            required
-                          >
-                            <option value="en">English</option>
-                            <option value="hi">Hindi</option>
-                            <option value="es">Spanish</option>
-                          </select>
-                        </div>
+                      required
+                    >
+                      <option value="en">English</option>
+                      <option value="hi">Hindi</option>
+                      <option value="es">Spanish</option>
+                    </select>
+                  </div>
                       </div>
                     </>
                   )}
@@ -1218,7 +1218,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                 </div>
                 <div className="p-6 pt-0 space-y-4">
                   {/* STT Provider Selection */}
-                  <div className="space-y-2">
+                    <div className="space-y-2">
                     <label className="text-sm font-medium leading-none" htmlFor="updateSttProvider">STT Provider</label>
                     <select
                       className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
@@ -1239,7 +1239,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="updateDeepgramApiKey">Deepgram API Key</label>
-                          <input
+                      <input
                             className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
                             name="updateDeepgramApiKey"
                             id="updateDeepgramApiKey"
@@ -1252,12 +1252,12 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                               } 
                             })}
                             placeholder="API Key"
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="updateDeepgramModel">Model</label>
-                          <select
+                      <select
                             className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
                             name="updateDeepgramModel"
                             id="updateDeepgramModel"
@@ -1269,18 +1269,18 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                                 deepgram: { ...updateForm.stt_config.deepgram, model: e.target.value } 
                               } 
                             })}
-                            required
-                          >
+                        required
+                      >
                             <option value="nova-2">Nova-2</option>
                             <option value="nova-3">Nova-3</option>
                             <option value="enhanced">Enhanced</option>
-                          </select>
-                        </div>
+                      </select>
+                    </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
+                    <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="updateDeepgramLanguage">Language</label>
-                          <select
+                      <select
                             className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus:bg-gray-50 md:text-sm"
                             name="updateDeepgramLanguage"
                             id="updateDeepgramLanguage"
@@ -1292,16 +1292,16 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                                 deepgram: { ...updateForm.stt_config.deepgram, language: e.target.value } 
                               } 
                             })}
-                            required
-                          >
+                        required
+                      >
                             <option value="hi">Hindi</option>
                             <option value="hi-IN">Hindi (India)</option>
                             <option value="en-US">English (US)</option>
                             <option value="en-GB">English (UK)</option>
                             <option value="es">Spanish</option>
                             <option value="fr">French</option>
-                          </select>
-                        </div>
+                      </select>
+                    </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium leading-none" htmlFor="updateDeepgramPunctuate">Punctuate</label>
                           <select
@@ -1321,7 +1321,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                             <option value="true">Yes</option>
                             <option value="false">No</option>
                           </select>
-                        </div>
+                  </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -1642,12 +1642,11 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                             <td className="py-4 px-4">
         {(() => {
           // Debug logging
-          console.log('Agent:', agent);
-          console.log('Trunks:', trunks);
+          
           
           // First check if agent has a phone number directly
           if (agent.phone_number) {
-            console.log('Using direct phone number:', agent.phone_number);
+
             return (
               <span className="text-sm font-medium text-green-700">
                 {agent.phone_number}
@@ -1666,10 +1665,8 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
             agent.name?.includes(t.name)
           );
           
-          console.log('Found trunk for agent:', trunk);
           
           if (trunk && trunk.numbers && trunk.numbers.length > 0) {
-            console.log('Using trunk phone number:', trunk.numbers[0]);
             return (
               <span className="text-sm font-medium text-blue-700">
                 {trunk.numbers[0]}
@@ -1677,7 +1674,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
             );
           }
           
-          console.log('No phone number found for agent');
+
           return (
             <span className="text-sm text-gray-500">
               Not set
