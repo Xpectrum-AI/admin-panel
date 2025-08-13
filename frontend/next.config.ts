@@ -3,29 +3,25 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: 'standalone',
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: true,  // Skip ESLint during build
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: true,    // Skip TypeScript checks during build
   },
-  async headers() {
+  experimental: {
+    // Enable runtime environment variable access
+    serverComponentsExternalPackages: [],
+  },
+  // Add runtime configuration for environment variables
+  env: {
+    // Build-time environment variables (if any)
+  },
+  // Runtime configuration function
+  async rewrites() {
     return [
       {
-        source: '/superadmin',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
-          },
-          {
-            key: 'Pragma',
-            value: 'no-cache',
-          },
-          {
-            key: 'Expires',
-            value: '0',
-          },
-        ],
+        source: '/api/runtime-config',
+        destination: '/api/runtime-config',
       },
     ];
   },

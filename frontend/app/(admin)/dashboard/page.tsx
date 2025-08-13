@@ -39,8 +39,7 @@ interface CalendarData {
 }
 
 export default function Dashboard() {
-  const { accessToken, user, loading, orgHelper } = useAuthInfo();
-  const [showWelcome, setShowWelcome] = useState(false);
+  const {user, loading, orgHelper } = useAuthInfo();
   const [showOrgSetup, setShowOrgSetup] = useState(false);
   const [showOrgChoice, setShowOrgChoice] = useState(false);
   const [orgs, setOrgs] = useState<any[]>([]);
