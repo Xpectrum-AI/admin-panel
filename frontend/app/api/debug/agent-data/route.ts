@@ -3,14 +3,13 @@ import { agentApiService } from '@/service/agentService';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('Debug Agent Data Structure');
+
     
     // Fetch both agents and trunks
     const agentsResponse = await agentApiService.getAllAgents();
     const trunksResponse = await agentApiService.getAgentTrunks();
     
-    console.log('Agents Response:', agentsResponse);
-    console.log('Trunks Response:', trunksResponse);
+    
     
     return NextResponse.json({
       success: true,

@@ -28,7 +28,7 @@ export default function CacheBuster({ children }: CacheBusterProps) {
     
     // If build is older than 5 minutes, suggest refresh
     if (timeDiff > 300000) {
-      console.log('Cache may be stale, consider refreshing');
+      
     }
   }, []);
 

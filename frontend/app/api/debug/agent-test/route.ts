@@ -6,9 +6,7 @@ const LIVE_API_KEY = process.env.NEXT_PUBLIC_API_KEY || '';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('Debug Agent API Test');
-    console.log('LIVE_API_BASE_URL:', LIVE_API_BASE_URL);
-    console.log('LIVE_API_KEY:', LIVE_API_KEY ? 'SET' : 'NOT SET');
+
 
     // Test the trunks endpoint
     const trunksResponse = await axios.get(`${LIVE_API_BASE_URL}/agents/trunks`, {
