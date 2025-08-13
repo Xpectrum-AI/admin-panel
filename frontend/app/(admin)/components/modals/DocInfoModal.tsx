@@ -4,11 +4,12 @@ import { useState } from 'react';
 import { useAuthInfo } from '@propelauth/react';
 import axios from 'axios';
 import { SyncLoader } from 'react-spinners';
-import {UserPen, UserCheck, Trash, Plus, X} from "lucide-react";
+import {UserPen, UserCheck, Trash, Plus, X, HelpCircle} from "lucide-react";
 import Module from 'module';
 import { doctorApiService } from '@/service/doctorService';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { LocationDropdowns } from '../common';
+import { SPECIALIZATIONS } from '../constants/specializations';
 
 // Helper function to generate unique ID
 const generateUniqueId = () => {
@@ -41,7 +42,7 @@ const initialDoctorProfile = {
     registration_city: '',
     registration_board: '',
     qualifications: [{ degree: '', university: '', year: '', place: '', country: '', state: '' }],
-    specializations: [{ specialization: '', level: '' }],
+    specializations: [{ specialization: '', level: '', customSpecialization: '' }],
     aliases: [''],
     facilities: [{ name: '', type: '', area: '', city: '', state: '', country: '', pincode: '', address: '' }],
   }
@@ -65,6 +66,8 @@ export default function WelcomeSetupModal({
   const [isDoctor, setIsDoctor] = useState(true);
   const [loading, setLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+  const [showAliasHelp, setShowAliasHelp] = useState(false);
+  const [isAliasHelpHovered, setIsAliasHelpHovered] = useState(false);
   
   const [doctorProfile, setDoctorProfile] = useState<any>(
     isEdit && doctorData ? {
@@ -83,10 +86,30 @@ export default function WelcomeSetupModal({
         registration_country: doctorData.doctor_data?.registration_country || '',
         registration_city: doctorData.doctor_data?.registration_city || '',
         registration_board: doctorData.doctor_data?.registration_board || '',
-        qualifications: doctorData.doctor_data?.qualifications || [],
-        specializations: doctorData.doctor_data?.specializations || [],
+        qualifications: doctorData.doctor_data?.qualifications?.map((q: any) => ({
+          degree: q.degree || '',
+          university: q.university || '',
+          year: q.year || '',
+          place: q.place || '',
+          country: q.country || '',
+          state: q.state || ''
+        })) || [],
+        specializations: doctorData.doctor_data?.specializations?.map((s: any) => ({
+          specialization: s.specialization || '',
+          level: s.level || '',
+          customSpecialization: s.customSpecialization || ''
+        })) || [],
         aliases: doctorData.doctor_data?.aliases || [],
-        facilities: doctorData.doctor_data?.facilities || []
+        facilities: doctorData.doctor_data?.facilities?.map((f: any) => ({
+          name: f.name || '',
+          type: f.type || '',
+          area: f.area || '',
+          city: f.city || '',
+          state: f.state || '',
+          country: f.country || '',
+          pincode: f.pincode || '',
+          address: f.address || ''
+        })) || []
       }
     } : initialDoctorProfile
   );
@@ -96,8 +119,8 @@ export default function WelcomeSetupModal({
     const ageNum = parseInt(age);
     const currentYear = new Date().getFullYear();
     
-    if (age && (ageNum < 18 || ageNum > 100)) {
-      return 'Age must be between 18 and 100 years (doctor must be at least 23 when starting practice)';
+    if (age && (ageNum < 23 || ageNum > 100)) {
+      return 'Age must be between 23 and 100 years (doctor must be at least 23 when starting practice)';
     }
     return '';
   };
@@ -164,8 +187,13 @@ export default function WelcomeSetupModal({
     const regYearNum = parseInt(regYear);
     const currentYear = new Date().getFullYear();
     
+    // Check for negative experience
+    if (experience && expNum < 0) {
+      return 'Experience cannot be negative';
+    }
+    
     if (experience && age && expNum > ageNum - 23) {
-      return `Experience cannot exceed ${ageNum - 23} years (doctor must be at least 23 when starting practice)`;
+      return `Experience cannot exceed ${ageNum - 23} years`;
     }
     
     if (experience && regYear) {
@@ -329,7 +357,7 @@ export default function WelcomeSetupModal({
     // Validate current step before proceeding
     const currentStepErrors = validateCurrentStep();
     if (Object.keys(currentStepErrors).length > 0) {
-      console.log('Validation errors preventing next step:', currentStepErrors);
+      
       setValidationErrors(prev => ({ ...prev, ...currentStepErrors }));
       return;
     }
@@ -340,34 +368,24 @@ export default function WelcomeSetupModal({
   const validateCurrentStep = () => {
     const errors: {[key: string]: string} = {};
 
-    console.log('Validating step:', currentStep, 'isDoctor:', isDoctor);
+    
 
     // Only validate the current step, not multiple steps
     if (currentStep === 1) {
       // Step 1: Basic Info validation
-      console.log('Validating Step 1 - Basic Info');
+      
       if (!doctorProfile.first_name.trim()) errors.first_name = 'First name is required';
       if (!doctorProfile.last_name.trim()) errors.last_name = 'Last name is required';
       if (doctorProfile.last_name.trim().length < 2) errors.last_name = 'Last name must be at least 2 characters';
       if (!doctorProfile.doctor_data.gender) errors.gender = 'Gender is required';
       if (!doctorProfile.doctor_data.age) errors.age = 'Age is required';
       
-      // Validate experience
-      const expError = validateExperience(
-        doctorProfile.doctor_data.experience,
-        doctorProfile.doctor_data.age,
-        doctorProfile.doctor_data.registration_year
-      );
-      if (expError) {
-        errors.experience = expError;
-      }
       
-      console.log('Step 1 validation errors:', errors);
     }
 
     if (currentStep === 2) {
       // Step 2: Registration Details validation
-      console.log('Validating Step 2 - Registration Details');
+      
       if (!doctorProfile.doctor_data.registration_number.trim()) {
         errors.registration_number = 'Registration number is required';
       }
@@ -388,12 +406,12 @@ export default function WelcomeSetupModal({
         errors.experience = expError;
       }
       
-      console.log('Step 2 validation errors:', errors);
+      
     }
 
     if (currentStep === 3) {
       // Step 3: Qualifications validation
-      console.log('Validating Step 3 - Qualifications');
+      
       const qualifications = doctorProfile.doctor_data.qualifications;
       qualifications.forEach((qual: any, idx: number) => {
         if (!qual.degree.trim()) {
@@ -424,10 +442,10 @@ export default function WelcomeSetupModal({
         errors.qualification_consistency = consistencyError;
       }
       
-      console.log('Step 3 validation errors:', errors);
+      
     }
 
-    console.log('Total validation errors:', errors);
+    
     return errors;
   };
 
@@ -710,12 +728,33 @@ export default function WelcomeSetupModal({
                     <input
                       id="experience"
                       type="number"
+                      min="0"
+                      step="1"
                       placeholder="Years of experience"
                       className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                         getFieldError('experience') ? 'border-red-500' : 'border-gray-300'
                       }`}
                       value={doctorProfile.doctor_data.experience}
-                      onChange={e => handleChange('experience', e.target.value)}
+                      onChange={e => {
+                        const value = e.target.value;
+                        // Allow empty value for clearing
+                        if (value === '') {
+                          handleChange('experience', value);
+                          return;
+                        }
+                        // Prevent negative values from being entered
+                        if (value.startsWith('-') || parseInt(value) < 0) {
+                          return;
+                        }
+                        handleChange('experience', value);
+                      }}
+                      onBlur={e => {
+                        const value = e.target.value;
+                        // Clear field if negative value is somehow entered
+                        if (value && parseInt(value) < 0) {
+                          handleChange('experience', '');
+                        }
+                      }}
                       required
                     />
                     {getFieldError('experience') && (
@@ -811,7 +850,7 @@ export default function WelcomeSetupModal({
                           className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                             getArrayFieldError('qualifications', idx, 'degree') ? 'border-red-500' : 'border-gray-300'
                           }`}
-                          value={q.degree}
+                          value={q.degree || ''}
                           onChange={e => handleArrayChange('qualifications', idx, 'degree', e.target.value)}
                         />
                         {getArrayFieldError('qualifications', idx, 'degree') && (
@@ -827,7 +866,7 @@ export default function WelcomeSetupModal({
                           className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                             getArrayFieldError('qualifications', idx, 'year') ? 'border-red-500' : 'border-gray-300'
                           }`}
-                          value={q.year}
+                          value={q.year || ''}
                           onChange={e => handleArrayChange('qualifications', idx, 'year', e.target.value)}
                         />
                         {getArrayFieldError('qualifications', idx, 'year') && (
@@ -842,7 +881,7 @@ export default function WelcomeSetupModal({
                           className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                             getArrayFieldError('qualifications', idx, 'university') ? 'border-red-500' : 'border-gray-300'
                           }`}
-                          value={q.university}
+                          value={q.university || ''}
                           onChange={e => handleArrayChange('qualifications', idx, 'university', e.target.value)}
                         />
                         {getArrayFieldError('qualifications', idx, 'university') && (
@@ -854,7 +893,7 @@ export default function WelcomeSetupModal({
                         <LocationDropdowns
                           selectedCountry={q.country || ''}
                           selectedState={q.state || ''}
-                          selectedCity={q.place}
+                          selectedCity={q.place || ''}
                           onCountryChange={(country) => handleArrayChange('qualifications', idx, 'country', country)}
                           onStateChange={(state) => handleArrayChange('qualifications', idx, 'state', state)}
                           onCityChange={(city) => handleArrayChange('qualifications', idx, 'place', city)}
@@ -929,7 +968,7 @@ export default function WelcomeSetupModal({
                   <h3 className="text-lg font-semibold">Specializations</h3>
                   <button
                     className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-black text-white hover:bg-gray-900 h-9 rounded-md px-3"
-                    onClick={() => addArrayItem('specializations', { specialization: '', level: '' })}
+                    onClick={() => addArrayItem('specializations', { specialization: '', level: '', customSpecialization: '' })}
                   >
                     <Plus/>
                     Add Specialization
@@ -953,20 +992,37 @@ export default function WelcomeSetupModal({
                     <div className="p-6 pt-0 grid grid-cols-2 gap-3">
                       <div>
                         <label className="text-sm font-medium leading-none" htmlFor={`specialization_${idx}`}>Specialization</label>
-                        <input
+                        <select
                           id={`specialization_${idx}`}
-                          placeholder="e.g., gynecologist, cardiologist"
-                          className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          value={s.specialization}
+                          className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          value={s.specialization || ''}
                           onChange={e => handleArrayChange('specializations', idx, 'specialization', e.target.value)}
-                        />
+                        >
+                          <option value="">Select Specialization</option>
+                          {SPECIALIZATIONS.map((spec) => (
+                            <option key={spec.id} value={spec.name}>
+                              {spec.name}
+                            </option>
+                          ))}
+                          <option value="Others">Others</option>
+                        </select>
+                         {s.specialization === 'Others' && (
+                           <div className="mt-2">
+                             <input
+                               placeholder="Enter custom specialization"
+                               className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                               value={s.customSpecialization || ''}
+                               onChange={e => handleArrayChange('specializations', idx, 'customSpecialization', e.target.value)}
+                             />
+                           </div>
+                         )}
                       </div>
                       <div>
                         <label className="text-sm font-medium leading-none" htmlFor={`level_${idx}`}>Level</label>
                         <select
                           id={`level_${idx}`}
                           className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          value={s.level}
+                          value={s.level || ''}
                           onChange={e => handleArrayChange('specializations', idx, 'level', e.target.value)}
                         >
                           <option value="">Level</option>
@@ -979,24 +1035,69 @@ export default function WelcomeSetupModal({
                   </div>
                 ))}
     
-                {/* Aliases Header */}
-                <div className="flex items-center justify-between mt-4">
-                  <h4 className="font-medium">Aliases</h4>
-                  <button
-                    className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-black text-white hover:bg-gray-900 h-9 rounded-md px-3"
-                    onClick={() => addArrayItem('aliases', '')}
-                  >
-                    <Plus/>
-                    Add Alias
-                  </button>
-                </div>
+                                 {/* Aliases Header */}
+                 <div className="flex items-center justify-between mt-4">
+                   <div className="flex items-center gap-2">
+                     <h4 className="font-medium">Aliases</h4>
+                     <div 
+                       className="relative group"
+                       onMouseEnter={() => setIsAliasHelpHovered(true)}
+                       onMouseLeave={() => setIsAliasHelpHovered(false)}
+                     >
+                       <button
+                         type="button"
+                         className="text-gray-400 hover:text-blue-600 transition-all duration-200 p-1 rounded-full hover:bg-blue-50 group-hover:scale-110"
+                         aria-label="Help with aliases"
+                       >
+                         <HelpCircle className="w-4 h-4" />
+                       </button>
+                       
+                                                                       {/* Enhanced Hover Tooltip */}
+                        {isAliasHelpHovered && (
+                          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20">
+                            <div className="bg-white border border-gray-200 shadow-2xl rounded-xl p-6 max-w-2xl mx-4 backdrop-blur-sm">
+                              <div className="flex items-start gap-4">
+                                <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                  <HelpCircle className="w-5 h-5 text-blue-600" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h5 className="font-semibold text-gray-900 mb-3 text-base">What are Aliases?</h5>
+                                  <p className="text-gray-600 text-sm leading-relaxed mb-4">
+                                    Alternative names or nicknames that the doctor might be known by in their professional practice. These can include abbreviations, common nicknames, or alternative titles.
+                                  </p>
+                                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                    <p className="text-sm font-medium text-gray-700 mb-2">Examples:</p>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200">Dr. Smith</span>
+                                      <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-green-100 text-green-800 border border-green-200">Doc</span>
+                                      <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-purple-100 text-purple-800 border border-purple-200">Dr. John</span>
+                                      <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-orange-100 text-orange-800 border border-orange-200">Dr. K</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                                                         </div>
+                           </div>
+                        )}
+                     </div>
+                   </div>
+                   <button
+                     className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-black text-white hover:bg-gray-900 h-9 rounded-md px-3"
+                     onClick={() => addArrayItem('aliases', '')}
+                   >
+                     <Plus/>
+                     Add Alias
+                   </button>
+                 </div>
+                 
+                 
                 {/* Aliases List */}
                 {doctorProfile.doctor_data.aliases.map((a: string, idx: number) => (
                   <div key={idx} className="flex gap-2 mb-2">
                     <input
                       placeholder="e.g., Dr. Smith, Doc"
                       className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      value={a}
+                      value={a || ''}
                       onChange={e => {
                         const arr = [...doctorProfile.doctor_data.aliases];
                         arr[idx] = e.target.value;
@@ -1097,12 +1198,12 @@ export default function WelcomeSetupModal({
                     </div>
                     <div className="p-6 pt-0 grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-sm font-medium leading-none" htmlFor={`facility_name_${idx}`}>Facility Name</label>
+                                                 <label className="text-sm font-medium leading-none" htmlFor={`facility_name_${idx}`}>Hospital/Facility Name</label>
                         <input
                           id={`facility_name_${idx}`}
                           placeholder="Hospital/Clinic name"
                           className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          value={f.name}
+                          value={f.name || ''}
                           onChange={e => handleArrayChange('facilities', idx, 'name', e.target.value)}
                         />
                       </div>
@@ -1112,7 +1213,7 @@ export default function WelcomeSetupModal({
                           id={`facility_type_${idx}`}
                           placeholder="Type (e.g., Hospital, Clinic)"
                           className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          value={f.type}
+                          value={f.type || ''}
                           onChange={e => handleArrayChange('facilities', idx, 'type', e.target.value)}
                         />
                       </div>
@@ -1122,7 +1223,7 @@ export default function WelcomeSetupModal({
                           id={`facility_area_${idx}`}
                           placeholder="Area/Locality"
                           className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          value={f.area}
+                          value={f.area || ''}
                           onChange={e => handleArrayChange('facilities', idx, 'area', e.target.value)}
                         />
                       </div>
@@ -1130,8 +1231,8 @@ export default function WelcomeSetupModal({
                         <label className="text-sm font-medium leading-none mb-2 block">Location</label>
                         <LocationDropdowns
                           selectedCountry={f.country || ''}
-                          selectedState={f.state}
-                          selectedCity={f.city}
+                          selectedState={f.state || ''}
+                          selectedCity={f.city || ''}
                           onCountryChange={(country) => handleArrayChange('facilities', idx, 'country', country)}
                           onStateChange={(state) => handleArrayChange('facilities', idx, 'state', state)}
                           onCityChange={(city) => handleArrayChange('facilities', idx, 'city', city)}
@@ -1145,7 +1246,7 @@ export default function WelcomeSetupModal({
                           id={`facility_pincode_${idx}`}
                           placeholder="Pincode"
                           className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          value={f.pincode}
+                          value={f.pincode || ''}
                           onChange={e => handleArrayChange('facilities', idx, 'pincode', e.target.value)}
                         />
                       </div>
@@ -1155,7 +1256,7 @@ export default function WelcomeSetupModal({
                           id={`facility_address_${idx}`}
                           placeholder="Full address"
                           className="flex min-h-[80px] w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          value={f.address}
+                          value={f.address || ''}
                           onChange={e => handleArrayChange('facilities', idx, 'address', e.target.value)}
                         />
                       </div>

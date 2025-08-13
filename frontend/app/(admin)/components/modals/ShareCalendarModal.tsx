@@ -11,6 +11,7 @@ interface ShareCalendarModalProps {
   calendarName?: string;
   calendarId?: string | null;
   onComplete?: () => void;
+  onInvitationSent?: (email: string) => void;
 }
 
 interface SharedUser {
@@ -18,7 +19,7 @@ interface SharedUser {
   permission: 'view' | 'edit';
 }
 
-export default function ShareCalendarModal({ isOpen, onClose, calendarName = "My Calendar", calendarId, onComplete }: ShareCalendarModalProps) {
+export default function ShareCalendarModal({ isOpen, onClose, calendarName = "My Calendar", calendarId, onComplete, onInvitationSent }: ShareCalendarModalProps) {
   const [email, setEmail] = useState('');
   const [permission, setPermission] = useState<'view' | 'edit'>('view');
   const [sharedUsers, setSharedUsers] = useState<SharedUser[]>([]);
@@ -39,7 +40,11 @@ export default function ShareCalendarModal({ isOpen, onClose, calendarName = "My
       showSuccess('Calendar shared successfully');
       setSharedUsers([...sharedUsers, { email: email.trim(), permission }]);
       setEmail('');
+      console.log('ShareCalendarModal: Calendar shared with email:', email.trim());
+      console.log('ShareCalendarModal: Calling onComplete first');
       onComplete?.();
+      console.log('ShareCalendarModal: Calling onInvitationSent with email:', email.trim());
+      onInvitationSent?.(email.trim());
     } catch (error) {
       console.error('Failed to share calendar:', error);
     } finally {

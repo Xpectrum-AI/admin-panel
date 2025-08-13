@@ -18,7 +18,9 @@ import {
   ShareCalendarModal,
   CreateEventModal,
   EditEventModal,
-  ShowDocInfoModal
+  ShowDocInfoModal,
+  EmailVerificationDialog,
+  EmailVerificationNotification
 } from '../components';
 import { Calendar } from '../components/calendar';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
@@ -66,6 +68,42 @@ export default function Dashboard() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null); // Add selected date state
   const [filteredEvents, setFilteredEvents] = useState<any[]>([]); // Add filtered events state
+  const [showEmailVerificationNotification, setShowEmailVerificationNotification] = useState(false);
+  const [invitationEmail, setInvitationEmail] = useState('');
+
+  // Check for existing email verification state on component mount
+  useEffect(() => {
+    const savedState = localStorage.getItem('emailVerificationState');
+    console.log('Dashboard: Checking localStorage for email verification state:', savedState);
+    
+    if (savedState) {
+      try {
+        const parsedState = JSON.parse(savedState);
+        console.log('Dashboard: Parsed state:', parsedState);
+        
+        const now = Date.now();
+        const oneHour = 60 * 60 * 1000; // 1 hour in milliseconds
+        
+        // Only restore if the state is less than 1 hour old
+        if (parsedState.timestamp && (now - parsedState.timestamp) < oneHour) {
+          console.log('Dashboard: Restoring email verification state with email:', parsedState.email);
+          setInvitationEmail(parsedState.email);
+          setShowEmailVerificationNotification(true);
+        } else {
+          // Clean up old state
+          console.log('Dashboard: Cleaning up old email verification state');
+          localStorage.removeItem('emailVerificationState');
+        }
+      } catch (error) {
+        console.error('Error parsing saved email verification state:', error);
+        localStorage.removeItem('emailVerificationState');
+      }
+    } else {
+      console.log('Dashboard: No saved email verification state found');
+    }
+  }, []);
+
+
   const { showError, showSuccess, showWarning } = useErrorHandler();
 
   const fetchDoctors = async () => {
@@ -341,8 +379,7 @@ export default function Dashboard() {
     });
 
     setFilteredEvents(filtered);
-    console.log('Selected date:', date);
-    console.log('Filtered events for date:', filtered);
+    
   };
 
   const handleShowAllEvents = () => {
@@ -377,9 +414,11 @@ export default function Dashboard() {
   };
 
   const handleShareCalendarClose = () => {
+    console.log('Dashboard: handleShareCalendarClose called');
     setShowShareCalendarModal(false);
     setCreatedCalendarId(null);
-    window.location.reload();
+    // Don't reload immediately - let the notification show first
+    // window.location.reload();
   };
 
   const handleCalendarSelect = async (calendar: any) => {
@@ -389,10 +428,9 @@ export default function Dashboard() {
     setEventsLoading(true);
     try {
       // Fetch events for the selected calendar
-      console.log('Fetching events for calendar:', calendar.calendar_id);
+      
       const response = await eventService.listEvents(calendar.calendar_id, false); // Set upcomingOnly to false to get all events
-      console.log('Calendar events response:', response);
-      console.log('Events array:', response.events);
+      
       setEvents(response.events || []);
     } catch (error) {
       console.error('Error loading calendar events:', error);
@@ -425,28 +463,39 @@ export default function Dashboard() {
           handleChooseOrg={handleChooseOrg}
         />
       )}
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col min-h-screen bg-gray-50">
         <Header activeTab={activeTab} onTabChange={setActiveTab} />
-        <main className="flex-1 p-6">
-          <div>
+        <main className="flex-1 p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto">
+                         {/* Welcome Section */}
+                           <div className="mb-8">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  Welcome back, {user?.firstName || 'User'}!
+                </h1>
+                <p className="text-gray-600">
+                  Manage your healthcare organization efficiently
+                </p>
+              </div>
 
             {/* Main Content */}
             {activeTab === 'calendar' && orgSetupComplete && (
-              <div className="grid grid-cols-1 gap-8 mb-8">
-                <DoctorCalendars 
-                  calendars={calendars} 
-                  loading={calendarsLoading} 
-                  selectedCalendar={selectedCalendar}
-                  onCalendarSelect={handleCalendarSelect}
-                  onNewCalendar={handleNewCalendar}
-                />
+              <div className="space-y-8">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <DoctorCalendars 
+                    calendars={calendars} 
+                    loading={calendarsLoading} 
+                    selectedCalendar={selectedCalendar}
+                    onCalendarSelect={handleCalendarSelect}
+                    onNewCalendar={handleNewCalendar}
+                  />
+                </div>
               </div>
             )}
             {activeTab === 'calendar' && orgSetupComplete && (
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
                 {/* Left Column - Calendar */}
-                <div className="lg:col-span-2 flex">
-                  <div className="w-full">
+                <div className="lg:col-span-2">
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <Calendar
                       events={events}
                       selectedDate={selectedDate || undefined} // Convert null to undefined
@@ -457,8 +506,8 @@ export default function Dashboard() {
                 </div>
 
                 {/* Right Column - Today's Events */}
-                <div className="lg:col-span-3 flex">
-                  <div className="w-full">
+                <div className="lg:col-span-3">
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <CalendarEventsList
                       events={selectedDate ? filteredEvents : events} // Use filtered events if date is selected
                       loading={eventsLoading}
@@ -480,7 +529,13 @@ export default function Dashboard() {
 
             {activeTab === 'calendar' && !orgSetupComplete && (
               <div className="flex items-center justify-center h-64">
-                <div className="text-center">
+                <div className="text-center bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Complete Organization Setup</h3>
                   <p className="text-gray-600 mb-4">Please complete organization setup first</p>
                   <p className="text-sm text-gray-500">You need to create or select an organization before managing calendars.</p>
                 </div>
@@ -488,33 +543,43 @@ export default function Dashboard() {
             )}
 
             {activeTab === 'agents' && (
-              <div className="grid grid-cols-1 gap-8">
-                <AgentsSection 
-                  agent={agent} 
-                  loading={agentLoading} 
-                />
+              <div className="space-y-8">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <AgentsSection 
+                    agent={agent} 
+                    loading={agentLoading} 
+                  />
+                </div>
               </div>
             )}
 
 {activeTab === 'doctors' && orgSetupComplete && (
-              <div className="grid grid-cols-1 gap-8">
-                <DoctorsSection 
-                  doctors={doctors} 
-                  loading={doctorsLoading}
-                  calendars={calendars}
-                  onAddDoctor={handleAddDoctor}
-                  onSearch={handleSearchDoctors}
-                  onEditDoctor={handleEditDoctor}
-                  onAssignCalendar={handleAssignCalendar}
-                  onDeleteDoctor={handleDeleteDoctor}
-                  onViewDetails={handleViewDetails}
-                />
+              <div className="space-y-8">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <DoctorsSection 
+                    doctors={doctors} 
+                    loading={doctorsLoading}
+                    calendars={calendars}
+                    onAddDoctor={handleAddDoctor}
+                    onSearch={handleSearchDoctors}
+                    onEditDoctor={handleEditDoctor}
+                    onAssignCalendar={handleAssignCalendar}
+                    onDeleteDoctor={handleDeleteDoctor}
+                    onViewDetails={handleViewDetails}
+                  />
+                </div>
               </div>
             )}
 
             {activeTab === 'doctors' && !orgSetupComplete && (
               <div className="flex items-center justify-center h-64">
-                <div className="text-center">
+                <div className="text-center bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Complete Organization Setup</h3>
                   <p className="text-gray-600 mb-4">Please complete organization setup first</p>
                   <p className="text-sm text-gray-500">You need to create or select an organization before managing doctors.</p>
                 </div>
@@ -578,7 +643,20 @@ export default function Dashboard() {
           isOpen={showShareCalendarModal}
           onClose={handleShareCalendarClose}
           calendarId={createdCalendarId}
-          onComplete={handleShareCalendarClose}
+          onComplete={() => {
+            console.log('Dashboard: ShareCalendarModal onComplete called');
+            // Don't close immediately - let onInvitationSent handle it
+          }}
+          onInvitationSent={(email) => {
+            console.log('Dashboard: Invitation sent to email:', email);
+            console.log('Dashboard: Setting invitationEmail to:', email);
+            console.log('Dashboard: Current showEmailVerificationNotification state:', showEmailVerificationNotification);
+            setInvitationEmail(email);
+            setShowEmailVerificationNotification(true);
+            console.log('Dashboard: Called setShowEmailVerificationNotification(true)');
+            // Close the modal after setting the notification
+            handleShareCalendarClose();
+          }}
         />
       )}
       {showCreateEventModal && (
@@ -630,6 +708,18 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Floating Calendar Invitation Notification */}
+      <EmailVerificationNotification
+        isVisible={showEmailVerificationNotification}
+        onClose={() => setShowEmailVerificationNotification(false)}
+        email={invitationEmail}
+        invitationType="calendar invitation"
+        onVerificationComplete={() => {
+          setShowEmailVerificationNotification(false);
+          showSuccess('Calendar invitation accepted successfully!');
+        }}
+      />
     </ProtectedRoute>
   );
 } 

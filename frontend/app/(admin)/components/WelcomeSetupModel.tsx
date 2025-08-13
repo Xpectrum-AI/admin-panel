@@ -6,6 +6,7 @@ import axios from 'axios';
 import { SyncLoader } from 'react-spinners';
 import {UserPen, UserCheck, Trash, Plus} from "lucide-react";
 import Module from 'module';
+import { SPECIALIZATIONS } from './constants/specializations';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_CALENDAR_API_URL || '';
 
@@ -22,7 +23,7 @@ const initialDoctorProfile = {
   registration_country: '',
   registration_board: '',
   qualifications: [{ degree: '', university: '', year: '', place: '' }],
-  specializations: [{ specialization: '', level: '' }],
+  specializations: [{ specialization: '', level: '', customSpecialization: '' }],
   aliases: [''],
   facilities: [{ name: '', type: '', area: '', city: '', state: '', pincode: '', address: '' }],
 };
@@ -44,8 +45,13 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
     const ageNum = parseInt(age);
     const currentYear = new Date().getFullYear();
     
-    if (age && (ageNum < 18 || ageNum > 100)) {
-      return 'Age must be between 18 and 100 years (doctor must be at least 23 when starting practice)';
+    // Check for negative age
+    if (age && ageNum < 0) {
+      return 'Age cannot be negative';
+    }
+    
+    if (age && (ageNum < 23 || ageNum > 100)) {
+      return 'Age must be between 23 and 100 years (doctor must be at least 23 when starting practice)';
     }
     return '';
   };
@@ -112,8 +118,13 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
     const regYearNum = parseInt(regYear);
     const currentYear = new Date().getFullYear();
     
+    // Check for negative experience
+    if (experience && expNum < 0) {
+      return 'Experience cannot be negative';
+    }
+    
     if (experience && age && expNum > ageNum - 23) {
-      return `Experience cannot exceed ${ageNum - 23} years (doctor must be at least 23 when starting practice)`;
+      return `Experience cannot exceed ${ageNum - 23} years`;
     }
     
     if (experience && regYear) {
@@ -134,15 +145,12 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
   const handleChange = (field: string, value: any) => {
     setDoctorProfile((prev: any) => ({ ...prev, [field]: value }));
     
-    // Clear validation errors when user starts typing
-    if (validationErrors[field]) {
-      setValidationErrors(prev => ({ ...prev, [field]: '' }));
-    }
-    
     // Validate last name
     if (field === 'last_name') {
       if (value.trim().length > 0 && value.trim().length < 2) {
         setValidationErrors(prev => ({ ...prev, last_name: 'Last name must be at least 2 characters' }));
+      } else {
+        setValidationErrors(prev => ({ ...prev, last_name: '' }));
       }
     }
     
@@ -251,9 +259,9 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
       if (!doctorProfile.registration_year) errors.registration_year = 'Registration year is required';
       if (!doctorProfile.experience) errors.experience = 'Experience is required';
       
-      // Validate experience
-      if (doctorProfile.experience && doctorProfile.age && doctorProfile.registration_year) {
-        const expError = validateExperience(doctorProfile.experience, doctorProfile.age, doctorProfile.registration_year);
+      // Validate experience - always validate if experience is provided
+      if (doctorProfile.experience) {
+        const expError = validateExperience(doctorProfile.experience, doctorProfile.age || '', doctorProfile.registration_year || '');
         if (expError) {
           errors.experience = expError;
         }
@@ -523,6 +531,7 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
                   <input
                     id="age"
                     type="number"
+                    min="0"
                     placeholder="Enter age"
                     className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                       getFieldError('age') ? 'border-red-500' : 'border-gray-300'
@@ -683,12 +692,33 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
                     <input
                       id="experience"
                       type="number"
+                      min="0"
+                      step="1"
                       placeholder="Years of experience"
                       className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                         getFieldError('experience') ? 'border-red-500' : 'border-gray-300'
                       }`}
                       value={doctorProfile.experience}
-                      onChange={e => handleChange('experience', e.target.value)}
+                      onChange={e => {
+                        const value = e.target.value;
+                        // Allow empty value for clearing
+                        if (value === '') {
+                          handleChange('experience', value);
+                          return;
+                        }
+                        // Prevent negative values from being entered
+                        if (value.startsWith('-') || parseInt(value) < 0) {
+                          return;
+                        }
+                        handleChange('experience', value);
+                      }}
+                      onBlur={e => {
+                        const value = e.target.value;
+                        // Clear field if negative value is somehow entered
+                        if (value && parseInt(value) < 0) {
+                          handleChange('experience', '');
+                        }
+                      }}
                       required
                     />
                     {getFieldError('experience') && (
@@ -882,7 +912,7 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
                   <h3 className="text-lg font-semibold">Specializations</h3>
                   <button
                     className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-black text-white hover:bg-gray-900 h-9 rounded-md px-3"
-                    onClick={() => addArrayItem('specializations', { specialization: '', level: '' })}
+                    onClick={() => addArrayItem('specializations', { specialization: '', level: '', customSpecialization: '' })}
                   >
                     <Plus/>
                     Add Specialization
@@ -906,13 +936,29 @@ export default function WelcomeSetupModal({ onComplete }: { onComplete: () => vo
                     <div className="p-6 pt-0 grid grid-cols-2 gap-3">
                       <div>
                         <label className="text-sm font-medium leading-none" htmlFor={`specialization_${idx}`}>Specialization</label>
-                        <input
+                        <select
                           id={`specialization_${idx}`}
-                          placeholder="e.g., gynecologist, cardiologist"
-                          className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                           value={s.specialization}
                           onChange={e => handleArrayChange('specializations', idx, 'specialization', e.target.value)}
-                        />
+                        >
+                          <option value="">Select Specialization</option>
+                          {SPECIALIZATIONS.map((spec) => (
+                            <option key={spec.id} value={spec.name}>
+                              {spec.name}
+                            </option>
+                          ))}
+                          <option value="others">Others</option>
+                        </select>
+                        {s.specialization === 'others' && (
+                          <input
+                            id={`specialization_custom_${idx}`}
+                            placeholder="Enter custom specialization"
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 mt-2"
+                            value={s.customSpecialization || ''}
+                            onChange={e => handleArrayChange('specializations', idx, 'customSpecialization', e.target.value)}
+                          />
+                        )}
                       </div>
                       <div>
                         <label className="text-sm font-medium leading-none" htmlFor={`level_${idx}`}>Level</label>
