@@ -89,14 +89,6 @@ jobs:
       env:
         
         RELEASE_IMAGE_TAG: ${{ steps.image-tag.outputs.image_tag }}
-<<<<<<< HEAD
-        # Pass GitHub environment variables to CDK
-        RELEASE_NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.RELEASE_NEXT_PUBLIC_PROPELAUTH_API_KEY }}
-        RELEASE_NEXT_PUBLIC_API_KEY: ${{ secrets.RELEASE_NEXT_PUBLIC_API_KEY }}
-        RELEASE_GOOGLE_CLIENT_ID: ${{ secrets.RELEASE_GOOGLE_CLIENT_ID }}
-        RELEASE_MONGODB_URL: ${{ secrets.RELEASE_MONGODB_URL }}
-        RELEASE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.RELEASE_STRIPE_PUBLISHABLE_KEY }}
-=======
         # Pass GitHub environment variables to CDK (using production secrets)
         RELEASE_NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.RELEASE_NEXT_PUBLIC_PROPELAUTH_API_KEY }}
         RELEASE_NEXT_PUBLIC_LIVE_API_URL: ${{ secrets.RELEASE_NEXT_PUBLIC_LIVE_API_URL }}
@@ -104,18 +96,12 @@ jobs:
         RELEASE_PROPELAUTH_URL: ${{ secrets.RELEASE_PROPELAUTH_URL }}
         RELEASE_NEXT_PUBLIC_PROPELAUTH_URL: ${{ secrets.RELEASE_NEXT_PUBLIC_PROPELAUTH_URL }}
 
->>>>>>> 25800248e731395e6f5c92efe3a58499fe5d6fd8
         RELEASE_SECRET_KEY: ${{ secrets.RELEASE_SECRET_KEY }}
         RELEASE_PROPELAUTH_API_KEY: ${{ secrets.RELEASE_PROPELAUTH_API_KEY }}
         RELEASE_PROPELAUTH_VERIFIER_KEY: ${{ secrets.RELEASE_PROPELAUTH_VERIFIER_KEY }}
         RELEASE_PROPELAUTH_REDIRECT_URI: ${{ secrets.RELEASE_PROPELAUTH_REDIRECT_URI }}
-<<<<<<< HEAD
-        RELEASE_NEXT_PUBLIC_LIVE_API_URL: ${{ secrets.RELEASE_NEXT_PUBLIC_LIVE_API_URL }}
-        RELEASE_SUPER_ADMIN_ORG_ID: ${{ secrets.RELEASE_SUPER_ADMIN_ORG_ID }}
-=======
         
         RELEASE_NEXT_PUBLIC_SUPER_ADMIN_ORG_ID: ${{ secrets.RELEASE_SUPER_ADMIN_ORG_ID }}
->>>>>>> 25800248e731395e6f5c92efe3a58499fe5d6fd8
       run: |
         cd python-cdk-v2
         # Deploy to release environment
