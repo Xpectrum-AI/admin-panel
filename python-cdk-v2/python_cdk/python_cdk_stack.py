@@ -70,30 +70,6 @@ class AdminPanelDeploymentStack(Stack):
         # Task Role
         task_role = iam.Role(self, f"{config['stack_name']}TaskRole", assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"))
 
-        # Get secrets from GitHub environment variables
-        # These will be passed from GitHub Actions workflow
-        # Use environment-specific prefix (保留原有的三环境支持)
-        if environment == 'production':
-            prefix = 'PRODUCTION_'
-        elif environment == 'release':
-            prefix = 'RELEASE_'
-        else:
-            prefix = 'STAGING_'
-        
-        secrets = {
-            'NEXT_PUBLIC_PROPELAUTH_API_KEY': os.environ.get(f'{prefix}NEXT_PUBLIC_PROPELAUTH_API_KEY', ''),
-            'NEXT_PUBLIC_API_KEY': os.environ.get(f'{prefix}NEXT_PUBLIC_API_KEY', ''),
-            'SECRET_KEY': os.environ.get(f'{prefix}SECRET_KEY', ''),
-            'PROPELAUTH_API_KEY': os.environ.get(f'{prefix}PROPELAUTH_API_KEY', ''),
-            'PROPELAUTH_REDIRECT_URI': os.environ.get(f'{prefix}PROPELAUTH_REDIRECT_URI', f"https://{config['auth_domain']}"),
-            'NEXT_PUBLIC_LIVE_API_URL': os.environ.get(f'{prefix}NEXT_PUBLIC_LIVE_API_URL', ''),
-            'NEXT_PUBLIC_SUPER_ADMIN_ORG_ID': os.environ.get(f'{prefix}SUPER_ADMIN_ORG_ID', ''),
-            'NEXT_PUBLIC_PROPELAUTH_URL': os.environ.get(f'{prefix}NEXT_PUBLIC_PROPELAUTH_URL', f"https://{config['auth_domain']}"),
-
-            'API_KEY': os.environ.get(f'{prefix}API_KEY', 'xpectrum-ai@123'),
-            'LIVE_API_KEY': os.environ.get(f'{prefix}LIVE_API_KEY', 'xpectrum-ai@123'),
-        }
-
         current_account = os.environ.get('CDK_DEFAULT_ACCOUNT', '')
         is_new_account = current_account == '503561436224'
         is_release_env = environment == 'release'
@@ -121,34 +97,9 @@ class AdminPanelDeploymentStack(Stack):
             image=ecs.ContainerImage.from_ecr_repository(repo, tag=config['frontend_tag']),
             logging=ecs.LogDriver.aws_logs(stream_prefix="frontend"),
             environment={
-                "NEXT_PUBLIC_PROPELAUTH_API_KEY": secrets["NEXT_PUBLIC_PROPELAUTH_API_KEY"],
-                "NEXT_PUBLIC_API_KEY": secrets["NEXT_PUBLIC_API_KEY"],
-                "SECRET_KEY": secrets["SECRET_KEY"],
-                "PROPELAUTH_API_KEY": secrets["PROPELAUTH_API_KEY"],
-                "PROPELAUTH_REDIRECT_URI": secrets["PROPELAUTH_REDIRECT_URI"],
-                "NEXT_PUBLIC_LIVE_API_URL": secrets["NEXT_PUBLIC_LIVE_API_URL"],
-                "NEXT_PUBLIC_SUPER_ADMIN_ORG_ID": secrets["NEXT_PUBLIC_SUPER_ADMIN_ORG_ID"],
-                "NEXT_PUBLIC_DEFAULT_TIMEZONE": "America/New_York",
-                "NEXT_PUBLIC_TIMEZONE_OPTIONS": "IST:Asia/Kolkata,EST:America/New_York,PST:America/Los_Angeles",
-                "NEXT_PUBLIC_GOOGLE_CALENDAR_API_URL": "https://www.googleapis.com/calendar/v3",
-                "NEXT_PUBLIC_DATABASE_NAME": "google_oauth",
-                "NEXT_PUBLIC_AUTH_URL": f"https://{config['auth_domain']}",
-                "NEXT_PUBLIC_PROPELAUTH_URL": secrets["NEXT_PUBLIC_PROPELAUTH_URL"],
-                "NEXT_PUBLIC_CALENDAR_API_URL": f"https://{config['domain']}/calendar-api",
-                "NEXT_PUBLIC_API_BASE_URL": f"https://{config['domain']}/calendar-api",
-                "NEXT_PUBLIC_API_URL": f"https://{config['domain']}/api",
-                "NEXT_PUBLIC_APP_TITLE": "Admin Panel Calendar Services",
-                "NEXT_PUBLIC_APP_DESCRIPTION": "Calendar Services Management Dashboard",
-                "NEXT_PUBLIC_AUTH_TOKEN_KEY": "auth_token",
-                "NEXT_PUBLIC_PENDING_FIRST_NAME_KEY": "pending_first_name",
-                "NEXT_PUBLIC_PENDING_LAST_NAME_KEY": "pending_last_name",
-                "NEXT_PUBLIC_TIMEZONE_KEY": "selected_timezone",
                 "NODE_ENV": environment,
                 "PORT": config['frontend_port'],
                 "HOST": "0.0.0.0",
-                # 新增的环境变量
-                "API_KEY": secrets["API_KEY"],
-                "LIVE_API_KEY": secrets["LIVE_API_KEY"]
             },
             port_mappings=[ecs.PortMapping(container_port=int(config['frontend_port']))]
         )

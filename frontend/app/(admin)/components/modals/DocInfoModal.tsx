@@ -187,11 +187,6 @@ export default function WelcomeSetupModal({
     const regYearNum = parseInt(regYear);
     const currentYear = new Date().getFullYear();
     
-    // Check for negative experience
-    if (experience && expNum < 0) {
-      return 'Experience cannot be negative';
-    }
-    
     if (experience && age && expNum > ageNum - 23) {
       return `Experience cannot exceed ${ageNum - 23} years`;
     }
