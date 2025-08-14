@@ -26,8 +26,8 @@ jobs:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        aws-access-key-id: ${{ secrets.AWS_RELEASE_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_RELEASE_SECRET_ACCESS_KEY }}
+        aws-access-key-id: ${{ vars.AWS_PROD_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_PORD_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
     - name: Login to Amazon ECR
@@ -55,18 +55,27 @@ jobs:
         echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
 
     - name: Build and push Frontend image to ECR
+      env:
+        NEXT_PUBLIC_LIVE_API_URL: ${{ vars.PRODUCTION_LIVE_API_URL }}
+        NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.PRODUCTION_PROPELAUTH_URL }}
+        NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.PRODUCTION_LIVE_API_KEY }}
+        NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_PROPELAUTH_API_KEY }}
+        NEXT_PUBLIC_SUPER_ADMIN_ORG_ID: ${{ secrets.PRODUCTION_SUPER_ADMIN_ORG_ID }}
       run: |
         # Set ECR repository URI
         REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
-        IMAGE_TAG="${{ steps.image-tag.outputs.image_tag }}"
         
-        # Build, tag, and push frontend
+        # Build, tag, and push frontend only with environment variables
         cd frontend
-        docker build -t admin-panel:$IMAGE_TAG .
+        docker build \
+          --build-arg NEXT_PUBLIC_LIVE_API_URL="${NEXT_PUBLIC_LIVE_API_URL}" \
+          --build-arg NEXT_PUBLIC_PROPELAUTH_URL="${NEXT_PUBLIC_PROPELAUTH_URL}" \
+          --build-arg NEXT_PUBLIC_LIVE_API_KEY="${NEXT_PUBLIC_LIVE_API_KEY}" \
+          --build-arg NEXT_PUBLIC_PROPELAUTH_API_KEY="${NEXT_PUBLIC_PROPELAUTH_API_KEY}" \
+          --build-arg NEXT_PUBLIC_SUPER_ADMIN_ORG_ID="${NEXT_PUBLIC_SUPER_ADMIN_ORG_ID}" \
+          -t admin-panel:$IMAGE_TAG .
         docker tag admin-panel:$IMAGE_TAG $REPO:$IMAGE_TAG
         docker push $REPO:$IMAGE_TAG
-        
-        # Also tag as latest release
         docker tag admin-panel:$IMAGE_TAG $REPO:frontend-release-latest
         docker push $REPO:frontend-release-latest
         cd ..
@@ -84,38 +93,28 @@ jobs:
     - name: Install AWS CDK
       run: |
         npm install -g aws-cdk
-
-    - name: Deploy CDK stack (release)
-      env:
-        
-        RELEASE_IMAGE_TAG: ${{ steps.image-tag.outputs.image_tag }}
-        # Pass GitHub environment variables to CDK (using production secrets)
-        RELEASE_NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.RELEASE_NEXT_PUBLIC_PROPELAUTH_API_KEY }}
-        RELEASE_NEXT_PUBLIC_LIVE_API_URL: ${{ secrets.RELEASE_NEXT_PUBLIC_LIVE_API_URL }}
-        RELEASE_NEXT_PUBLIC_API_KEY: ${{ secrets.RELEASE_NEXT_PUBLIC_API_KEY }}
-        RELEASE_PROPELAUTH_URL: ${{ secrets.RELEASE_PROPELAUTH_URL }}
-        RELEASE_NEXT_PUBLIC_PROPELAUTH_URL: ${{ secrets.RELEASE_NEXT_PUBLIC_PROPELAUTH_URL }}
-
-        RELEASE_SECRET_KEY: ${{ secrets.RELEASE_SECRET_KEY }}
-        RELEASE_PROPELAUTH_API_KEY: ${{ secrets.RELEASE_PROPELAUTH_API_KEY }}
-        RELEASE_PROPELAUTH_VERIFIER_KEY: ${{ secrets.RELEASE_PROPELAUTH_VERIFIER_KEY }}
-        RELEASE_PROPELAUTH_REDIRECT_URI: ${{ secrets.RELEASE_PROPELAUTH_REDIRECT_URI }}
-        
-        RELEASE_NEXT_PUBLIC_SUPER_ADMIN_ORG_ID: ${{ secrets.RELEASE_SUPER_ADMIN_ORG_ID }}
+    
+    - name: Deploy CDK stack (releasing)
       run: |
         cd python-cdk-v2
-        # Deploy to release environment
+        
+        echo "=== CDK DEPLOYMENT DEBUG ==="
+        echo "Current directory: $(pwd)"
+        echo "Environment variables are now handled during Docker build"
+        echo "====================================="
+        
+        # Deploy to release environment with release context
         # Add timeout to prevent hanging
         timeout 30m cdk deploy AdminPanelReleaseStack --require-approval never --context environment=release || {
           echo "CDK deployment timed out or failed"
           echo "Checking ECS service status..."
           aws ecs describe-services \
-            --cluster AdminPanelReleaseStack-AdminPanelReleaseStackCluster* \
-            --services AdminPanelReleaseStack-AdminPanelReleaseStackService* \
+            --cluster AdminPanelReleaseStack-AdminPanelReleaseStackCluster76C604E8-R97Z7BkpsIK1 \
+            --services AdminPanelReleaseStackService-1  \
             --region ${{ env.AWS_REGION }} || echo "Could not check ECS status"
           exit 1
         }
-
+    
     - name: Wait for deployment to complete
       run: |
         # Check if stack exists first
