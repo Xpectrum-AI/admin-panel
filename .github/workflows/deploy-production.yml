@@ -80,13 +80,13 @@ jobs:
           CLUSTER_NAME=$(aws cloudformation describe-stacks \
             --stack-name AdminPanelProductionStack \
             --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==ClusterName].OutputValue' \
+            --query 'Stacks[0].Outputs[?OutputKey==`ClusterName`].OutputValue' \
             --output text 2>/dev/null || echo "AdminPanelProductionStackCluster")
           
           SERVICE_NAME=$(aws cloudformation describe-stacks \
             --stack-name AdminPanelProductionStack \
             --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==ServiceName].OutputValue' \
+            --query 'Stacks[0].Outputs[?OutputKey==`ServiceName`].OutputValue' \
             --output text 2>/dev/null || echo "AdminPanelProductionStackService")
           
           aws ecs describe-services \
@@ -104,13 +104,13 @@ jobs:
           CLUSTER_NAME=$(aws cloudformation describe-stacks \
             --stack-name AdminPanelProductionStack \
             --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==ClusterName].OutputValue' \
+            --query 'Stacks[0].Outputs[?OutputKey==`ClusterName`].OutputValue' \
             --output text 2>/dev/null || echo "AdminPanelProductionStackCluster")
           
           SERVICE_NAME=$(aws cloudformation describe-stacks \
             --stack-name AdminPanelProductionStack \
             --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==ServiceName].OutputValue' \
+            --query 'Stacks[0].Outputs[?OutputKey==`ServiceName`].OutputValue' \
             --output text 2>/dev/null || echo "AdminPanelProductionStackService")
           
           echo "Using cluster: $CLUSTER_NAME"
@@ -128,24 +128,30 @@ jobs:
     - name: Get ALB DNS name
       id: alb-dns
       run: |
-        # Try to get FrontendURL first
+        # Try to get FrontendURL first using a more reliable query
         DNS_NAME=$(aws cloudformation describe-stacks \
           --stack-name AdminPanelProductionStack \
-          --query 'Stacks[0].Outputs[?OutputKey==FrontendURL].OutputValue' \
-          --output text \
-          --region ${{ env.AWS_REGION }})
+          --region ${{ env.AWS_REGION }} \
+          --query 'Stacks[0].Outputs[?OutputKey==`FrontendURL`].OutputValue' \
+          --output text)
         
         # If FrontendURL is not available, use LoadBalancerDNS and construct HTTPS URL
         if [ -z "$DNS_NAME" ] || [ "$DNS_NAME" = "None" ]; then
           echo "FrontendURL not found, using LoadBalancerDNS..."
           LB_DNS=$(aws cloudformation describe-stacks \
             --stack-name AdminPanelProductionStack \
-            --query 'Stacks[0].Outputs[?OutputKey==LoadBalancerDNS].OutputValue' \
-            --output text \
-            --region ${{ env.AWS_REGION }})
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`LoadBalancerDNS`].OutputValue' \
+            --output text)
           
           if [ -z "$LB_DNS" ] || [ "$LB_DNS" = "None" ]; then
             echo "Error: Could not get LoadBalancerDNS from CloudFormation stack"
+            echo "Available outputs:"
+            aws cloudformation describe-stacks \
+              --stack-name AdminPanelProductionStack \
+              --region ${{ env.AWS_REGION }} \
+              --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
+              --output table
             exit 1
           fi
           
@@ -163,21 +169,27 @@ jobs:
         # Get ALB DNS name (try FrontendURL first, fallback to LoadBalancerDNS)
         DNS_NAME=$(aws cloudformation describe-stacks \
           --stack-name AdminPanelProductionStack \
-          --query 'Stacks[0].Outputs[?OutputKey==FrontendURL].OutputValue' \
-          --output text \
-          --region ${{ env.AWS_REGION }})
+          --region ${{ env.AWS_REGION }} \
+          --query 'Stacks[0].Outputs[?OutputKey==`FrontendURL`].OutputValue' \
+          --output text)
         
         # If FrontendURL is not available, use LoadBalancerDNS and construct HTTPS URL
         if [ -z "$DNS_NAME" ] || [ "$DNS_NAME" = "None" ]; then
           echo "FrontendURL not found, using LoadBalancerDNS..."
           LB_DNS=$(aws cloudformation describe-stacks \
             --stack-name AdminPanelProductionStack \
-            --query 'Stacks[0].Outputs[?OutputKey==LoadBalancerDNS].OutputValue' \
-            --output text \
-            --region ${{ env.AWS_REGION }})
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`LoadBalancerDNS`].OutputValue' \
+            --output text)
           
           if [ -z "$LB_DNS" ] || [ "$LB_DNS" = "None" ]; then
             echo "Error: Could not get LoadBalancerDNS from CloudFormation stack"
+            echo "Available outputs:"
+            aws cloudformation describe-stacks \
+              --stack-name AdminPanelProductionStack \
+              --region ${{ env.AWS_REGION }} \
+              --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
+              --output table
             exit 1
           fi
           
