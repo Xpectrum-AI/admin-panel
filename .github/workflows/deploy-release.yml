@@ -61,9 +61,18 @@ jobs:
         NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.PRODUCTION_LIVE_API_KEY }}
         NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_PROPELAUTH_API_KEY }}
         NEXT_PUBLIC_SUPER_ADMIN_ORG_ID: ${{ secrets.PRODUCTION_SUPER_ADMIN_ORG_ID }}
+        IMAGE_TAG: ${{ steps.image-tag.outputs.image_tag }}
       run: |
         # Set ECR repository URI
         REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
+        
+        # Verify IMAGE_TAG is set
+        if [ -z "$IMAGE_TAG" ]; then
+          echo "Error: IMAGE_TAG is not set"
+          exit 1
+        fi
+        
+        echo "Building with image tag: $IMAGE_TAG"
         
         # Build, tag, and push frontend only with environment variables
         cd frontend
