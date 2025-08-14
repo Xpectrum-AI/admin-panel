@@ -128,11 +128,31 @@ jobs:
     - name: Get ALB DNS name
       id: alb-dns
       run: |
+        # Try to get FrontendURL first
         DNS_NAME=$(aws cloudformation describe-stacks \
           --stack-name AdminPanelProductionStack \
           --query 'Stacks[0].Outputs[?OutputKey==FrontendURL].OutputValue' \
           --output text \
           --region ${{ env.AWS_REGION }})
+        
+        # If FrontendURL is not available, use LoadBalancerDNS and construct HTTPS URL
+        if [ -z "$DNS_NAME" ] || [ "$DNS_NAME" = "None" ]; then
+          echo "FrontendURL not found, using LoadBalancerDNS..."
+          LB_DNS=$(aws cloudformation describe-stacks \
+            --stack-name AdminPanelProductionStack \
+            --query 'Stacks[0].Outputs[?OutputKey==LoadBalancerDNS].OutputValue' \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          
+          if [ -z "$LB_DNS" ] || [ "$LB_DNS" = "None" ]; then
+            echo "Error: Could not get LoadBalancerDNS from CloudFormation stack"
+            exit 1
+          fi
+          
+          DNS_NAME="https://$LB_DNS"
+          echo "Constructed URL: $DNS_NAME"
+        fi
+        
         echo "alb-dns=$DNS_NAME" >> $GITHUB_OUTPUT
 
     - name: Health check
@@ -140,17 +160,29 @@ jobs:
         # Wait for services to be fully ready
         sleep 60
         
-        # Get ALB DNS name
+        # Get ALB DNS name (try FrontendURL first, fallback to LoadBalancerDNS)
         DNS_NAME=$(aws cloudformation describe-stacks \
           --stack-name AdminPanelProductionStack \
           --query 'Stacks[0].Outputs[?OutputKey==FrontendURL].OutputValue' \
           --output text \
           --region ${{ env.AWS_REGION }})
         
-        # Check if DNS_NAME is not empty
+        # If FrontendURL is not available, use LoadBalancerDNS and construct HTTPS URL
         if [ -z "$DNS_NAME" ] || [ "$DNS_NAME" = "None" ]; then
-          echo "Error: Could not get DNS name from CloudFormation stack"
-          exit 1
+          echo "FrontendURL not found, using LoadBalancerDNS..."
+          LB_DNS=$(aws cloudformation describe-stacks \
+            --stack-name AdminPanelProductionStack \
+            --query 'Stacks[0].Outputs[?OutputKey==LoadBalancerDNS].OutputValue' \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          
+          if [ -z "$LB_DNS" ] || [ "$LB_DNS" = "None" ]; then
+            echo "Error: Could not get LoadBalancerDNS from CloudFormation stack"
+            exit 1
+          fi
+          
+          DNS_NAME="https://$LB_DNS"
+          echo "Constructed URL: $DNS_NAME"
         fi
         
         # Extract just the hostname from the URL
