@@ -70,40 +70,22 @@ export default function Dashboard() {
   const [showEmailVerificationNotification, setShowEmailVerificationNotification] = useState(false);
   const [invitationEmail, setInvitationEmail] = useState('');
 
-  // Check for existing email verification state on component mount
+  const { showError, showSuccess, showWarning, clearAllErrors } = useErrorHandler();
+
+  // Clean up any existing email verification state on component mount to prevent false notifications
   useEffect(() => {
-    const savedState = localStorage.getItem('emailVerificationState');
-    console.log('Dashboard: Checking localStorage for email verification state:', savedState);
+    // Clear any existing email verification state to prevent false notifications
+    // when just creating calendars or doing other operations
+    console.log('Dashboard: Cleaning up any existing email verification state to prevent false notifications');
+    localStorage.removeItem('emailVerificationState');
     
-    if (savedState) {
-      try {
-        const parsedState = JSON.parse(savedState);
-        console.log('Dashboard: Parsed state:', parsedState);
-        
-        const now = Date.now();
-        const oneHour = 60 * 60 * 1000; // 1 hour in milliseconds
-        
-        // Only restore if the state is less than 1 hour old
-        if (parsedState.timestamp && (now - parsedState.timestamp) < oneHour) {
-          console.log('Dashboard: Restoring email verification state with email:', parsedState.email);
-          setInvitationEmail(parsedState.email);
-          setShowEmailVerificationNotification(true);
-        } else {
-          // Clean up old state
-          console.log('Dashboard: Cleaning up old email verification state');
-          localStorage.removeItem('emailVerificationState');
-        }
-      } catch (error) {
-        console.error('Error parsing saved email verification state:', error);
-        localStorage.removeItem('emailVerificationState');
-      }
-    } else {
-      console.log('Dashboard: No saved email verification state found');
-    }
-  }, []);
-
-
-  const { showError, showSuccess, showWarning } = useErrorHandler();
+    // Also reset the notification state to ensure no false notifications
+    setShowEmailVerificationNotification(false);
+    setInvitationEmail('');
+    
+    // Clear all existing notifications to prevent false messages from appearing
+    clearAllErrors();
+  }, [clearAllErrors]);
 
   const fetchDoctors = async () => {
     // Only fetch doctors if organization setup is complete

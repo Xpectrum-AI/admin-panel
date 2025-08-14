@@ -125,6 +125,19 @@ export default function WelcomeSetupModal({
     return '';
   };
 
+  const validatePhoneNumber = (phone: string) => {
+    if (!phone) return ''; // Phone is optional
+    
+    // International phone number format: +[country code][number]
+    const phoneRegex = /^\+[1-9]\d{1,14}$/;
+    
+    if (!phoneRegex.test(phone)) {
+      return 'Phone number must be in international format (e.g., +1234567890)';
+    }
+    
+    return '';
+  };
+
   const validateQualificationYear = (qualYear: string, age: string) => {
     const qualYearNum = parseInt(qualYear);
     const ageNum = parseInt(age);
@@ -140,15 +153,17 @@ export default function WelcomeSetupModal({
   };
 
   const validateQualificationYearConsistency = (qualifications: any[]) => {
-    if (qualifications.length < 2) return '';
+    // Check if any two qualifications have the same year
+    const years = qualifications
+      .map(q => q.year)
+      .filter(year => year && year.trim() !== '');
     
-    const years = qualifications.map(q => q.year).filter(year => year.trim() !== '');
-    if (years.length < 2) return '';
+    const uniqueYears = new Set(years);
     
-    const uniqueYears = [...new Set(years)];
-    if (uniqueYears.length > 1) {
-      return 'All qualification years must be the same';
+    if (years.length !== uniqueYears.size) {
+      return 'Any two qualifications cannot be in the same year';
     }
+    
     return '';
   };
 
@@ -261,13 +276,22 @@ export default function WelcomeSetupModal({
         }));
       }
 
-          // Validate registration year
-      if (field === 'registration_year') {
-        const yearError = validateRegistrationYear(value, doctorProfile.doctor_data.qualifications?.[0]?.year || '');
-        const ageVsRegError = validateAgeVsRegistrationYear(doctorProfile.doctor_data.age, value);
-        const finalError = yearError || ageVsRegError;
-        setValidationErrors(prev => ({ ...prev, registration_year: finalError }));
-      }
+                 // Validate registration year
+       if (field === 'registration_year') {
+         const yearError = validateRegistrationYear(value, doctorProfile.doctor_data.qualifications?.[0]?.year || '');
+         const ageVsRegError = validateAgeVsRegistrationYear(doctorProfile.doctor_data.age, value);
+         const finalError = yearError || ageVsRegError;
+         setValidationErrors(prev => ({ ...prev, registration_year: finalError }));
+       }
+       
+       // Validate phone number
+       if (field === 'phone') {
+         const phoneError = validatePhoneNumber(value);
+         setValidationErrors(prev => ({
+           ...prev,
+           phone: phoneError
+         }));
+       }
   };
 
   // For array fields (qualifications, specializations, aliases, facilities) with validation
@@ -599,16 +623,21 @@ export default function WelcomeSetupModal({
                     <p className="text-sm text-red-500 mt-1">{getFieldError('age')}</p>
                   )}
                 </div>
-                <div>
-                  <label className="text-sm font-medium leading-none" htmlFor="phone">Phone Number</label>
-                  <input
-                    id="phone"
-                    placeholder="Enter phone number"
-                    className="flex h-10 w-full rounded-md border border-gray-300 border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    value={doctorProfile.doctor_data.phone}
-                    onChange={e => handleChange('phone', e.target.value)}
-                  />
-                </div>
+                                 <div>
+                   <label className="text-sm font-medium leading-none" htmlFor="phone">Phone Number</label>
+                   <input
+                     id="phone"
+                     placeholder="Enter phone number (e.g., +1234567890)"
+                     className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                       getFieldError('phone') ? 'border-red-500' : 'border-gray-300'
+                     }`}
+                     value={doctorProfile.doctor_data.phone}
+                     onChange={e => handleChange('phone', e.target.value)}
+                   />
+                   {getFieldError('phone') && (
+                     <p className="text-sm text-red-500 mt-1">{getFieldError('phone')}</p>
+                   )}
+                 </div>
 
               </div>
             </div>

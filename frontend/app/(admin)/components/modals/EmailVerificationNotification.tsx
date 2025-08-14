@@ -40,7 +40,7 @@ export default function EmailVerificationNotification({
 
   // Save state to localStorage whenever it changes
   useEffect(() => {
-    if (isVisible) {
+    if (isVisible && email) {
       const stateToSave = {
         email,
         invitationType,
@@ -57,6 +57,16 @@ export default function EmailVerificationNotification({
     localStorage.removeItem('emailVerificationState');
     onClose();
   };
+
+  // Clean up localStorage when component unmounts
+  useEffect(() => {
+    return () => {
+      // Only clean up if we're not in a visible state
+      if (!isVisible) {
+        localStorage.removeItem('emailVerificationState');
+      }
+    };
+  }, [isVisible]);
 
   // Handle email redirection
   const handleEmailRedirect = () => {

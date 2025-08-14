@@ -10,7 +10,6 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     // Enable runtime environment variable access
-    serverComponentsExternalPackages: [],
   },
   // Add runtime configuration for environment variables
   env: {

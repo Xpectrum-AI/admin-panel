@@ -6,8 +6,11 @@ export interface CreateEventRequest {
   summary: string;
   start: string;
   end: string;
+  timezone?: string;
   description?: string;
   location?: string;
+  attendee_email?: string;
+  event_type?: string;
 }
 
 export interface UpdateEventRequest {
