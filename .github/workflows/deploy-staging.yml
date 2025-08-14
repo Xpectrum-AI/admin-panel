@@ -41,11 +41,11 @@ jobs:
         # Build, tag, and push frontend only with environment variables
         cd frontend
         docker build \
-          --build-arg NEXT_PUBLIC_LIVE_API_URL=$NEXT_PUBLIC_LIVE_API_URL \
-          --build-arg NEXT_PUBLIC_PROPELAUTH_URL=$NEXT_PUBLIC_PROPELAUTH_URL \
-          --build-arg NEXT_PUBLIC_LIVE_API_KEY=$NEXT_PUBLIC_LIVE_API_KEY \
-          --build-arg NEXT_PUBLIC_PROPELAUTH_API_KEY=$NEXT_PUBLIC_PROPELAUTH_API_KEY \
-          --build-arg NEXT_PUBLIC_SUPER_ADMIN_ORG_ID=$NEXT_PUBLIC_SUPER_ADMIN_ORG_ID \
+          --build-arg NEXT_PUBLIC_LIVE_API_URL="${NEXT_PUBLIC_LIVE_API_URL}" \
+          --build-arg NEXT_PUBLIC_PROPELAUTH_URL="${NEXT_PUBLIC_PROPELAUTH_URL}" \
+          --build-arg NEXT_PUBLIC_LIVE_API_KEY="${NEXT_PUBLIC_LIVE_API_KEY}" \
+          --build-arg NEXT_PUBLIC_PROPELAUTH_API_KEY="${NEXT_PUBLIC_PROPELAUTH_API_KEY}" \
+          --build-arg NEXT_PUBLIC_SUPER_ADMIN_ORG_ID="${NEXT_PUBLIC_SUPER_ADMIN_ORG_ID}" \
           -t admin-panel:frontend-staging .
         docker tag admin-panel:frontend-staging $REPO:frontend-staging
         docker push $REPO:frontend-staging
