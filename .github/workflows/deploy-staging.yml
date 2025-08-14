@@ -10,7 +10,7 @@ env:
 jobs:
   deploy-staging:
     runs-on: ubuntu-latest
-    environment: staging
+    environment: development
     
     steps:
     - name: Checkout code
@@ -19,8 +19,8 @@ jobs:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-access-key-id: ${{ secrets.DEV_AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.DEV_AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
     - name: Login to Amazon ECR
@@ -29,11 +29,11 @@ jobs:
 
     - name: Build and push Frontend image to ECR
       env:
-        NEXT_PUBLIC_LIVE_API_URL: ${{ vars.STAGING_LIVE_API_URL }}
-        NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.STAGING_PROPELAUTH_URL }}
-        NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.STAGING_LIVE_API_KEY }}
-        NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.STAGING_PROPELAUTH_API_KEY }}
-        NEXT_PUBLIC_SUPER_ADMIN_ORG_ID: ${{ secrets.STAGING_SUPER_ADMIN_ORG_ID }}
+        NEXT_PUBLIC_LIVE_API_URL: ${{ vars.DEV_LIVE_API_URL }}
+        NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.DEV_PROPELAUTH_URL }}
+        NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.DEV_LIVE_API_KEY }}
+        NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.DEV_PROPELAUTH_API_KEY }}
+        NEXT_PUBLIC_SUPER_ADMIN_ORG_ID: ${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}
       run: |
         # Set ECR repository URI
         REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
@@ -68,36 +68,36 @@ jobs:
     - name: Log Environment Variables (Staging)
       run: |
         echo "=== STAGING ENVIRONMENT VARIABLES ==="
-        echo "STAGING_LIVE_API_KEY: ${{ secrets.STAGING_LIVE_API_KEY }}"
-        echo "STAGING_PROPELAUTH_API_KEY: ${{ secrets.STAGING_PROPELAUTH_API_KEY }}"
-        echo "STAGING_SUPER_ADMIN_ORG_ID: ${{ secrets.STAGING_SUPER_ADMIN_ORG_ID }}"
-        echo "STAGING_LIVE_API_URL: ${{ vars.STAGING_LIVE_API_URL }}"
-        echo "STAGING_PROPELAUTH_URL: ${{ vars.STAGING_PROPELAUTH_URL }}"
+        echo "STAGING_LIVE_API_KEY: ${{ secrets.DEV_LIVE_API_KEY }}"
+        echo "STAGING_PROPELAUTH_API_KEY: ${{ secrets.DEV_PROPELAUTH_API_KEY }}"
+        echo "STAGING_SUPER_ADMIN_ORG_ID: ${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}"
+        echo "STAGING_LIVE_API_URL: ${{ vars.DEV_LIVE_API_URL }}"
+        echo "STAGING_PROPELAUTH_URL: ${{ vars.DEV_PROPELAUTH_URL }}"
         echo "====================================="
         
         echo "=== SUPER ADMIN CONFIGURATION DEBUG ==="
-        if [ -z "${{ secrets.STAGING_SUPER_ADMIN_ORG_ID }}" ]; then
+        if [ -z "${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}" ]; then
           echo "❌ ERROR: STAGING_SUPER_ADMIN_ORG_ID is empty or not set!"
         else
-          echo "✅ STAGING_SUPER_ADMIN_ORG_ID is set: ${{ secrets.STAGING_SUPER_ADMIN_ORG_ID }}"
+          echo "✅ STAGING_SUPER_ADMIN_ORG_ID is set: ${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}"
         fi
         
-        if [ -z "${{ secrets.STAGING_PROPELAUTH_API_KEY }}" ]; then
+        if [ -z "${{ secrets.DEV_PROPELAUTH_API_KEY }}" ]; then
           echo "❌ ERROR: STAGING_PROPELAUTH_API_KEY is empty or not set!"
         else
           echo "✅ STAGING_PROPELAUTH_API_KEY is set (length: ${#STAGING_PROPELAUTH_API_KEY})"
         fi
         
-        if [ -z "${{ vars.STAGING_LIVE_API_URL }}" ]; then
+        if [ -z "${{ vars.DEV_LIVE_API_URL }}" ]; then
           echo "❌ ERROR: STAGING_LIVE_API_URL is empty or not set!"
         else
-          echo "✅ STAGING_LIVE_API_URL is set: ${{ vars.STAGING_LIVE_API_URL }}"
+          echo "✅ STAGING_LIVE_API_URL is set: ${{ vars.DEV_LIVE_API_URL }}"
         fi
         
-        if [ -z "${{ vars.STAGING_PROPELAUTH_URL }}" ]; then
+        if [ -z "${{ vars.DEV_PROPELAUTH_URL }}" ]; then
           echo "❌ ERROR: STAGING_PROPELAUTH_URL is empty or not set!"
         else
-          echo "✅ STAGING_PROPELAUTH_URL is set: ${{ vars.STAGING_PROPELAUTH_URL }}"
+          echo "✅ STAGING_PROPELAUTH_URL is set: ${{ vars.DEV_PROPELAUTH_URL }}"
         fi
         echo "====================================="
 
