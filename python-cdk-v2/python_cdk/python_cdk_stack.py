@@ -165,15 +165,6 @@ class AdminPanelDeploymentStack(Stack):
                 targets=[service],
                 health_check=elbv2.HealthCheck(path="/api/health", port=str(config['frontend_port']), healthy_http_codes="200-399")
             )
-        
-        # Add targets to HTTPS listener
-        https_listener.add_targets(
-            "FrontendDefault",
-            port=int(config['frontend_port']),
-            protocol=elbv2.ApplicationProtocol.HTTP,
-            targets=[service],
-            health_check=elbv2.HealthCheck(path="/api/health", port=str(config['frontend_port']), healthy_http_codes="200-399")
-        )
 
       
         if not is_new_account and not is_release_env:
