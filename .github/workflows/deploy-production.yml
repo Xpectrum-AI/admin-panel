@@ -19,8 +19,8 @@ jobs:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-access-key-id: ${{ secrets.AWS_PROD_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_PROD_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
     - name: Login to Amazon ECR
@@ -56,28 +56,19 @@ jobs:
     - name: Log Environment Variables (Production)
       run: |
         echo "=== PRODUCTION ENVIRONMENT VARIABLES ==="
-        echo "PRODUCTION_PROPELAUTH_URL: ${{ secrets.PRODUCTION_PROPELAUTH_URL }}"
-        echo "PRODUCTION_PROPELAUTH_REDIRECT_URI: ${{ secrets.PRODUCTION_PROPELAUTH_REDIRECT_URI }}"
-        echo "PRODUCTION_NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_NEXT_PUBLIC_PROPELAUTH_API_KEY }}"
+        echo "Note: Secrets are now handled at runtime by CDK deployment"
+        echo "✅ Environment variables will be set during container startup"
         echo "========================================"
 
     - name: Deploy CDK stack (production)
       env:
-        # Pass GitHub environment variables to CDK
-        PRODUCTION_NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_NEXT_PUBLIC_PROPELAUTH_API_KEY }}
-        PRODUCTION_NEXT_PUBLIC_API_KEY: ${{ secrets.PRODUCTION_NEXT_PUBLIC_API_KEY }}
-        PRODUCTION_GOOGLE_CLIENT_ID: ${{ secrets.PRODUCTION_GOOGLE_CLIENT_ID }}
-        PRODUCTION_MONGODB_URL: ${{ secrets.PRODUCTION_MONGODB_URL }}
-        PRODUCTION_STRIPE_PUBLISHABLE_KEY: ${{ secrets.PRODUCTION_STRIPE_PUBLISHABLE_KEY }}
-        PRODUCTION_SECRET_KEY: ${{ secrets.PRODUCTION_SECRET_KEY }}
+        # Pass GitHub environment variables to CDK using simplified naming pattern
+        # Using PRODUCTION_ prefix for production environment
+        PRODUCTION_LIVE_API_URL: ${{ vars.PRODUCTION_LIVE_API_URL }}
+        PRODUCTION_PROPELAUTH_URL: ${{ vars.PRODUCTION_PROPELAUTH_URL }}
+        PRODUCTION_LIVE_API_KEY: ${{ secrets.PRODUCTION_LIVE_API_KEY }}
         PRODUCTION_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_PROPELAUTH_API_KEY }}
-        PRODUCTION_PROPELAUTH_VERIFIER_KEY: ${{ secrets.PRODUCTION_PROPELAUTH_VERIFIER_KEY }}
-        PRODUCTION_PROPELAUTH_REDIRECT_URI: ${{ secrets.PRODUCTION_PROPELAUTH_REDIRECT_URI }}
-        PRODUCTION_PROPELAUTH_URL: ${{ secrets.PRODUCTION_PROPELAUTH_URL }}
-        PRODUCTION_NEXT_PUBLIC_LIVE_API_URL: ${{ secrets.PRODUCTION_NEXT_PUBLIC_LIVE_API_URL }}
         PRODUCTION_SUPER_ADMIN_ORG_ID: ${{ secrets.PRODUCTION_SUPER_ADMIN_ORG_ID }}
-        # Add the missing NEXT_PUBLIC_PROPELAUTH_URL variable
-        PRODUCTION_NEXT_PUBLIC_PROPELAUTH_URL: ${{ secrets.PRODUCTION_PROPELAUTH_URL }}
       run: |
         cd python-cdk-v2
         # Deploy to production environment
@@ -89,13 +80,13 @@ jobs:
           CLUSTER_NAME=$(aws cloudformation describe-stacks \
             --stack-name AdminPanelProductionStack \
             --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`ClusterName`].OutputValue' \
+            --query 'Stacks[0].Outputs[?OutputKey==ClusterName].OutputValue' \
             --output text 2>/dev/null || echo "AdminPanelProductionStackCluster")
           
           SERVICE_NAME=$(aws cloudformation describe-stacks \
             --stack-name AdminPanelProductionStack \
             --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`ServiceName`].OutputValue' \
+            --query 'Stacks[0].Outputs[?OutputKey==ServiceName].OutputValue' \
             --output text 2>/dev/null || echo "AdminPanelProductionStackService")
           
           aws ecs describe-services \
@@ -113,13 +104,13 @@ jobs:
           CLUSTER_NAME=$(aws cloudformation describe-stacks \
             --stack-name AdminPanelProductionStack \
             --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`ClusterName`].OutputValue' \
+            --query 'Stacks[0].Outputs[?OutputKey==ClusterName].OutputValue' \
             --output text 2>/dev/null || echo "AdminPanelProductionStackCluster")
           
           SERVICE_NAME=$(aws cloudformation describe-stacks \
             --stack-name AdminPanelProductionStack \
             --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`ServiceName`].OutputValue' \
+            --query 'Stacks[0].Outputs[?OutputKey==ServiceName].OutputValue' \
             --output text 2>/dev/null || echo "AdminPanelProductionStackService")
           
           echo "Using cluster: $CLUSTER_NAME"
@@ -139,7 +130,7 @@ jobs:
       run: |
         DNS_NAME=$(aws cloudformation describe-stacks \
           --stack-name AdminPanelProductionStack \
-          --query 'Stacks[0].Outputs[?OutputKey==`FrontendURL`].OutputValue' \
+          --query 'Stacks[0].Outputs[?OutputKey==FrontendURL].OutputValue' \
           --output text \
           --region ${{ env.AWS_REGION }})
         echo "alb-dns=$DNS_NAME" >> $GITHUB_OUTPUT
@@ -152,7 +143,7 @@ jobs:
         # Get ALB DNS name
         DNS_NAME=$(aws cloudformation describe-stacks \
           --stack-name AdminPanelProductionStack \
-          --query 'Stacks[0].Outputs[?OutputKey==`FrontendURL`].OutputValue' \
+          --query 'Stacks[0].Outputs[?OutputKey==FrontendURL].OutputValue' \
           --output text \
           --region ${{ env.AWS_REGION }})
         
@@ -181,4 +172,4 @@ jobs:
     steps:
       - name: Production Deployment Failed
         run: |
-          echo "Production deployment failed - check the logs for details" 
+          echo "Production deployment failed - check the logs for details"
