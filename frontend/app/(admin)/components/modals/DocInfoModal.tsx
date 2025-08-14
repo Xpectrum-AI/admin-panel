@@ -230,21 +230,14 @@ export default function WelcomeSetupModal({
     }
   };
 
-  // Phone number validation function
+  // Phone number validation function - Simplified with essential constraints
   const validatePhone = (phone: string) => {
     if (!phone) return ''; // Allow empty phone numbers
     
     // Remove all non-digit characters for validation
     const digitsOnly = phone.replace(/\D/g, '');
     
-    // Check if it starts with country code (1-3 digits) followed by 7-15 digits
-    const phoneRegex = /^(\+?[1-9]\d{0,2})?(\d{7,15})$/;
-    
-    if (!phoneRegex.test(phone)) {
-      return 'Please enter a valid phone number (e.g., +1234567890 or 1234567890)';
-    }
-    
-    // Check total length (including country code)
+    // Check total length
     if (digitsOnly.length < 10) {
       return 'Phone number must have at least 10 digits';
     }
@@ -253,7 +246,7 @@ export default function WelcomeSetupModal({
       return 'Phone number cannot exceed 15 digits';
     }
     
-    // Check for common invalid patterns
+    // Check for obviously fake patterns
     if (digitsOnly.match(/^0+$/)) {
       return 'Phone number cannot be all zeros';
     }
@@ -262,16 +255,7 @@ export default function WelcomeSetupModal({
       return 'Phone number cannot be all ones';
     }
     
-    // Check for repeated patterns (like 123123123)
-    if (digitsOnly.length >= 6) {
-      const firstHalf = digitsOnly.substring(0, Math.floor(digitsOnly.length / 2));
-      const secondHalf = digitsOnly.substring(Math.floor(digitsOnly.length / 2));
-      if (firstHalf === secondHalf && firstHalf.length >= 3) {
-        return 'Phone number cannot have repeated patterns';
-      }
-    }
-    
-    // Check for sequential numbers (like 123456789)
+    // Check for sequential numbers (like 1234567890)
     if (digitsOnly.length >= 5) {
       let isSequential = true;
       for (let i = 1; i < digitsOnly.length; i++) {
@@ -282,20 +266,6 @@ export default function WelcomeSetupModal({
       }
       if (isSequential) {
         return 'Phone number cannot be sequential numbers';
-      }
-    }
-    
-    // Check for reverse sequential numbers (like 987654321)
-    if (digitsOnly.length >= 5) {
-      let isReverseSequential = true;
-      for (let i = 1; i < digitsOnly.length; i++) {
-        if (parseInt(digitsOnly[i]) !== parseInt(digitsOnly[i-1]) - 1) {
-          isReverseSequential = false;
-          break;
-        }
-      }
-      if (isReverseSequential) {
-        return 'Phone number cannot be reverse sequential numbers';
       }
     }
     
