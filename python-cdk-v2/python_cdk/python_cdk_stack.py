@@ -71,20 +71,13 @@ class AdminPanelDeploymentStack(Stack):
         task_role = iam.Role(self, f"{config['stack_name']}TaskRole", assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"))
 
         current_account = os.environ.get('CDK_DEFAULT_ACCOUNT', '')
-        is_new_account = current_account == '503561436224'
         is_release_env = environment == 'release'
         
-
-        if is_new_account:
-            certificate = acm.Certificate.from_certificate_arn(
-                self, f"{config['stack_name']}Cert",
-                "arn:aws:acm:us-west-1:503561436224:certificate/e4c6c688-9d4f-48ce-b3fa-5972d8fe2b57" 
-            )
-        else:
-            certificate = acm.Certificate.from_certificate_arn(
-                self, f"{config['stack_name']}Cert",
-                "arn:aws:acm:us-west-1:641623447164:certificate/6052b1be-e882-452c-8575-cedd01bb9fbc"
-            )
+        # Use the certificate for admin-dev.xpectrum-ai.com
+        certificate = acm.Certificate.from_certificate_arn(
+            self, f"{config['stack_name']}Cert",
+            "arn:aws:acm:us-west-1:641623447164:certificate/6052b1be-e882-452c-8575-cedd01bb9fbc"
+        )
 
         # Fargate Task Definition - Frontend only
         task = ecs.FargateTaskDefinition(self, f"{config['stack_name']}Task", memory_limit_mib=1024, cpu=512)
