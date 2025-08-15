@@ -146,7 +146,7 @@ jobs:
         
         # Deploy to development environment with development context
         # Add timeout to prevent hanging
-        timeout 30m cdk deploy AdminPanelStagingStack --require-approval never --context environment=staging || {
+        timeout 30m cdk deploy AdminPanelStagingStack --require-approval never --context environment=development || {
           echo "CDK deployment timed out or failed"
           echo "Checking ECS service status..."
           aws ecs describe-services \
