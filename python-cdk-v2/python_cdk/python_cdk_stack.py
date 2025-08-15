@@ -43,7 +43,7 @@ class AdminPanelDeploymentStack(Stack):
             }
         }
         
-        config = env_configs.get(environment, env_configs['staging'])
+        config = env_configs.get(environment, env_configs['development'])
 
         # Use 2 AZs but disable EIP allocation to avoid EIP limit issues
         vpc = ec2.Vpc(self, f"{config['stack_name']}Vpc", 
