@@ -8,7 +8,7 @@
 - **Services Dashboard**: http://localhost:3000/services
 - **Admin Dashboard**: http://localhost:3000/(admin)/dashboard
 - **Calendar**: http://localhost:3000/(admin)/calendar
-- **Billing**: http://localhost:3000/(admin)/billing
+
 - **Workspace**: http://localhost:3000/(admin)/workspace
 - **Settings**: http://localhost:3000/(admin)/settings
 
@@ -18,7 +18,7 @@
 - **User API**: http://localhost:8000/api/user
 - **Org API**: http://localhost:8000/api/org
 - **Agent API**: http://localhost:8000/api/agent
-- **Stripe API**: http://localhost:8000/api/stripe
+
 
 ### Calendar Backend (Python)
 - **API Base**: http://localhost:8001/api/v1
@@ -42,7 +42,7 @@
 
 ## 💳 Payment URLs
 
-### Stripe
+
 - **Test Secret Key**: sk_test_51RaX9pBTMxLlaTtWg74455SOBukRu3gQsEY3SfP17rkMOHy3Aoh7SHvuoMqV5Kk1wdsEf9yCeoROtu66SulV1YKW00YGErU4Pq
 - **Publishable Key**: (configure in .env)
 
@@ -99,7 +99,7 @@ API_KEY=xpectrum-ai@123
 LIVE_API_KEY=xpectrum-ai@123
 LIVE_API_BASE_URL=https://d1fs86umxjjz67.cloudfront.net
 PROPELAUTH_API_KEY=5c1b57840f4d4ec7265d0622cf68dd63e028b78d8482b21b8fb00395bb6ee3c59a1fde5f9288d373b1a315e591bd8723
-STRIPE_SECRET_KEY=sk_test_51RaX9pBTMxLlaTtWg74455SOBukRu3gQsEY3SfP17rkMOHy3Aoh7SHvuoMqV5Kk1wdsEf9yCeoROtu66SulV1YKW00YGErU4Pq
+
 ```
 
 ### Calendar Backend (.env)

@@ -117,13 +117,7 @@ export default function Header({ activeTab = 'calendar', onTabChange }: HeaderPr
                   <Building2 className="h-5 w-5 mr-3 text-gray-400 group-hover:text-blue-600 transition-colors duration-200" />
                   Workspace
                 </Link>
-                {/* <Link
-                  href="/billing"
-                  className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
-                >
-                  <CreditCard className="h-5 w-5 mr-3" />
-                  Billing & Payments
-                </Link> */}
+
                 {/* <Link
                   href="/settings"
                   className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
