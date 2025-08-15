@@ -32,17 +32,17 @@ jobs:
       - name: Lint frontend
         run: |
           cd frontend
-          npm run lint || echo "Lint completed with warnings"
+          npm run lint
 
       - name: Type check frontend
         run: |
           cd frontend
-          npx tsc --noEmit || echo "Type check completed with warnings"
+          npx tsc --noEmit
 
       - name: Run tests
         run: |
           cd frontend
-          npm test || echo "Tests completed with warnings"
+          npm test -- --coverage --watchAll=false
 
   test-cdk:
     runs-on: ubuntu-latest
@@ -63,7 +63,7 @@ jobs:
       - name: Run CDK tests
         run: |
           cd python-cdk-v2
-          python -m pytest tests/ || echo "CDK tests completed with warnings"
+          python -m pytest tests/
 
   build-images:
     needs: [test-frontend, test-cdk]
@@ -137,7 +137,7 @@ jobs:
       - name: Audit frontend dependencies
         run: |
           cd frontend
-          npm audit --audit-level=moderate || echo "Audit completed with warnings"
+          npm audit --audit-level=moderate
 
   python-security:
     runs-on: ubuntu-latest
@@ -156,5 +156,5 @@ jobs:
       - name: Check Python dependencies
         run: |
           cd python-cdk-v2
-          safety check --output json --save safety-report.json || echo "Safety check completed with warnings"
+          safety check --output json --save safety-report.json
  
