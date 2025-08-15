@@ -16,14 +16,14 @@ class AdminPanelDeploymentStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         # Get environment from context
-        environment = self.node.try_get_context('environment') or 'staging'
+        environment = self.node.try_get_context('environment') or 'development'
         
         # Environment-specific configurations
         env_configs = {
-            'staging': {
+            'development': {
                 'domain': 'admin-test.xpectrum-ai.com',
                 'auth_domain': 'auth.admin-test.xpectrum-ai.com',
-                'frontend_tag': 'frontend-staging',
+                'frontend_tag': 'frontend-development',
                 'frontend_port': '3000',
                 'stack_name': 'AdminPanelStagingStack'
             },
