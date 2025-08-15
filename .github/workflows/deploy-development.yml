@@ -1,4 +1,4 @@
-name: Deploy to Staging
+name: Deploy to Development
 
 on:
   workflow_dispatch:
@@ -41,7 +41,7 @@ jobs:
           cd frontend
           npm test -- --coverage --watchAll=false
 
-  deploy-staging:
+  deploy-development:
     runs-on: ubuntu-latest
     environment: development
     needs: test
@@ -80,9 +80,9 @@ jobs:
           --build-arg NEXT_PUBLIC_LIVE_API_KEY="${NEXT_PUBLIC_LIVE_API_KEY}" \
           --build-arg NEXT_PUBLIC_PROPELAUTH_API_KEY="${NEXT_PUBLIC_PROPELAUTH_API_KEY}" \
           --build-arg NEXT_PUBLIC_SUPER_ADMIN_ORG_ID="${NEXT_PUBLIC_SUPER_ADMIN_ORG_ID}" \
-          -t admin-panel:frontend-staging .
-        docker tag admin-panel:frontend-staging $REPO:frontend-staging
-        docker push $REPO:frontend-staging
+          -t admin-panel:frontend-development .
+        docker tag admin-panel:frontend-development $REPO:frontend-development
+        docker push $REPO:frontend-development
         cd ..
 
     - name: Setup Python for CDK
@@ -99,43 +99,43 @@ jobs:
       run: |
         npm install -g aws-cdk
 
-    - name: Log Environment Variables (Staging)
+    - name: Log Environment Variables (Development)
       run: |
-        echo "=== STAGING ENVIRONMENT VARIABLES ==="
-        echo "STAGING_LIVE_API_KEY: ${{ secrets.DEV_LIVE_API_KEY }}"
-        echo "STAGING_PROPELAUTH_API_KEY: ${{ secrets.DEV_PROPELAUTH_API_KEY }}"
-        echo "STAGING_SUPER_ADMIN_ORG_ID: ${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}"
-        echo "STAGING_LIVE_API_URL: ${{ vars.DEV_LIVE_API_URL }}"
-        echo "STAGING_PROPELAUTH_URL: ${{ vars.DEV_PROPELAUTH_URL }}"
+        echo "=== DEVELOPMENT ENVIRONMENT VARIABLES ==="
+        echo "DEVELOPMENT_LIVE_API_KEY: ${{ secrets.DEV_LIVE_API_KEY }}"
+        echo "DEVELOPMENT_PROPELAUTH_API_KEY: ${{ secrets.DEV_PROPELAUTH_API_KEY }}"
+        echo "DEVELOPMENT_SUPER_ADMIN_ORG_ID: ${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}"
+        echo "DEVELOPMENT_LIVE_API_URL: ${{ vars.DEV_LIVE_API_URL }}"
+        echo "DEVELOPMENT_PROPELAUTH_URL: ${{ vars.DEV_PROPELAUTH_URL }}"
         echo "====================================="
         
         echo "=== SUPER ADMIN CONFIGURATION DEBUG ==="
         if [ -z "${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}" ]; then
-          echo "❌ ERROR: STAGING_SUPER_ADMIN_ORG_ID is empty or not set!"
+          echo "❌ ERROR: DEVELOPMENT_SUPER_ADMIN_ORG_ID is empty or not set!"
         else
-          echo "✅ STAGING_SUPER_ADMIN_ORG_ID is set: ${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}"
+          echo "✅ DEVELOPMENT_SUPER_ADMIN_ORG_ID is set: ${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}"
         fi
         
         if [ -z "${{ secrets.DEV_PROPELAUTH_API_KEY }}" ]; then
-          echo "❌ ERROR: STAGING_PROPELAUTH_API_KEY is empty or not set!"
+          echo "❌ ERROR: DEVELOPMENT_PROPELAUTH_API_KEY is empty or not set!"
         else
-          echo "✅ STAGING_PROPELAUTH_API_KEY is set (length: ${#STAGING_PROPELAUTH_API_KEY})"
+          echo "✅ DEVELOPMENT_PROPELAUTH_API_KEY is set (length: ${#DEVELOPMENT_PROPELAUTH_API_KEY})"
         fi
         
         if [ -z "${{ vars.DEV_LIVE_API_URL }}" ]; then
-          echo "❌ ERROR: STAGING_LIVE_API_URL is empty or not set!"
+          echo "❌ ERROR: DEVELOPMENT_LIVE_API_URL is empty or not set!"
         else
-          echo "✅ STAGING_LIVE_API_URL is set: ${{ vars.DEV_LIVE_API_URL }}"
+          echo "✅ DEVELOPMENT_LIVE_API_URL is set: ${{ vars.DEV_LIVE_API_URL }}"
         fi
         
         if [ -z "${{ vars.DEV_PROPELAUTH_URL }}" ]; then
-          echo "❌ ERROR: STAGING_PROPELAUTH_URL is empty or not set!"
+          echo "❌ ERROR: DEVELOPMENT_PROPELAUTH_URL is empty or not set!"
         else
-          echo "✅ STAGING_PROPELAUTH_URL is set: ${{ vars.DEV_PROPELAUTH_URL }}"
+          echo "✅ DEVELOPMENT_PROPELAUTH_URL is set: ${{ vars.DEV_PROPELAUTH_URL }}"
         fi
         echo "====================================="
 
-    - name: Deploy CDK stack (staging)
+    - name: Deploy CDK stack (development)
       run: |
         cd python-cdk-v2
         
@@ -144,7 +144,7 @@ jobs:
         echo "Environment variables are now handled during Docker build"
         echo "====================================="
         
-        # Deploy to staging environment with staging context
+        # Deploy to development environment with development context
         # Add timeout to prevent hanging
         timeout 30m cdk deploy AdminPanelStagingStack --require-approval never --context environment=staging || {
           echo "CDK deployment timed out or failed"
@@ -322,10 +322,10 @@ jobs:
         fi
 
   deployment-failure:
-    needs: deploy-staging
+    needs: deploy-development
     runs-on: ubuntu-latest
     if: failure()
     steps:
-      - name: Staging Deployment Failed
+      - name: Development Deployment Failed
         run: |
-          echo "Staging deployment failed - check the logs for details" 
+          echo "Development deployment failed - check the logs for details" 
