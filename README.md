@@ -313,9 +313,9 @@ npm run dev
    cdk deploy AdminPanelProductionStack --require-approval never --context environment=production
    ```
 
-3. **Deploy to staging:**
+3. **Deploy to development:**
    ```bash
-   cdk deploy AdminPanelProductionStack --require-approval never --context environment=staging
+   cdk deploy AdminPanelDevelopmentStack --require-approval never --context environment=development
    ```
 
 ### GitHub Actions CI/CD
@@ -323,7 +323,7 @@ npm run dev
 The project includes automated CI/CD pipelines:
 
 - **Production Deployment**: Triggered on push to `main` branch
-- **Staging Deployment**: Triggered on push to `develop` branch
+- **Development Deployment**: Triggered on push to `develop` branch
 - **Security Scanning**: Automated vulnerability checks with Trivy and Bandit
 - **Database Backup**: Automated daily backups
 - **Code Quality**: Automated linting and testing

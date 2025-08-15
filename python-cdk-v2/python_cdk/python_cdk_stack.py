@@ -25,7 +25,7 @@ class AdminPanelDeploymentStack(Stack):
                 'auth_domain': 'auth.admin-test.xpectrum-ai.com',
                 'frontend_tag': 'frontend-development',
                 'frontend_port': '3000',
-                'stack_name': 'AdminPanelStagingStack'
+                'stack_name': 'AdminPanelDevelopmentStack'
             },
             'production': {
                 'domain': 'admin.xpectrum-ai.com',
