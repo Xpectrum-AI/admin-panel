@@ -21,8 +21,8 @@ class AdminPanelDeploymentStack(Stack):
         # Environment-specific configurations
         env_configs = {
             'development': {
-                'domain': 'admin-test.xpectrum-ai.com',
-                'auth_domain': 'auth.admin-test.xpectrum-ai.com',
+                'domain': 'admin-dev.xpectrum-ai.com',
+                'auth_domain': 'auth.admin-dev.xpectrum-ai.com',
                 'frontend_tag': 'frontend-development',
                 'frontend_port': '3000',
                 'stack_name': 'AdminPanelDevelopmentStack'
@@ -83,7 +83,7 @@ class AdminPanelDeploymentStack(Stack):
         else:
             certificate = acm.Certificate.from_certificate_arn(
                 self, f"{config['stack_name']}Cert",
-                "arn:aws:acm:us-west-1:641623447164:certificate/99850dcb-97a8-4bed-bbed-6038e2c25e90"
+                "arn:aws:acm:us-west-1:641623447164:certificate/6052b1be-e882-452c-8575-cedd01bb9fbc"
             )
 
         # Fargate Task Definition - Frontend only
