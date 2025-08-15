@@ -11,6 +11,7 @@ import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { LocationDropdowns } from '../common';
 import { SPECIALIZATIONS } from '../constants/specializations';
 import { formatPhoneNumber, validatePhone } from '@/lib/utils/phoneValidation';
+import { validateQualificationYear, validateQualificationYearConsistency, validateRegistrationYear } from '@/lib/utils/qualificationValidation';
 
 // Helper function to generate unique ID
 const generateUniqueId = () => {
@@ -126,47 +127,7 @@ export default function WelcomeSetupModal({
     return '';
   };
 
-  const validateQualificationYear = (qualYear: string, age: string) => {
-    const qualYearNum = parseInt(qualYear);
-    const ageNum = parseInt(age);
-    const currentYear = new Date().getFullYear();
-    
-    if (qualYear && age) {
-      const minQualYear = currentYear - ageNum + 23;
-      if (qualYearNum < minQualYear) {
-        return `Qualification year must be at least ${minQualYear} (doctor must be at least 23 when qualifying)`;
-      }
-    }
-    return '';
-  };
-
-  const validateQualificationYearConsistency = (qualifications: any[]) => {
-    if (qualifications.length < 2) return '';
-    
-    const years = qualifications.map(q => q.year).filter(year => year.trim() !== '');
-    if (years.length < 2) return '';
-    
-    const uniqueYears = [...new Set(years)];
-    if (uniqueYears.length > 1) {
-      return 'All qualification years must be the same';
-    }
-    return '';
-  };
-
-  const validateRegistrationYear = (regYear: string, qualYear: string) => {
-    const regYearNum = parseInt(regYear);
-    const qualYearNum = parseInt(qualYear);
-    const currentYear = new Date().getFullYear();
-    
-    if (regYear && qualYear && regYearNum < qualYearNum) {
-      return 'Registration year must be after or equal to qualification year';
-    }
-    
-    if (regYear && regYearNum > currentYear) {
-      return 'Registration year cannot be in the future';
-    }
-    return '';
-  };
+  // Using imported validation functions from qualificationValidation.ts
 
   const validateAgeVsRegistrationYear = (age: string, regYear: string) => {
     const ageNum = parseInt(age);
