@@ -4,7 +4,7 @@ const roles = [
   {
     name: 'Owner',
     description: 'Full access to all features',
-    permissions: ['Create Bots', 'View Analytics', 'Billing Access', 'Manage Team', 'Manage Roles'],
+            permissions: ['Create Bots', 'View Analytics', 'Manage Team', 'Manage Roles'],
   },
   {
     name: 'Admin',

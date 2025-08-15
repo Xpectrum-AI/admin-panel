@@ -10,7 +10,7 @@ The Healthcare Admin Panel is a sophisticated web application designed specifica
 - **Calendar Management**: Google Calendar integration for appointment scheduling and management
 - **Agent Monitoring**: Real-time monitoring of call center agents and their activities
 - **Organization Management**: Multi-tenant architecture with role-based access control
-- **Payment Processing**: Integrated Stripe payment processing for billing and subscriptions
+
 - **Super Admin Panel**: Comprehensive system administration and oversight capabilities
 
 ## 🏗️ Architecture Overview
@@ -28,7 +28,7 @@ This project follows a modern, scalable architecture:
 ### Backend Services
 - **API Routes**: Next.js API routes handling all backend operations
 - **Database**: MongoDB for data persistence with proper indexing
-- **Payment Processing**: Stripe integration for secure payment handling
+
 - **Calendar Integration**: Google Calendar API for appointment management
 - **Authentication**: PropelAuth for user management and security
 
@@ -46,7 +46,7 @@ admin-panel/
 │   ├── app/                 # App router pages and API routes
 │   │   ├── (admin)/        # Admin dashboard pages
 │   │   │   ├── dashboard/  # Main dashboard with calendar, agents, doctors
-│   │   │   ├── billing/    # Payment and subscription management
+
 │   │   │   ├── settings/   # Application settings
 │   │   │   ├── workspace/  # Team and organization management
 │   │   │   └── auth/       # Authentication components
@@ -57,7 +57,7 @@ admin-panel/
 │   │   │   ├── doctor/     # Doctor management APIs
 │   │   │   ├── event/      # Event management APIs
 │   │   │   ├── org/        # Organization management APIs
-│   │   │   ├── stripe/     # Payment processing APIs
+
 │   │   │   └── user/       # User management APIs
 │   │   └── globals.css     # Global styles
 │   ├── components/         # Reusable React components
@@ -90,7 +90,7 @@ admin-panel/
 - **AWS CDK** (for infrastructure deployment)
 - **MongoDB** (local or cloud instance)
 - **Google Cloud Console** (for Calendar API access)
-- **Stripe Account** (for payment processing)
+
 - **PropelAuth Account** (for authentication)
 
 ### Environment Setup
@@ -122,8 +122,7 @@ admin-panel/
    PROPELAUTH_URL=your_propelauth_url
    PROPELAUTH_API_KEY=your_propelauth_api_key
    
-   # Stripe Configuration
-   STRIPE_SECRET_KEY=your_stripe_secret_key
+   
    
    # Application Configuration
    FRONTEND_URL=http://localhost:3000
@@ -169,7 +168,7 @@ npm run dev
 - **Runtime**: Node.js with Next.js API routes
 - **Database**: MongoDB with Mongoose
 - **Authentication**: PropelAuth
-- **Payment Processing**: Stripe
+
 - **Calendar Integration**: Google Calendar API
 - **Validation**: Built-in Next.js validation
 
@@ -214,9 +213,9 @@ npm run dev
 - **Organization Settings**: Configure organization-specific settings
 
 ### 5. Payment Processing
-- **Stripe Integration**: Secure payment processing
+
 - **Subscription Management**: Handle recurring payments and subscriptions
-- **Billing Management**: Generate and manage invoices
+
 - **Payment Methods**: Support for multiple payment methods
 - **Transaction History**: Complete payment and transaction history
 
@@ -276,17 +275,7 @@ npm run dev
 - `DELETE /api/agents/delete_phone/[agentId]` - Remove agent phone
 - `GET /api/agents/by_phone/[phoneNumber]` - Find agent by phone number
 
-### Payment Processing (`/api/stripe/v1/*`)
-- `GET /api/stripe/v1/customers` - Get all customers
-- `GET /api/stripe/v1/customers/[id]` - Get specific customer
-- `GET /api/stripe/v1/products` - Get available products
-- `GET /api/stripe/v1/prices` - Get product prices
-- `GET /api/stripe/v1/subscriptions` - Get subscriptions
-- `GET /api/stripe/v1/invoices` - Get invoices
-- `POST /api/stripe/v1/checkout/sessions` - Create checkout session
-- `GET /api/stripe/v1/checkout/sessions/[id]` - Get checkout session
-- `GET /api/stripe/v1/payment_intents/[id]` - Get payment intent
-- `GET /api/stripe/v1/events` - Get payment events
+
 
 ### Health Check
 - `GET /api/health` - Application health status
@@ -303,7 +292,7 @@ npm run dev
 ### Security Features
 - **API Security**: Next.js API routes with proper validation
 - **Database Security**: MongoDB with proper indexing and access controls
-- **Payment Security**: Stripe secure payment processing
+
 - **Infrastructure Security**: AWS IAM roles and security groups
 - **CORS Protection**: Proper CORS configuration
 - **Input Validation**: Comprehensive input validation and sanitization
@@ -365,7 +354,7 @@ The project includes comprehensive testing setup:
 - **API Testing**: Next.js API route testing
 - **Frontend Testing**: React component testing
 - **Authentication Testing**: PropelAuth integration testing
-- **Payment Testing**: Stripe integration testing
+
 - **Infrastructure Testing**: AWS CDK testing
 - **End-to-End Testing**: Complete workflow testing
 
@@ -442,7 +431,7 @@ The project includes comprehensive testing setup:
    - Ensure proper scopes are configured
 
 3. **Payment Issues:**
-   - Verify Stripe API keys
+   
    - Check webhook configurations
    - Ensure proper payment method setup
 

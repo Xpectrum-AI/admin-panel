@@ -11,7 +11,6 @@ const tabs = [
   'Profile',
   'Team',
   'Roles',
-  'Billing',
   'Analytics',
   'Audit Logs',
   'Integrations',
@@ -64,7 +63,7 @@ export default function WorkspaceTabs({ workspace }: WorkspaceTabsProps) {
         {activeTab === 'Profile' && <ProfileTab workspace={workspace} />}
         {activeTab === 'Team' && <TeamTab workspace={workspace} />}
         {activeTab === 'Roles' && <RolesTab workspace={workspace} />}
-        {['Billing', 'Analytics', 'Audit Logs', 'Integrations'].includes(activeTab) && (
+        {['Analytics', 'Audit Logs', 'Integrations'].includes(activeTab) && (
           <div className="text-gray-400 text-center py-12">Coming soon...</div>
         )}
       </div>
