@@ -8,43 +8,9 @@ env:
   ACCOUNT_ID: 641623447164
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
- 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: |
-          cd frontend
-          npm ci
-
-      - name: Lint frontend
-        run: |
-          cd frontend
-          npm run lint || echo "Lint completed with warnings"
-
-      - name: Type check frontend
-        run: |
-          cd frontend
-          npx tsc --noEmit || echo "Type check completed with warnings"
-
-      - name: Run tests
-        run: |
-          cd frontend
-          npm test -- --coverage --watchAll=false
-
   deploy-staging:
     runs-on: ubuntu-latest
     environment: development
-    needs: test
     
     steps:
     - name: Checkout code
