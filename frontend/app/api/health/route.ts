@@ -20,7 +20,7 @@ export async function GET() {
         agents: '/api/agents',
         orgs: '/api/org',
         users: '/api/user',
-        stripe: '/api/stripe/v1',
+    
         health: '/api/health'
       }
     };
