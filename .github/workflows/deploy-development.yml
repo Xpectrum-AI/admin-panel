@@ -202,7 +202,7 @@ jobs:
         
         # Get ALB DNS name
         DNS_NAME=$(aws cloudformation describe-stacks \
-          --stack-name AdminPanelDevelopmentStack \ 
+          --stack-name AdminPanelDevelopmentStack \
           --query 'Stacks[0].Outputs[?OutputKey==`FrontendURL`].OutputValue' \
           --output text \
           --region ${{ env.AWS_REGION }})
