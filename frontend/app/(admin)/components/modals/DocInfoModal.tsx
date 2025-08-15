@@ -10,6 +10,7 @@ import { doctorApiService } from '@/service/doctorService';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { LocationDropdowns } from '../common';
 import { SPECIALIZATIONS } from '../constants/specializations';
+import { formatPhoneNumber, validatePhone } from '@/lib/utils/phoneValidation';
 
 // Helper function to generate unique ID
 const generateUniqueId = () => {
@@ -200,107 +201,7 @@ export default function WelcomeSetupModal({
     return '';
   };
 
-  // Phone number formatting function
-  const formatPhoneNumber = (value: string) => {
-    // Remove all non-digit characters except +
-    const cleaned = value.replace(/[^\d+]/g, '');
-    
-    // Ensure only one + at the beginning
-    let formatted = cleaned;
-    if (cleaned.includes('+')) {
-      const parts = cleaned.split('+');
-      formatted = '+' + parts.join('');
-    }
-    
-    // If it starts with +, keep it
-    if (formatted.startsWith('+')) {
-      // Limit to 15 digits after +
-      const digitsAfterPlus = formatted.substring(1).replace(/\D/g, '');
-      if (digitsAfterPlus.length <= 15) {
-        return '+' + digitsAfterPlus;
-      }
-      return '+' + digitsAfterPlus.substring(0, 15);
-    } else {
-      // If no +, limit to 15 digits
-      const digitsOnly = formatted.replace(/\D/g, '');
-      if (digitsOnly.length <= 15) {
-        return digitsOnly;
-      }
-      return digitsOnly.substring(0, 15);
-    }
-  };
 
-  // Phone number validation function
-  const validatePhone = (phone: string) => {
-    if (!phone) return ''; // Allow empty phone numbers
-    
-    // Remove all non-digit characters for validation
-    const digitsOnly = phone.replace(/\D/g, '');
-    
-    // Check if it starts with country code (1-3 digits) followed by 7-15 digits
-    const phoneRegex = /^(\+?[1-9]\d{0,2})?(\d{7,15})$/;
-    
-    if (!phoneRegex.test(phone)) {
-      return 'Please enter a valid phone number (e.g., +1234567890 or 1234567890)';
-    }
-    
-    // Check total length (including country code)
-    if (digitsOnly.length < 10) {
-      return 'Phone number must have at least 10 digits';
-    }
-    
-    if (digitsOnly.length > 15) {
-      return 'Phone number cannot exceed 15 digits';
-    }
-    
-    // Check for common invalid patterns
-    if (digitsOnly.match(/^0+$/)) {
-      return 'Phone number cannot be all zeros';
-    }
-    
-    if (digitsOnly.match(/^1+$/)) {
-      return 'Phone number cannot be all ones';
-    }
-    
-    // Check for repeated patterns (like 123123123)
-    if (digitsOnly.length >= 6) {
-      const firstHalf = digitsOnly.substring(0, Math.floor(digitsOnly.length / 2));
-      const secondHalf = digitsOnly.substring(Math.floor(digitsOnly.length / 2));
-      if (firstHalf === secondHalf && firstHalf.length >= 3) {
-        return 'Phone number cannot have repeated patterns';
-      }
-    }
-    
-    // Check for sequential numbers (like 123456789)
-    if (digitsOnly.length >= 5) {
-      let isSequential = true;
-      for (let i = 1; i < digitsOnly.length; i++) {
-        if (parseInt(digitsOnly[i]) !== parseInt(digitsOnly[i-1]) + 1) {
-          isSequential = false;
-          break;
-        }
-      }
-      if (isSequential) {
-        return 'Phone number cannot be sequential numbers';
-      }
-    }
-    
-    // Check for reverse sequential numbers (like 987654321)
-    if (digitsOnly.length >= 5) {
-      let isReverseSequential = true;
-      for (let i = 1; i < digitsOnly.length; i++) {
-        if (parseInt(digitsOnly[i]) !== parseInt(digitsOnly[i-1]) - 1) {
-          isReverseSequential = false;
-          break;
-        }
-      }
-      if (isReverseSequential) {
-        return 'Phone number cannot be reverse sequential numbers';
-      }
-    }
-    
-    return '';
-  };
 
   // Helper function to get error message for a field
   const getFieldError = (fieldName: string) => {
