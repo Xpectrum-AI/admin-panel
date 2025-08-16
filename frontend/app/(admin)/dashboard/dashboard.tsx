@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useAuthInfo } from '@propelauth/react';
-import { ProtectedRoute } from "../../(admin)/auth/ProtectedRoute";
 import Header from './Header';
 
 import { 
@@ -446,7 +445,7 @@ export default function Dashboard() {
   };
 
   return (
-    <ProtectedRoute>
+    <>
       {showOrgSetup && <OrgSetup onOrgCreated={() => {
         setShowOrgSetup(false);
         setOrgSetupComplete(true);
@@ -719,7 +718,7 @@ export default function Dashboard() {
           showSuccess('Calendar invitation accepted successfully!');
         }}
       />
-    </ProtectedRoute>
+    </>
   );
 } 
 

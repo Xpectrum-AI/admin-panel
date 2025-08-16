@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Mail, Eye, EyeOff, Phone, MapPin, User2, Save, Lock } from 'lucide-react';
 import { useAuthInfo } from '@propelauth/react';
-import { ProtectedRoute } from '../auth/ProtectedRoute';
 import { useAuthFrontendApis } from '@propelauth/frontend-apis-react';
 import { useErrorHandler } from '../../../hooks/useErrorHandler';
 import { useRouter } from 'next/navigation';
@@ -162,7 +161,6 @@ export default function AccountSettings() {
   };
 
   return (
-    <ProtectedRoute>
       <div className="min-h-screen bg-[#f8fafc]">
         {/* Header */}
         <div className="flex items-center px-8 py-6 border-b border-gray-200 mb-10">
@@ -312,6 +310,5 @@ export default function AccountSettings() {
             </div>
         </div>
       </div>
-    </ProtectedRoute>
   );
 } 
