@@ -7,6 +7,8 @@ import { eventService } from '@/service/eventService';
 import { getTimezoneLabel } from '@/lib/utils/timezoneUtils';
 import { CalendarEvent } from '../common/types';
 
+
+
 interface EditEventModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -102,23 +104,54 @@ export default function EditEventModal({ isOpen, onClose, event, calendarId, sel
 
     setIsSubmitting(true);
     try {
-      const calendarTimezone = selectedCalendar?.timezone || 'Asia/Kolkata';
+      // Always use the calendar's timezone - no fallback
+      if (!selectedCalendar?.timezone) {
+        showError('Calendar timezone is required. Please select a calendar with a valid timezone.');
+        return;
+      }
       
-      const startDateTime = `${formData.date}T${formData.startTime}:00`;
-      const endDateTime = `${formData.date}T${formData.endTime}:00`;
-
-      const eventData = {
-        calendar_id: calendarId,
-        event_id: event.id,
-        summary: formData.title,
-        start: startDateTime,
-        end: endDateTime,
-        timezone: calendarTimezone,
-        attendee_email: formData.attendees || undefined,
-        description: formData.description || undefined,
-        event_type: formData.eventType || undefined,
-        location: formData.location || undefined,
+      const calendarTimezone = selectedCalendar.timezone;
+      
+      // Create datetime strings with explicit timezone information
+      // Convert the local time to the calendar's timezone properly
+      const createDateTimeWithTimezone = (dateStr: string, timeStr: string, timezone: string): string => {
+        try {
+          // Create a date object representing the time in the target timezone
+          const dateTimeStr = `${dateStr}T${timeStr}:00`;
+          
+          // Get the timezone offset for the target timezone
+          const date = new Date(dateTimeStr);
+          
+          // Calculate the offset between the target timezone and UTC
+          const targetDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
+          const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+          const offsetMs = targetDate.getTime() - utcDate.getTime();
+          
+          // Create the datetime string with timezone offset
+          const utcTime = date.getTime() - offsetMs;
+          return new Date(utcTime).toISOString();
+        } catch (error) {
+          console.error('Error creating datetime with timezone:', error);
+          // Fallback: send with timezone suffix
+          return `${dateStr}T${timeStr}:00`;
+        }
       };
+
+      const startDateTimeISO = createDateTimeWithTimezone(formData.date, formData.startTime, calendarTimezone);
+      const endDateTimeISO = createDateTimeWithTimezone(formData.date, formData.endTime, calendarTimezone);
+
+             const eventData = {
+         calendar_id: calendarId,
+         event_id: event.id,
+         summary: formData.title,
+         start: startDateTimeISO,
+         end: endDateTimeISO,
+         timezone: calendarTimezone,
+         attendee_email: formData.attendees || undefined,
+         description: formData.description || undefined,
+         event_type: formData.eventType || undefined,
+         location: formData.location || undefined,
+       };
 
       const result = await eventService.updateEvent(eventData);
       showSuccess('Event updated successfully!');
