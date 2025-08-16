@@ -20,7 +20,8 @@ export function getTimezoneLabel(timezone: string): string {
     'Australia/Sydney': 'Australian Eastern Time (AET)',
     'Asia/Shanghai': 'China Standard Time (CST)',
     'Asia/Dubai': 'Gulf Standard Time (GST)',
-    'Asia/Singapore': 'Singapore Time (SGT)'
+    'Asia/Singapore': 'Singapore Time (SGT)',
+    'UTC': 'Coordinated Universal Time (UTC)'
   };
   
   return timezoneLabels[timezone] || timezone;
