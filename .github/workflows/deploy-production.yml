@@ -206,6 +206,14 @@ jobs:
         curl -f -k "https://$HOSTNAME/" || exit 1
         curl -f -k "https://$HOSTNAME/api/health" || exit 1
 
+    - name: Force restart ECS services
+      run: |
+        aws ecs update-service \
+          --cluster "AdminPanelProductionStack-AdminPanelProductionStackCluster56FF079E-JXiyRka2S3Ds" \
+          --service "AdminPanelProductionStackService-1" \
+          --force-new-deployment \
+          --region "$AWS_REGION"
+
     # GitHub release creation removed due to permissions issue
     # You can manually create releases from GitHub UI if needed
 
