@@ -165,7 +165,7 @@ export default function AccountSettings() {
         {/* Header */}
         <div className="flex items-center px-8 py-6 border-b border-gray-200 mb-10">
           <button
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push("/")}
             className="group mr-3"
             aria-label="Back"
           >
