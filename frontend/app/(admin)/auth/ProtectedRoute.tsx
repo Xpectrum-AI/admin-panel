@@ -3,18 +3,39 @@
 
 import { useAuthInfo } from "@propelauth/react";
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { loading, user } = useAuthInfo();
+  const pathname = usePathname();
+
+  // Routes that don't require authentication
+  const PUBLIC_ROUTES = ['/login', '/signup'];
+
   useEffect(() => {
     if (!loading && !user) {
-      window.location.href = "/login";
+      // Only redirect if user is not authenticated AND not on a public route
+      if (!PUBLIC_ROUTES.some(route => pathname.startsWith(route))) {
+        window.location.href = "/login";
+      }
     }
-  }, [loading, user]);
+  }, [loading, user, pathname]);
 
-  if (loading || !user) {
-    return null; // or a spinner if you prefer
+  // If still loading, show nothing
+  if (loading) {
+    return null;
   }
 
+  // If user is not authenticated and on a public route, show children
+  if (!user && PUBLIC_ROUTES.some(route => pathname.startsWith(route))) {
+    return <>{children}</>;
+  }
+
+  // If user is not authenticated and not on a public route, show nothing (will redirect)
+  if (!user) {
+    return null;
+  }
+
+  // User is authenticated, show children
   return <>{children}</>;
 }

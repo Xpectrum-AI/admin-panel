@@ -8,10 +8,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,    // Skip TypeScript checks during build
   },
-  experimental: {
-    // Enable runtime environment variable access
-    serverComponentsExternalPackages: [],
-  },
+  serverExternalPackages: [],
   // Add runtime configuration for environment variables
   env: {
     // Build-time environment variables (if any)
