@@ -257,7 +257,15 @@ jobs:
         else
           echo "No tasks found to verify environment variables"
         fi
-
+    
+    - name: Force restart ECS services
+      run: |
+        aws ecs update-service \
+          --cluster "AdminPanelDevelopmentStack-AdminPanelDevelopmentStackCluster085C0A6B-rKfYBFGHCbDH" \
+          --service "AdminPanelDevelopmentStackService-1" \
+          --force-new-deployment \
+          --region "$AWS_REGION"
+    
     - name: Debug deployment status
       run: |
         echo "=== Checking CloudFormation stack status ==="
