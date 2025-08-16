@@ -42,7 +42,7 @@ export default function Header({ activeTab = 'calendar', onTabChange }: HeaderPr
   return (
     <header className="flex items-center justify-between bg-white/95 backdrop-blur-sm p-6 border-b border-gray-200/50 shadow-sm sticky top-0 z-40">
       <div className="flex items-center">
-        <Link href="/dashboard" className="flex items-center space-x-3 group">
+        <Link href="/" className="flex items-center space-x-3 group">
           <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:shadow-xl transition-all duration-200">
             D
           </div>
