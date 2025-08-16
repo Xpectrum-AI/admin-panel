@@ -199,9 +199,25 @@ export default function CalendarEventsList({ events, loading, selectedCalendar, 
               console.error('Error parsing dates:', error);
             }
             
-            const startTime = formatTimeInTimezone(event.start.dateTime, selectedCalendar?.timezone || 'Asia/Kolkata');
-            const endTime = formatTimeInTimezone(event.end.dateTime, selectedCalendar?.timezone || 'Asia/Kolkata');
-            const timezoneLabel = getTimezoneLabel(selectedCalendar?.timezone || 'Asia/Kolkata');
+
+
+            // Display the time exactly as it's stored, without timezone conversion
+            const formatTimeAsStored = (dateTimeStr: string): string => {
+              try {
+                // Extract time from the datetime string (e.g., "2025-08-15T09:00:00" -> "09:00")
+                const timePart = dateTimeStr.split('T')[1];
+                if (timePart) {
+                  return timePart.substring(0, 5); // Get HH:MM part
+                }
+                return '00:00';
+              } catch (error) {
+                return '00:00';
+              }
+            };
+
+            const startTime = formatTimeAsStored(event.start.dateTime);
+            const endTime = formatTimeAsStored(event.end.dateTime);
+            const timezoneLabel = getTimezoneLabel(selectedCalendar?.timezone || 'UTC');
 
             return (
               <div key={event.id || `${event.summary}-${event.start.dateTime}`} className="p-4 border border-gray-300 rounded-lg space-y-3">
@@ -235,12 +251,21 @@ export default function CalendarEventsList({ events, loading, selectedCalendar, 
                 {/* Event Date */}
                 <div className="flex items-center gap-1 text-sm text-gray-600">
                   <Calendar className="h-4 w-4 text-blue-600" />
-                  <span>{new Date(event.start.dateTime).toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}</span>
+                  <span>{(() => {
+                    try {
+                      // Extract date from the datetime string (e.g., "2025-08-15T09:00:00" -> "2025-08-15")
+                      const datePart = event.start.dateTime.split('T')[0];
+                      const date = new Date(datePart + 'T00:00:00'); // Create date without timezone conversion
+                      return date.toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      });
+                    } catch (error) {
+                      return 'Invalid Date';
+                    }
+                  })()}</span>
                 </div>
 
                 {/* Event Time */}
