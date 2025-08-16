@@ -6,6 +6,8 @@ import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { eventService } from '@/service/eventService';
 import { getTimezoneLabel } from '@/lib/utils/timezoneUtils';
 
+
+
 interface CreateEventModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -73,22 +75,44 @@ export default function CreateEventModal({ isOpen, onClose, calendarId, selected
 
     setIsSubmitting(true);
     try {
-      const calendarTimezone = selectedCalendar?.timezone || 'Asia/Kolkata';
+      // Always use the calendar's timezone - no fallback
+      if (!selectedCalendar?.timezone) {
+        showError('Calendar timezone is required. Please select a calendar with a valid timezone.');
+        return;
+      }
       
-      const startDateTime = `${formData.date}T${formData.startTime}:00`;
-      const endDateTime = `${formData.date}T${formData.endTime}:00`;
+      const calendarTimezone = selectedCalendar.timezone;
+      
+      // Store the time exactly as input, without any conversion
+      // This ensures the event appears at the exact time you create it
+      const startDateTimeISO = `${formData.date}T${formData.startTime}:00`;
+      const endDateTimeISO = `${formData.date}T${formData.endTime}:00`;
 
       const eventData = {
         calendar_id: calendarId,
         summary: formData.title,
-        start: startDateTime,
-        end: endDateTime,
+        start: startDateTimeISO,
+        end: endDateTimeISO,
         timezone: calendarTimezone,
         attendee_email: formData.attendees || undefined,
         description: formData.description || undefined,
         event_type: formData.eventType || undefined,
         location: formData.location || undefined,
       };
+
+      // Debug logging
+      console.log('Creating event with data:', {
+        calendarTimezone,
+        startDateTimeISO,
+        endDateTimeISO,
+        formData: {
+          date: formData.date,
+          startTime: formData.startTime,
+          endTime: formData.endTime
+        },
+        eventData: eventData,
+        note: 'Storing time exactly as input - no timezone conversion'
+      });
 
       const result = await eventService.createEvent(eventData);
       showSuccess('Event created successfully!');
@@ -391,15 +415,18 @@ export default function CreateEventModal({ isOpen, onClose, calendarId, selected
               />
             </div>
 
-            {/* Timezone Info */}
-            {selectedCalendar?.timezone && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 sm:p-4">
-                <div className="flex items-center gap-2 text-sm text-blue-800">
-                  <Clock className="h-4 w-4 flex-shrink-0" />
-                  <span className="truncate">Timezone: {getTimezoneLabel(selectedCalendar.timezone)}</span>
-                </div>
-              </div>
-            )}
+                         {/* Timezone Info */}
+             <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 sm:p-4">
+               <div className="flex items-center gap-2 text-sm text-blue-800">
+                 <Clock className="h-4 w-4 flex-shrink-0" />
+                 <span className="truncate">
+                   Timezone: {selectedCalendar?.timezone ? getTimezoneLabel(selectedCalendar.timezone) : 'No timezone set'}
+                 </span>
+               </div>
+               <p className="text-xs text-blue-600 mt-1">
+                 Time input: {formData.startTime} - {formData.endTime} on {formData.date}
+               </p>
+             </div>
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4">
