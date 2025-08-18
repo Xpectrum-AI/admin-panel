@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRedirectFunctions, useAuthInfo } from '@propelauth/react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { ProtectedRoute } from '../../(admin)/auth/ProtectedRoute';
 
 const tabs = [
   { label: 'Account', icon: '👤' },
@@ -78,10 +77,9 @@ export default function SettingsPage() {
   const org = ownerOrgs?.[0];
 
   return (
-    <ProtectedRoute>
       <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
         <div className="max-w-4xl mx-auto">
-          <button onClick={() => router.push('/dashboard')} className="flex items-center text-gray-600 hover:text-gray-900 mb-6">
+          <button onClick={() => router.push('/')} className="flex items-center text-gray-600 hover:text-gray-900 mb-6">
             <ArrowLeft className="h-5 w-5 mr-2" />
             <span className="font-semibold">Settings</span>
           </button>
@@ -271,6 +269,5 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
-    </ProtectedRoute>
   );
 } 

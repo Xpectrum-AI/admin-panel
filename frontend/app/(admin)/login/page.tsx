@@ -180,7 +180,7 @@ export default function Login() {
             return;
           }
           showSuccess('Login successful! You will be redirected to dashboard.');
-          window.location.href = "/dashboard";
+          window.location.href = "/";
         },
         passwordLoginDisabled() {
           showError('Password login is disabled.');

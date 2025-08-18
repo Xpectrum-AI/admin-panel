@@ -223,6 +223,14 @@ jobs:
           curl -f "http://$HOSTNAME/api/health" || exit 1
         fi
 
+    - name: Force restart ECS services
+      run: |
+        aws ecs update-service \
+          --cluster "AdminPanelReleaseStack-AdminPanelReleaseStackCluster76C604E8-R97Z7BkpsIK1" \
+          --service "AdminPanelReleaseStackService-1" \
+          --force-new-deployment \
+          --region "$AWS_REGION" 
+        
     - name: Debug deployment status
       run: |
         echo "=== Checking CloudFormation stack status ==="
