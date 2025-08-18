@@ -13,7 +13,7 @@ NEXT_PUBLIC_PROPELAUTH_API_KEY=ad39ddd2967143bea4f4405e5f6dc4d0f5183c63a027add99
 
 # Timezone Configuration
 NEXT_PUBLIC_DEFAULT_TIMEZONE=America/New_York
-NEXT_PUBLIC_TIMEZONE_OPTIONS=IST:Asia/Kolkata,EST:America/New_York,PST:America/Los_Angeles
+NEXT_PUBLIC_TIMEZONE_OPTIONS=EST:America/New_York,PST:America/Los_Angeles,IST:Asia/Kolkata
 
 # Development Server
 NEXT_PUBLIC_DEV_SERVER_URL=http://localhost:3000
