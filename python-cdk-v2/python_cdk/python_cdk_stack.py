@@ -25,21 +25,24 @@ class AdminPanelDeploymentStack(Stack):
                 'auth_domain': 'auth.admin-dev.xpectrum-ai.com',
                 'frontend_tag': 'frontend-development',
                 'frontend_port': '3000',
-                'stack_name': 'AdminPanelDevelopmentStack'
+                'stack_name': 'AdminPanelDevelopmentStack',
+                'cluster_name': 'admin-panel-development'
             },
             'production': {
                 'domain': 'admin.xpectrum-ai.com',
                 'auth_domain': 'auth.admin.xpectrum-ai.com',
                 'frontend_tag': 'frontend-latest',
                 'frontend_port': '3000',
-                'stack_name': 'AdminPanelProductionStack'
+                'stack_name': 'AdminPanelProductionStack',
+                'cluster_name': 'admin-panel-production'
             },
             'release': {
                 'domain': 'admin-release.xpectrum-ai.com',  
                 'auth_domain': 'auth.admin-release.xpectrum-ai.com',  
                 'frontend_tag': os.environ.get('RELEASE_IMAGE_TAG', 'frontend-release-latest'),
                 'frontend_port': '3000',
-                'stack_name': 'AdminPanelReleaseStack'
+                'stack_name': 'AdminPanelReleaseStack',
+                'cluster_name': 'admin-panel-release'
             }
         }
         
@@ -62,7 +65,12 @@ class AdminPanelDeploymentStack(Stack):
                 )
             ]
         )
-        cluster = ecs.Cluster(self, f"{config['stack_name']}Cluster", vpc=vpc)
+        
+        # Create cluster with specific name
+        cluster = ecs.Cluster(self, f"{config['stack_name']}Cluster", 
+            vpc=vpc,
+            cluster_name=config['cluster_name']
+        )
 
         # Use single ECR Repository by name
         repo = ecr.Repository.from_repository_name(self, f"{config['stack_name']}Repo", "admin-panel")
