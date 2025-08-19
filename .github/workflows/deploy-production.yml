@@ -77,17 +77,9 @@ jobs:
           echo "Checking ECS service status..."
           
           # Get the actual cluster and service names
-          CLUSTER_NAME=$(aws cloudformation describe-stacks \
-            --stack-name AdminPanelProductionStack \
-            --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`ClusterName`].OutputValue' \
-            --output text 2>/dev/null || echo "AdminPanelProductionStackCluster")
+          CLUSTER_NAME="admin-panel-production"
           
-          SERVICE_NAME=$(aws cloudformation describe-stacks \
-            --stack-name AdminPanelProductionStack \
-            --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`ServiceName`].OutputValue' \
-            --output text 2>/dev/null || echo "AdminPanelProductionStackService")
+          SERVICE_NAME="admin-panel-service-production"
           
           aws ecs describe-services \
             --cluster $CLUSTER_NAME \
@@ -101,17 +93,9 @@ jobs:
         # Check if stack exists first
         if aws cloudformation describe-stacks --stack-name AdminPanelProductionStack --region ${{ env.AWS_REGION }} 2>/dev/null; then
           # Get the actual cluster and service names from CloudFormation outputs
-          CLUSTER_NAME=$(aws cloudformation describe-stacks \
-            --stack-name AdminPanelProductionStack \
-            --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`ClusterName`].OutputValue' \
-            --output text 2>/dev/null || echo "AdminPanelProductionStackCluster")
+          CLUSTER_NAME="admin-panel-production"
           
-          SERVICE_NAME=$(aws cloudformation describe-stacks \
-            --stack-name AdminPanelProductionStack \
-            --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`ServiceName`].OutputValue' \
-            --output text 2>/dev/null || echo "AdminPanelProductionStackService")
+          SERVICE_NAME="admin-panel-service-production"
           
           echo "Using cluster: $CLUSTER_NAME"
           echo "Using service: $SERVICE_NAME"
@@ -209,8 +193,8 @@ jobs:
     - name: Force restart ECS services
       run: |
         aws ecs update-service \
-          --cluster "AdminPanelProductionStack-AdminPanelProductionStackCluster56FF079E-JXiyRka2S3Ds" \
-          --service "AdminPanelProductionStackService-1" \
+          --cluster "admin-panel-production" \
+          --service "admin-panel-service-production" \
           --force-new-deployment \
           --region "$AWS_REGION"
 

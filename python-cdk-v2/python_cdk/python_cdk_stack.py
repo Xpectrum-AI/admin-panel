@@ -25,21 +25,27 @@ class AdminPanelDeploymentStack(Stack):
                 'auth_domain': 'auth.admin-dev.xpectrum-ai.com',
                 'frontend_tag': 'frontend-development',
                 'frontend_port': '3000',
-                'stack_name': 'AdminPanelDevelopmentStack'
+                'stack_name': 'AdminPanelDevelopmentStack',
+                'cluster_name': 'admin-panel-development',
+                'service_name': 'admin-panel-service-development'
             },
             'production': {
                 'domain': 'admin.xpectrum-ai.com',
                 'auth_domain': 'auth.admin.xpectrum-ai.com',
                 'frontend_tag': 'frontend-latest',
                 'frontend_port': '3000',
-                'stack_name': 'AdminPanelProductionStack'
+                'stack_name': 'AdminPanelProductionStack',
+                'cluster_name': 'admin-panel-production',
+                'service_name': 'admin-panel-service-production'
             },
             'release': {
                 'domain': 'admin-release.xpectrum-ai.com',  
                 'auth_domain': 'auth.admin-release.xpectrum-ai.com',  
                 'frontend_tag': os.environ.get('RELEASE_IMAGE_TAG', 'frontend-release-latest'),
                 'frontend_port': '3000',
-                'stack_name': 'AdminPanelReleaseStack'
+                'stack_name': 'AdminPanelReleaseStack',
+                'cluster_name': 'admin-panel-release',
+                'service_name': 'admin-panel-service-release'
             }
         }
         
@@ -62,7 +68,12 @@ class AdminPanelDeploymentStack(Stack):
                 )
             ]
         )
-        cluster = ecs.Cluster(self, f"{config['stack_name']}Cluster", vpc=vpc)
+        
+        # Create cluster with specific name
+        cluster = ecs.Cluster(self, f"{config['stack_name']}Cluster", 
+            vpc=vpc,
+            cluster_name=config['cluster_name']
+        )
 
         # Use single ECR Repository by name
         repo = ecr.Repository.from_repository_name(self, f"{config['stack_name']}Repo", "admin-panel")
@@ -112,8 +123,8 @@ class AdminPanelDeploymentStack(Stack):
             # Add deployment configuration to prevent warnings
             min_healthy_percent=100,
             max_healthy_percent=200,
-            # Force new deployment with timestamp
-            service_name=f"{config['stack_name']}Service-{int(os.environ.get('BUILD_NUMBER', '1'))}"
+            # Use explicit service name from configuration
+            service_name=config['service_name']
         )
 
         # ALB
