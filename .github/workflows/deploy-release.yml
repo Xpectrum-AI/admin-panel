@@ -153,7 +153,7 @@ jobs:
           echo "Checking ECS service status..."
           aws ecs describe-services \
             --cluster admin-panel-release \
-            --services AdminPanelReleaseStackService-1  \
+            --services admin-panel-service-release  \
             --region ${{ env.AWS_REGION }} || echo "Could not check ECS status"
           exit 1
         }
@@ -166,7 +166,7 @@ jobs:
           # 注意：这里需要在第一次部署后更新实际的集群和服务名称
           # aws ecs wait services-stable \
           #   --cluster admin-panel-release \
-          #   --services AdminPanelReleaseStackService-1 \
+          #   --services admin-panel-service-release \
           #   --region ${{ env.AWS_REGION }} || echo "Services not stable yet"
         else
           echo "Stack does not exist yet, skipping wait"
@@ -227,9 +227,9 @@ jobs:
       run: |
         aws ecs update-service \
           --cluster "admin-panel-release" \
-          --service "AdminPanelReleaseStackService-1" \
+          --service "admin-panel-service-release" \
           --force-new-deployment \
-          --region "$AWS_REGION" 
+          --region "$AWS_REGION"
         
     - name: Debug deployment status
       run: |
@@ -243,11 +243,11 @@ jobs:
         echo "=== Getting actual ECS resources ==="
         # 获取实际的集群名称
         CLUSTER_NAME="admin-panel-release"
+        SERVICE_NAME="admin-panel-service-release"
         if [ ! -z "$CLUSTER_NAME" ]; then
           echo "Found cluster: $CLUSTER_NAME"
           
           # 获取服务名称
-          SERVICE_NAME=$(aws ecs list-services --cluster $CLUSTER_NAME --region ${{ env.AWS_REGION }} | grep arn | head -1 | awk -F'/' '{print $NF}' | tr -d '",' || echo "")
           if [ ! -z "$SERVICE_NAME" ]; then
             echo "Found service: $SERVICE_NAME"
             
