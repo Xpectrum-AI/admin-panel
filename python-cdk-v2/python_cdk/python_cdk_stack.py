@@ -26,7 +26,8 @@ class AdminPanelDeploymentStack(Stack):
                 'frontend_tag': 'frontend-development',
                 'frontend_port': '3000',
                 'stack_name': 'AdminPanelDevelopmentStack',
-                'cluster_name': 'admin-panel-development'
+                'cluster_name': 'admin-panel-development',
+                'service_name': 'admin-panel-service-development'
             },
             'production': {
                 'domain': 'admin.xpectrum-ai.com',
@@ -34,7 +35,8 @@ class AdminPanelDeploymentStack(Stack):
                 'frontend_tag': 'frontend-latest',
                 'frontend_port': '3000',
                 'stack_name': 'AdminPanelProductionStack',
-                'cluster_name': 'admin-panel-production'
+                'cluster_name': 'admin-panel-production',
+                'service_name': 'admin-panel-service-production'
             },
             'release': {
                 'domain': 'admin-release.xpectrum-ai.com',  
@@ -42,7 +44,8 @@ class AdminPanelDeploymentStack(Stack):
                 'frontend_tag': os.environ.get('RELEASE_IMAGE_TAG', 'frontend-release-latest'),
                 'frontend_port': '3000',
                 'stack_name': 'AdminPanelReleaseStack',
-                'cluster_name': 'admin-panel-release'
+                'cluster_name': 'admin-panel-release',
+                'service_name': 'admin-panel-service-release'
             }
         }
         
@@ -120,8 +123,8 @@ class AdminPanelDeploymentStack(Stack):
             # Add deployment configuration to prevent warnings
             min_healthy_percent=100,
             max_healthy_percent=200,
-            # Force new deployment with timestamp
-            service_name=f"{config['stack_name']}Service-{int(os.environ.get('BUILD_NUMBER', '1'))}"
+            # Use explicit service name from configuration
+            service_name=config['service_name']
         )
 
         # ALB

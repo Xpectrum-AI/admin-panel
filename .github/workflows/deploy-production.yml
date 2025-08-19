@@ -79,11 +79,7 @@ jobs:
           # Get the actual cluster and service names
           CLUSTER_NAME="admin-panel-production"
           
-          SERVICE_NAME=$(aws cloudformation describe-stacks \
-            --stack-name AdminPanelProductionStack \
-            --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`ServiceName`].OutputValue' \
-            --output text 2>/dev/null || echo "AdminPanelProductionStackService")
+          SERVICE_NAME="admin-panel-service-production"
           
           aws ecs describe-services \
             --cluster $CLUSTER_NAME \
@@ -99,11 +95,7 @@ jobs:
           # Get the actual cluster and service names from CloudFormation outputs
           CLUSTER_NAME="admin-panel-production"
           
-          SERVICE_NAME=$(aws cloudformation describe-stacks \
-            --stack-name AdminPanelProductionStack \
-            --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`ServiceName`].OutputValue' \
-            --output text 2>/dev/null || echo "AdminPanelProductionStackService")
+          SERVICE_NAME="admin-panel-service-production"
           
           echo "Using cluster: $CLUSTER_NAME"
           echo "Using service: $SERVICE_NAME"
@@ -202,7 +194,7 @@ jobs:
       run: |
         aws ecs update-service \
           --cluster "admin-panel-production" \
-          --service "AdminPanelProductionStackService-1" \
+          --service "admin-panel-service-production" \
           --force-new-deployment \
           --region "$AWS_REGION"
 
