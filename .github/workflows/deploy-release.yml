@@ -152,8 +152,8 @@ jobs:
           echo "CDK deployment timed out or failed"
           echo "Checking ECS service status..."
           aws ecs describe-services \
-            --cluster AdminPanelReleaseStack-AdminPanelReleaseStackCluster76C604E8-R97Z7BkpsIK1 \
-            --services AdminPanelReleaseStackService-1  \
+            --cluster admin-panel-release \
+            --services admin-panel-service-release  \
             --region ${{ env.AWS_REGION }} || echo "Could not check ECS status"
           exit 1
         }
@@ -165,8 +165,8 @@ jobs:
           echo "Waiting for services to stabilize..."
           # 注意：这里需要在第一次部署后更新实际的集群和服务名称
           # aws ecs wait services-stable \
-          #   --cluster AdminPanelReleaseStack-AdminPanelReleaseStackCluster* \
-          #   --services AdminPanelReleaseStack-AdminPanelReleaseStackService* \
+          #   --cluster admin-panel-release \
+          #   --services admin-panel-service-release \
           #   --region ${{ env.AWS_REGION }} || echo "Services not stable yet"
         else
           echo "Stack does not exist yet, skipping wait"
@@ -226,10 +226,10 @@ jobs:
     - name: Force restart ECS services
       run: |
         aws ecs update-service \
-          --cluster "AdminPanelReleaseStack-AdminPanelReleaseStackCluster76C604E8-R97Z7BkpsIK1" \
-          --service "AdminPanelReleaseStackService-1" \
+          --cluster "admin-panel-release" \
+          --service "admin-panel-service-release" \
           --force-new-deployment \
-          --region "$AWS_REGION" 
+          --region "$AWS_REGION"
         
     - name: Debug deployment status
       run: |
@@ -242,12 +242,12 @@ jobs:
         
         echo "=== Getting actual ECS resources ==="
         # 获取实际的集群名称
-        CLUSTER_NAME=$(aws ecs list-clusters --region ${{ env.AWS_REGION }} | grep AdminPanelReleaseStack | head -1 | awk -F'/' '{print $NF}' | tr -d '",' || echo "")
+        CLUSTER_NAME="admin-panel-release"
+        SERVICE_NAME="admin-panel-service-release"
         if [ ! -z "$CLUSTER_NAME" ]; then
           echo "Found cluster: $CLUSTER_NAME"
           
           # 获取服务名称
-          SERVICE_NAME=$(aws ecs list-services --cluster $CLUSTER_NAME --region ${{ env.AWS_REGION }} | grep arn | head -1 | awk -F'/' '{print $NF}' | tr -d '",' || echo "")
           if [ ! -z "$SERVICE_NAME" ]; then
             echo "Found service: $SERVICE_NAME"
             
@@ -266,7 +266,7 @@ jobs:
       run: |
         echo "=== Checking for ECS tasks ==="
         # 获取集群名称
-        CLUSTER_NAME=$(aws ecs list-clusters --region ${{ env.AWS_REGION }} | grep AdminPanelReleaseStack | head -1 | awk -F'/' '{print $NF}' | tr -d '",' || echo "")
+        CLUSTER_NAME="admin-panel-release"
         
         if [ ! -z "$CLUSTER_NAME" ]; then
           TASK_ARNS=$(aws ecs list-tasks \

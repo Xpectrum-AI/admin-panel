@@ -20,6 +20,7 @@ elif environment == 'release':
     stack_name = "AdminPanelReleaseStack"
 else:
     stack_name = "AdminPanelDevelopmentStack"  # Default to development
+
 # Deploy AdminPanelDeploymentStack with appropriate stack name
 AdminPanelDeploymentStack(app, stack_name,
     # If you don't specify 'env', this stack will be environment-agnostic.

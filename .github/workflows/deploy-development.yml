@@ -150,8 +150,8 @@ jobs:
           echo "CDK deployment timed out or failed"
           echo "Checking ECS service status..."
           aws ecs describe-services \
-            --cluster AdminPanelDevelopmentStack-AdminPanelDevelopmentStackCluster354587DC-WMnszSmI30dz \
-            --services AdminPanelDevelopmentStack-AdminPanelDevelopmentStackService167ECF01-mGcKXTWR0Ntv \
+            --cluster admin-panel-development \
+            --services admin-panel-service-development \
             --region ${{ env.AWS_REGION }} || echo "Could not check ECS status"
           exit 1
         }
@@ -161,17 +161,8 @@ jobs:
         # Check if stack exists first
         if aws cloudformation describe-stacks --stack-name AdminPanelDevelopmentStack --region ${{ env.AWS_REGION }} 2>/dev/null; then
           # Get the actual cluster and service names from CloudFormation outputs
-          CLUSTER_NAME=$(aws cloudformation describe-stacks \
-            --stack-name AdminPanelDevelopmentStack \
-            --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`ClusterName`].OutputValue' \
-            --output text 2>/dev/null || echo "AdminPanelDevelopmentStackCluster")
-          
-          SERVICE_NAME=$(aws cloudformation describe-stacks \
-            --stack-name AdminPanelDevelopmentStack \
-            --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`ServiceName`].OutputValue' \
-            --output text 2>/dev/null || echo "AdminPanelDevelopmentStackService")  
+          CLUSTER_NAME="admin-panel-development"
+          SERVICE_NAME="admin-panel-service-development"
           
           echo "Using cluster: $CLUSTER_NAME"
           echo "Using service: $SERVICE_NAME"
@@ -224,11 +215,7 @@ jobs:
         
         echo "=== VERIFYING DEPLOYED ENVIRONMENT VARIABLES ==="
         # Get ECS task details to verify environment variables
-        CLUSTER_NAME=$(aws cloudformation describe-stacks \
-          --stack-name AdminPanelDevelopmentStack \
-          --region ${{ env.AWS_REGION }} \
-          --query 'Stacks[0].Outputs[?OutputKey==`ClusterName`].OutputValue' \
-          --output text 2>/dev/null || echo "AdminPanelDevelopmentStackCluster")
+        CLUSTER_NAME="admin-panel-development"
         
         TASK_ARN=$(aws ecs list-tasks \
           --cluster $CLUSTER_NAME \
@@ -261,8 +248,8 @@ jobs:
     - name: Force restart ECS services
       run: |
         aws ecs update-service \
-          --cluster "AdminPanelDevelopmentStack-AdminPanelDevelopmentStackCluster085C0A6B-rKfYBFGHCbDH" \
-          --service "AdminPanelDevelopmentStackService-1" \
+          --cluster "admin-panel-development" \
+          --service "admin-panel-service-development" \
           --force-new-deployment \
           --region "$AWS_REGION"
     
@@ -276,17 +263,8 @@ jobs:
           --output text || echo "Stack not found"
         
         # Get actual cluster and service names
-        CLUSTER_NAME=$(aws cloudformation describe-stacks \
-          --stack-name AdminPanelDevelopmentStack \
-          --region ${{ env.AWS_REGION }} \
-          --query 'Stacks[0].Outputs[?OutputKey==`ClusterName`].OutputValue' \
-          --output text 2>/dev/null || echo "AdminPanelDevelopmentStackCluster")
-        
-        SERVICE_NAME=$(aws cloudformation describe-stacks \
-          --stack-name AdminPanelDevelopmentStack \
-          --region ${{ env.AWS_REGION }} \
-          --query 'Stacks[0].Outputs[?OutputKey==`ServiceName`].OutputValue' \
-          --output text 2>/dev/null || echo "AdminPanelDevelopmentStackService")
+        CLUSTER_NAME="admin-panel-development"
+        SERVICE_NAME="admin-panel-service-development"
         
         echo "=== Checking ECS service status ==="
         aws ecs describe-services \
@@ -305,11 +283,7 @@ jobs:
       if: always()
       run: |
         echo "=== Checking for failed ECS tasks ==="
-        CLUSTER_NAME=$(aws cloudformation describe-stacks \
-          --stack-name AdminPanelDevelopmentStack \
-          --region ${{ env.AWS_REGION }} \
-          --query 'Stacks[0].Outputs[?OutputKey==`ClusterName`].OutputValue' \
-          --output text 2>/dev/null || echo "AdminPanelDevelopmentStackCluster")
+        CLUSTER_NAME="admin-panel-development"
         
         TASK_ARNS=$(aws ecs list-tasks \
           --cluster $CLUSTER_NAME \
