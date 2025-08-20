@@ -1,0 +1,146 @@
+check that page contains "Welcome back"
+wait 2 sec
+
+enter "jaddu.karthikeya@xpectrum-ai.com" into "Enter your email"
+enter "Karthikeya@2004" into "Enter your password"
+click "Sign In"
+wait 10 sec
+
+check that page contains "Super Admin"
+wait 3 sec
+
+click "Super Admin"
+wait 3 sec
+
+check that page contains "Users"
+wait 3 sec
+
+check that page contains "Organizations"
+wait 3 sec
+
+check that page contains "Agents"
+wait 3 sec
+
+check that page contains "Team"
+wait 3 sec
+
+check that page contains "Roles & Permissions"
+wait 3 sec
+
+check that page contains "Audit Logs"
+wait 3 sec
+
+check that page contains "System"
+wait 3 sec
+
+click "Users"
+wait 3 sec
+
+check that page contains "Total Users"
+wait 3 sec
+
+check that page contains "Search Users"
+wait 3 sec
+
+click "Organizations"
+wait 3 sec
+
+check that page contains "Total Organizations"
+wait 3 sec
+
+check that page contains "Search Organizations"
+wait 3 sec
+
+click "Agents"
+wait 3 sec
+
+check that page contains "Total Agents"
+wait 3 sec
+
+check that page contains "Search Agents"
+wait 3 sec
+
+click "Team"
+wait 3 sec
+
+check that page contains "Super Admin Team"
+wait 3 sec
+
+check that page contains "Invite Member"
+wait 3 sec
+
+click "Roles & Permissions"
+wait 3 sec
+
+check that page contains "Roles"
+wait 3 sec
+
+check that page contains "Permissions"
+wait 3 sec
+
+click "Audit Logs"
+wait 3 sec
+
+check that page contains "Audit Logs"
+wait 3 sec
+
+click "System"
+wait 3 sec
+
+check that page contains "System"
+wait 3 sec
+
+click "Users"
+wait 3 sec
+
+enter "test@example.com" into "Search Users"
+wait 2 sec
+
+click "Search"
+wait 3 sec
+
+click "Organizations"
+wait 3 sec
+
+enter "Test Organization" into "Search Organizations"
+wait 2 sec
+
+click "Search"
+wait 3 sec
+
+click "Agents"
+wait 3 sec
+
+enter "Test Agent" into "Search Agents"
+wait 2 sec
+
+click "Search"
+wait 3 sec
+
+click "Team"
+wait 3 sec
+
+click "Invite Member"
+wait 3 sec
+
+enter "newmember@xpectrum-ai.com" into "Email"
+enter "New Member" into "Name"
+click "Role"
+wait 2 sec
+click "Admin"
+click "Send Invitation"
+wait 5 sec
+
+check that page contains "Invitation sent successfully"
+wait 3 sec
+
+click "Users"
+wait 3 sec
+
+check that page contains "Users"
+wait 3 sec
+
+click "Dashboard"
+wait 3 sec
+
+check that page contains "Super Admin"

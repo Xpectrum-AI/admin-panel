@@ -1,0 +1,112 @@
+check that page contains "Welcome back"
+wait 2 sec
+
+enter "j.karthikeya2004@gmail.com" into "Enter your email"
+enter "Karthikeya@2004" into "Enter your password"
+click "Sign In"
+wait 10 sec
+
+check that page contains "No Doctors Found"
+wait 3 sec
+
+click "Add Your First Doctor"
+wait 3 sec
+
+enter "Dr. John" into "First Name"
+enter "Smith" into "Last Name"
+select "Male" from "Gender"
+enter "50" into "Age"
+enter "+1234567890" into "Phone Number"
+click "Next"
+wait 2 sec
+
+enter "MD123456" into "Registration Number"
+enter "2015" into "Registration Year"
+enter "California Medical Board" into "Board"
+enter "8" into "Experience (Years)"
+click "Next"
+wait 2 sec
+
+enter "MBBS" into "Degree Name"
+enter "2010" into "Year"
+enter "Harvard Medical School" into "University"
+click "Next"
+wait 2 sec
+
+select "Cardiology" from "Specialization"
+select "Senior" from "Level"
+click "Next"
+wait 2 sec
+
+enter "General Hospital" into "Hospital/Facility Name"
+enter "Hospital" into "Type"
+enter "Downtown" into "Area"
+enter "90210" into "Pincode"
+enter "123 Main Street, Los Angeles, CA 90210" into "Address"
+click "Create Doctor"
+wait 5 sec
+
+check that page contains "Create new calendar"
+wait 3 sec
+
+enter "work53" into "Calendar Name"
+click "Timezone"
+wait 2 sec
+
+click "Eastern Time (ET)" 
+wait 2 sec
+
+click "India Standard Time (IST)"
+click "Create Calendar"
+wait 5 sec
+
+enter "jaddu.karthikeya@xpectrum-ai.com" into "Enter email address"
+click "Add User"
+wait 5 sec
+
+check that page contains "Calendar"
+wait 3 sec
+
+click "Calendar"
+wait 3 sec
+
+check that page contains "All Events"
+wait 3 sec
+
+click "New Event"
+wait 3 sec
+
+enter "Patient Consultation" into "Event Title"
+enter "Regular patient consultation" into "Description"
+
+click "Date"
+wait 2 sec
+click "August 19, 2025"
+wait 2 sec 
+click "August 20, 2025"
+wait 2 sec
+
+click "Start Time"
+wait 2 sec
+click "09:00"
+wait 2 sec
+click "11:00"
+wait 2 sec
+
+click "End Time"
+wait 2 sec
+click "10:00"
+wait 2 sec
+click "10:00"
+wait 2 sec
+
+click "Create Event"
+wait 5 sec
+
+check that page contains "Event created successfully"
+wait 3 sec
+
+click "Dashboard"
+wait 3 sec
+
+check that page contains "Dr. John Smith"
