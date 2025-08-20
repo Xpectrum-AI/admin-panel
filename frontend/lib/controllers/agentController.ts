@@ -139,26 +139,77 @@ export async function updateAgent(request: NextRequest, agentId: string) {
     }
 
     // Validate TTS config
-    if (!tts_config.voice_id || !tts_config.tts_api_key || !tts_config.model || tts_config.speed === undefined) {
+    const ttsProvider = tts_config.provider;
+    let ttsValid = false;
+    
+    if (ttsProvider === 'openai') {
+      ttsValid = tts_config.openai && 
+                 tts_config.openai.api_key && 
+                 tts_config.openai.voice && 
+                 tts_config.openai.response_format && 
+                 tts_config.openai.quality && 
+                 tts_config.openai.speed !== undefined;
+    } else if (ttsProvider === 'cartesian') {
+      ttsValid = tts_config.cartesian && 
+                 tts_config.cartesian.voice_id && 
+                 tts_config.cartesian.tts_api_key && 
+                 tts_config.cartesian.model && 
+                 tts_config.cartesian.speed !== undefined && 
+                 tts_config.cartesian.language;
+    }
+    
+    if (!ttsValid) {
       return NextResponse.json({
         error: 'Invalid TTS configuration'
       }, { status: 400 });
     }
 
     // Validate STT config
-    if (!stt_config.api_key || !stt_config.model || !stt_config.language) {
+    const sttProvider = stt_config.provider;
+    let sttValid = false;
+    
+    if (sttProvider === 'deepgram') {
+      sttValid = stt_config.deepgram && 
+                 stt_config.deepgram.api_key && 
+                 stt_config.deepgram.model && 
+                 stt_config.deepgram.language;
+    } else if (sttProvider === 'whisper') {
+      sttValid = stt_config.whisper && 
+                 stt_config.whisper.api_key && 
+                 stt_config.whisper.model;
+    }
+    
+    if (!sttValid) {
       return NextResponse.json({
         error: 'Invalid STT configuration'
       }, { status: 400 });
     }
 
-    // Prepare request payload with all fields
+    // Prepare request payload with only the selected provider configurations
     const payload: any = {
       chatbot_api,
       chatbot_key,
-      tts_config,
-      stt_config
+      tts_config: {
+        provider: tts_config.provider
+      },
+      stt_config: {
+        provider: stt_config.provider
+      }
     };
+
+    // Add only the selected TTS provider configuration
+    if (ttsProvider === 'openai') {
+      payload.tts_config.openai = tts_config.openai;
+    } else if (ttsProvider === 'cartesian') {
+      payload.tts_config.cartesian = tts_config.cartesian;
+    }
+
+    // Add only the selected STT provider configuration
+    if (sttProvider === 'deepgram') {
+      payload.stt_config.deepgram = stt_config.deepgram;
+    } else if (sttProvider === 'whisper') {
+      payload.stt_config.whisper = stt_config.whisper;
+    }
 
     // Add optional fields if provided
     if (initial_message !== undefined) {
