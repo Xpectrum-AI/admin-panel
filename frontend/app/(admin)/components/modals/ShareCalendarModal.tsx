@@ -40,10 +40,25 @@ export default function ShareCalendarModal({ isOpen, onClose, calendarName = "My
       showSuccess('Calendar shared successfully');
       setSharedUsers([...sharedUsers, { email: email.trim(), permission }]);
       setEmail('');
-      console.log('ShareCalendarModal: Calendar shared with email:', email.trim());
-      console.log('ShareCalendarModal: Calling onComplete first');
+      
+             // Clear any existing verification state and create new one for this calendar
+       localStorage.removeItem('emailVerificationState');
+       
+       // Store verification state with calendar ID for tracking
+       const verificationState = {
+         email: email.trim(),
+         calendarId: calendarId,
+         calendarName: calendarName,
+         invitationType: 'calendar invitation',
+         isVerified: false, // Always start as false for new calendar sharing
+         verificationAttempts: 0,
+         timestamp: Date.now()
+       };
+       localStorage.setItem('emailVerificationState', JSON.stringify(verificationState));
+       
+       console.log('ShareCalendarModal: Created new verification state:', verificationState);
+      
       onComplete?.();
-      console.log('ShareCalendarModal: Calling onInvitationSent with email:', email.trim());
       onInvitationSent?.(email.trim());
     } catch (error) {
       console.error('Failed to share calendar:', error);

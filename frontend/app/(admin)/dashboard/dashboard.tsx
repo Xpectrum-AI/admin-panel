@@ -82,8 +82,8 @@ export default function Dashboard() {
         const now = Date.now();
         const oneHour = 60 * 60 * 1000; // 1 hour in milliseconds
         
-        // Only restore if the state is less than 1 hour old
-        if (parsedState.timestamp && (now - parsedState.timestamp) < oneHour) {
+        // Only restore if the state is less than 1 hour old AND has a valid calendar ID
+        if (parsedState.timestamp && (now - parsedState.timestamp) < oneHour && parsedState.calendarId) {
           console.log('Dashboard: Restoring email verification state with email:', parsedState.email);
           setInvitationEmail(parsedState.email);
           setShowEmailVerificationNotification(true);
@@ -100,6 +100,187 @@ export default function Dashboard() {
       console.log('Dashboard: No saved email verification state found');
     }
   }, []);
+
+  // Force reset verification status on page load if calendar is not shared and state is old
+  useEffect(() => {
+    if (calendars.length > 0) {
+      const savedState = localStorage.getItem('emailVerificationState');
+      if (savedState) {
+        try {
+          const parsedState = JSON.parse(savedState);
+          const calendarId = parsedState.calendarId;
+          
+          if (calendarId) {
+            const calendar = calendars.find(cal => (cal.calendar_id || cal.id) === calendarId);
+            if (calendar) {
+              // Check if calendar is not shared
+              const isShared = calendar.shared_with && 
+                              calendar.shared_with.length > 0 && 
+                              calendar.shared_with[0] !== 'No one';
+              
+              // Only clear if verification state is old (more than 5 minutes) and calendar is not shared
+              const now = Date.now();
+              const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
+              const isOld = parsedState.timestamp && (now - parsedState.timestamp) > fiveMinutes;
+              
+              if (!isShared && isOld) {
+                console.log('Dashboard: Calendar not shared and verification state is old, clearing');
+                localStorage.removeItem('emailVerificationState');
+                setShowEmailVerificationNotification(false);
+                setInvitationEmail('');
+                return;
+              }
+            } else {
+              // Calendar not found, clear verification state
+              console.log('Dashboard: Calendar not found, clearing verification state');
+              localStorage.removeItem('emailVerificationState');
+              setShowEmailVerificationNotification(false);
+              setInvitationEmail('');
+            }
+          }
+        } catch (error) {
+          console.error('Error checking verification status on page load:', error);
+          // Clear state on error
+          localStorage.removeItem('emailVerificationState');
+          setShowEmailVerificationNotification(false);
+          setInvitationEmail('');
+        }
+      }
+    }
+  }, [calendars]);
+
+  // Check if calendar sharing status has changed and hide notification if calendar is now shared
+  useEffect(() => {
+    // Only clear verification state if it's old (more than 5 minutes) and calendar is not shared
+    if (calendars.length > 0) {
+      const savedState = localStorage.getItem('emailVerificationState');
+      if (savedState) {
+        try {
+          const parsedState = JSON.parse(savedState);
+          const calendarId = parsedState.calendarId;
+          
+          if (calendarId) {
+            const calendar = calendars.find(cal => (cal.calendar_id || cal.id) === calendarId);
+            if (calendar) {
+              // Check if calendar is not shared
+              const isShared = calendar.shared_with && 
+                              calendar.shared_with.length > 0 && 
+                              calendar.shared_with[0] !== 'No one';
+              
+              // Only clear if verification state is old (more than 5 minutes) and calendar is not shared
+              const now = Date.now();
+              const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
+              const isOld = parsedState.timestamp && (now - parsedState.timestamp) > fiveMinutes;
+              
+              if (!isShared && isOld) {
+                console.log('Dashboard: Calendar not shared and verification state is old, clearing');
+                localStorage.removeItem('emailVerificationState');
+                setShowEmailVerificationNotification(false);
+                setInvitationEmail('');
+                return;
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error checking calendar sharing status:', error);
+        }
+      }
+    }
+    
+    if (showEmailVerificationNotification && calendars.length > 0) {
+      const savedState = localStorage.getItem('emailVerificationState');
+      if (savedState) {
+        try {
+          const parsedState = JSON.parse(savedState);
+          const calendarId = parsedState.calendarId;
+          
+          if (calendarId) {
+            // Find the calendar that was shared
+            const sharedCalendar = calendars.find(cal => 
+              (cal.calendar_id || cal.id) === calendarId
+            );
+            
+            if (sharedCalendar) {
+              // Check if calendar name has changed - if so, reset verification status
+              const currentCalendarName = sharedCalendar.user_name || sharedCalendar.name || 'Calendar';
+              if (parsedState.calendarName && parsedState.calendarName !== currentCalendarName) {
+                console.log('Dashboard: Calendar name changed, resetting verification status');
+                console.log('Old name:', parsedState.calendarName, 'New name:', currentCalendarName);
+                
+                // Completely reset verification status when calendar name changes
+                const updatedState = {
+                  email: parsedState.email,
+                  calendarId: parsedState.calendarId,
+                  calendarName: currentCalendarName,
+                  invitationType: 'calendar invitation',
+                  isVerified: false, // Always reset to false when calendar name changes
+                  verificationAttempts: 0,
+                  timestamp: Date.now() // Update timestamp to indicate fresh verification needed
+                };
+                localStorage.setItem('emailVerificationState', JSON.stringify(updatedState));
+                
+                // Force the notification to show as not verified
+                setShowEmailVerificationNotification(true);
+                setInvitationEmail(parsedState.email);
+                
+                console.log('Dashboard: Verification status reset for calendar name change');
+                return;
+              }
+              
+              // Check if the calendar is now shared with someone (not "No one")
+              const isShared = sharedCalendar.shared_with && 
+                              sharedCalendar.shared_with.length > 0 && 
+                              sharedCalendar.shared_with[0] !== 'No one';
+              
+              console.log('Dashboard: Calendar sharing status check:', {
+                calendarId,
+                calendarName: currentCalendarName,
+                shared_with: sharedCalendar.shared_with,
+                isShared,
+                showNotification: showEmailVerificationNotification
+              });
+              
+              // If calendar is now shared, hide the notification
+              if (isShared) {
+                console.log('Dashboard: Calendar is now shared, hiding notification');
+                setShowEmailVerificationNotification(false);
+                localStorage.removeItem('emailVerificationState');
+              } else {
+                // If calendar is not shared, ensure notification shows as not verified
+                console.log('Dashboard: Calendar is not shared, notification should show as pending');
+                // Always reset verification status to false if calendar is not shared
+                const updatedState = {
+                  email: parsedState.email,
+                  calendarId: parsedState.calendarId,
+                  calendarName: currentCalendarName,
+                  invitationType: 'calendar invitation',
+                  isVerified: false, // Always false when not shared
+                  verificationAttempts: 0,
+                  timestamp: Date.now()
+                };
+                localStorage.setItem('emailVerificationState', JSON.stringify(updatedState));
+                
+                // Ensure notification is visible and shows as not verified
+                if (!showEmailVerificationNotification) {
+                  setShowEmailVerificationNotification(true);
+                  setInvitationEmail(parsedState.email);
+                }
+              }
+            } else {
+              // Calendar not found (probably deleted), clear the verification state
+              console.log('Dashboard: Calendar not found, clearing verification state');
+              setShowEmailVerificationNotification(false);
+              localStorage.removeItem('emailVerificationState');
+            }
+          }
+        } catch (error) {
+          console.error('Error checking calendar sharing status:', error);
+        }
+      }
+    }
+  }, [calendars, showEmailVerificationNotification]);
+
+
 
 
   const { showError, showSuccess, showWarning } = useErrorHandler();
@@ -238,6 +419,11 @@ export default function Dashboard() {
       });
 
       showSuccess('Calendar created successfully!');
+      
+      // Clear any existing verification state when a new calendar is created
+      localStorage.removeItem('emailVerificationState');
+      setShowEmailVerificationNotification(false);
+      setInvitationEmail('');
 
       // Refresh calendars after creating a new one
       if (orgHelper?.getOrgs()?.[0]?.orgId) {
@@ -394,6 +580,12 @@ export default function Dashboard() {
     try {
       await doctorApiService.deleteDoctor(doctor.doctor_id);
       showSuccess('Doctor deleted successfully'); 
+      
+      // Clear email verification state when doctor is deleted
+      localStorage.removeItem('emailVerificationState');
+      setShowEmailVerificationNotification(false);
+      setInvitationEmail('');
+      
       // Reload the page to ensure all related data (calendars, events) are properly cleaned up
       window.location.reload();
     } catch (error) {
@@ -412,7 +604,6 @@ export default function Dashboard() {
   };
 
   const handleShareCalendarClose = () => {
-    console.log('Dashboard: handleShareCalendarClose called');
     setShowShareCalendarModal(false);
     setCreatedCalendarId(null);
     // Don't reload immediately - let the notification show first
@@ -470,9 +661,10 @@ export default function Dashboard() {
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">
                   Welcome back, {user?.firstName || 'User'}!
                 </h1>
-                <p className="text-gray-600">
-                  Manage your healthcare organization efficiently
-                </p>
+                                 <p className="text-gray-600">
+                   Manage your healthcare organization efficiently
+                 </p>
+                
               </div>
 
             {/* Main Content */}
@@ -641,20 +833,15 @@ export default function Dashboard() {
           isOpen={showShareCalendarModal}
           onClose={handleShareCalendarClose}
           calendarId={createdCalendarId}
-          onComplete={() => {
-            console.log('Dashboard: ShareCalendarModal onComplete called');
-            // Don't close immediately - let onInvitationSent handle it
-          }}
-          onInvitationSent={(email) => {
-            console.log('Dashboard: Invitation sent to email:', email);
-            console.log('Dashboard: Setting invitationEmail to:', email);
-            console.log('Dashboard: Current showEmailVerificationNotification state:', showEmailVerificationNotification);
-            setInvitationEmail(email);
-            setShowEmailVerificationNotification(true);
-            console.log('Dashboard: Called setShowEmailVerificationNotification(true)');
-            // Close the modal after setting the notification
-            handleShareCalendarClose();
-          }}
+                   onComplete={() => {
+           // Don't close immediately - let onInvitationSent handle it
+         }}
+                     onInvitationSent={(email) => {
+             setInvitationEmail(email);
+             setShowEmailVerificationNotification(true);
+             // Close the modal after setting the notification
+             handleShareCalendarClose();
+           }}
         />
       )}
       {showCreateEventModal && (
@@ -708,16 +895,34 @@ export default function Dashboard() {
       )}
 
       {/* Floating Calendar Invitation Notification */}
-      <EmailVerificationNotification
-        isVisible={showEmailVerificationNotification}
-        onClose={() => setShowEmailVerificationNotification(false)}
-        email={invitationEmail}
-        invitationType="calendar invitation"
-        onVerificationComplete={() => {
-          setShowEmailVerificationNotification(false);
-          showSuccess('Calendar invitation accepted successfully!');
-        }}
-      />
+             <EmailVerificationNotification
+         isVisible={showEmailVerificationNotification}
+         onClose={() => {
+           setShowEmailVerificationNotification(false);
+         }}
+         email={invitationEmail}
+         invitationType="calendar invitation"
+         calendarName={(() => {
+           // Try to get calendar name from localStorage first
+           const savedState = localStorage.getItem('emailVerificationState');
+           if (savedState) {
+             try {
+               const parsedState = JSON.parse(savedState);
+               if (parsedState.calendarName) {
+                 return parsedState.calendarName;
+               }
+             } catch (error) {
+               console.error('Error parsing saved verification state:', error);
+             }
+           }
+           // Fallback to selected calendar name
+           return selectedCalendar?.user_name || selectedCalendar?.name || 'Calendar';
+         })()}
+         onVerificationComplete={() => {
+           // Don't hide notification immediately - let the calendar sharing status check handle it
+           showSuccess('Email verified successfully! Calendar access will be granted once sharing is confirmed.');
+         }}
+       />
     </>
   );
 } 
