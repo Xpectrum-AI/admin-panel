@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// In-memory storage for demo purposes - in production, use a database
+const verificationStore = new Map<string, { attempts: number; verified: boolean }>();
+
 export async function POST(request: NextRequest) {
   try {
     const { email, invitationType } = await request.json();
@@ -54,18 +57,25 @@ async function checkEmailVerificationStatus(email: string, invitationType: strin
   // const user = await db.users.findOne({ email });
   // return user?.emailVerified === true;
   
-      // For now, return false to simulate unverified status
-    // You can change this to true for testing
-    console.log(`Checking verification status for ${email} - ${invitationType}`);
-    
-    // Simulate verification check - in real implementation, this would query your database
-    // For testing purposes, let's assume verification is successful after a few attempts
-    const verificationAttempts = parseInt(localStorage.getItem(`verification_attempts_${email}`) || '0');
-    if (verificationAttempts >= 2) {
-      console.log(`Email ${email} is verified after ${verificationAttempts} attempts`);
-      return true;
-    }
+  console.log(`Checking verification status for ${email} - ${invitationType}`);
+  
+  // Use in-memory storage instead of localStorage
+  const key = `${email}_${invitationType}`;
+  const currentStatus = verificationStore.get(key) || { attempts: 0, verified: false };
+  
+  // For demo purposes, we'll simulate that verification only happens after 5 attempts
+  // In real implementation, this would check if the user actually clicked the verification link
+  if (currentStatus.attempts >= 5) {
+    console.log(`Email ${email} is verified after ${currentStatus.attempts} attempts`);
+    currentStatus.verified = true;
+    verificationStore.set(key, currentStatus);
+    return true;
+  }
 
-    console.log(`Email ${email} is not yet verified (attempts: ${verificationAttempts})`);
-    return false;
+  // Increment attempts for next check
+  currentStatus.attempts += 1;
+  verificationStore.set(key, currentStatus);
+
+  console.log(`Email ${email} is not yet verified (attempts: ${currentStatus.attempts})`);
+  return false;
 }

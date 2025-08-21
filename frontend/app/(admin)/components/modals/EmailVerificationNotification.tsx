@@ -9,6 +9,7 @@ interface EmailVerificationNotificationProps {
   onClose: () => void;
   email: string;
   invitationType?: string;
+  calendarName?: string;
   onVerificationComplete?: () => void;
 }
 
@@ -17,6 +18,7 @@ export default function EmailVerificationNotification({
   onClose,
   email,
   invitationType = "calendar invitation",
+  calendarName = "Calendar",
   onVerificationComplete
 }: EmailVerificationNotificationProps) {
   const [isVerifying, setIsVerifying] = useState(false);
@@ -34,23 +36,76 @@ export default function EmailVerificationNotification({
         setIsVerified(parsedState.isVerified);
         setVerificationAttempts(parsedState.verificationAttempts || 0);
         // Don't restore isExpanded from localStorage
+      } else {
+        // Reset state if email or invitation type changed
+        setIsVerified(false);
+        setVerificationAttempts(0);
       }
+    } else {
+      // Reset state if no saved state
+      setIsVerified(false);
+      setVerificationAttempts(0);
     }
+  }, [email, invitationType]);
+
+  // Listen for changes in localStorage to reset verification status
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const savedState = localStorage.getItem('emailVerificationState');
+      if (savedState) {
+        try {
+          const parsedState = JSON.parse(savedState);
+          if (parsedState.email === email && parsedState.invitationType === invitationType) {
+            setIsVerified(parsedState.isVerified);
+          }
+        } catch (error) {
+          console.error('Error parsing verification state:', error);
+        }
+      }
+    };
+
+    // Listen for storage events
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also check periodically for changes
+    const interval = setInterval(handleStorageChange, 1000);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
   }, [email, invitationType]);
 
   // Save state to localStorage whenever it changes
   useEffect(() => {
     if (isVisible) {
+      // Get existing state to preserve calendarId and calendarName
+      const existingState = localStorage.getItem('emailVerificationState');
+      let calendarId = null;
+      let savedCalendarName = null;
+      
+      if (existingState) {
+        try {
+          const parsed = JSON.parse(existingState);
+          calendarId = parsed.calendarId;
+          savedCalendarName = parsed.calendarName;
+        } catch (error) {
+          console.error('Error parsing existing verification state:', error);
+        }
+      }
+      
       const stateToSave = {
         email,
         invitationType,
         isVerified,
         verificationAttempts,
+        calendarId, // Preserve the calendar ID
+        calendarName: savedCalendarName || calendarName, // Preserve the calendar name
         timestamp: Date.now()
       };
       localStorage.setItem('emailVerificationState', JSON.stringify(stateToSave));
     }
-  }, [isVisible, email, invitationType, isVerified, verificationAttempts]);
+  }, [isVisible, email, invitationType, isVerified, verificationAttempts, calendarName]);
 
   // Clean up localStorage when notification is closed
   const handleClose = () => {
@@ -119,15 +174,12 @@ export default function EmailVerificationNotification({
 
         if (response.ok) {
           const data = await response.json();
-          if (data.verified) {
-            setIsVerified(true);
-            showSuccess('Email verified successfully!');
-            onVerificationComplete?.();
-            // Auto-close after 5 seconds
-            setTimeout(() => {
-              handleClose();
-            }, 5000);
-          }
+                     if (data.verified) {
+             setIsVerified(true);
+             showSuccess('Email verified successfully!');
+             onVerificationComplete?.();
+             // Don't auto-close - let the calendar sharing status check handle it
+           }
         }
       } catch (error) {
         console.error('Failed to check verification status:', error);
@@ -146,8 +198,8 @@ export default function EmailVerificationNotification({
     const newAttempts = verificationAttempts + 1;
     setVerificationAttempts(newAttempts);
 
-    // Store attempts in localStorage for the API to check
-    localStorage.setItem(`verification_attempts_${email}`, newAttempts.toString());
+    // The API now handles verification attempts internally
+    // No need to store in localStorage anymore
 
     try {
       const response = await fetch('/api/verify-email-status', {
@@ -158,21 +210,19 @@ export default function EmailVerificationNotification({
         body: JSON.stringify({ email, invitationType }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.verified) {
-          setIsVerified(true);
-          showSuccess('Email verified successfully!');
-          onVerificationComplete?.();
-          setTimeout(() => {
-            handleClose();
-          }, 5000);
-        } else {
-          showError('Email not yet verified. Please check your inbox and click the verification link.');
-        }
-      } else {
-        showError('Failed to check verification status. Please try again.');
-      }
+             if (response.ok) {
+         const data = await response.json();
+         if (data.verified) {
+           setIsVerified(true);
+           showSuccess('Email verified successfully!');
+           onVerificationComplete?.();
+           // Don't auto-close - let the calendar sharing status check handle it
+         } else {
+           showError('Email not yet verified. Please check your inbox and click the verification link.');
+         }
+       } else {
+         showError('Failed to check verification status. Please try again.');
+       }
     } catch (error) {
       showError('Failed to check verification status. Please try again.');
     } finally {
@@ -180,37 +230,13 @@ export default function EmailVerificationNotification({
     }
   };
 
-  const handleResendInvitation = async () => {
-    try {
-      const response = await fetch('/api/resend-invitation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, invitationType }),
-      });
 
-      if (response.ok) {
-        showSuccess('Invitation resent successfully! Please check your email.');
-      } else {
-        showError('Failed to resend invitation. Please try again.');
-      }
-    } catch (error) {
-      showError('Failed to resend invitation. Please try again.');
-    }
-  };
 
-  console.log('EmailVerificationNotification render:', { isVisible, email, isVerified, invitationType });
-  console.log('EmailVerificationNotification: Received email prop:', email);
-  console.log('EmailVerificationNotification: isVisible =', isVisible);
-  
   if (!isVisible) {
-    console.log('EmailVerificationNotification: Not rendering because isVisible is false');
     return null;
   }
   
   if (!email) {
-    console.log('EmailVerificationNotification: Not rendering because email is empty');
     return null;
   }
 
@@ -231,9 +257,9 @@ export default function EmailVerificationNotification({
                <p className="text-sm font-medium text-gray-900 truncate">
                  {isVerified ? 'Email Verified!' : 'Verify Your Email'}
                </p>
-               <p className="text-xs text-gray-500 truncate">
-                 {isVerified ? 'Calendar invitation accepted' : `${email}`}
-               </p>
+                                <p className="text-xs text-gray-500 truncate">
+                   {isVerified ? 'Calendar invitation accepted' : `${calendarName}`}
+                 </p>
              </div>
              <div className="flex items-center gap-1">
                {!isVerified && (
@@ -283,9 +309,9 @@ export default function EmailVerificationNotification({
                 <h3 className="text-lg font-semibold text-gray-900">
                   {isVerified ? 'Email Verified!' : 'Verify Your Email'}
                 </h3>
-                <p className="text-sm text-gray-600">
-                  {isVerified ? 'Calendar invitation accepted successfully' : `${invitationType} sent to ${email}`}
-                </p>
+                                 <p className="text-sm text-gray-600">
+                   {isVerified ? 'Calendar invitation accepted successfully' : `Accept your invitation to join shared calendar: '${calendarName}'`}
+                 </p>
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -312,7 +338,7 @@ export default function EmailVerificationNotification({
             <>
                              <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                  <p className="text-sm text-blue-800 mb-3">
-                   Please check your email and click the verification link to access the {invitationType}.
+                   Please check your email and click the verification link to access the shared calendar '{calendarName}'.
                  </p>
                  <button
                    onClick={handleEmailRedirect}
@@ -324,30 +350,23 @@ export default function EmailVerificationNotification({
                </div>
 
               <div className="space-y-3">
-                <button
-                  onClick={handleManualVerification}
-                  disabled={isVerifying}
-                  className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isVerifying ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                      Checking...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="h-4 w-4" />
-                      I've Verified My Email
-                    </>
-                  )}
-                </button>
-
-                <button
-                  onClick={handleResendInvitation}
-                  className="w-full text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors"
-                >
-                  Didn't receive the email? Resend
-                </button>
+                                 <button
+                   onClick={handleManualVerification}
+                   disabled={isVerifying}
+                   className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                 >
+                   {isVerifying ? (
+                     <>
+                       <RefreshCw className="h-4 w-4 animate-spin" />
+                       Checking...
+                     </>
+                   ) : (
+                     <>
+                       <CheckCircle className="h-4 w-4" />
+                       I've Verified My Email
+                     </>
+                   )}
+                 </button>
               </div>
 
               {verificationAttempts > 0 && (
@@ -358,16 +377,16 @@ export default function EmailVerificationNotification({
             </>
           )}
 
-          {isVerified && (
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <CheckCircle className="h-8 w-8 text-green-600" />
-              </div>
-              <p className="text-sm text-gray-600">
-                Your email has been successfully verified. You can now access the {invitationType}.
-              </p>
-            </div>
-          )}
+                     {isVerified && (
+             <div className="text-center">
+               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                 <CheckCircle className="h-8 w-8 text-green-600" />
+               </div>
+               <p className="text-sm text-gray-600">
+                 Your email has been successfully verified. Calendar access will be granted once sharing is confirmed.
+               </p>
+             </div>
+           )}
         </div>
       )}
     </div>
