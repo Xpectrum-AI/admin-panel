@@ -1,0 +1,83 @@
+
+check that page contains "Welcome Back"
+wait 2 sec 
+
+check that page contains "Don't have an account? Sign up"
+wait 2 sec 
+
+click "Sign up"
+wait 2 sec 
+
+check that page contains "Create an account"
+wait 2 sec
+
+enter "John" into "First Name"
+wait 2 sec
+
+enter "Doe" into "Last Name"
+wait 2 sec
+
+enter "j.karthikeya2004@gmail.com" into "Email"
+wait 2 sec
+
+enter "Karthikeya" into "Username"
+wait 2 sec
+
+enter "Karthikeya@2004" into "Password"
+wait 2 sec
+
+enter "Karthikeya@2004" into "Confirm Password"
+wait 2 sec
+
+click "I agree to the Terms of Service and Privacy Policy"
+wait 2 sec
+
+click "Create Account"
+wait 10 sec
+
+check that page contains "Sign in"
+wait 2 sec
+
+enter "j.karthikeya2004@gmail.com" into "Email"
+wait 3 sec
+
+enter "Karthikeya@2004" into "Password"
+wait 3 sec 
+
+click "Sign In"
+wait 3 sec
+
+check that page contains "Welcome"
+wait 3 sec
+
+
+check that page contains "Create Your Organization"
+wait 3 sec
+
+enter "John's Medical Practice" into "Organization Name"
+wait 2 sec
+
+click "Create Organization"
+wait 10 sec
+
+check that page contains "Organization created"
+wait 3 sec
+
+check that page contains "Welcome to your dashboard"
+wait 3 sec
+
+check that page contains "Doctors"
+wait 3 sec
+
+check that page contains "Agents"
+wait 3 sec
+
+check that page contains "Calendar"
+wait 3 sec
+
+click "Doctors"
+wait 3 sec
+
+check that page contains "Add Doctor"
+wait 3 sec
+

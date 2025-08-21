@@ -1,16 +1,36 @@
 check that page contains "Welcome back"
 wait 2 sec
 
-enter "jaddu.karthikeya@xpectrum-ai.com" into "Enter your email"
-enter "Karthikeya@2004" into "Enter your password"
-click "Sign In"
+click "Continue with Google"
 wait 10 sec
 
-check that page contains "Super Admin"
+check that page contains "Sign in"
+wait 2 sec 
+
+enter "jaddu.karthikeya@xpectrum-ai.com" into "Email"
 wait 3 sec
 
-click "Super Admin"
+click "Next"
 wait 3 sec
+
+check that page contains "Welcome"
+wait 3 sec
+
+enter "Karthikeya@2004" into "Password"
+wait 3 sec
+
+click "Next"
+wait 3 sec 
+
+check that page contains "You’re signing back in to xpectrum-ai.com"
+wait 3 sec 
+
+click "Continue"
+wait 3 sec 
+
+check that page contains "Super Admin Panel"
+wait 3 sec
+
 
 check that page contains "Users"
 wait 3 sec
@@ -24,14 +44,179 @@ wait 3 sec
 check that page contains "Team"
 wait 3 sec
 
-check that page contains "Roles & Permissions"
+
+click "Agents"
 wait 3 sec
 
-check that page contains "Audit Logs"
+check that page contains "Global Agent Management"
 wait 3 sec
 
-check that page contains "System"
+check that page contains "Add Agent"
+wait 3 sec 
+
+click "Add Agent"
 wait 3 sec
+
+enter "Super Admin Org" into "Enter agent ID"
+wait 2 sec
+
+enter "https://demo.xpectrum-ai.com/v1/chat-messages" into "Chatbot API"
+wait 2 sec
+
+enter "app-test-key-12345" into "Chatbot Key"
+wait 2 sec
+
+check that page contains "TTS Configuration"
+wait 2 sec
+
+check that page contains "TTS Provider"
+wait 2 sec
+
+check that page contains "OpenAI API Key"
+wait 2 sec
+
+
+select "Cartesian" from "TTS Provider"
+wait 2 sec 
+
+enter "sk-test-cartesian-key-12345" into "Voice ID"
+wait 2 sec
+
+enter "api-key-2025" into "Cartesian API Key"
+wait 2 sec 
+
+select "Sonic Hindi" from "Model"
+wait 2 sec
+
+
+enter "0.1" into "Speed"
+wait 2 sec
+ 
+select "Hindi" from Language
+wait 2 sec
+
+
+check that page contains "STT Configuration"
+wait 2 sec
+
+check that page contains "STT Provider"
+wait 2 sec
+
+check that page contains "Deepgram"
+wait 2 sec
+
+check that page contains "Deepgram API Key"
+wait 2 sec
+
+enter "dg-test-deepgram-key-12345" into "Deepgram API Key"
+wait 2 sec
+
+check that page contains "Model"
+wait 2 sec
+
+check that page contains "Nova-2"
+wait 2 sec
+
+check that page contains "Language"
+wait 2 sec
+
+check that page contains "Hindi"
+wait 2 sec
+
+check that page contains "Punctuate"
+wait 2 sec
+
+check that page contains "Yes"
+wait 2 sec
+
+check that page contains "Smart Format"
+wait 2 sec
+
+check that page contains "Yes"
+wait 2 sec
+
+check that page contains "Interim Results"
+wait 2 sec
+
+check that page contains "Yes"
+wait 2 sec
+
+check that page contains "Agent Behavior Configuration"
+wait 2 sec
+
+check that page contains "Initial Message"
+wait 2 sec
+
+enter "Hello! How can I help you today?" into "Initial Message"
+wait 2 sec
+
+check that page contains "Nudge Text"
+wait 2 sec
+
+enter "Hello? Are you still there?" into "Nudge Text"
+wait 2 sec
+
+check that page contains "Nudge Interval (seconds)"
+wait 2 sec
+
+enter "15" into "Nudge Interval (seconds)"
+wait 2 sec
+
+check that page contains "Max Nudges"
+wait 2 sec
+
+enter "3" into "Max Nudges"
+wait 2 sec
+
+check that page contains "Typing Volume"
+wait 2 sec
+
+enter "0.8" into "Typing Volume"
+wait 2 sec
+
+click "Create Agent"
+wait 10 sec
+
+
+check that page contains "Super Admin Org"
+wait 3 sec
+
+click "Actions"
+wait 2 sec
+
+click "Set Phone"
+wait 3 sec
+
+check that page contains "Set Phone Number"
+wait 3 sec
+
+check that page contains "Agent ID"
+wait 2 sec
+
+check that page contains "Super Admin Org"
+wait 2 sec
+
+check that page contains "New Phone Number"
+wait 2 sec
+
+enter "+1234567890" into "New Phone Number"
+wait 2 sec
+
+click "Save"
+wait 5 sec
+
+check that page contains "Phone number set successfully in live system!"
+wait 3 sec
+
+check that page contains "+1234567890"
+wait 3 sec
+
+enter "Super Admin Org" into "Search agents..."
+wait 2 sec
+
+check that page contains "Super Admin Org"
+wait 3 sec
+
 
 click "Users"
 wait 3 sec
@@ -51,15 +236,6 @@ wait 3 sec
 check that page contains "Search Organizations"
 wait 3 sec
 
-click "Agents"
-wait 3 sec
-
-check that page contains "Total Agents"
-wait 3 sec
-
-check that page contains "Search Agents"
-wait 3 sec
-
 click "Team"
 wait 3 sec
 
@@ -67,57 +243,6 @@ check that page contains "Super Admin Team"
 wait 3 sec
 
 check that page contains "Invite Member"
-wait 3 sec
-
-click "Roles & Permissions"
-wait 3 sec
-
-check that page contains "Roles"
-wait 3 sec
-
-check that page contains "Permissions"
-wait 3 sec
-
-click "Audit Logs"
-wait 3 sec
-
-check that page contains "Audit Logs"
-wait 3 sec
-
-click "System"
-wait 3 sec
-
-check that page contains "System"
-wait 3 sec
-
-click "Users"
-wait 3 sec
-
-enter "test@example.com" into "Search Users"
-wait 2 sec
-
-click "Search"
-wait 3 sec
-
-click "Organizations"
-wait 3 sec
-
-enter "Test Organization" into "Search Organizations"
-wait 2 sec
-
-click "Search"
-wait 3 sec
-
-click "Agents"
-wait 3 sec
-
-enter "Test Agent" into "Search Agents"
-wait 2 sec
-
-click "Search"
-wait 3 sec
-
-click "Team"
 wait 3 sec
 
 click "Invite Member"
