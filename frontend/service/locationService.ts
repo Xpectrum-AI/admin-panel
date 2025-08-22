@@ -20,19 +20,21 @@ export const locationService = {
   // Fetch all countries
   async getCountries(): Promise<Country[]> {
     try {
-  
       const response = await fetch(`${API_BASE_URL}/countries`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch countries');
+      }
       const result: LocationResponse = await response.json();
-      
-      
-      
+
       if (result.error) {
         throw new Error(result.msg || 'Failed to fetch countries');
       }
-      
+
       return result.data || [];
     } catch (error) {
-      console.error('Error fetching countries:', error);
+      if (error instanceof Error) {
+        throw error; // preserve API-provided messages
+      }
       throw new Error('Failed to fetch countries');
     }
   },
@@ -40,7 +42,6 @@ export const locationService = {
   // Fetch states for a specific country
   async getStates(country: string): Promise<State[]> {
     try {
-
       const response = await fetch(`${API_BASE_URL}/countries/states`, {
         method: 'POST',
         headers: {
@@ -48,18 +49,22 @@ export const locationService = {
         },
         body: JSON.stringify({ country }),
       });
-      
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch states');
+      }
+
       const result: LocationResponse = await response.json();
-      
-      
-      
+
       if (result.error) {
         throw new Error(result.msg || 'Failed to fetch states');
       }
-      
+
       return result.data?.states || [];
     } catch (error) {
-      console.error('Error fetching states for', country, ':', error);
+      if (error instanceof Error) {
+        throw error;
+      }
       throw new Error('Failed to fetch states');
     }
   },
@@ -67,7 +72,6 @@ export const locationService = {
   // Fetch cities for a specific state in a country
   async getCities(country: string, state: string): Promise<string[]> {
     try {
-
       const response = await fetch(`${API_BASE_URL}/countries/state/cities`, {
         method: 'POST',
         headers: {
@@ -75,18 +79,22 @@ export const locationService = {
         },
         body: JSON.stringify({ country, state }),
       });
-      
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch cities');
+      }
+
       const result: LocationResponse = await response.json();
-      
-      
-      
+
       if (result.error) {
         throw new Error(result.msg || 'Failed to fetch cities');
       }
-      
+
       return result.data || [];
     } catch (error) {
-      console.error('Error fetching cities for', country, state, ':', error);
+      if (error instanceof Error) {
+        throw error;
+      }
       throw new Error('Failed to fetch cities');
     }
   },
@@ -94,13 +102,11 @@ export const locationService = {
   // Get cities directly for a country (without state)
   async getCitiesByCountry(country: string): Promise<string[]> {
     try {
-
       const countries = await this.getCountries();
       const countryData = countries.find(c => c.country === country);
-      
+
       return countryData?.cities || [];
     } catch (error) {
-      console.error('Error fetching cities by country:', error);
       throw new Error('Failed to fetch cities');
     }
   }
