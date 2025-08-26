@@ -41,6 +41,33 @@ jobs:
           cd frontend
           npm test -- --coverage --watchAll=false
 
+      - name: Setup Node.js for developer frontend
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend-developer/package-lock.json
+
+      - name: Install developer frontend dependencies
+        run: |
+          cd frontend-developer
+          npm ci
+
+      - name: Lint developer frontend
+        run: |
+          cd frontend-developer
+          npm run lint || echo "Lint completed with warnings"
+
+      - name: Type check developer frontend
+        run: |
+          cd frontend-developer
+          npx tsc --noEmit || echo "Type check completed with warnings"
+
+      - name: Run developer frontend tests
+        run: |
+          cd frontend-developer
+          npm test -- --coverage --watchAll=false
+
   deploy-development:
     runs-on: ubuntu-latest
     environment: development
@@ -61,7 +88,7 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Build and push Frontend image to ECR
+    - name: Build and push Main Frontend image to ECR
       env:
         NEXT_PUBLIC_LIVE_API_URL: ${{ vars.DEV_LIVE_API_URL }}
         NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.DEV_PROPELAUTH_URL }}
@@ -72,7 +99,7 @@ jobs:
         # Set ECR repository URI
         REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
         
-        # Build, tag, and push frontend only with environment variables
+        # Build, tag, and push main frontend with environment variables
         cd frontend
         docker build \
           --build-arg NEXT_PUBLIC_LIVE_API_URL="${NEXT_PUBLIC_LIVE_API_URL}" \
@@ -83,6 +110,28 @@ jobs:
           -t admin-panel:frontend-development .
         docker tag admin-panel:frontend-development $REPO:frontend-development
         docker push $REPO:frontend-development
+        cd ..
+
+    - name: Build and push Developer Frontend image to ECR
+      env:
+        NEXT_PUBLIC_LIVE_API_URL: ${{ vars.DEV_LIVE_API_URL }}
+        NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.DEV_PROPELAUTH_URL }}
+        NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.DEV_LIVE_API_KEY }}
+        NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.DEV_PROPELAUTH_API_KEY }}
+      run: |
+        # Set ECR repository URI
+        REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
+        
+        # Build, tag, and push developer frontend with environment variables
+        cd frontend-developer
+        docker build \
+          --build-arg NEXT_PUBLIC_LIVE_API_URL="${NEXT_PUBLIC_LIVE_API_URL}" \
+          --build-arg NEXT_PUBLIC_PROPELAUTH_URL="${NEXT_PUBLIC_PROPELAUTH_URL}" \
+          --build-arg NEXT_PUBLIC_LIVE_API_KEY="${NEXT_PUBLIC_LIVE_API_KEY}" \
+          --build-arg NEXT_PUBLIC_PROPELAUTH_API_KEY="${NEXT_PUBLIC_PROPELAUTH_API_KEY}" \
+          -t admin-panel:frontend-developer-development .
+        docker tag admin-panel:frontend-developer-development $REPO:frontend-developer-development
+        docker push $REPO:frontend-developer-development
         cd ..
 
     - name: Setup Python for CDK
@@ -151,7 +200,7 @@ jobs:
           echo "Checking ECS service status..."
           aws ecs describe-services \
             --cluster admin-panel-development \
-            --services admin-panel-service-development \
+            --services admin-panel-service-development admin-panel-developer-service-development \
             --region ${{ env.AWS_REGION }} || echo "Could not check ECS status"
           exit 1
         }
@@ -162,15 +211,17 @@ jobs:
         if aws cloudformation describe-stacks --stack-name AdminPanelDevelopmentStack --region ${{ env.AWS_REGION }} 2>/dev/null; then
           # Get the actual cluster and service names from CloudFormation outputs
           CLUSTER_NAME="admin-panel-development"
-          SERVICE_NAME="admin-panel-service-development"
+          MAIN_SERVICE_NAME="admin-panel-service-development"
+          DEVELOPER_SERVICE_NAME="admin-panel-developer-service-development"
           
           echo "Using cluster: $CLUSTER_NAME"
-          echo "Using service: $SERVICE_NAME"
+          echo "Using main service: $MAIN_SERVICE_NAME"
+          echo "Using developer service: $DEVELOPER_SERVICE_NAME"
           
           # Wait for ECS services to be stable
           aws ecs wait services-stable \
             --cluster $CLUSTER_NAME \
-            --services $SERVICE_NAME \
+            --services $MAIN_SERVICE_NAME $DEVELOPER_SERVICE_NAME \
             --region ${{ env.AWS_REGION }} || echo "Services not stable yet"
         else
           echo "Stack does not exist yet, skipping wait"
@@ -209,40 +260,60 @@ jobs:
         
         echo "Testing health endpoints on: $HOSTNAME"
         
-        # Health checks for frontend only (skip SSL verification)
+        # Health checks for main frontend
         curl -f -k "https://$HOSTNAME/" || exit 1
         curl -f -k "https://$HOSTNAME/api/health" || exit 1
+        
+        # Health checks for developer frontend
+        curl -f -k "https://$HOSTNAME/developer" || exit 1
+        curl -f -k "https://$HOSTNAME/developer/api/health" || exit 1
         
         echo "=== VERIFYING DEPLOYED ENVIRONMENT VARIABLES ==="
         # Get ECS task details to verify environment variables
         CLUSTER_NAME="admin-panel-development"
         
-        TASK_ARN=$(aws ecs list-tasks \
+        # Check main service tasks
+        MAIN_TASK_ARN=$(aws ecs list-tasks \
           --cluster $CLUSTER_NAME \
+          --service-name admin-panel-service-development \
           --region ${{ env.AWS_REGION }} \
           --query 'taskArns[0]' \
           --output text 2>/dev/null || echo "")
         
-        if [ ! -z "$TASK_ARN" ] && [ "$TASK_ARN" != "None" ]; then
-          echo "Checking environment variables in deployed container..."
+        if [ ! -z "$MAIN_TASK_ARN" ] && [ "$MAIN_TASK_ARN" != "None" ]; then
+          echo "Checking environment variables in main frontend container..."
           
-          echo "=== SUPER ADMIN ENVIRONMENT VARIABLES VERIFICATION ==="
+          echo "=== MAIN FRONTEND ENVIRONMENT VARIABLES VERIFICATION ==="
           aws ecs describe-tasks \
             --cluster $CLUSTER_NAME \
-            --tasks $TASK_ARN \
+            --tasks $MAIN_TASK_ARN \
             --region ${{ env.AWS_REGION }} \
             --query 'tasks[0].overrides.containerOverrides[0].environment[?contains(name, `SUPER_ADMIN`) || contains(name, `PROPELAUTH`)].{name:name,value:value}' \
-            --output table || echo "Could not get super admin environment variables"
+            --output table || echo "Could not get main frontend environment variables"
+        else
+          echo "No main frontend tasks found to verify environment variables"
+        fi
+
+        # Check developer service tasks
+        DEVELOPER_TASK_ARN=$(aws ecs list-tasks \
+          --cluster $CLUSTER_NAME \
+          --service-name admin-panel-developer-service-development \
+          --region ${{ env.AWS_REGION }} \
+          --query 'taskArns[0]' \
+          --output text 2>/dev/null || echo "")
+        
+        if [ ! -z "$DEVELOPER_TASK_ARN" ] && [ "$DEVELOPER_TASK_ARN" != "None" ]; then
+          echo "Checking environment variables in developer frontend container..."
           
-          echo "=== ALL ENVIRONMENT VARIABLES ==="
+          echo "=== DEVELOPER FRONTEND ENVIRONMENT VARIABLES VERIFICATION ==="
           aws ecs describe-tasks \
             --cluster $CLUSTER_NAME \
-            --tasks $TASK_ARN \
+            --tasks $DEVELOPER_TASK_ARN \
             --region ${{ env.AWS_REGION }} \
-            --query 'tasks[0].overrides.containerOverrides[0].environment[].{name:name,value:value}' \
-            --output table || echo "Could not get all environment variables"
+            --query 'tasks[0].overrides.containerOverrides[0].environment[?contains(name, `PROPELAUTH`)].{name:name,value:value}' \
+            --output table || echo "Could not get developer frontend environment variables"
         else
-          echo "No tasks found to verify environment variables"
+          echo "No developer frontend tasks found to verify environment variables"
         fi
     
     - name: Force restart ECS services
@@ -250,6 +321,12 @@ jobs:
         aws ecs update-service \
           --cluster "admin-panel-development" \
           --service "admin-panel-service-development" \
+          --force-new-deployment \
+          --region "$AWS_REGION"
+        
+        aws ecs update-service \
+          --cluster "admin-panel-development" \
+          --service "admin-panel-developer-service-development" \
           --force-new-deployment \
           --region "$AWS_REGION"
     
@@ -264,14 +341,15 @@ jobs:
         
         # Get actual cluster and service names
         CLUSTER_NAME="admin-panel-development"
-        SERVICE_NAME="admin-panel-service-development"
+        MAIN_SERVICE_NAME="admin-panel-service-development"
+        DEVELOPER_SERVICE_NAME="admin-panel-developer-service-development"
         
         echo "=== Checking ECS service status ==="
         aws ecs describe-services \
           --cluster $CLUSTER_NAME \
-          --services $SERVICE_NAME \
+          --services $MAIN_SERVICE_NAME $DEVELOPER_SERVICE_NAME \
           --region ${{ env.AWS_REGION }} \
-          --query 'services[0].{status:status,desiredCount:desiredCount,runningCount:runningCount,pendingCount:pendingCount}' \
+          --query 'services[].{serviceName:serviceName,status:status,desiredCount:desiredCount,runningCount:runningCount,pendingCount:pendingCount}' \
           --output table || echo "Could not check ECS status"
         
         echo "=== Checking ECS tasks ==="
