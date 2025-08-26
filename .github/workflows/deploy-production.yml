@@ -27,17 +27,20 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Pull and retag Frontend image from Release
+    - name: Pull and retag Frontend images from Release
       run: |
         # Set ECR repository URI
         REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
         
-        # Pull the latest release image
+        # Pull the latest release images
         docker pull $REPO:frontend-release-latest
+        docker pull $REPO:frontend-developer-release-latest
         
         # Retag as production latest and push
         docker tag $REPO:frontend-release-latest $REPO:frontend-latest
+        docker tag $REPO:frontend-developer-release-latest $REPO:frontend-developer-latest
         docker push $REPO:frontend-latest
+        docker push $REPO:frontend-developer-latest
 
     - name: Setup Python for CDK
       uses: actions/setup-python@v4
@@ -186,15 +189,25 @@ jobs:
         
         echo "Testing health endpoints on: $HOSTNAME"
         
-        # Health checks for frontend only (skip SSL verification)
+        # Health checks for main frontend
         curl -f -k "https://$HOSTNAME/" || exit 1
         curl -f -k "https://$HOSTNAME/api/health" || exit 1
+        
+        # Health checks for developer frontend
+        curl -f -k "https://$HOSTNAME/developer" || exit 1
+        curl -f -k "https://$HOSTNAME/developer/api/health" || exit 1
 
     - name: Force restart ECS services
       run: |
         aws ecs update-service \
           --cluster "admin-panel-production" \
           --service "admin-panel-service-production" \
+          --force-new-deployment \
+          --region "$AWS_REGION"
+        
+        aws ecs update-service \
+          --cluster "admin-panel-production" \
+          --service "admin-panel-developer-service-production" \
           --force-new-deployment \
           --region "$AWS_REGION"
 
