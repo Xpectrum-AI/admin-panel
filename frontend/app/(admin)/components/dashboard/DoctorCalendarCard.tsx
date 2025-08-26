@@ -6,7 +6,7 @@ interface DoctorCalendar {
   doctorName: string;
   timezone: string;
   createdDate: string;
-  calendar_id?: string; 
+  calendar_id?: string;
   doctor_id?: string;
   doctor_first_name?: string;
   doctor_last_name?: string;
@@ -33,12 +33,11 @@ export default function DoctorCalendarCard({
   };
 
   return (
-    <div 
-      className={`rounded-lg border transition-all cursor-pointer ${
-        isSelected 
-          ? 'border-blue-500 bg-blue-50 shadow-lg' 
-          : 'border-gray-200 bg-card text-card-foreground hover:shadow-lg'
-      }`}
+    <div
+      className={`rounded-lg border transition-all cursor-pointer ${isSelected
+        ? 'border-blue-500 bg-blue-50 shadow-lg'
+        : 'border-gray-200 bg-card text-card-foreground hover:shadow-lg'
+        }`}
       onClick={onClick}
     >
       {/* Card Header */}
@@ -68,7 +67,19 @@ export default function DoctorCalendarCard({
         <div className="flex items-center gap-2">
           <div>
             <p className="text-sm font-medium">Shared with</p>
-            <p className="text-xs text-gray-500">{calendar.shared_with?.[0] || 'No one'}</p>
+            {calendar.shared_with && calendar.shared_with.length > 0 ? (
+              <div className="space-y-1">
+                {calendar.shared_with
+                  .filter((email: string) => email !== 'No one')
+                  .map((email: string, index: number) => (
+                    <p key={index} className="text-xs text-gray-500">
+                      {email}
+                    </p>
+                  ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500">No one</p>
+            )}
           </div>
         </div>
 
