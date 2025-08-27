@@ -48,6 +48,33 @@ jobs:
           cd frontend
           npm test -- --coverage --watchAll=false
 
+      - name: Setup Node.js for developer frontend
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend-developer/package-lock.json
+
+      - name: Install developer frontend dependencies
+        run: |
+          cd frontend-developer
+          npm ci
+
+      - name: Lint developer frontend
+        run: |
+          cd frontend-developer
+          npm run lint || echo "Lint completed with warnings"
+
+      - name: Type check developer frontend
+        run: |
+          cd frontend-developer
+          npx tsc --noEmit || echo "Type check completed with warnings"
+
+      - name: Run developer frontend tests
+        run: |
+          cd frontend-developer
+          npm test -- --coverage --watchAll=false
+
   deploy-release:
     runs-on: ubuntu-latest
     environment: production
@@ -68,8 +95,8 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Determine image tag
-      id: image-tag
+    - name: Determine image tags
+      id: image-tags
       run: |
         # 如果提供了 image_tag_suffix，使用它
         if [ -n "${{ inputs.image_tag_suffix }}" ]; then
@@ -83,32 +110,35 @@ jobs:
         fi
         
         # 设置完整的标签
-        IMAGE_TAG="frontend-release-${TAG_SUFFIX}"
+        MAIN_IMAGE_TAG="frontend-release-${TAG_SUFFIX}"
+        DEVELOPER_IMAGE_TAG="frontend-developer-release-${TAG_SUFFIX}"
         
-        echo "Using image tag: $IMAGE_TAG"
-        echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+        echo "Using main image tag: $MAIN_IMAGE_TAG"
+        echo "Using developer image tag: $DEVELOPER_IMAGE_TAG"
+        echo "main_image_tag=$MAIN_IMAGE_TAG" >> $GITHUB_OUTPUT
+        echo "developer_image_tag=$DEVELOPER_IMAGE_TAG" >> $GITHUB_OUTPUT
 
-    - name: Build and push Frontend image to ECR
+    - name: Build and push Main Frontend image to ECR
       env:
         NEXT_PUBLIC_LIVE_API_URL: ${{ vars.PRODUCTION_LIVE_API_URL }}
         NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.PRODUCTION_PROPELAUTH_URL }}
         NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.PRODUCTION_LIVE_API_KEY }}
         NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_PROPELAUTH_API_KEY }}
         NEXT_PUBLIC_SUPER_ADMIN_ORG_ID: ${{ secrets.PRODUCTION_SUPER_ADMIN_ORG_ID }}
-        IMAGE_TAG: ${{ steps.image-tag.outputs.image_tag }}
+        MAIN_IMAGE_TAG: ${{ steps.image-tags.outputs.main_image_tag }}
       run: |
         # Set ECR repository URI
         REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
         
-        # Verify IMAGE_TAG is set
-        if [ -z "$IMAGE_TAG" ]; then
-          echo "Error: IMAGE_TAG is not set"
+        # Verify MAIN_IMAGE_TAG is set
+        if [ -z "$MAIN_IMAGE_TAG" ]; then
+          echo "Error: MAIN_IMAGE_TAG is not set"
           exit 1
         fi
         
-        echo "Building with image tag: $IMAGE_TAG"
+        echo "Building main frontend with image tag: $MAIN_IMAGE_TAG"
         
-        # Build, tag, and push frontend only with environment variables
+        # Build, tag, and push main frontend with environment variables
         cd frontend
         docker build \
           --build-arg NEXT_PUBLIC_LIVE_API_URL="${NEXT_PUBLIC_LIVE_API_URL}" \
@@ -116,11 +146,44 @@ jobs:
           --build-arg NEXT_PUBLIC_LIVE_API_KEY="${NEXT_PUBLIC_LIVE_API_KEY}" \
           --build-arg NEXT_PUBLIC_PROPELAUTH_API_KEY="${NEXT_PUBLIC_PROPELAUTH_API_KEY}" \
           --build-arg NEXT_PUBLIC_SUPER_ADMIN_ORG_ID="${NEXT_PUBLIC_SUPER_ADMIN_ORG_ID}" \
-          -t admin-panel:$IMAGE_TAG .
-        docker tag admin-panel:$IMAGE_TAG $REPO:$IMAGE_TAG
-        docker push $REPO:$IMAGE_TAG
-        docker tag admin-panel:$IMAGE_TAG $REPO:frontend-release-latest
+          -t admin-panel:$MAIN_IMAGE_TAG .
+        docker tag admin-panel:$MAIN_IMAGE_TAG $REPO:$MAIN_IMAGE_TAG
+        docker push $REPO:$MAIN_IMAGE_TAG
+        docker tag admin-panel:$MAIN_IMAGE_TAG $REPO:frontend-release-latest
         docker push $REPO:frontend-release-latest
+        cd ..
+
+    - name: Build and push Developer Frontend image to ECR
+      env:
+        NEXT_PUBLIC_LIVE_API_URL: ${{ vars.PRODUCTION_LIVE_API_URL }}
+        NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.PRODUCTION_PROPELAUTH_URL }}
+        NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.PRODUCTION_LIVE_API_KEY }}
+        NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_PROPELAUTH_API_KEY }}
+        DEVELOPER_IMAGE_TAG: ${{ steps.image-tags.outputs.developer_image_tag }}
+      run: |
+        # Set ECR repository URI
+        REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
+        
+        # Verify DEVELOPER_IMAGE_TAG is set
+        if [ -z "$DEVELOPER_IMAGE_TAG" ]; then
+          echo "Error: DEVELOPER_IMAGE_TAG is not set"
+          exit 1
+        fi
+        
+        echo "Building developer frontend with image tag: $DEVELOPER_IMAGE_TAG"
+        
+        # Build, tag, and push developer frontend with environment variables
+        cd frontend-developer
+        docker build \
+          --build-arg NEXT_PUBLIC_LIVE_API_URL="${NEXT_PUBLIC_LIVE_API_URL}" \
+          --build-arg NEXT_PUBLIC_PROPELAUTH_URL="${NEXT_PUBLIC_PROPELAUTH_URL}" \
+          --build-arg NEXT_PUBLIC_LIVE_API_KEY="${NEXT_PUBLIC_LIVE_API_KEY}" \
+          --build-arg NEXT_PUBLIC_PROPELAUTH_API_KEY="${NEXT_PUBLIC_PROPELAUTH_API_KEY}" \
+          -t admin-panel:$DEVELOPER_IMAGE_TAG .
+        docker tag admin-panel:$DEVELOPER_IMAGE_TAG $REPO:$DEVELOPER_IMAGE_TAG
+        docker push $REPO:$DEVELOPER_IMAGE_TAG
+        docker tag admin-panel:$DEVELOPER_IMAGE_TAG $REPO:frontend-developer-release-latest
+        docker push $REPO:frontend-developer-release-latest
         cd ..
 
     - name: Setup Python for CDK
@@ -138,12 +201,18 @@ jobs:
         npm install -g aws-cdk
     
     - name: Deploy CDK stack (releasing)
+      env:
+        # Pass GitHub environment variables to CDK
+        RELEASE_IMAGE_TAG: ${{ steps.image-tags.outputs.main_image_tag }}
+        RELEASE_DEVELOPER_IMAGE_TAG: ${{ steps.image-tags.outputs.developer_image_tag }}
       run: |
         cd python-cdk-v2
         
         echo "=== CDK DEPLOYMENT DEBUG ==="
         echo "Current directory: $(pwd)"
         echo "Environment variables are now handled during Docker build"
+        echo "RELEASE_IMAGE_TAG: $RELEASE_IMAGE_TAG"
+        echo "RELEASE_DEVELOPER_IMAGE_TAG: $RELEASE_DEVELOPER_IMAGE_TAG"
         echo "====================================="
         
         # Deploy to release environment with release context
@@ -153,7 +222,7 @@ jobs:
           echo "Checking ECS service status..."
           aws ecs describe-services \
             --cluster admin-panel-release \
-            --services admin-panel-service-release  \
+            --services admin-panel-service-release admin-panel-developer-service-release \
             --region ${{ env.AWS_REGION }} || echo "Could not check ECS status"
           exit 1
         }
@@ -214,7 +283,7 @@ jobs:
         
         echo "Testing health endpoints on: $PROTOCOL://$HOSTNAME"
         
-        # Health checks for frontend
+        # Health checks for main frontend
         if [ "$PROTOCOL" = "https" ]; then
           curl -f -k "https://$HOSTNAME/" || exit 1
           curl -f -k "https://$HOSTNAME/api/health" || exit 1
@@ -222,12 +291,27 @@ jobs:
           curl -f "http://$HOSTNAME/" || exit 1
           curl -f "http://$HOSTNAME/api/health" || exit 1
         fi
+        
+        # Health checks for developer frontend
+        if [ "$PROTOCOL" = "https" ]; then
+          curl -f -k "https://$HOSTNAME/developer" || exit 1
+          curl -f -k "https://$HOSTNAME/developer/api/health" || exit 1
+        else
+          curl -f "http://$HOSTNAME/developer" || exit 1
+          curl -f "http://$HOSTNAME/developer/api/health" || exit 1
+        fi
 
     - name: Force restart ECS services
       run: |
         aws ecs update-service \
           --cluster "admin-panel-release" \
           --service "admin-panel-service-release" \
+          --force-new-deployment \
+          --region "$AWS_REGION"
+        
+        aws ecs update-service \
+          --cluster "admin-panel-release" \
+          --service "admin-panel-developer-service-release" \
           --force-new-deployment \
           --region "$AWS_REGION"
         
@@ -294,13 +378,15 @@ jobs:
         echo "## Release Deployment Successful! 🚀" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Image Tag**: ${{ steps.image-tag.outputs.image_tag }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Main Image Tag**: ${{ steps.image-tags.outputs.main_image_tag }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Developer Image Tag**: ${{ steps.image-tags.outputs.developer_image_tag }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Frontend URL**: ${{ steps.alb-dns.outputs.alb-dns }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Deployed At**: $(date)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Release Information" >> $GITHUB_STEP_SUMMARY
         echo "- **Week Number**: $(echo ${{ github.ref_name }} | sed 's/release-//')" >> $GITHUB_STEP_SUMMARY
-        echo "- **Release Tag**: frontend-release-latest" >> $GITHUB_STEP_SUMMARY
+        echo "- **Main Release Tag**: frontend-release-latest" >> $GITHUB_STEP_SUMMARY
+        echo "- **Developer Release Tag**: frontend-developer-release-latest" >> $GITHUB_STEP_SUMMARY
 
   deployment-failure:
     needs: deploy-release

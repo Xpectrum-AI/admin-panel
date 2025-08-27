@@ -18,4 +18,23 @@ services:
       - NEXT_PUBLIC_PROPELAUTH_URL=https://181249979.propelauthtest.com
       - NEXT_PUBLIC_PROPELAUTH_API_KEY=888ea8af8e1d78888fcb15304e2633446516519573b7f6219943b306a4626df95d477061f77b939b8cdadd7a50559a6c
       - NEXT_PUBLIC_SUPER_ADMIN_ORG_ID=c53e8731-2ce7-4484-919c-0aba50c2f46a
+    restart: unless-stopped
+
+  frontend-developer:
+    build:
+      context: ./frontend-developer
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_LIVE_API_URL=https://diwz9dcb62ek1.cloudfront.net
+        - NEXT_PUBLIC_LIVE_API_KEY=xpectrum-ai@123
+        - NEXT_PUBLIC_PROPELAUTH_URL=https://181249979.propelauthtest.com
+        - NEXT_PUBLIC_PROPELAUTH_API_KEY=888ea8af8e1d78888fcb15304e2633446516519573b7f6219943b306a4626df95d477061f77b939b8cdadd7a50559a6c
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_LIVE_API_URL=https://diwz9dcb62ek1.cloudfront.net
+      - NEXT_PUBLIC_LIVE_API_KEY=xpectrum-ai@123
+      - NEXT_PUBLIC_PROPELAUTH_URL=https://181249979.propelauthtest.com
+      - NEXT_PUBLIC_PROPELAUTH_API_KEY=888ea8af8e1d78888fcb15304e2633446516519573b7f6219943b306a4626df95d477061f77b939b8cdadd7a50559a6c
     restart: unless-stopped 
