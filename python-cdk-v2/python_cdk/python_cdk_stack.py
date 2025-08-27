@@ -24,28 +24,37 @@ class AdminPanelDeploymentStack(Stack):
                 'domain': 'admin-dev.xpectrum-ai.com',
                 'auth_domain': 'auth.admin-dev.xpectrum-ai.com',
                 'frontend_tag': 'frontend-development',
+                'frontend_developer_tag': 'frontend-developer-development',
                 'frontend_port': '3000',
+                'frontend_developer_port': '3001',
                 'stack_name': 'AdminPanelDevelopmentStack',
                 'cluster_name': 'admin-panel-development',
-                'service_name': 'admin-panel-service-development'
+                'service_name': 'admin-panel-service-development',
+                'developer_service_name': 'admin-panel-developer-service-development'
             },
             'production': {
                 'domain': 'admin.xpectrum-ai.com',
                 'auth_domain': 'auth.admin.xpectrum-ai.com',
                 'frontend_tag': 'frontend-latest',
+                'frontend_developer_tag': 'frontend-developer-latest',
                 'frontend_port': '3000',
+                'frontend_developer_port': '3001',
                 'stack_name': 'AdminPanelProductionStack',
                 'cluster_name': 'admin-panel-production',
-                'service_name': 'admin-panel-service-production'
+                'service_name': 'admin-panel-service-production',
+                'developer_service_name': 'admin-panel-developer-service-production'
             },
             'release': {
                 'domain': 'admin-release.xpectrum-ai.com',  
                 'auth_domain': 'auth.admin-release.xpectrum-ai.com',  
                 'frontend_tag': os.environ.get('RELEASE_IMAGE_TAG', 'frontend-release-latest'),
+                'frontend_developer_tag': os.environ.get('RELEASE_DEVELOPER_IMAGE_TAG', 'frontend-developer-release-latest'),
                 'frontend_port': '3000',
+                'frontend_developer_port': '3001',
                 'stack_name': 'AdminPanelReleaseStack',
                 'cluster_name': 'admin-panel-release',
-                'service_name': 'admin-panel-service-release'
+                'service_name': 'admin-panel-service-release',
+                'developer_service_name': 'admin-panel-developer-service-release'
             }
         }
         
@@ -97,14 +106,14 @@ class AdminPanelDeploymentStack(Stack):
                 "arn:aws:acm:us-west-1:641623447164:certificate/6052b1be-e882-452c-8575-cedd01bb9fbc"
             )
 
-        # Fargate Task Definition - Frontend only
-        task = ecs.FargateTaskDefinition(self, f"{config['stack_name']}Task", memory_limit_mib=1024, cpu=512)
+        # Fargate Task Definition - Main Frontend
+        main_task = ecs.FargateTaskDefinition(self, f"{config['stack_name']}MainTask", memory_limit_mib=1024, cpu=512)
 
-        # Frontend container only
-        task.add_container(
-            "FrontendContainer",
+        # Main Frontend container
+        main_task.add_container(
+            "MainFrontendContainer",
             image=ecs.ContainerImage.from_ecr_repository(repo, tag=config['frontend_tag']),
-            logging=ecs.LogDriver.aws_logs(stream_prefix="frontend"),
+            logging=ecs.LogDriver.aws_logs(stream_prefix="main-frontend"),
             environment={
                 "NODE_ENV": environment,
                 "PORT": config['frontend_port'],
@@ -113,11 +122,27 @@ class AdminPanelDeploymentStack(Stack):
             port_mappings=[ecs.PortMapping(container_port=int(config['frontend_port']))]
         )
 
-        # Fargate Service (2 tasks)
-        service = ecs.FargateService(
-            self, f"{config['stack_name']}Service", 
+        # Fargate Task Definition - Developer Frontend
+        developer_task = ecs.FargateTaskDefinition(self, f"{config['stack_name']}DeveloperTask", memory_limit_mib=1024, cpu=512)
+
+        # Developer Frontend container
+        developer_task.add_container(
+            "DeveloperFrontendContainer",
+            image=ecs.ContainerImage.from_ecr_repository(repo, tag=config['frontend_developer_tag']),
+            logging=ecs.LogDriver.aws_logs(stream_prefix="developer-frontend"),
+            environment={
+                "NODE_ENV": environment,
+                "PORT": config['frontend_developer_port'],
+                "HOST": "0.0.0.0",
+            },
+            port_mappings=[ecs.PortMapping(container_port=int(config['frontend_developer_port']))]
+        )
+
+        # Fargate Service - Main Frontend (2 tasks)
+        main_service = ecs.FargateService(
+            self, f"{config['stack_name']}MainService", 
             cluster=cluster, 
-            task_definition=task, 
+            task_definition=main_task, 
             desired_count=1, 
             assign_public_ip=True,
             # Add deployment configuration to prevent warnings
@@ -125,6 +150,20 @@ class AdminPanelDeploymentStack(Stack):
             max_healthy_percent=200,
             # Use explicit service name from configuration
             service_name=config['service_name']
+        )
+
+        # Fargate Service - Developer Frontend (1 task)
+        developer_service = ecs.FargateService(
+            self, f"{config['stack_name']}DeveloperService", 
+            cluster=cluster, 
+            task_definition=developer_task, 
+            desired_count=1, 
+            assign_public_ip=True,
+            # Add deployment configuration to prevent warnings
+            min_healthy_percent=100,
+            max_healthy_percent=200,
+            # Use explicit service name from configuration
+            service_name=config['developer_service_name']
         )
 
         # ALB
@@ -151,12 +190,12 @@ class AdminPanelDeploymentStack(Stack):
             )
         )
         
-        # Add targets to HTTPS listener
+        # Add main frontend target to HTTPS listener (root path)
         https_listener.add_targets(
-            "FrontendDefault",
+            "MainFrontendDefault",
             port=int(config['frontend_port']),
             protocol=elbv2.ApplicationProtocol.HTTP,
-            targets=[service],
+            targets=[main_service],
             health_check=elbv2.HealthCheck(
                 path="/api/health", 
                 port=str(config['frontend_port']), 
@@ -164,13 +203,31 @@ class AdminPanelDeploymentStack(Stack):
             )
         )
 
+        # Add developer frontend target to HTTPS listener (/developer path)
+        https_listener.add_targets(
+            "DeveloperFrontendPath",
+            port=int(config['frontend_developer_port']),
+            protocol=elbv2.ApplicationProtocol.HTTP,
+            targets=[developer_service],
+            health_check=elbv2.HealthCheck(
+                path="/api/health", 
+                port=str(config['frontend_developer_port']), 
+                healthy_http_codes="200-399"
+            ),
+            conditions=[
+                elbv2.ListenerCondition.path_patterns(["/developer*"])
+            ]
+        )
+
         # 所有环境都输出HTTPS URL
         CfnOutput(self, "FrontendURL", value=f"https://{lb.load_balancer_dns_name}")
+        CfnOutput(self, "DeveloperFrontendURL", value=f"https://{lb.load_balancer_dns_name}/developer")
         CfnOutput(self, "LoadBalancerDNS", value=lb.load_balancer_dns_name)
         CfnOutput(self, "Environment", value=environment)
         CfnOutput(self, "AccountID", value=current_account)
         CfnOutput(self, "ClusterName", value=cluster.cluster_name)
-        CfnOutput(self, "ServiceName", value=service.service_name)
+        CfnOutput(self, "MainServiceName", value=main_service.service_name)
+        CfnOutput(self, "DeveloperServiceName", value=developer_service.service_name)
         
         if is_release_env:
             CfnOutput(self, "ReleaseInfo", value=f"Release environment deployed with HTTPS support")

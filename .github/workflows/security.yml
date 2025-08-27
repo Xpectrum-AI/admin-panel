@@ -23,6 +23,14 @@ jobs:
         format: 'HTML'
         out: 'reports/frontend'
 
+    - name: Run OWASP Dependency Check for Developer Frontend
+      uses: dependency-check/Dependency-Check_Action@main
+      with:
+        project: 'Admin Panel Developer Frontend'
+        path: './frontend-developer'
+        format: 'HTML'
+        out: 'reports/frontend-developer'
+
     - name: Upload security reports
       uses: actions/upload-artifact@v4
       with:
@@ -80,6 +88,11 @@ jobs:
     - name: Audit frontend dependencies
       run: |
         cd frontend
+        npm audit --audit-level=moderate || echo "Audit completed with warnings"
+
+    - name: Audit developer frontend dependencies
+      run: |
+        cd frontend-developer
         npm audit --audit-level=moderate || echo "Audit completed with warnings"
 
   notify-security-issues:
