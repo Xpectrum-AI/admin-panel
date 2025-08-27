@@ -1,10 +1,10 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import DeveloperDashboard from '@/app/developer/page';
+import DeveloperDashboard from '@/app/page';
 
 // Mock the tab components
-jest.mock('@/app/developer/components', () => ({
+jest.mock('@/app/components', () => ({
   AgentsTab: () => <div data-testid="agents-tab">Agents Tab</div>,
   PhoneNumbersTab: () => <div data-testid="phone-numbers-tab">Phone Numbers Tab</div>,
   SMSTab: () => <div data-testid="sms-tab">SMS Tab</div>,

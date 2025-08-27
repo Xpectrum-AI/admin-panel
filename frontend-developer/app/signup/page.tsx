@@ -33,7 +33,7 @@ export default function SignUp() {
   const handleGoogleSignUp = () => {
     // Store user type in localStorage before redirect
     localStorage.setItem('userType', 'developer');
-    const redirectUrl = '/developer';
+    const redirectUrl = '/';
     window.location.href = `${process.env.NEXT_PUBLIC_PROPELAUTH_URL}/google/login?scope=openid+email+profile&external_param_access_type=offline&external_param_prompt=consent&redirect_uri=${encodeURIComponent(redirectUrl)}`;
     showSuccess('Redirecting to OAuth login');
   };
