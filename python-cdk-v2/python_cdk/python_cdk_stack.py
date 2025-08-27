@@ -209,6 +209,7 @@ class AdminPanelDeploymentStack(Stack):
             port=int(config['frontend_developer_port']),
             protocol=elbv2.ApplicationProtocol.HTTP,
             targets=[developer_service],
+            priority=1,
             health_check=elbv2.HealthCheck(
                 path="/api/health", 
                 port=str(config['frontend_developer_port']), 
