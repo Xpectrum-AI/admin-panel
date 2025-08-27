@@ -15,76 +15,65 @@ describe('Home Page', () => {
   });
 
   describe('Rendering', () => {
-    it('renders the loading spinner and redirect message', () => {
+    it('renders the developer dashboard', () => {
       render(<Home />);
       
-      expect(screen.getByText('Redirecting to Developer Dashboard...')).toBeInTheDocument();
+      expect(screen.getByText('Developer Dashboard')).toBeInTheDocument();
     });
 
-    it('renders the loading spinner with correct styling', () => {
+    it('renders the welcome message', () => {
       render(<Home />);
       
-      const spinner = screen.getByText('Redirecting to Developer Dashboard...').previousElementSibling;
-      expect(spinner).toHaveClass('animate-spin', 'rounded-full', 'h-32', 'w-32', 'border-b-2', 'border-green-500');
+      expect(screen.getByText(/Welcome back/)).toBeInTheDocument();
     });
   });
 
   describe('Redirect Behavior', () => {
-    it('redirects to developer dashboard on mount', () => {
-      const mockPush = jest.fn();
-      jest.spyOn(require('next/navigation'), 'useRouter').mockReturnValue({
-        push: mockPush,
-      });
-      
+    it('renders the developer dashboard directly', () => {
       render(<Home />);
       
-      expect(mockPush).toHaveBeenCalledWith('/developer');
+      expect(screen.getByText('Developer Dashboard')).toBeInTheDocument();
     });
 
-    it('redirects only once on mount', () => {
-      const mockPush = jest.fn();
-      jest.spyOn(require('next/navigation'), 'useRouter').mockReturnValue({
-        push: mockPush,
-      });
-      
+    it('renders the dashboard consistently', () => {
       const { rerender } = render(<Home />);
       
-      expect(mockPush).toHaveBeenCalledTimes(1);
+      expect(screen.getByText('Developer Dashboard')).toBeInTheDocument();
       
-      // Re-render should not trigger another redirect
+      // Re-render should still show the dashboard
       rerender(<Home />);
       
-      expect(mockPush).toHaveBeenCalledTimes(1);
+      expect(screen.getByText('Developer Dashboard')).toBeInTheDocument();
     });
   });
 
-  describe('Loading State', () => {
-    it('shows loading state while redirecting', () => {
+  describe('Dashboard Content', () => {
+    it('shows the overview section', () => {
       render(<Home />);
       
-      expect(screen.getByText('Redirecting to Developer Dashboard...')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Overview' })).toBeInTheDocument();
     });
 
-    it('displays the correct loading message', () => {
+    it('displays the stats grid', () => {
       render(<Home />);
       
-      expect(screen.getByText('Redirecting to Developer Dashboard...')).toBeInTheDocument();
+      expect(screen.getByText('Active Assistants')).toBeInTheDocument();
+      expect(screen.getByText('Active Calls')).toBeInTheDocument();
     });
   });
 
   describe('Styling', () => {
-    it('applies correct text styling to the message', () => {
+    it('applies correct dashboard styling', () => {
       render(<Home />);
       
-      const message = screen.getByText('Redirecting to Developer Dashboard...');
-      expect(message).toHaveClass('mt-4', 'text-lg');
+      const dashboard = screen.getByText('Developer Dashboard');
+      expect(dashboard).toBeInTheDocument();
     });
 
-    it('applies correct container styling', () => {
+    it('applies correct sidebar styling', () => {
       render(<Home />);
       
-      const textCenter = screen.getByText('Redirecting to Developer Dashboard...').parentElement;
-      expect(textCenter).toHaveClass('text-center');
+      expect(screen.getByText('Control Center')).toBeInTheDocument();
     });
   });
 

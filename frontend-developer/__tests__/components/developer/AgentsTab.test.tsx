@@ -1,22 +1,22 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import AgentsTab from '@/app/developer/components/AgentsTab';
+import AgentsTab from '@/app/components/AgentsTab';
 
 // Mock the config components
-jest.mock('@/app/developer/components/config/ModelConfig', () => {
+jest.mock('@/app/components/config/ModelConfig', () => {
   return function MockModelConfig() {
     return <div data-testid="model-config">Model Configuration</div>;
   };
 });
 
-jest.mock('@/app/developer/components/config/VoiceConfig', () => {
+jest.mock('@/app/components/config/VoiceConfig', () => {
   return function MockVoiceConfig() {
     return <div data-testid="voice-config">Voice Configuration</div>;
   };
 });
 
-jest.mock('@/app/developer/components/config/TranscriberConfig', () => {
+jest.mock('@/app/components/config/TranscriberConfig', () => {
   return function MockTranscriberConfig() {
     return <div data-testid="transcriber-config">Transcriber Configuration</div>;
   };

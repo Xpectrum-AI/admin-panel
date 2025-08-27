@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import WhatsAppTab from '@/app/developer/components/WhatsAppTab';
+import WhatsAppTab from '@/app/components/WhatsAppTab';
 
 describe('WhatsAppTab', () => {
   const user = userEvent.setup();

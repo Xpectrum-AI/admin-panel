@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import TranscriberConfig from '@/app/developer/components/config/TranscriberConfig';
+import TranscriberConfig from '@/app/components/config/TranscriberConfig';
 
 describe('TranscriberConfig', () => {
   const user = userEvent.setup();
