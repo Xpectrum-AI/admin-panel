@@ -148,8 +148,8 @@ class AdminPanelDeploymentStack(Stack):
             # Add deployment configuration to prevent warnings
             min_healthy_percent=100,
             max_healthy_percent=200,
-            # Use explicit service name from configuration
-            service_name=config['service_name']
+            # Use unique service name to avoid conflicts
+            service_name=f"{config['service_name']}-v2"
         )
 
         # Fargate Service - Developer Frontend (1 task)
@@ -162,8 +162,8 @@ class AdminPanelDeploymentStack(Stack):
             # Add deployment configuration to prevent warnings
             min_healthy_percent=100,
             max_healthy_percent=200,
-            # Use explicit service name from configuration
-            service_name=config['developer_service_name']
+            # Use unique service name to avoid conflicts
+            service_name=f"{config['developer_service_name']}-v2"
         )
 
         # ALB
