@@ -38,29 +38,33 @@ describe('SMSTab', () => {
   });
 
   describe('Tab Navigation', () => {
-    it('renders inbound and outbound tabs', () => {
+     it('renders conversations, configuration, analytics, and health tabs', () => {
       render(<SMSTab />);
       
-      expect(screen.getByText('Inbound')).toBeInTheDocument();
-      expect(screen.getByText('Outbound')).toBeInTheDocument();
+      expect(screen.getByText('Conversations')).toBeInTheDocument();
+      expect(screen.getByText('Configuration')).toBeInTheDocument();
+      expect(screen.getByText('Analytics')).toBeInTheDocument();
+      expect(screen.getByText('System Health')).toBeInTheDocument();
     });
 
-    it('shows inbound tab as active by default', () => {
+    it('shows conversations tab as active by default', () => {
       render(<SMSTab />);
       
-      const inboundTab = screen.getByText('Inbound');
-      expect(inboundTab).toBeInTheDocument();
+      const conversationsTab = screen.getByText('Conversations');
+      expect(conversationsTab).toBeInTheDocument();
     });
 
-    it('allows switching between inbound and outbound tabs', async () => {
+    it('allows switching between tabs', async () => {
       render(<SMSTab />);
       
-      const outboundTab = screen.getByText('Outbound');
-      await user.click(outboundTab);
+      const configurationTab = screen.getByText('Configuration');
+      await user.click(configurationTab);
       
-      // Both tabs should still be visible
-      expect(screen.getByText('Inbound')).toBeInTheDocument();
-      expect(screen.getByText('Outbound')).toBeInTheDocument();
+      // All tabs should still be visible
+      expect(screen.getByText('Conversations')).toBeInTheDocument();
+      expect(screen.getByText('Configuration')).toBeInTheDocument();
+      expect(screen.getByText('Analytics')).toBeInTheDocument();
+      expect(screen.getByText('System Health')).toBeInTheDocument();
     });
   });
 
