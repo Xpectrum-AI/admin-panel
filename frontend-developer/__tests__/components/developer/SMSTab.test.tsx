@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import SMSTab from '@/app/developer/components/SMSTab';
+import SMSTab from '@/app/components/SMSTab';
 
 describe('SMSTab', () => {
   const user = userEvent.setup();

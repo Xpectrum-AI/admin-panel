@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import PhoneNumbersTab from '@/app/developer/components/PhoneNumbersTab';
+import PhoneNumbersTab from '@/app/components/PhoneNumbersTab';
 
 describe('PhoneNumbersTab', () => {
   const user = userEvent.setup();

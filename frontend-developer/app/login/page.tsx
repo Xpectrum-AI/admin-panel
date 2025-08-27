@@ -110,7 +110,7 @@ export default function Login() {
   const { showError, showSuccess } = useErrorHandler();
 
   const handleGoogleLogin = () => {
-    const redirectUrl = '/developer';
+    const redirectUrl = '/';
     window.location.href = `${process.env.NEXT_PUBLIC_PROPELAUTH_URL}/google/login?scope=openid+email+profile&external_param_access_type=offline&external_param_prompt=consent&redirect_uri=${encodeURIComponent(redirectUrl)}`;
     showSuccess('Redirecting to OAuth login');
   }
@@ -169,7 +169,7 @@ export default function Login() {
           
           showSuccess('Login successful! You will be redirected to dashboard.');
           // Redirect to developer dashboard
-          window.location.href = '/developer';
+          window.location.href = '/';
         },
         passwordLoginDisabled() {
           showError('Password login is disabled.');

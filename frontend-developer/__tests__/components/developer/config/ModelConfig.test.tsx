@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import ModelConfig from '@/app/developer/components/config/ModelConfig';
+import ModelConfig from '@/app/components/config/ModelConfig';
 
 describe('ModelConfig', () => {
   const user = userEvent.setup();

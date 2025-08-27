@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import VoiceConfig from '@/app/developer/components/config/VoiceConfig';
+import VoiceConfig from '@/app/components/config/VoiceConfig';
 
 describe('VoiceConfig', () => {
   const user = userEvent.setup();
