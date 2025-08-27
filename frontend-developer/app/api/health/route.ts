@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { createSuccessResponse, handleApiError } from '@/lib/utils/apiResponse';
 
 export async function GET() {
   try {
@@ -10,12 +9,10 @@ export async function GET() {
       version: '1.0.0',
       environment: process.env.NODE_ENV || 'development',
       port: process.env.PORT || 3000,
-      // Additional health information
       uptime: process.uptime(),
       memory: process.memoryUsage(),
       platform: process.platform,
       nodeVersion: process.version,
-      // Developer frontend specific APIs
       apis: {
         auth: '/api/auth',
         user: '/api/user',
@@ -23,8 +20,19 @@ export async function GET() {
       }
     };
 
-    return createSuccessResponse(healthData, 'Health check completed successfully');
+    return NextResponse.json({
+      success: true,
+      message: 'Health check completed successfully',
+      data: healthData,
+      timestamp: new Date().toISOString()
+    }, { status: 200 });
   } catch (error) {
-    return handleApiError(error, 'Health API');
+    console.error('Health API Error:', error);
+    return NextResponse.json({
+      success: false,
+      message: 'Health API operation failed',
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      timestamp: new Date().toISOString()
+    }, { status: 500 });
   }
 }
