@@ -227,7 +227,7 @@ class AdminPanelDeploymentStack(Stack):
         elbv2.ApplicationListenerRule(
             self, f"{config['stack_name']}DeveloperRule",
             listener=https_listener,
-            priority=1,  # Higher priority than default
+            priority=10,  # Use priority 10 to avoid conflicts
             conditions=[
                 elbv2.ListenerCondition.path_patterns(["/developer", "/developer/*"])
             ],
@@ -243,7 +243,7 @@ class AdminPanelDeploymentStack(Stack):
         CfnOutput(self, "ClusterName", value=cluster.cluster_name)
         CfnOutput(self, "MainServiceName", value=main_service.service_name)
         CfnOutput(self, "DeveloperServiceName", value=developer_service.service_name)
-        CfnOutput(self, "DeploymentVersion", value="v4.0")  # Updated version with proper routing
+        CfnOutput(self, "DeploymentVersion", value="v4.1")  # Fixed priority conflict
         
         if is_release_env:
             CfnOutput(self, "ReleaseInfo", value=f"Release environment deployed with HTTPS support")
