@@ -112,27 +112,33 @@ jobs:
           echo "Stack does not exist yet, skipping wait"
         fi
 
-    - name: Get ALB DNS name
+    - name: Get ALB DNS names
       id: alb-dns
       run: |
-        # Try to get FrontendURL first using a more reliable query
-        DNS_NAME=$(aws cloudformation describe-stacks \
+        # Try to get DoctorServiceURL and DeveloperServiceURL
+        DOCTOR_DNS=$(aws cloudformation describe-stacks \
           --stack-name AdminPanelProductionStack \
           --region ${{ env.AWS_REGION }} \
-          --query 'Stacks[0].Outputs[?OutputKey==`FrontendURL`].OutputValue' \
+          --query 'Stacks[0].Outputs[?OutputKey==`DoctorServiceURL`].OutputValue' \
           --output text)
         
-        # If FrontendURL is not available, use LoadBalancerDNS and construct HTTPS URL
-        if [ -z "$DNS_NAME" ] || [ "$DNS_NAME" = "None" ]; then
-          echo "FrontendURL not found, using LoadBalancerDNS..."
-          LB_DNS=$(aws cloudformation describe-stacks \
+        DEVELOPER_DNS=$(aws cloudformation describe-stacks \
+          --stack-name AdminPanelProductionStack \
+          --region ${{ env.AWS_REGION }} \
+          --query 'Stacks[0].Outputs[?OutputKey==`DeveloperServiceURL`].OutputValue' \
+          --output text)
+        
+        # If URLs are not available, use LoadBalancerDNS and construct HTTPS URLs
+        if [ -z "$DOCTOR_DNS" ] || [ "$DOCTOR_DNS" = "None" ]; then
+          echo "DoctorServiceURL not found, using DoctorLoadBalancerDNS..."
+          DOCTOR_LB_DNS=$(aws cloudformation describe-stacks \
             --stack-name AdminPanelProductionStack \
             --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`LoadBalancerDNS`].OutputValue' \
+            --query 'Stacks[0].Outputs[?OutputKey==`DoctorLoadBalancerDNS`].OutputValue' \
             --output text)
           
-          if [ -z "$LB_DNS" ] || [ "$LB_DNS" = "None" ]; then
-            echo "Error: Could not get LoadBalancerDNS from CloudFormation stack"
+          if [ -z "$DOCTOR_LB_DNS" ] || [ "$DOCTOR_LB_DNS" = "None" ]; then
+            echo "Error: Could not get DoctorLoadBalancerDNS from CloudFormation stack"
             echo "Available outputs:"
             aws cloudformation describe-stacks \
               --stack-name AdminPanelProductionStack \
@@ -142,35 +148,65 @@ jobs:
             exit 1
           fi
           
-          DNS_NAME="https://$LB_DNS"
-          echo "Constructed URL: $DNS_NAME"
+          DOCTOR_DNS="https://$DOCTOR_LB_DNS"
+          echo "Constructed Doctor URL: $DOCTOR_DNS"
         fi
         
-        echo "alb-dns=$DNS_NAME" >> $GITHUB_OUTPUT
+        if [ -z "$DEVELOPER_DNS" ] || [ "$DEVELOPER_DNS" = "None" ]; then
+          echo "DeveloperServiceURL not found, using DeveloperLoadBalancerDNS..."
+          DEVELOPER_LB_DNS=$(aws cloudformation describe-stacks \
+            --stack-name AdminPanelProductionStack \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`DeveloperLoadBalancerDNS`].OutputValue' \
+            --output text)
+          
+          if [ -z "$DEVELOPER_LB_DNS" ] || [ "$DEVELOPER_LB_DNS" = "None" ]; then
+            echo "Error: Could not get DeveloperLoadBalancerDNS from CloudFormation stack"
+            echo "Available outputs:"
+            aws cloudformation describe-stacks \
+              --stack-name AdminPanelProductionStack \
+              --region ${{ env.AWS_REGION }} \
+              --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
+              --output table
+            exit 1
+          fi
+          
+          DEVELOPER_DNS="https://$DEVELOPER_LB_DNS"
+          echo "Constructed Developer URL: $DEVELOPER_DNS"
+        fi
+        
+        echo "doctor-dns=$DOCTOR_DNS" >> $GITHUB_OUTPUT
+        echo "developer-dns=$DEVELOPER_DNS" >> $GITHUB_OUTPUT
 
     - name: Health check
       run: |
         # Wait for services to be fully ready
         sleep 60
         
-        # Get ALB DNS name (try FrontendURL first, fallback to LoadBalancerDNS)
-        DNS_NAME=$(aws cloudformation describe-stacks \
+        # Get ALB DNS names for both services
+        DOCTOR_DNS=$(aws cloudformation describe-stacks \
           --stack-name AdminPanelProductionStack \
           --region ${{ env.AWS_REGION }} \
-          --query 'Stacks[0].Outputs[?OutputKey==`FrontendURL`].OutputValue' \
+          --query 'Stacks[0].Outputs[?OutputKey==`DoctorServiceURL`].OutputValue' \
           --output text)
         
-        # If FrontendURL is not available, use LoadBalancerDNS and construct HTTPS URL
-        if [ -z "$DNS_NAME" ] || [ "$DNS_NAME" = "None" ]; then
-          echo "FrontendURL not found, using LoadBalancerDNS..."
-          LB_DNS=$(aws cloudformation describe-stacks \
+        DEVELOPER_DNS=$(aws cloudformation describe-stacks \
+          --stack-name AdminPanelProductionStack \
+          --region ${{ env.AWS_REGION }} \
+          --query 'Stacks[0].Outputs[?OutputKey==`DeveloperServiceURL`].OutputValue' \
+          --output text)
+        
+        # If URLs are not available, use LoadBalancerDNS and construct HTTPS URLs
+        if [ -z "$DOCTOR_DNS" ] || [ "$DOCTOR_DNS" = "None" ]; then
+          echo "DoctorServiceURL not found, using DoctorLoadBalancerDNS..."
+          DOCTOR_LB_DNS=$(aws cloudformation describe-stacks \
             --stack-name AdminPanelProductionStack \
             --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`LoadBalancerDNS`].OutputValue' \
+            --query 'Stacks[0].Outputs[?OutputKey==`DoctorLoadBalancerDNS`].OutputValue' \
             --output text)
           
-          if [ -z "$LB_DNS" ] || [ "$LB_DNS" = "None" ]; then
-            echo "Error: Could not get LoadBalancerDNS from CloudFormation stack"
+          if [ -z "$DOCTOR_LB_DNS" ] || [ "$DOCTOR_LB_DNS" = "None" ]; then
+            echo "Error: Could not get DoctorLoadBalancerDNS from CloudFormation stack"
             echo "Available outputs:"
             aws cloudformation describe-stacks \
               --stack-name AdminPanelProductionStack \
@@ -180,22 +216,43 @@ jobs:
             exit 1
           fi
           
-          DNS_NAME="https://$LB_DNS"
-          echo "Constructed URL: $DNS_NAME"
+          DOCTOR_DNS="https://$DOCTOR_LB_DNS"
+          echo "Constructed Doctor URL: $DOCTOR_DNS"
         fi
         
-        # Extract just the hostname from the URL
-        HOSTNAME=$(echo $DNS_NAME | sed 's|https://||')
+        if [ -z "$DEVELOPER_DNS" ] || [ "$DEVELOPER_DNS" = "None" ]; then
+          echo "DeveloperServiceURL not found, using DeveloperLoadBalancerDNS..."
+          DEVELOPER_LB_DNS=$(aws cloudformation describe-stacks \
+            --stack-name AdminPanelProductionStack \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`DeveloperLoadBalancerDNS`].OutputValue' \
+            --output text)
+          
+          if [ -z "$DEVELOPER_LB_DNS" ] || [ "$DEVELOPER_LB_DNS" = "None" ]; then
+            echo "Error: Could not get DeveloperLoadBalancerDNS from CloudFormation stack"
+            echo "Available outputs:"
+            aws cloudformation describe-stacks \
+              --stack-name AdminPanelProductionStack \
+              --region ${{ env.AWS_REGION }} \
+              --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
+              --output table
+            exit 1
+          fi
+          
+          DEVELOPER_DNS="https://$DEVELOPER_LB_DNS"
+          echo "Constructed Developer URL: $DEVELOPER_DNS"
+        fi
         
-        echo "Testing health endpoints on: $HOSTNAME"
+        echo "Testing Doctor service health endpoints on: $DOCTOR_DNS"
+        echo "Testing Developer service health endpoints on: $DEVELOPER_DNS"
         
-        # Health checks for main frontend
-        curl -f -k "https://$HOSTNAME/" || exit 1
-        curl -f -k "https://$HOSTNAME/api/health" || exit 1
+        # Health checks for Doctor service (main frontend)
+        curl -f -k "$DOCTOR_DNS/" || exit 1
+        curl -f -k "$DOCTOR_DNS/api/health" || exit 1
         
-        # Health checks for developer frontend
-        curl -f -k "https://$HOSTNAME/developer" || exit 1
-        curl -f -k "https://$HOSTNAME/developer/api/health" || exit 1
+        # Health checks for Developer service (separate domain)
+        curl -f -k "$DEVELOPER_DNS/" || exit 1
+        curl -f -k "$DEVELOPER_DNS/api/health" || exit 1
 
     - name: Force restart ECS services
       run: |

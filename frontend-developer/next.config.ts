@@ -3,9 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: 'standalone',
   
-  // Keep basePath for developer dashboard - this is correct
-  basePath: '/developer',
-  assetPrefix: '/developer',
+  // Remove basePath since we're now using separate domains
+  // basePath: '/developer',
+  // assetPrefix: '/developer',
   
   eslint: {
     ignoreDuringBuilds: true,
@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
     // Build-time environment variables
   },
   
-  // Configure rewrites to handle API routes properly within basePath
+  // Configure rewrites to handle API routes properly
   async rewrites() {
     return {
       beforeFiles: [],
@@ -38,8 +38,8 @@ const nextConfig: NextConfig = {
   // Handle trailing slashes consistently
   trailingSlash: false,
   
-  // Optimize for production
-  swcMinify: true,
+  // Optimize for production (swcMinify is deprecated in Next.js 15+)
+  // swcMinify: true,
   
   // Configure headers for better performance
   async headers() {

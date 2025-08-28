@@ -15,7 +15,7 @@ describe('ProtectedRoute', () => {
   describe('Rendering', () => {
     it('renders children when client-side hydration is complete', () => {
       const { usePathname } = require('next/navigation');
-      usePathname.mockReturnValue('/developer');
+      usePathname.mockReturnValue('/');
       
       render(<ProtectedRoute>Test Content</ProtectedRoute>);
       
@@ -57,7 +57,7 @@ describe('ProtectedRoute', () => {
 
     it('allows access to protected routes (development bypass)', () => {
       const { usePathname } = require('next/navigation');
-      usePathname.mockReturnValue('/developer');
+      usePathname.mockReturnValue('/');
       
       render(<ProtectedRoute>Developer Content</ProtectedRoute>);
       
