@@ -31,7 +31,7 @@ RUN npm ci --prefer-offline --no-audit --production=false && \
     rm -rf /root/.npm
 
 # Add cache-busting timestamp
-RUN echo "Build timestamp: $(date +%s)" > .build-timestamp
+RUN echo "Build timestamp: $(date +%s) - v4.0 proper routing fix" > .build-timestamp
 
 # Copy source files
 COPY . .

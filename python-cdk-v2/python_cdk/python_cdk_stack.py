@@ -169,7 +169,7 @@ class AdminPanelDeploymentStack(Stack):
         # ALB
         lb = elbv2.ApplicationLoadBalancer(self, f"{config['stack_name']}ALB", vpc=vpc, internet_facing=True)
         
-        # 所有环境都使用HTTPS
+        # HTTPS listener
         https_listener = lb.add_listener(
             "HttpsListener",
             port=443,
@@ -178,7 +178,7 @@ class AdminPanelDeploymentStack(Stack):
             open=True
         )
         
-        # HTTP listener - 重定向到HTTPS
+        # HTTP listener - redirect to HTTPS
         lb.add_listener(
             "HttpListener",
             port=80,
@@ -190,37 +190,51 @@ class AdminPanelDeploymentStack(Stack):
             )
         )
         
-        # Add main frontend target to HTTPS listener (root path)
-        https_listener.add_targets(
-            "MainFrontendDefault",
+        # Create Target Groups explicitly
+        main_target_group = elbv2.ApplicationTargetGroup(
+            self, f"{config['stack_name']}MainTargetGroup",
             port=int(config['frontend_port']),
             protocol=elbv2.ApplicationProtocol.HTTP,
+            vpc=vpc,
             targets=[main_service],
             health_check=elbv2.HealthCheck(
-                path="/api/health", 
-                port=str(config['frontend_port']), 
+                path="/api/health",
+                port=str(config['frontend_port']),
+                healthy_http_codes="200-399"
+            )
+        )
+        
+        developer_target_group = elbv2.ApplicationTargetGroup(
+            self, f"{config['stack_name']}DeveloperTargetGroup",
+            port=int(config['frontend_developer_port']),
+            protocol=elbv2.ApplicationProtocol.HTTP,
+            vpc=vpc,
+            targets=[developer_service],
+            health_check=elbv2.HealthCheck(
+                path="/api/health",
+                port=str(config['frontend_developer_port']),
                 healthy_http_codes="200-399"
             )
         )
 
-        # Add developer frontend target to HTTPS listener (/developer path)
-        https_listener.add_targets(
-            "DeveloperFrontendPath",
-            port=int(config['frontend_developer_port']),
-            protocol=elbv2.ApplicationProtocol.HTTP,
-            targets=[developer_service],
-            priority=1,
-            health_check=elbv2.HealthCheck(
-                path="/api/health", 
-                port=str(config['frontend_developer_port']), 
-                healthy_http_codes="200-399"
-            ),
-            conditions=[
-                elbv2.ListenerCondition.path_patterns(["/developer*"])
-            ]
+        # Default action for HTTPS listener (Doctor Dashboard - root path)
+        https_listener.add_action(
+            "DefaultAction",
+            action=elbv2.ListenerAction.forward([main_target_group])
         )
 
-        # 所有环境都输出HTTPS URL
+        # Rule for Developer Dashboard (/developer path) - Higher priority
+        elbv2.ApplicationListenerRule(
+            self, f"{config['stack_name']}DeveloperRule",
+            listener=https_listener,
+            priority=1,  # Higher priority than default
+            conditions=[
+                elbv2.ListenerCondition.path_patterns(["/developer", "/developer/*"])
+            ],
+            action=elbv2.ListenerAction.forward([developer_target_group])
+        )
+
+        # Output the URLs
         CfnOutput(self, "FrontendURL", value=f"https://{lb.load_balancer_dns_name}")
         CfnOutput(self, "DeveloperFrontendURL", value=f"https://{lb.load_balancer_dns_name}/developer")
         CfnOutput(self, "LoadBalancerDNS", value=lb.load_balancer_dns_name)
@@ -229,7 +243,7 @@ class AdminPanelDeploymentStack(Stack):
         CfnOutput(self, "ClusterName", value=cluster.cluster_name)
         CfnOutput(self, "MainServiceName", value=main_service.service_name)
         CfnOutput(self, "DeveloperServiceName", value=developer_service.service_name)
-        CfnOutput(self, "DeploymentVersion", value="v2.8")  # Force redeployment with NODE_ENV fix
+        CfnOutput(self, "DeploymentVersion", value="v4.0")  # Updated version with proper routing
         
         if is_release_env:
             CfnOutput(self, "ReleaseInfo", value=f"Release environment deployed with HTTPS support")

@@ -2,37 +2,34 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const healthData = {
+    // Health check for Developer Dashboard
+    return NextResponse.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      service: 'developer-frontend',
-      version: '1.0.0',
+      service: 'developer-dashboard',
       environment: process.env.NODE_ENV || 'development',
-      port: process.env.PORT || 3000,
-      uptime: process.uptime(),
-      memory: process.memoryUsage(),
-      platform: process.platform,
-      nodeVersion: process.version,
-      apis: {
-        auth: '/api/auth',
-        user: '/api/user',
-        health: '/api/health'
+      basePath: '/developer',
+      version: '1.0.0'
+    }, { 
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Content-Type': 'application/json'
       }
-    };
-
-    return NextResponse.json({
-      success: true,
-      message: 'Health check completed successfully',
-      data: healthData,
-      timestamp: new Date().toISOString()
-    }, { status: 200 });
+    });
   } catch (error) {
-    console.error('Health API Error:', error);
+    console.error('Developer dashboard health check failed:', error);
     return NextResponse.json({
-      success: false,
-      message: 'Health API operation failed',
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
-      timestamp: new Date().toISOString()
-    }, { status: 500 });
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      service: 'developer-dashboard',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, { 
+      status: 500,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Content-Type': 'application/json'
+      }
+    });
   }
 }
