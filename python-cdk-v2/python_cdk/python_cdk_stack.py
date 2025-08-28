@@ -101,15 +101,24 @@ class AdminPanelDeploymentStack(Stack):
         is_release_env = environment == 'release'
         
 
-        if is_new_account:
+        # Certificate configuration for different environments
+        if environment == 'development':
+            # Development certificate (covers both admin-dev and developer-dev domains)
             certificate = acm.Certificate.from_certificate_arn(
                 self, f"{config['stack_name']}Cert",
-                "arn:aws:acm:us-west-1:503561436224:certificate/e4c6c688-9d4f-48ce-b3fa-5972d8fe2b57" 
+                "arn:aws:acm:us-west-1:641623447164:certificate/9b1d1f93-1039-4222-bcde-312f7198c82d"
+            )
+        elif environment in ['production', 'release']:
+            # Production/Release certificate (account 503561436224 - wildcard certificate)
+            certificate = acm.Certificate.from_certificate_arn(
+                self, f"{config['stack_name']}Cert",
+                "arn:aws:acm:us-west-1:503561436224:certificate/e4c6c688-9d4f-48ce-b3fa-5972d8fe2b57"
             )
         else:
+            # Fallback for any other environment
             certificate = acm.Certificate.from_certificate_arn(
                 self, f"{config['stack_name']}Cert",
-                "arn:aws:acm:us-west-1:641623447164:certificate/6052b1be-e882-452c-8575-cedd01bb9fbc"
+                "arn:aws:acm:us-west-1:641623447164:certificate/9b1d1f93-1039-4222-bcde-312f7198c82d"
             )
 
         # Fargate Task Definition - Main Frontend (Doctor Service)
