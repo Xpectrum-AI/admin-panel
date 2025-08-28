@@ -229,7 +229,7 @@ class AdminPanelDeploymentStack(Stack):
         CfnOutput(self, "ClusterName", value=cluster.cluster_name)
         CfnOutput(self, "MainServiceName", value=main_service.service_name)
         CfnOutput(self, "DeveloperServiceName", value=developer_service.service_name)
-        CfnOutput(self, "DeploymentVersion", value="v2.6")  # Force redeployment with rewrites fix
+        CfnOutput(self, "DeploymentVersion", value="v2.8")  # Force redeployment with NODE_ENV fix
         
         if is_release_env:
             CfnOutput(self, "ReleaseInfo", value=f"Release environment deployed with HTTPS support")
