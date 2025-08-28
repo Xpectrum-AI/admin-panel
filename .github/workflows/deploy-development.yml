@@ -125,6 +125,7 @@ jobs:
         # Build, tag, and push developer frontend with environment variables
         cd frontend-developer
         docker build \
+          --no-cache \
           --build-arg NEXT_PUBLIC_LIVE_API_URL="${NEXT_PUBLIC_LIVE_API_URL}" \
           --build-arg NEXT_PUBLIC_PROPELAUTH_URL="${NEXT_PUBLIC_PROPELAUTH_URL}" \
           --build-arg NEXT_PUBLIC_LIVE_API_KEY="${NEXT_PUBLIC_LIVE_API_KEY}" \
