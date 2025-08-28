@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  basePath: '/developer',
+  assetPrefix: '/developer',
   eslint: {
     ignoreDuringBuilds: true,  // Skip ESLint during build
   },
@@ -19,11 +21,6 @@ const nextConfig: NextConfig = {
       {
         source: '/api/runtime-config',
         destination: '/api/runtime-config',
-      },
-      // Handle /developer path routing
-      {
-        source: '/developer/:path*',
-        destination: '/:path*',
       },
     ];
   },
