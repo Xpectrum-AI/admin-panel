@@ -148,8 +148,8 @@ class AdminPanelDeploymentStack(Stack):
             # Add deployment configuration to prevent warnings
             min_healthy_percent=100,
             max_healthy_percent=200,
-            # Use unique service name to avoid conflicts
-            service_name=f"{config['service_name']}-v2"
+            # Use the configured service name
+            service_name=config['service_name']
         )
 
         # Fargate Service - Developer Frontend (1 task)
@@ -162,8 +162,8 @@ class AdminPanelDeploymentStack(Stack):
             # Add deployment configuration to prevent warnings
             min_healthy_percent=100,
             max_healthy_percent=200,
-            # Use unique service name to avoid conflicts
-            service_name=f"{config['developer_service_name']}-v2"
+            # Use the configured service name
+            service_name=config['developer_service_name']
         )
 
         # ALB
@@ -229,6 +229,7 @@ class AdminPanelDeploymentStack(Stack):
         CfnOutput(self, "ClusterName", value=cluster.cluster_name)
         CfnOutput(self, "MainServiceName", value=main_service.service_name)
         CfnOutput(self, "DeveloperServiceName", value=developer_service.service_name)
+        CfnOutput(self, "DeploymentVersion", value="v2.1")  # Force redeployment
         
         if is_release_env:
             CfnOutput(self, "ReleaseInfo", value=f"Release environment deployed with HTTPS support")
