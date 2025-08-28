@@ -8,7 +8,7 @@ export async function GET() {
       timestamp: new Date().toISOString(),
       service: 'developer-dashboard',
       environment: process.env.NODE_ENV || 'development',
-      domain: 'developer-service',
+      domain: 'developer-dev.xpectrum-ai.com',
       version: '1.0.0'
     }, { 
       status: 200,
