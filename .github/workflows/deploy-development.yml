@@ -228,46 +228,61 @@ jobs:
           echo "Stack does not exist yet, skipping wait"
         fi
 
-    - name: Get ALB DNS name
+    - name: Get ALB DNS names
       id: alb-dns
       run: |
-        DNS_NAME=$(aws cloudformation describe-stacks \
+        DOCTOR_DNS=$(aws cloudformation describe-stacks \
           --stack-name AdminPanelDevelopmentStack \
-          --query 'Stacks[0].Outputs[?OutputKey==`FrontendURL`].OutputValue' \
+          --query 'Stacks[0].Outputs[?OutputKey==`DoctorServiceURL`].OutputValue' \
           --output text \
           --region ${{ env.AWS_REGION }})
-        echo "alb-dns=$DNS_NAME" >> $GITHUB_OUTPUT
+        DEVELOPER_DNS=$(aws cloudformation describe-stacks \
+          --stack-name AdminPanelDevelopmentStack \
+          --query 'Stacks[0].Outputs[?OutputKey==`DeveloperServiceURL`].OutputValue' \
+          --output text \
+          --region ${{ env.AWS_REGION }})
+        echo "doctor-dns=$DOCTOR_DNS" >> $GITHUB_OUTPUT
+        echo "developer-dns=$DEVELOPER_DNS" >> $GITHUB_OUTPUT
 
     - name: Health check
       run: |
         # Wait for services to be fully ready
         sleep 60
         
-        # Get ALB DNS name
-        DNS_NAME=$(aws cloudformation describe-stacks \
+        # Get ALB DNS names for both services
+        DOCTOR_DNS=$(aws cloudformation describe-stacks \
           --stack-name AdminPanelDevelopmentStack \
-          --query 'Stacks[0].Outputs[?OutputKey==`FrontendURL`].OutputValue' \
+          --query 'Stacks[0].Outputs[?OutputKey==`DoctorServiceURL`].OutputValue' \
           --output text \
           --region ${{ env.AWS_REGION }})
         
-        # Check if DNS_NAME is not empty
-        if [ -z "$DNS_NAME" ] || [ "$DNS_NAME" = "None" ]; then
-          echo "Error: Could not get DNS name from CloudFormation stack"
+        DEVELOPER_DNS=$(aws cloudformation describe-stacks \
+          --stack-name AdminPanelDevelopmentStack \
+          --query 'Stacks[0].Outputs[?OutputKey==`DeveloperServiceURL`].OutputValue' \
+          --output text \
+          --region ${{ env.AWS_REGION }})
+        
+        # Check if DNS names are not empty
+        if [ -z "$DOCTOR_DNS" ] || [ "$DOCTOR_DNS" = "None" ]; then
+          echo "Error: Could not get Doctor service DNS name from CloudFormation stack"
           exit 1
         fi
         
-        # Extract just the hostname from the URL
-        HOSTNAME=$(echo $DNS_NAME | sed 's|https://||')
+        if [ -z "$DEVELOPER_DNS" ] || [ "$DEVELOPER_DNS" = "None" ]; then
+          echo "Error: Could not get Developer service DNS name from CloudFormation stack"
+          exit 1
+        fi
         
-        echo "Testing health endpoints on: $HOSTNAME"
+        echo "Testing Doctor service health endpoints on: $DOCTOR_DNS"
+        echo "Testing Developer service health endpoints on: $DEVELOPER_DNS"
         
-        # Health checks for main frontend
-        curl -f -k "https://$HOSTNAME/" || exit 1
-        curl -f -k "https://$HOSTNAME/api/health" || exit 1
+        # Health checks for Doctor service (main frontend)
+        curl -f -k "$DOCTOR_DNS/" || exit 1
+        curl -f -k "$DOCTOR_DNS/api/health" || exit 1
         
-        # Health checks for developer frontend
-        curl -f -k "https://$HOSTNAME/developer" || exit 1
-        curl -f -k "https://$HOSTNAME/developer/api/health" || exit 1
+        # Health checks for Developer service (separate domain)
+        curl -f -k "$DEVELOPER_DNS/" || exit 1
+        curl -f -k "$DEVELOPER_DNS/api/health" || exit 1
         
         echo "=== VERIFYING DEPLOYED ENVIRONMENT VARIABLES ==="
         # Get ECS task details to verify environment variables

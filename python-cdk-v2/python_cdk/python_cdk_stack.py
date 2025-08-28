@@ -21,8 +21,10 @@ class AdminPanelDeploymentStack(Stack):
         # Environment-specific configurations
         env_configs = {
             'development': {
-                'domain': 'admin-dev.xpectrum-ai.com',
+                'doctor_domain': 'admin-dev.xpectrum-ai.com',
+                'developer_domain': 'developer-dev.xpectrum-ai.com',
                 'auth_domain': 'auth.admin-dev.xpectrum-ai.com',
+                'developer_auth_domain': 'auth.developer-dev.xpectrum-ai.com',
                 'frontend_tag': 'frontend-development',
                 'frontend_developer_tag': 'frontend-developer-development',
                 'frontend_port': '3000',
@@ -33,8 +35,10 @@ class AdminPanelDeploymentStack(Stack):
                 'developer_service_name': 'admin-panel-developer-service-development'
             },
             'production': {
-                'domain': 'admin.xpectrum-ai.com',
+                'doctor_domain': 'admin.xpectrum-ai.com',
+                'developer_domain': 'developer.xpectrum-ai.com',
                 'auth_domain': 'auth.admin.xpectrum-ai.com',
+                'developer_auth_domain': 'auth.developer.xpectrum-ai.com',
                 'frontend_tag': 'frontend-latest',
                 'frontend_developer_tag': 'frontend-developer-latest',
                 'frontend_port': '3000',
@@ -45,8 +49,10 @@ class AdminPanelDeploymentStack(Stack):
                 'developer_service_name': 'admin-panel-developer-service-production'
             },
             'release': {
-                'domain': 'admin-release.xpectrum-ai.com',  
-                'auth_domain': 'auth.admin-release.xpectrum-ai.com',  
+                'doctor_domain': 'admin-release.xpectrum-ai.com',
+                'developer_domain': 'developer-release.xpectrum-ai.com',
+                'auth_domain': 'auth.admin-release.xpectrum-ai.com',
+                'developer_auth_domain': 'auth.developer-release.xpectrum-ai.com',
                 'frontend_tag': os.environ.get('RELEASE_IMAGE_TAG', 'frontend-release-latest'),
                 'frontend_developer_tag': os.environ.get('RELEASE_DEVELOPER_IMAGE_TAG', 'frontend-developer-release-latest'),
                 'frontend_port': '3000',
@@ -106,7 +112,7 @@ class AdminPanelDeploymentStack(Stack):
                 "arn:aws:acm:us-west-1:641623447164:certificate/6052b1be-e882-452c-8575-cedd01bb9fbc"
             )
 
-        # Fargate Task Definition - Main Frontend
+        # Fargate Task Definition - Main Frontend (Doctor Service)
         main_task = ecs.FargateTaskDefinition(self, f"{config['stack_name']}MainTask", memory_limit_mib=1024, cpu=512)
 
         # Main Frontend container
@@ -138,7 +144,7 @@ class AdminPanelDeploymentStack(Stack):
             port_mappings=[ecs.PortMapping(container_port=int(config['frontend_developer_port']))]
         )
 
-        # Fargate Service - Main Frontend (2 tasks)
+        # Fargate Service - Main Frontend (Doctor Service)
         main_service = ecs.FargateService(
             self, f"{config['stack_name']}MainService", 
             cluster=cluster, 
@@ -152,7 +158,7 @@ class AdminPanelDeploymentStack(Stack):
             service_name=config['service_name']
         )
 
-        # Fargate Service - Developer Frontend (1 task)
+        # Fargate Service - Developer Frontend
         developer_service = ecs.FargateService(
             self, f"{config['stack_name']}DeveloperService", 
             cluster=cluster, 
@@ -166,21 +172,47 @@ class AdminPanelDeploymentStack(Stack):
             service_name=config['developer_service_name']
         )
 
-        # ALB
-        lb = elbv2.ApplicationLoadBalancer(self, f"{config['stack_name']}ALB", vpc=vpc, internet_facing=True)
+        # Create separate load balancers for different services
         
-        # HTTPS listener
-        https_listener = lb.add_listener(
-            "HttpsListener",
+        # Load Balancer for Doctor Service
+        doctor_lb = elbv2.ApplicationLoadBalancer(self, f"{config['stack_name']}DoctorALB", vpc=vpc, internet_facing=True)
+        
+        # HTTPS listener for Doctor Service
+        doctor_https_listener = doctor_lb.add_listener(
+            "DoctorHttpsListener",
             port=443,
             certificates=[certificate],
             protocol=elbv2.ApplicationProtocol.HTTPS,
             open=True
         )
         
-        # HTTP listener - redirect to HTTPS
-        lb.add_listener(
-            "HttpListener",
+        # HTTP listener for Doctor Service - redirect to HTTPS
+        doctor_lb.add_listener(
+            "DoctorHttpListener",
+            port=80,
+            protocol=elbv2.ApplicationProtocol.HTTP,
+            default_action=elbv2.ListenerAction.redirect(
+                protocol="HTTPS",
+                port="443",
+                permanent=True
+            )
+        )
+        
+        # Load Balancer for Developer Service
+        developer_lb = elbv2.ApplicationLoadBalancer(self, f"{config['stack_name']}DeveloperALB", vpc=vpc, internet_facing=True)
+        
+        # HTTPS listener for Developer Service
+        developer_https_listener = developer_lb.add_listener(
+            "DeveloperHttpsListener",
+            port=443,
+            certificates=[certificate],
+            protocol=elbv2.ApplicationProtocol.HTTPS,
+            open=True
+        )
+        
+        # HTTP listener for Developer Service - redirect to HTTPS
+        developer_lb.add_listener(
+            "DeveloperHttpListener",
             port=80,
             protocol=elbv2.ApplicationProtocol.HTTP,
             default_action=elbv2.ListenerAction.redirect(
@@ -217,34 +249,32 @@ class AdminPanelDeploymentStack(Stack):
             )
         )
 
-        # Default action for HTTPS listener (Doctor Dashboard - root path)
-        https_listener.add_action(
-            "DefaultAction",
+        # Default action for Doctor Service HTTPS listener (root path)
+        doctor_https_listener.add_action(
+            "DoctorDefaultAction",
             action=elbv2.ListenerAction.forward([main_target_group])
         )
 
-        # Rule for Developer Dashboard (/developer path) - Higher priority
-        elbv2.ApplicationListenerRule(
-            self, f"{config['stack_name']}DeveloperRule",
-            listener=https_listener,
-            priority=10,  # Use priority 10 to avoid conflicts
-            conditions=[
-                elbv2.ListenerCondition.path_patterns(["/developer", "/developer/*"])
-            ],
+        # Default action for Developer Service HTTPS listener (root path)
+        developer_https_listener.add_action(
+            "DeveloperDefaultAction",
             action=elbv2.ListenerAction.forward([developer_target_group])
         )
 
         # Output the URLs
-        CfnOutput(self, "FrontendURL", value=f"https://{lb.load_balancer_dns_name}")
-        CfnOutput(self, "DeveloperFrontendURL", value=f"https://{lb.load_balancer_dns_name}/developer")
-        CfnOutput(self, "LoadBalancerDNS", value=lb.load_balancer_dns_name)
+        CfnOutput(self, "DoctorServiceURL", value=f"https://{config['doctor_domain']}")
+        CfnOutput(self, "DeveloperServiceURL", value=f"https://{config['developer_domain']}")
+        CfnOutput(self, "DoctorAuthDomain", value=config['auth_domain'])
+        CfnOutput(self, "DeveloperAuthDomain", value=config['developer_auth_domain'])
+        CfnOutput(self, "DoctorLoadBalancerDNS", value=doctor_lb.load_balancer_dns_name)
+        CfnOutput(self, "DeveloperLoadBalancerDNS", value=developer_lb.load_balancer_dns_name)
         CfnOutput(self, "Environment", value=environment)
         CfnOutput(self, "AccountID", value=current_account)
         CfnOutput(self, "ClusterName", value=cluster.cluster_name)
         CfnOutput(self, "MainServiceName", value=main_service.service_name)
         CfnOutput(self, "DeveloperServiceName", value=developer_service.service_name)
-        CfnOutput(self, "DeploymentVersion", value="v4.1")  # Fixed priority conflict
+        CfnOutput(self, "DeploymentVersion", value="v4.3")  # Updated version for separate domains and auth
         
         if is_release_env:
-            CfnOutput(self, "ReleaseInfo", value=f"Release environment deployed with HTTPS support")
-            CfnOutput(self, "NextStep", value="Ensure certificate is properly configured for the domain")
+            CfnOutput(self, "ReleaseInfo", value=f"Release environment deployed with separate load balancers")
+            CfnOutput(self, "NextStep", value="Ensure certificates are properly configured for both domains")

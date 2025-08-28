@@ -241,65 +241,63 @@ jobs:
           echo "Stack does not exist yet, skipping wait"
         fi
 
-    - name: Get ALB DNS name
+    - name: Get ALB DNS names
       id: alb-dns
       run: |
-        DNS_NAME=$(aws cloudformation describe-stacks \
+        DOCTOR_DNS=$(aws cloudformation describe-stacks \
           --stack-name AdminPanelReleaseStack \
-          --query 'Stacks[0].Outputs[?OutputKey==`FrontendURL`].OutputValue' \
+          --query 'Stacks[0].Outputs[?OutputKey==`DoctorServiceURL`].OutputValue' \
           --output text \
           --region ${{ env.AWS_REGION }})
-        echo "alb-dns=$DNS_NAME" >> $GITHUB_OUTPUT
-        echo "Frontend URL: $DNS_NAME"
+        DEVELOPER_DNS=$(aws cloudformation describe-stacks \
+          --stack-name AdminPanelReleaseStack \
+          --query 'Stacks[0].Outputs[?OutputKey==`DeveloperServiceURL`].OutputValue' \
+          --output text \
+          --region ${{ env.AWS_REGION }})
+        echo "doctor-dns=$DOCTOR_DNS" >> $GITHUB_OUTPUT
+        echo "developer-dns=$DEVELOPER_DNS" >> $GITHUB_OUTPUT
+        echo "Doctor Service URL: $DOCTOR_DNS"
+        echo "Developer Service URL: $DEVELOPER_DNS"
 
     - name: Health check
       run: |
         # Wait for services to be fully ready
         sleep 60
         
-        # Get ALB DNS name
-        DNS_NAME=$(aws cloudformation describe-stacks \
+        # Get ALB DNS names for both services
+        DOCTOR_DNS=$(aws cloudformation describe-stacks \
           --stack-name AdminPanelReleaseStack \
-          --query 'Stacks[0].Outputs[?OutputKey==`FrontendURL`].OutputValue' \
+          --query 'Stacks[0].Outputs[?OutputKey==`DoctorServiceURL`].OutputValue' \
           --output text \
           --region ${{ env.AWS_REGION }})
         
-        # Check if DNS_NAME is not empty
-        if [ -z "$DNS_NAME" ] || [ "$DNS_NAME" = "None" ]; then
-          echo "Error: Could not get DNS name from CloudFormation stack"
+        DEVELOPER_DNS=$(aws cloudformation describe-stacks \
+          --stack-name AdminPanelReleaseStack \
+          --query 'Stacks[0].Outputs[?OutputKey==`DeveloperServiceURL`].OutputValue' \
+          --output text \
+          --region ${{ env.AWS_REGION }})
+        
+        # Check if DNS names are not empty
+        if [ -z "$DOCTOR_DNS" ] || [ "$DOCTOR_DNS" = "None" ]; then
+          echo "Error: Could not get Doctor service DNS name from CloudFormation stack"
           exit 1
         fi
         
-        echo "Frontend URL: $DNS_NAME"
-        
-        # Extract protocol and hostname from URL
-        if [[ "$DNS_NAME" == https://* ]]; then
-          PROTOCOL="https"
-          HOSTNAME=$(echo $DNS_NAME | sed 's|https://||')
-        else
-          PROTOCOL="http"
-          HOSTNAME=$(echo $DNS_NAME | sed 's|http://||')
+        if [ -z "$DEVELOPER_DNS" ] || [ "$DEVELOPER_DNS" = "None" ]; then
+          echo "Error: Could not get Developer service DNS name from CloudFormation stack"
+          exit 1
         fi
         
-        echo "Testing health endpoints on: $PROTOCOL://$HOSTNAME"
+        echo "Doctor Service URL: $DOCTOR_DNS"
+        echo "Developer Service URL: $DEVELOPER_DNS"
         
-        # Health checks for main frontend
-        if [ "$PROTOCOL" = "https" ]; then
-          curl -f -k "https://$HOSTNAME/" || exit 1
-          curl -f -k "https://$HOSTNAME/api/health" || exit 1
-        else
-          curl -f "http://$HOSTNAME/" || exit 1
-          curl -f "http://$HOSTNAME/api/health" || exit 1
-        fi
+        # Health checks for Doctor service (main frontend)
+        curl -f -k "$DOCTOR_DNS/" || exit 1
+        curl -f -k "$DOCTOR_DNS/api/health" || exit 1
         
-        # Health checks for developer frontend
-        if [ "$PROTOCOL" = "https" ]; then
-          curl -f -k "https://$HOSTNAME/developer" || exit 1
-          curl -f -k "https://$HOSTNAME/developer/api/health" || exit 1
-        else
-          curl -f "http://$HOSTNAME/developer" || exit 1
-          curl -f "http://$HOSTNAME/developer/api/health" || exit 1
-        fi
+        # Health checks for Developer service (separate domain)
+        curl -f -k "$DEVELOPER_DNS/" || exit 1
+        curl -f -k "$DEVELOPER_DNS/api/health" || exit 1
 
     - name: Force restart ECS services
       run: |
@@ -380,7 +378,8 @@ jobs:
         echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Main Image Tag**: ${{ steps.image-tags.outputs.main_image_tag }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Developer Image Tag**: ${{ steps.image-tags.outputs.developer_image_tag }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Frontend URL**: ${{ steps.alb-dns.outputs.alb-dns }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Doctor Service URL**: ${{ steps.alb-dns.outputs.doctor-dns }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Developer Service URL**: ${{ steps.alb-dns.outputs.developer-dns }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Deployed At**: $(date)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Release Information" >> $GITHUB_STEP_SUMMARY

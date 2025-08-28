@@ -8,7 +8,7 @@ export async function GET() {
       timestamp: new Date().toISOString(),
       service: 'developer-dashboard',
       environment: process.env.NODE_ENV || 'development',
-      basePath: '/developer',
+      domain: 'developer-service',
       version: '1.0.0'
     }, { 
       status: 200,
