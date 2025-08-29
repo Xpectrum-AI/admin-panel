@@ -1,31 +1,31 @@
-import { modelConfigService } from '../../service/modelConfigService';
+import { modelConfigService } from '@/service/modelConfigService';
 
 // Mock fetch globally
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
-// Mock environment variables
-const originalEnv = process.env;
-
 describe('modelConfigService', () => {
+  const mockModelConfig = {
+    provider: 'langgenius/openai/openai',
+    model: 'gpt-4o'
+  };
+
+  const mockPromptConfig = {
+    prompt: 'You are an expert calendar management assistant.'
+  };
+
   beforeEach(() => {
-    mockFetch.mockClear();
-    // Set up environment variables for testing
-    process.env.NEXT_PUBLIC_MODEL_API_BASE_URL = process.env.NEXT_PUBLIC_MODEL_API_BASE_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1';
-    process.env.NEXT_PUBLIC_MODEL_API_KEY = process.env.NEXT_PUBLIC_MODEL_API_KEY || 'test-api-key';
+    jest.clearAllMocks();
+    // Set default environment variables for testing
+    process.env.NEXT_PUBLIC_MODEL_API_BASE_URL = 'https://d22yt2oewbcglh.cloudfront.net/v1';
+    process.env.NEXT_PUBLIC_MODEL_API_KEY = 'app-CV6dxVdo4K226Yvm3vBj3iUO';
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
-    process.env = originalEnv;
+    jest.restoreAllMocks();
   });
 
   describe('configureModel', () => {
-    const mockModelConfig = {
-      provider: 'langgenius/openai/openai',
-      model: 'gpt-4o'
-    };
-
     it('should successfully configure model', async () => {
       const mockResponse = {
         ok: true,
@@ -43,12 +43,12 @@ describe('modelConfigService', () => {
       const result = await modelConfigService.configureModel(mockModelConfig);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        `${process.env.NEXT_PUBLIC_MODEL_API_BASE_URL}/apps/current/model-config`,
+        'https://d22yt2oewbcglh.cloudfront.net/v1/apps/current/model-config',
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_MODEL_API_KEY}`
+            'Authorization': 'Bearer app-CV6dxVdo4K226Yvm3vBj3iUO'
           },
           body: JSON.stringify(mockModelConfig)
         }
@@ -140,10 +140,6 @@ describe('modelConfigService', () => {
   });
 
   describe('configurePrompt', () => {
-    const mockPromptConfig = {
-      prompt: 'You are an expert calendar management assistant.'
-    };
-
     it('should successfully configure prompt', async () => {
       const mockResponse = {
         ok: true,
@@ -160,12 +156,12 @@ describe('modelConfigService', () => {
       const result = await modelConfigService.configurePrompt(mockPromptConfig);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        `${process.env.NEXT_PUBLIC_MODEL_API_BASE_URL}/apps/current/prompt`,
+        'https://d22yt2oewbcglh.cloudfront.net/v1/apps/current/prompt',
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_MODEL_API_KEY}`
+            'Authorization': 'Bearer app-CV6dxVdo4K226Yvm3vBj3iUO'
           },
           body: JSON.stringify(mockPromptConfig)
         }
@@ -270,11 +266,11 @@ describe('modelConfigService', () => {
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining(process.env.NEXT_PUBLIC_MODEL_API_BASE_URL || ''),
+        'https://d22yt2oewbcglh.cloudfront.net/v1/apps/current/model-config',
         expect.objectContaining({
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_MODEL_API_KEY || ''}`
+            'Authorization': 'Bearer app-CV6dxVdo4K226Yvm3vBj3iUO'
           }
         })
       );
@@ -300,7 +296,7 @@ describe('modelConfigService', () => {
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('https://d22yt2oewbcglh.cloudfront.net/v1'),
+        'https://d22yt2oewbcglh.cloudfront.net/v1/apps/current/model-config',
         expect.objectContaining({
           headers: {
             'Content-Type': 'application/json',
