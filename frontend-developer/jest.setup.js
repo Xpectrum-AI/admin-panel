@@ -86,7 +86,11 @@ beforeEach(() => {
     if (
       typeof args[0] === 'string' &&
       (args[0].includes('Error in Database:') ||
-       args[0].includes('Error in Validation:'))
+       args[0].includes('Error in Validation:') ||
+       args[0].includes('NEXT_PUBLIC_PROPELAUTH_URL is not set') ||
+       args[0].includes('Model configuration error:') ||
+       args[0].includes('Prompt configuration error:') ||
+       args[0].includes('Received NaN for the `value` attribute'))
     ) {
       return // Suppress expected test errors
     }
