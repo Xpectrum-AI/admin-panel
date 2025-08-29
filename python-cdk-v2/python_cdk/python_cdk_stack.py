@@ -133,6 +133,8 @@ class AdminPanelDeploymentStack(Stack):
                 "NODE_ENV": environment,
                 "PORT": config['frontend_port'],
                 "HOST": "0.0.0.0",
+                "NEXT_PUBLIC_PROPELAUTH_URL": os.environ.get('PRODUCTION_PROPELAUTH_URL' if environment == 'production' else 'DEV_PROPELAUTH_URL', ''),
+                "NEXT_PUBLIC_PROPELAUTH_API_KEY": os.environ.get('PRODUCTION_PROPELAUTH_API_KEY' if environment == 'production' else 'DEV_PROPELAUTH_API_KEY', ''),
             },
             port_mappings=[ecs.PortMapping(container_port=int(config['frontend_port']))]
         )
@@ -149,6 +151,8 @@ class AdminPanelDeploymentStack(Stack):
                 "NODE_ENV": environment,
                 "PORT": config['frontend_developer_port'],
                 "HOST": "0.0.0.0",
+                "NEXT_PUBLIC_PROPELAUTH_URL": os.environ.get('PRODUCTION_DEVELOPER_PROPELAUTH_URL' if environment == 'production' else 'DEV_DEVELOPER_PROPELAUTH_URL', ''),
+                "NEXT_PUBLIC_PROPELAUTH_API_KEY": os.environ.get('PRODUCTION_DEVELOPER_PROPELAUTH_API_KEY' if environment == 'production' else 'DEV_DEVELOPER_PROPELAUTH_API_KEY', ''),
             },
             port_mappings=[ecs.PortMapping(container_port=int(config['frontend_developer_port']))]
         )

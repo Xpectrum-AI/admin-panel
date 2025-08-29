@@ -156,9 +156,9 @@ jobs:
     - name: Build and push Developer Frontend image to ECR
       env:
         NEXT_PUBLIC_LIVE_API_URL: ${{ vars.PRODUCTION_LIVE_API_URL }}
-        NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.PRODUCTION_PROPELAUTH_URL }}
+        NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.PRODUCTION_DEVELOPER_PROPELAUTH_URL }}
         NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.PRODUCTION_LIVE_API_KEY }}
-        NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_PROPELAUTH_API_KEY }}
+        NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_DEVELOPER_PROPELAUTH_API_KEY }}
         DEVELOPER_IMAGE_TAG: ${{ steps.image-tags.outputs.developer_image_tag }}
       run: |
         # Set ECR repository URI

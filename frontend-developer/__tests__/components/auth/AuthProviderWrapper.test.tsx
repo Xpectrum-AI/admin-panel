@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { AuthProviderWrapper } from '@/app/auth/AuthProviderWrapper';
 
 // Mock PropelAuth
@@ -22,59 +22,89 @@ describe('AuthProviderWrapper', () => {
   });
 
   describe('Rendering', () => {
-    it('renders loading spinner during client-side hydration', () => {
+    it('shows error when NEXT_PUBLIC_PROPELAUTH_URL is not set', async () => {
       render(<AuthProviderWrapper>Test Content</AuthProviderWrapper>);
       
-      expect(screen.getByText('Test Content')).toBeInTheDocument();
+      // Should show error message when environment variable is not set
+      await waitFor(() => {
+        expect(screen.getByText('Authentication configuration error')).toBeInTheDocument();
+      });
     });
 
-    it('renders AuthProvider with children', () => {
+    it('renders AuthProvider with children when environment variable is set', async () => {
+      process.env.NEXT_PUBLIC_PROPELAUTH_URL = 'https://test.auth.example.com';
+      
       render(<AuthProviderWrapper>Test Content</AuthProviderWrapper>);
       
-      const authProvider = screen.getByTestId('auth-provider');
-      expect(authProvider).toBeInTheDocument();
-      expect(authProvider).toHaveTextContent('Test Content');
+      // Wait for client-side hydration to complete
+      await waitFor(() => {
+        const authProvider = screen.getByTestId('auth-provider');
+        expect(authProvider).toBeInTheDocument();
+        expect(authProvider).toHaveTextContent('Test Content');
+      });
     });
   });
 
   describe('Environment Variables', () => {
-    it('uses NEXT_PUBLIC_PROPELAUTH_URL from environment', () => {
-      process.env.NEXT_PUBLIC_PROPELAUTH_URL = 'https://test.propelauthtest.com';
+    it('uses NEXT_PUBLIC_PROPELAUTH_URL from environment', async () => {
+      process.env.NEXT_PUBLIC_PROPELAUTH_URL = 'https://test.auth.example.com';
       
       render(<AuthProviderWrapper>Test Content</AuthProviderWrapper>);
       
-      const authProvider = screen.getByTestId('auth-provider');
-      expect(authProvider).toHaveAttribute('data-auth-url', 'https://test.propelauthtest.com');
+      // Wait for client-side hydration to complete
+      await waitFor(() => {
+        const authProvider = screen.getByTestId('auth-provider');
+        expect(authProvider).toHaveAttribute('data-auth-url', 'https://test.auth.example.com');
+      });
     });
 
-    it('uses fallback URL when NEXT_PUBLIC_PROPELAUTH_URL is not set', () => {
+    it('shows error when NEXT_PUBLIC_PROPELAUTH_URL is not set', async () => {
       render(<AuthProviderWrapper>Test Content</AuthProviderWrapper>);
       
-      const authProvider = screen.getByTestId('auth-provider');
-      expect(authProvider).toHaveAttribute('data-auth-url', 'https://30281939.propelauthtest.com');
+      // Wait for client-side hydration to complete
+      await waitFor(() => {
+        expect(screen.getByText('Authentication configuration error')).toBeInTheDocument();
+      });
     });
 
-    it('uses fallback URL when NEXT_PUBLIC_PROPELAUTH_URL is empty', () => {
+    it('shows error when NEXT_PUBLIC_PROPELAUTH_URL is empty', async () => {
       process.env.NEXT_PUBLIC_PROPELAUTH_URL = '';
       
       render(<AuthProviderWrapper>Test Content</AuthProviderWrapper>);
       
-      const authProvider = screen.getByTestId('auth-provider');
-      expect(authProvider).toHaveAttribute('data-auth-url', 'https://30281939.propelauthtest.com');
+      // Wait for client-side hydration to complete
+      await waitFor(() => {
+        expect(screen.getByText('Authentication configuration error')).toBeInTheDocument();
+      });
     });
   });
 
   describe('Client-side Hydration', () => {
-    it('handles client-side hydration correctly', () => {
+    it('handles client-side hydration correctly when environment variable is set', async () => {
+      process.env.NEXT_PUBLIC_PROPELAUTH_URL = 'https://test.auth.example.com';
+      
       render(<AuthProviderWrapper>Test Content</AuthProviderWrapper>);
       
-      // Should render content immediately (no loading state in current implementation)
-      expect(screen.getByText('Test Content')).toBeInTheDocument();
+      // Wait for client-side hydration to complete
+      await waitFor(() => {
+        expect(screen.getByText('Test Content')).toBeInTheDocument();
+      });
+    });
+
+    it('shows error during hydration when environment variable is not set', async () => {
+      render(<AuthProviderWrapper>Test Content</AuthProviderWrapper>);
+      
+      // Should show error message
+      await waitFor(() => {
+        expect(screen.getByText('Authentication configuration error')).toBeInTheDocument();
+      });
     });
   });
 
   describe('Props Handling', () => {
-    it('passes children to AuthProvider', () => {
+    it('passes children to AuthProvider when environment variable is set', async () => {
+      process.env.NEXT_PUBLIC_PROPELAUTH_URL = 'https://test.auth.example.com';
+      
       const testContent = (
         <div>
           <h1>Test Header</h1>
@@ -84,11 +114,16 @@ describe('AuthProviderWrapper', () => {
       
       render(<AuthProviderWrapper>{testContent}</AuthProviderWrapper>);
       
-      expect(screen.getByText('Test Header')).toBeInTheDocument();
-      expect(screen.getByText('Test Paragraph')).toBeInTheDocument();
+      // Wait for client-side hydration to complete
+      await waitFor(() => {
+        expect(screen.getByText('Test Header')).toBeInTheDocument();
+        expect(screen.getByText('Test Paragraph')).toBeInTheDocument();
+      });
     });
 
-    it('handles multiple children', () => {
+    it('handles multiple children when environment variable is set', async () => {
+      process.env.NEXT_PUBLIC_PROPELAUTH_URL = 'https://test.auth.example.com';
+      
       render(
         <AuthProviderWrapper>
           <div>Child 1</div>
@@ -97,18 +132,35 @@ describe('AuthProviderWrapper', () => {
         </AuthProviderWrapper>
       );
       
-      expect(screen.getByText('Child 1')).toBeInTheDocument();
-      expect(screen.getByText('Child 2')).toBeInTheDocument();
-      expect(screen.getByText('Child 3')).toBeInTheDocument();
+      // Wait for client-side hydration to complete
+      await waitFor(() => {
+        expect(screen.getByText('Child 1')).toBeInTheDocument();
+        expect(screen.getByText('Child 2')).toBeInTheDocument();
+        expect(screen.getByText('Child 3')).toBeInTheDocument();
+      });
     });
   });
 
   describe('Error Handling', () => {
-    it('handles null children', () => {
+    it('handles null children when environment variable is set', async () => {
+      process.env.NEXT_PUBLIC_PROPELAUTH_URL = 'https://test.auth.example.com';
+      
       render(<AuthProviderWrapper>{null}</AuthProviderWrapper>);
       
-      const authProvider = screen.getByTestId('auth-provider');
-      expect(authProvider).toBeInTheDocument();
+      // Wait for client-side hydration to complete
+      await waitFor(() => {
+        const authProvider = screen.getByTestId('auth-provider');
+        expect(authProvider).toBeInTheDocument();
+      });
+    });
+
+    it('shows error when environment variable is not set', async () => {
+      render(<AuthProviderWrapper>{null}</AuthProviderWrapper>);
+      
+      // Should show error message
+      await waitFor(() => {
+        expect(screen.getByText('Authentication configuration error')).toBeInTheDocument();
+      });
     });
   });
 });
