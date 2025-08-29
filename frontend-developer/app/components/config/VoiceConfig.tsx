@@ -18,6 +18,13 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ isDarkMode =
     'Groq': ['llama-3.1-8b', 'llama-3.1-70b', 'mixtral-8x7b']
   };
 
+  const handleSpeedChange = (value: string | number) => {
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    if (!isNaN(numValue)) {
+      setSpeedValue(numValue);
+    }
+  };
+
   return (
     <div ref={ref}>
       <div className="space-y-6">
@@ -116,7 +123,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ isDarkMode =
                     max="0"
                     step="0.1"
                     value={speedValue}
-                    onChange={(e) => setSpeedValue(parseFloat(e.target.value))}
+                    onChange={(e) => handleSpeedChange(e.target.value)}
                     className={`flex-1 h-2 rounded-lg appearance-none cursor-pointer ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}
                   />
                   <input
@@ -125,7 +132,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ isDarkMode =
                     max="0"
                     step="0.1"
                     value={speedValue}
-                    onChange={(e) => setSpeedValue(parseFloat(e.target.value))}
+                    onChange={(e) => handleSpeedChange(e.target.value)}
                     className={`w-20 px-3 py-2 border rounded-lg text-center ${isDarkMode ? 'border-gray-600 bg-gray-800 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
                   />
                 </div>

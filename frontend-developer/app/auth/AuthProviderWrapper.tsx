@@ -11,13 +11,22 @@ export function AuthProviderWrapper({ children }: { children: React.ReactNode })
     setIsClient(true);
   }, []);
 
-  const AUTH_URL = process.env.NEXT_PUBLIC_PROPELAUTH_URL || "https://30281939.propelauthtest.com";
+  const AUTH_URL = process.env.NEXT_PUBLIC_PROPELAUTH_URL;
 
   // Prevent hydration mismatch by not rendering until client-side
   if (!isClient) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (!AUTH_URL) {
+    console.error('NEXT_PUBLIC_PROPELAUTH_URL is not set');
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-red-600">Authentication configuration error</div>
       </div>
     );
   }

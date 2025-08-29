@@ -115,9 +115,9 @@ jobs:
     - name: Build and push Developer Frontend image to ECR
       env:
         NEXT_PUBLIC_LIVE_API_URL: ${{ vars.DEV_LIVE_API_URL }}
-        NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.DEV_PROPELAUTH_URL }}
+        NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.DEV_DEVELOPER_PROPELAUTH_URL }}
         NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.DEV_LIVE_API_KEY }}
-        NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.DEV_PROPELAUTH_API_KEY }}
+        NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.DEV_DEVELOPER_PROPELAUTH_API_KEY }}
       run: |
         # Set ECR repository URI
         REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
@@ -154,9 +154,11 @@ jobs:
         echo "=== DEVELOPMENT ENVIRONMENT VARIABLES ==="
         echo "DEVELOPMENT_LIVE_API_KEY: ${{ secrets.DEV_LIVE_API_KEY }}"
         echo "DEVELOPMENT_PROPELAUTH_API_KEY: ${{ secrets.DEV_PROPELAUTH_API_KEY }}"
+        echo "DEVELOPMENT_DEVELOPER_PROPELAUTH_API_KEY: ${{ secrets.DEV_DEVELOPER_PROPELAUTH_API_KEY }}"
         echo "DEVELOPMENT_SUPER_ADMIN_ORG_ID: ${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}"
         echo "DEVELOPMENT_LIVE_API_URL: ${{ vars.DEV_LIVE_API_URL }}"
         echo "DEVELOPMENT_PROPELAUTH_URL: ${{ vars.DEV_PROPELAUTH_URL }}"
+        echo "DEVELOPMENT_DEVELOPER_PROPELAUTH_URL: ${{ vars.DEV_DEVELOPER_PROPELAUTH_URL }}"
         echo "====================================="
         
         echo "=== SUPER ADMIN CONFIGURATION DEBUG ==="
@@ -183,15 +185,32 @@ jobs:
         else
           echo "✅ DEVELOPMENT_PROPELAUTH_URL is set: ${{ vars.DEV_PROPELAUTH_URL }}"
         fi
+        
+        if [ -z "${{ vars.DEV_DEVELOPER_PROPELAUTH_URL }}" ]; then
+          echo "❌ ERROR: DEVELOPMENT_DEVELOPER_PROPELAUTH_URL is empty or not set!"
+        else
+          echo "✅ DEVELOPMENT_DEVELOPER_PROPELAUTH_URL is set: ${{ vars.DEV_DEVELOPER_PROPELAUTH_URL }}"
+        fi
+        
+        if [ -z "${{ secrets.DEV_DEVELOPER_PROPELAUTH_API_KEY }}" ]; then
+          echo "❌ ERROR: DEVELOPMENT_DEVELOPER_PROPELAUTH_API_KEY is empty or not set!"
+        else
+          echo "✅ DEVELOPMENT_DEVELOPER_PROPELAUTH_API_KEY is set (length: ${#DEVELOPMENT_DEVELOPER_PROPELAUTH_API_KEY})"
+        fi
         echo "====================================="
 
     - name: Deploy CDK stack (development)
+      env:
+        DEV_PROPELAUTH_URL: ${{ vars.DEV_PROPELAUTH_URL }}
+        DEV_PROPELAUTH_API_KEY: ${{ secrets.DEV_PROPELAUTH_API_KEY }}
+        DEV_DEVELOPER_PROPELAUTH_URL: ${{ vars.DEV_DEVELOPER_PROPELAUTH_URL }}
+        DEV_DEVELOPER_PROPELAUTH_API_KEY: ${{ secrets.DEV_DEVELOPER_PROPELAUTH_API_KEY }}
       run: |
         cd python-cdk-v2
         
         echo "=== CDK DEPLOYMENT DEBUG ==="
         echo "Current directory: $(pwd)"
-        echo "Environment variables are now handled during Docker build"
+        echo "Environment variables are now handled during Docker build and CDK deployment"
         echo "====================================="
         
         # Deploy to development environment with development context
