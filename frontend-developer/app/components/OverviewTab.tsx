@@ -12,7 +12,7 @@ export default function OverviewTab({ isDarkMode = false }: OverviewTabProps) {
     const { user } = useAuthInfo();
 
     return (
-        <div className="max-w-7xl mx-auto space-y-8">
+        <div className="max-w-9xl mx-auto space-y-8">
             {/* Welcome Section */}
             <div className={`${isDarkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white' : 'bg-white text-gray-900'} rounded-3xl p-4 sm:p-6 lg:p-8 relative overflow-hidden border ${isDarkMode ? 'border-gray-700/50' : 'border-gray-200'} shadow-xl`}>
                 <div className={`absolute inset-0 ${isDarkMode ? 'bg-gradient-to-r from-green-500/10 to-blue-500/10' : 'bg-gradient-to-r from-green-50 to-blue-50'}`}></div>
