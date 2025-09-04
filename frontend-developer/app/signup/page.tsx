@@ -5,6 +5,7 @@ import { Mail, Eye, EyeOff, User, Lock, Code } from 'lucide-react';
 import { useAuthFrontendApis } from '@propelauth/frontend-apis-react';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import Link from 'next/link';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function SignUp() {
   const [formData, setFormData] = useState({
@@ -29,6 +30,7 @@ export default function SignUp() {
   });
   const { showError, showSuccess } = useErrorHandler();
   const { signup } = useAuthFrontendApis();
+  const { isDarkMode } = useTheme();
 
   const handleGoogleSignUp = () => {
     // Store user type in localStorage before redirect
@@ -166,31 +168,35 @@ export default function SignUp() {
 
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+          <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} flex flex-col justify-center py-12 sm:px-6 lg:px-8`}>
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
             <Code className="h-8 w-8 text-white" />
           </div>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+                  <h2 className={`mt-6 text-center text-3xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
           Create your account
         </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
+                  <p className={`mt-2 text-center text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
           Or{' '}
-          <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+                      <Link href="/login" className={`font-medium ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'}`}>
             sign in to your existing account
           </Link>
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+        <div className={`${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white'} py-8 px-4 shadow sm:rounded-lg sm:px-10`}>
           {/* Google OAuth Button */}
           <div className="mb-6">
             <button
               onClick={handleGoogleSignUp}
-              className="w-full flex justify-center items-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                              className={`w-full flex justify-center items-center px-4 py-3 border rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                  isDarkMode 
+                    ? 'border-gray-600 bg-gray-700 text-gray-200 hover:bg-gray-600' 
+                    : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                }`}
             >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -204,17 +210,17 @@ export default function SignUp() {
 
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
+              <div className={`w-full border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`} />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                              <span className={`px-2 ${isDarkMode ? 'bg-gray-800 text-gray-400' : 'bg-white text-gray-500'}`}>Or continue with</span>
             </div>
           </div>
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="firstName" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
                   First name
                 </label>
                 <div className="mt-1 relative">
@@ -228,7 +234,7 @@ export default function SignUp() {
                     autoComplete="given-name"
                     required
                     className={`appearance-none block w-full px-3 py-2 pl-10 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                      errors.firstName ? 'border-red-300' : 'border-gray-300'
+                      errors.firstName ? 'border-red-300' : isDarkMode ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-300 bg-white text-gray-900'
                     }`}
                     placeholder="First name"
                     value={formData.firstName}
@@ -236,12 +242,12 @@ export default function SignUp() {
                   />
                 </div>
                 {errors.firstName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
+                  <p className={`mt-1 text-sm ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{errors.firstName}</p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="lastName" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
                   Last name
                 </label>
                 <div className="mt-1 relative">
@@ -255,7 +261,7 @@ export default function SignUp() {
                     autoComplete="family-name"
                     required
                     className={`appearance-none block w-full px-3 py-2 pl-10 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                      errors.lastName ? 'border-red-300' : 'border-gray-300'
+                      errors.lastName ? 'border-red-300' : isDarkMode ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-300 bg-white text-gray-900'
                     }`}
                     placeholder="Last name"
                     value={formData.lastName}
@@ -263,7 +269,7 @@ export default function SignUp() {
                   />
                 </div>
                 {errors.lastName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
+                  <p className={`mt-1 text-sm ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{errors.lastName}</p>
                 )}
               </div>
             </div>
@@ -271,7 +277,7 @@ export default function SignUp() {
 
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                              <label htmlFor="email" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
                 Email address
               </label>
               <div className="mt-1 relative">
@@ -285,7 +291,7 @@ export default function SignUp() {
                   autoComplete="email"
                   required
                   className={`appearance-none block w-full px-3 py-2 pl-10 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                    errors.email ? 'border-red-300' : 'border-gray-300'
+                    errors.email ? 'border-red-300' : isDarkMode ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-300 bg-white text-gray-900'
                   }`}
                   placeholder="Email address"
                   value={formData.email}
@@ -293,12 +299,12 @@ export default function SignUp() {
                 />
               </div>
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                <p className={`mt-1 text-sm ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{errors.email}</p>
               )}
             </div>
 
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="username" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
                 Username
               </label>
               <div className="mt-1 relative">
@@ -312,7 +318,7 @@ export default function SignUp() {
                   autoComplete="username"
                   required
                   className={`appearance-none block w-full px-3 py-2 pl-10 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                    errors.username ? 'border-red-300' : 'border-gray-300'
+                    errors.username ? 'border-red-300' : isDarkMode ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-300 bg-white text-gray-900'
                   }`}
                   placeholder="Enter your username"
                   value={formData.username}
