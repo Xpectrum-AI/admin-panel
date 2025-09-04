@@ -27,7 +27,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ isDarkMode =
 
   return (
     <div ref={ref}>
-      <div className="space-y-6">
+      <div className="px-4 sm:px-6 lg:px-6 py-4 sm:py-6 space-y-6">
         {/* Voice Configuration Section */}
         <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white/50 border-gray-200'}`}>
           <div className="flex items-center justify-between mb-4">
