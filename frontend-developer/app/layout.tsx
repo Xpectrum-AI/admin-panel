@@ -4,6 +4,7 @@ import './globals.css'
 import { AuthProviderWrapper } from './auth/AuthProviderWrapper'
 import { ErrorProvider } from './contexts/ErrorContext'
 import { ProtectedRoute } from './auth/ProtectedRoute'
+import { ThemeProvider } from './contexts/ThemeContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -18,15 +19,17 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <AuthProviderWrapper>
-          <ErrorProvider>
-            <ProtectedRoute>
-              {children}
-            </ProtectedRoute>
-          </ErrorProvider>
-        </AuthProviderWrapper>
+    <html lang="en" className="dark">
+      <body className={`${inter.className} dark:bg-gray-900 dark:text-white`}>
+        <ThemeProvider>
+          <AuthProviderWrapper>
+            <ErrorProvider>
+              <ProtectedRoute>
+                {children}
+              </ProtectedRoute>
+            </ErrorProvider>
+          </AuthProviderWrapper>
+        </ThemeProvider>
       </body>
     </html>
   )
