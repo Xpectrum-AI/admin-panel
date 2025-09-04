@@ -50,12 +50,14 @@ export default function Navbar({
                 setDropdownOpen(false);
             }
         }
-        document.addEventListener('mousedown', handleClickOutside);
+        if (dropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    }, [dropdownOpen]);
 
     return (
-        <nav className={`w-full ${isDarkMode ? 'bg-gray-900/80 backdrop-blur-xl border-b border-gray-700/50' : 'bg-white border-b border-gray-200'}`}>
+        <nav className={` w-full ${isDarkMode ? 'bg-gray-900/80 backdrop-blur-xl border-b border-gray-700/50' : 'bg-white border-b border-gray-200'}`}>
             <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center flex-wrap gap-3 sm:gap-4">
@@ -106,18 +108,18 @@ export default function Navbar({
                                 </div>
                             </button>
                             {dropdownOpen && (
-                                <div className={`absolute right-0 mt-3 w-[90vw] sm:w-80 rounded-2xl shadow-2xl z-10 animate-fade-in-down ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-xl border border-gray-700/50' : 'bg-white border border-gray-200'}`}>
-                                    <div className={`p-6 ${isDarkMode ? 'border-b border-gray-700/50' : 'border-b border-gray-200'}`}>
-                                        <p className={`font-bold text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                <div className={`absolute right-0 sm:right-0 mt-3 w-[90vw] sm:w-80 max-w-[calc(100vw-2rem)] rounded-2xl shadow-2xl z-[9999] animate-fade-in-down ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`} style={{ zIndex: 9999 }}>
+                                    <div className={`p-4 sm:p-6 ${isDarkMode ? 'border-b border-gray-700/50' : 'border-b border-gray-200'}`}>
+                                        <p className={`font-bold text-base sm:text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                                             {user?.firstName} {user?.lastName}
                                         </p>
-                                        <p className={`mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{user?.email}</p>
+                                        <p className={`mt-1 text-sm sm:text-base ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{user?.email}</p>
                                         <div className="flex items-center gap-2 mt-2">
                                             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                            <p className={`text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>Developer</p>
+                                            <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>Developer</p>
                                         </div>
                                     </div>
-                                    <nav className="p-4">
+                                    <nav className="p-3 sm:p-4">
                                         <button
                                             onClick={(e) => {
                                                 e.preventDefault();
@@ -125,9 +127,9 @@ export default function Navbar({
                                                 window.location.href = '/account';
                                                 setDropdownOpen(false);
                                             }}
-                                            className={`w-full flex items-center px-4 py-3 rounded-xl transition-all duration-300 group ${isDarkMode ? 'text-gray-300 hover:bg-blue-500/10 hover:text-blue-300' : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'}`}
+                                            className={`w-full flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-xl transition-all duration-300 group ${isDarkMode ? 'text-gray-300 hover:bg-blue-500/10 hover:text-blue-300' : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'}`}
                                         >
-                                            <UserIcon className={`h-5 w-5 mr-3 ${isDarkMode ? 'text-gray-400 group-hover:text-blue-400' : 'text-gray-400 group-hover:text-blue-600'} transition-colors duration-300`} />
+                                            <UserIcon className={`h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 ${isDarkMode ? 'text-gray-400 group-hover:text-blue-400' : 'text-gray-400 group-hover:text-blue-600'} transition-colors duration-300`} />
                                             Account
                                         </button>
                                         <div className={`${isDarkMode ? 'border-gray-700/50' : 'border-gray-200'} my-2 border-t`}></div>
@@ -140,9 +142,9 @@ export default function Navbar({
                                                     setIsLoggingOut(false);
                                                 }
                                             }}
-                                            className={`w-full flex items-center px-4 py-3 rounded-xl transition-all duration-300 group ${isDarkMode ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300' : 'text-red-600 hover:bg-red-50 hover:text-red-700'}`}
+                                            className={`w-full flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-xl transition-all duration-300 group ${isDarkMode ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300' : 'text-red-600 hover:bg-red-50 hover:text-red-700'}`}
                                         >
-                                            <LogOut className="h-5 w-5 mr-3" />
+                                            <LogOut className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
                                             {isLoggingOut ? 'Logging out...' : 'Log out'}
                                         </button>
                                     </nav>
