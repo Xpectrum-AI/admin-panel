@@ -25,7 +25,7 @@ describe('ModelConfig', () => {
     // Mock scrollIntoView
     Element.prototype.scrollIntoView = jest.fn();
     jest.clearAllMocks();
-    
+
     // Set up environment variables for testing
     process.env.NEXT_PUBLIC_MODEL_API_BASE_URL = process.env.NEXT_PUBLIC_MODEL_API_BASE_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1';
     process.env.NEXT_PUBLIC_MODEL_API_KEY = process.env.NEXT_PUBLIC_MODEL_API_KEY || 'test-api-key';
@@ -39,7 +39,7 @@ describe('ModelConfig', () => {
   describe('Rendering', () => {
     it('renders the model config with default props', () => {
       render(<ModelConfig />);
-      
+
       expect(screen.getByText('Provider')).toBeInTheDocument();
       expect(screen.getByText('Model')).toBeInTheDocument();
       expect(screen.getByText('First Message')).toBeInTheDocument();
@@ -48,14 +48,14 @@ describe('ModelConfig', () => {
 
     it('renders with dark mode styling', () => {
       render(<ModelConfig isDarkMode={true} />);
-      
+
       // Check that the component renders without errors
       expect(screen.getByText('Provider')).toBeInTheDocument();
     });
 
     it('displays provider options', () => {
       render(<ModelConfig />);
-      
+
       expect(screen.getByText('OpenAI')).toBeInTheDocument();
       expect(screen.getByText('Anthropic')).toBeInTheDocument();
       expect(screen.getByText('DeepSeek')).toBeInTheDocument();
@@ -66,7 +66,7 @@ describe('ModelConfig', () => {
 
     it('displays model options', () => {
       render(<ModelConfig />);
-      
+
       expect(screen.getByText('GPT-4o')).toBeInTheDocument();
       expect(screen.getByText('GPT-4o Mini')).toBeInTheDocument();
       expect(screen.getByText('GPT-4 Turbo')).toBeInTheDocument();
@@ -76,21 +76,21 @@ describe('ModelConfig', () => {
 
     it('displays default values correctly', () => {
       render(<ModelConfig />);
-      
+
       // Check default provider and model
       expect(screen.getByDisplayValue('OpenAI')).toBeInTheDocument();
       expect(screen.getByDisplayValue('GPT-4o')).toBeInTheDocument();
-      
+
       // Check default first message
       expect(screen.getByDisplayValue('Thank you for calling Wellness Partners. This is Riley, your scheduling agent. How may I help you today?')).toBeInTheDocument();
-      
+
       // Check default system prompt
       expect(screen.getByDisplayValue(/Appointment Scheduling Agent Prompt/)).toBeInTheDocument();
     });
 
     it('shows configure and save buttons', () => {
       render(<ModelConfig />);
-      
+
       expect(screen.getByText('Configure')).toBeInTheDocument();
       expect(screen.getByText('Save')).toBeInTheDocument();
     });
@@ -99,19 +99,19 @@ describe('ModelConfig', () => {
   describe('Provider Selection', () => {
     it('allows selecting different providers', async () => {
       render(<ModelConfig />);
-      
+
       const providerSelect = screen.getByDisplayValue('OpenAI');
       await user.selectOptions(providerSelect, 'Anthropic');
-      
+
       expect(providerSelect).toHaveValue('Anthropic');
     });
 
     it('updates model options when provider changes', async () => {
       render(<ModelConfig />);
-      
+
       const providerSelect = screen.getByDisplayValue('OpenAI');
       await user.selectOptions(providerSelect, 'Anthropic');
-      
+
       // Model should reset to first option of new provider
       const modelSelect = screen.getByDisplayValue('Claude 3.5 Sonnet');
       expect(modelSelect).toBeInTheDocument();
@@ -119,10 +119,10 @@ describe('ModelConfig', () => {
 
     it('allows selecting different models', async () => {
       render(<ModelConfig />);
-      
+
       const modelSelect = screen.getByDisplayValue('GPT-4o');
       await user.selectOptions(modelSelect, 'GPT-4o Mini');
-      
+
       expect(modelSelect).toHaveValue('GPT-4o Mini');
     });
   });
@@ -130,21 +130,21 @@ describe('ModelConfig', () => {
   describe('Text Inputs', () => {
     it('allows editing first message', async () => {
       render(<ModelConfig />);
-      
+
       const firstMessageTextarea = screen.getByDisplayValue('Thank you for calling Wellness Partners. This is Riley, your scheduling agent. How may I help you today?');
       await user.clear(firstMessageTextarea);
       await user.type(firstMessageTextarea, 'Hello, this is a test message');
-      
+
       expect(firstMessageTextarea).toHaveValue('Hello, this is a test message');
     });
 
     it('allows editing system prompt', async () => {
       render(<ModelConfig />);
-      
+
       const systemPromptTextarea = screen.getByDisplayValue(/Appointment Scheduling Agent Prompt/);
       await user.clear(systemPromptTextarea);
       await user.type(systemPromptTextarea, 'You are a helpful assistant');
-      
+
       expect(systemPromptTextarea).toHaveValue('You are a helpful assistant');
     });
   });
@@ -152,7 +152,7 @@ describe('ModelConfig', () => {
   describe('Generate Button', () => {
     it('shows generate button for first message', () => {
       render(<ModelConfig />);
-      
+
       expect(screen.getByText('Generate')).toBeInTheDocument();
     });
   });
@@ -165,8 +165,8 @@ describe('ModelConfig', () => {
       });
 
       render(<ModelConfig />);
-      
-      const configureButton = screen.getByText('Configure');
+
+      const configureButton = screen.getByRole('button', { name: /configure/i });
       await user.click(configureButton);
 
       await waitFor(() => {
@@ -183,8 +183,8 @@ describe('ModelConfig', () => {
       );
 
       render(<ModelConfig />);
-      
-      const configureButton = screen.getByText('Configure');
+
+      const configureButton = screen.getByRole('button', { name: /configure/i });
       await user.click(configureButton);
 
       expect(screen.getByText('Configuring...')).toBeInTheDocument();
@@ -198,8 +198,8 @@ describe('ModelConfig', () => {
       });
 
       render(<ModelConfig />);
-      
-      const configureButton = screen.getByText('Configure');
+
+      const configureButton = screen.getByRole('button', { name: /configure/i });
       await user.click(configureButton);
 
       await waitFor(() => {
@@ -214,8 +214,8 @@ describe('ModelConfig', () => {
       });
 
       render(<ModelConfig />);
-      
-      const configureButton = screen.getByText('Configure');
+
+      const configureButton = screen.getByRole('button', { name: /configure/i });
       await user.click(configureButton);
 
       await waitFor(() => {
@@ -230,16 +230,16 @@ describe('ModelConfig', () => {
       });
 
       render(<ModelConfig />);
-      
+
       // Change provider to Anthropic
       const providerSelect = screen.getByDisplayValue('OpenAI');
       await user.selectOptions(providerSelect, 'Anthropic');
-      
+
       // Change model to Claude 3.5 Haiku
       const modelSelect = screen.getByDisplayValue('Claude 3.5 Sonnet');
       await user.selectOptions(modelSelect, 'Claude 3.5 Haiku');
-      
-      const configureButton = screen.getByText('Configure');
+
+      const configureButton = screen.getByRole('button', { name: /configure/i });
       await user.click(configureButton);
 
       await waitFor(() => {
@@ -259,7 +259,7 @@ describe('ModelConfig', () => {
       });
 
       render(<ModelConfig />);
-      
+
       const saveButton = screen.getByText('Save');
       await user.click(saveButton);
 
@@ -276,7 +276,7 @@ describe('ModelConfig', () => {
       );
 
       render(<ModelConfig />);
-      
+
       const saveButton = screen.getByText('Save');
       await user.click(saveButton);
 
@@ -291,7 +291,7 @@ describe('ModelConfig', () => {
       });
 
       render(<ModelConfig />);
-      
+
       const saveButton = screen.getByText('Save');
       await user.click(saveButton);
 
@@ -307,7 +307,7 @@ describe('ModelConfig', () => {
       });
 
       render(<ModelConfig />);
-      
+
       const saveButton = screen.getByText('Save');
       await user.click(saveButton);
 
@@ -323,12 +323,12 @@ describe('ModelConfig', () => {
       });
 
       render(<ModelConfig />);
-      
+
       // Edit the system prompt
       const systemPromptTextarea = screen.getByDisplayValue(/Appointment Scheduling Agent Prompt/);
       await user.clear(systemPromptTextarea);
       await user.type(systemPromptTextarea, 'New custom prompt');
-      
+
       const saveButton = screen.getByText('Save');
       await user.click(saveButton);
 
@@ -348,8 +348,8 @@ describe('ModelConfig', () => {
       });
 
       render(<ModelConfig />);
-      
-      const configureButton = screen.getByText('Configure');
+
+      const configureButton = screen.getByRole('button', { name: /configure/i });
       await user.click(configureButton);
 
       await waitFor(() => {
@@ -369,15 +369,15 @@ describe('ModelConfig', () => {
         });
 
       render(<ModelConfig />);
-      
-      const configureButton = screen.getByText('Configure');
-      
+
+      const configureButton = screen.getByRole('button', { name: /configure/i });
+
       // First call - shows error
       await user.click(configureButton);
       await waitFor(() => {
         expect(screen.getByText('First error')).toBeInTheDocument();
       });
-      
+
       // Second call - error should be cleared
       await user.click(configureButton);
       await waitFor(() => {
@@ -392,8 +392,8 @@ describe('ModelConfig', () => {
       });
 
       render(<ModelConfig />);
-      
-      const configureButton = screen.getByText('Configure');
+
+      const configureButton = screen.getByRole('button', { name: /configure/i });
       await user.click(configureButton);
 
       await waitFor(() => {
@@ -409,8 +409,8 @@ describe('ModelConfig', () => {
       );
 
       render(<ModelConfig />);
-      
-      const configureButton = screen.getByText('Configure');
+
+      const configureButton = screen.getByRole('button', { name: /configure/i });
       await user.click(configureButton);
 
       expect(configureButton).toBeDisabled();
@@ -423,8 +423,8 @@ describe('ModelConfig', () => {
       });
 
       render(<ModelConfig />);
-      
-      const configureButton = screen.getByText('Configure');
+
+      const configureButton = screen.getByRole('button', { name: /configure/i });
       await user.click(configureButton);
 
       await waitFor(() => {
@@ -440,8 +440,8 @@ describe('ModelConfig', () => {
       });
 
       render(<ModelConfig />);
-      
-      const configureButton = screen.getByText('Configure');
+
+      const configureButton = screen.getByRole('button', { name: /configure/i });
       await user.click(configureButton);
 
       await waitFor(() => {
@@ -454,7 +454,7 @@ describe('ModelConfig', () => {
   describe('Responsive Design', () => {
     it('renders the component without errors', () => {
       render(<ModelConfig />);
-      
+
       expect(screen.getByText('Provider')).toBeInTheDocument();
     });
   });
@@ -462,7 +462,7 @@ describe('ModelConfig', () => {
   describe('Accessibility', () => {
     it('has proper labels and form structure', () => {
       render(<ModelConfig />);
-      
+
       // Check that labels are present in the document
       expect(screen.getByText('Provider')).toBeInTheDocument();
       expect(screen.getByText('Model')).toBeInTheDocument();
@@ -472,17 +472,17 @@ describe('ModelConfig', () => {
 
     it('has proper button roles and states', () => {
       render(<ModelConfig />);
-      
+
       const configureButton = screen.getByRole('button', { name: 'Configure' });
       const saveButton = screen.getByRole('button', { name: 'Save' });
-      
+
       expect(configureButton).toBeInTheDocument();
       expect(saveButton).toBeInTheDocument();
     });
 
     it('has proper form controls with accessible names', () => {
       render(<ModelConfig />);
-      
+
       // Check that form controls are present
       expect(screen.getByDisplayValue('OpenAI')).toBeInTheDocument(); // Provider select
       expect(screen.getByDisplayValue('GPT-4o')).toBeInTheDocument(); // Model select
