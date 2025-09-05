@@ -1,14 +1,24 @@
 'use client';
 
-import React, { forwardRef, useState } from 'react';
+import React, { forwardRef, useState, useEffect } from 'react';
 import { Sparkles, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { modelConfigService } from '../../../service/modelConfigService';
 
 interface ModelConfigProps {
+  agentName?: string;
+  onConfigChange?: (config: any) => void;
+  existingConfig?: any;
+  isEditing?: boolean;
   isDarkMode?: boolean;
 }
 
-const ModelConfig = forwardRef<HTMLDivElement, ModelConfigProps>(({ isDarkMode = false }, ref) => {
+const ModelConfig = forwardRef<HTMLDivElement, ModelConfigProps>(({ 
+  agentName = 'default', 
+  onConfigChange, 
+  existingConfig, 
+  isEditing = false,
+  isDarkMode = false 
+}, ref) => {
   const [selectedModelProvider, setSelectedModelProvider] = useState('OpenAI');
   const [selectedModel, setSelectedModel] = useState('GPT-4o');
   const [firstMessage, setFirstMessage] = useState('Thank you for calling Wellness Partners. This is Riley, your scheduling agent. How may I help you today?');
@@ -33,9 +43,151 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
   // Loading and error states
   const [isLoadingModel, setIsLoadingModel] = useState(false);
   const [isLoadingPrompt, setIsLoadingPrompt] = useState(false);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(false);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [modelConfigStatus, setModelConfigStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [promptConfigStatus, setPromptConfigStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  
+  // Configuration status states
+  const [isModelConfigured, setIsModelConfigured] = useState(false);
+  const [isPromptConfigured, setIsPromptConfigured] = useState(false);
+  const [currentModelConfig, setCurrentModelConfig] = useState<any>(null);
+  const [currentPromptConfig, setCurrentPromptConfig] = useState<any>(null);
+
+  // Load existing configuration when provided
+  useEffect(() => {
+    if (existingConfig && isEditing) {
+      setSelectedModelProvider(existingConfig.selectedModelProvider || 'OpenAI');
+      setSelectedModel(existingConfig.selectedModel || 'GPT-4o');
+      setFirstMessage(existingConfig.firstMessage || 'Thank you for calling Wellness Partners. This is Riley, your scheduling agent. How may I help you today?');
+      setSystemPrompt(existingConfig.systemPrompt || `# Appointment Scheduling Agent Prompt
+
+## Identity & Purpose
+You are Riley, an appointment scheduling voice agent for Wellness Partners, a multi-specialty health clinic. Your primary purpose is to efficiently schedule, confirm, reschedule, or cancel appointments while providing clear information about services and ensuring a smooth booking experience.
+
+## Voice & Persona
+### Personality
+- Sound friendly, organized, and efficient
+- Project a helpful and patient demeanor, especially with elderly or confused callers
+- Maintain a warm but professional tone throughout the conversation
+- Convey confidence and competence in managing the scheduling system
+
+### Speech Characteristics
+- Speak clearly and at a moderate pace
+- Use simple, direct language that's easy to understand
+- Avoid medical jargon unless the caller uses it first
+- Be concise but thorough in your responses`);
+    }
+  }, [existingConfig, isEditing]);
+
+  // Load current configuration from API on component mount
+  useEffect(() => {
+    loadCurrentConfiguration();
+  }, []);
+
+  // Load current configuration from API
+  const loadCurrentConfiguration = async () => {
+    setIsLoadingConfig(true);
+    setErrorMessage('');
+
+    try {
+      // Load model configuration
+      const modelResult = await modelConfigService.getCurrentModelConfig();
+      if (modelResult.success && modelResult.data) {
+        setIsModelConfigured(true);
+        setCurrentModelConfig(modelResult.data);
+        
+        // Update form fields with current configuration
+        const provider = Object.keys(modelProviders).find(key => 
+          modelProviders[key as keyof typeof modelProviders].apiProvider === modelResult.data.provider
+        );
+        if (provider) {
+          setSelectedModelProvider(provider);
+        }
+        if (modelResult.data.model) {
+          setSelectedModel(modelResult.data.model);
+        }
+      } else {
+        setIsModelConfigured(false);
+        setCurrentModelConfig(null);
+      }
+
+      // Load prompt configuration
+      const promptResult = await modelConfigService.getCurrentPromptConfig();
+      if (promptResult.success && promptResult.data) {
+        setIsPromptConfigured(true);
+        setCurrentPromptConfig(promptResult.data);
+        
+        // Update form fields with current configuration
+        if (promptResult.data.prompt) {
+          setSystemPrompt(promptResult.data.prompt);
+        }
+      } else {
+        setIsPromptConfigured(false);
+        setCurrentPromptConfig(null);
+      }
+    } catch (error) {
+      console.error('Error loading current configuration:', error);
+      setErrorMessage('Failed to load current configuration');
+    } finally {
+      setIsLoadingConfig(false);
+    }
+  };
+
+  // Check current configuration status
+  const checkConfigurationStatus = async () => {
+    setIsCheckingStatus(true);
+    setErrorMessage('');
+    
+    try {
+      await loadCurrentConfiguration();
+      console.log('Configuration status updated:', {
+        modelConfigured: isModelConfigured,
+        promptConfigured: isPromptConfigured,
+        currentModelConfig,
+        currentPromptConfig
+      });
+    } catch (error) {
+      console.error('Error checking configuration status:', error);
+      setErrorMessage('Failed to check configuration status');
+    } finally {
+      setIsCheckingStatus(false);
+    }
+  };
+
+  // Reset configuration status
+  const resetConfigurationStatus = () => {
+    setIsModelConfigured(false);
+    setIsPromptConfigured(false);
+    setCurrentModelConfig(null);
+    setCurrentPromptConfig(null);
+    setModelConfigStatus('idle');
+    setPromptConfigStatus('idle');
+    setErrorMessage('');
+    
+    // Reset the form fields to defaults
+    setSelectedModelProvider('OpenAI');
+    setSelectedModel('GPT-4o');
+    setFirstMessage('Thank you for calling Wellness Partners. This is Riley, your scheduling agent. How may I help you today?');
+    setSystemPrompt(`# Appointment Scheduling Agent Prompt
+
+## Identity & Purpose
+You are Riley, an appointment scheduling voice agent for Wellness Partners, a multi-specialty health clinic. Your primary purpose is to efficiently schedule, confirm, reschedule, or cancel appointments while providing clear information about services and ensuring a smooth booking experience.
+
+## Voice & Persona
+### Personality
+- Sound friendly, organized, and efficient
+- Project a helpful and patient demeanor, especially with elderly or confused callers
+- Maintain a warm but professional tone throughout the conversation
+- Convey confidence and competence in managing the scheduling system
+
+### Speech Characteristics
+- Speak clearly and at a moderate pace
+- Use simple, direct language that's easy to understand
+- Avoid medical jargon unless the caller uses it first
+- Be concise but thorough in your responses`);
+  };
 
   // Model data structure with API provider mappings
   const modelProviders = {
@@ -94,6 +246,15 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
     'PaLM 2': 'palm-2'
   };
 
+  const handleProviderChange = (provider: string) => {
+    setSelectedModelProvider(provider);
+    // Reset model to first available model for the new provider
+    const providerData = modelProviders[provider as keyof typeof modelProviders];
+    if (providerData && providerData.models.length > 0) {
+      setSelectedModel(providerData.models[0]);
+    }
+  };
+
   const handleModelConfiguration = async () => {
     setIsLoadingModel(true);
     setModelConfigStatus('idle');
@@ -110,7 +271,15 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
 
       if (result.success) {
         setModelConfigStatus('success');
-        setTimeout(() => setModelConfigStatus('idle'), 3000);
+        // Mark model as configured when successful
+        setIsModelConfigured(true);
+        const modelConfig = {
+          provider: provider.apiProvider,
+          model: apiModel
+        };
+        setCurrentModelConfig(modelConfig);
+        
+        setTimeout(() => setModelConfigStatus('idle'), 5000);
       } else {
         setModelConfigStatus('error');
         setErrorMessage(result.message || 'Failed to configure model');
@@ -135,7 +304,14 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
 
       if (result.success) {
         setPromptConfigStatus('success');
-        setTimeout(() => setPromptConfigStatus('idle'), 3000);
+        // Mark prompt as configured when successful
+        setIsPromptConfigured(true);
+        const promptConfig = {
+          prompt: systemPrompt
+        };
+        setCurrentPromptConfig(promptConfig);
+        
+        setTimeout(() => setPromptConfigStatus('idle'), 5000);
       } else {
         setPromptConfigStatus('error');
         setErrorMessage(result.message || 'Failed to configure prompt');
@@ -145,15 +321,6 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
       setErrorMessage(error instanceof Error ? error.message : 'Failed to configure prompt');
     } finally {
       setIsLoadingPrompt(false);
-    }
-  };
-
-  const handleProviderChange = (provider: string) => {
-    setSelectedModelProvider(provider);
-    // Reset model to first available model for the new provider
-    const providerData = modelProviders[provider as keyof typeof modelProviders];
-    if (providerData && providerData.models.length > 0) {
-      setSelectedModel(providerData.models[0]);
     }
   };
 
@@ -168,139 +335,358 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
     }
   };
 
+  // Notify parent component of configuration changes (for first message only)
+  useEffect(() => {
+    if (onConfigChange) {
+      onConfigChange({
+        firstMessage
+      });
+    }
+  }, [firstMessage, onConfigChange]);
+
   return (
-    <div ref={ref}>
-      <div className="px-4 sm:px-6 lg:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
-        {/* Error Message */}
-        {errorMessage && (
-          <div className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border ${isDarkMode ? 'bg-red-900/20 border-red-700 text-red-300' : 'bg-red-50 border-red-200 text-red-700'}`}>
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 flex-shrink-0" />
-              <span className="text-xs sm:text-sm">{errorMessage}</span>
+    <div ref={ref} className="space-y-6">
+      {/* Header */}
+      <div className="text-center">
+        <div className={`p-3 sm:p-4 rounded-2xl inline-block mb-4 ${isDarkMode ? 'bg-gradient-to-r from-gray-800 to-gray-700' : 'bg-gradient-to-r from-gray-100 to-gray-200'}`}>
+          <Sparkles className={`h-6 w-6 sm:h-8 sm:w-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+        </div>
+        <h3 className={`text-xl sm:text-2xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Model Configuration</h3>
+        <p className={`max-w-2xl mx-auto text-sm sm:text-base ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+          Configure your AI model provider, model selection, and system prompt for optimal performance
+        </p>
+        
+        {/* Status Management Buttons */}
+        <div className="mt-4 flex justify-center gap-3">
+          <button
+            onClick={checkConfigurationStatus}
+            disabled={isCheckingStatus || isLoadingConfig}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+              isCheckingStatus || isLoadingConfig
+                ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                : 'bg-purple-600 text-white hover:bg-purple-700 transform hover:scale-105'
+            }`}
+          >
+            {isCheckingStatus || isLoadingConfig ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCircle className="h-4 w-4" />
+            )}
+            {isCheckingStatus || isLoadingConfig ? 'Loading...' : 'Check Status'}
+          </button>
+          
+          <button
+            onClick={resetConfigurationStatus}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-red-600 text-white hover:bg-red-700 transform hover:scale-105"
+          >
+            <AlertCircle className="h-4 w-4" />
+            Reset Status
+          </button>
+        </div>
+        
+        {/* Configuration Status Summary */}
+        <div className="mt-4 flex justify-center gap-4">
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+            isModelConfigured 
+              ? isDarkMode ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700'
+              : isDarkMode ? 'bg-red-900/30 text-red-300' : 'bg-red-100 text-red-700'
+          }`}>
+            <CheckCircle className={`h-4 w-4 ${isModelConfigured ? 'text-green-400' : 'text-red-400'}`} />
+            <span className="text-sm font-medium">
+              Model: {isModelConfigured ? 'Configured' : 'Not Configured'}
+            </span>
+          </div>
+          
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+            isPromptConfigured 
+              ? isDarkMode ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700'
+              : isDarkMode ? 'bg-red-900/30 text-red-300' : 'bg-red-100 text-red-700'
+          }`}>
+            <CheckCircle className={`h-4 w-4 ${isPromptConfigured ? 'text-green-400' : 'text-red-400'}`} />
+            <span className="text-sm font-medium">
+              Prompt: {isPromptConfigured ? 'Configured' : 'Not Configured'}
+            </span>
+          </div>
+        </div>
+        
+        {/* Help Text */}
+        <div className="text-center">
+          <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            💡 Configuration status is loaded from the API. Use "Check Status" to refresh the current configuration.
+          </p>
+        </div>
+      </div>
+
+      {/* Configuration Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Model Selection */}
+        <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
+          <div className="flex items-center gap-3 mb-4">
+            <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-blue-900/50' : 'bg-blue-100'}`}>
+              <Sparkles className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+            </div>
+            <div>
+              <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Model Selection</h4>
+              <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Choose your AI model provider and model</p>
             </div>
           </div>
-        )}
-
-        {/* Provider and Model Selection */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          <div>
-            <label className={`flex items-center gap-2 text-xs sm:text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Provider
-              <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-gray-500 flex items-center justify-center">
-                <span className="text-xs text-white">i</span>
-              </div>
-            </label>
-            <select
-              value={selectedModelProvider}
-              onChange={(e) => handleProviderChange(e.target.value)}
-              className={`w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 text-sm sm:text-base ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200' : 'border-gray-200 bg-white/80 text-gray-900'}`}
-            >
-              {Object.keys(modelProviders).map((provider) => (
-                <option key={provider} value={provider}>{provider}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className={`flex items-center gap-2 text-xs sm:text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Model
-              <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-gray-500 flex items-center justify-center">
-                <span className="text-xs text-white">i</span>
-              </div>
-            </label>
-            <div className="flex flex-col sm:flex-row gap-2">
+          
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Model Provider
+              </label>
+              <select
+                value={selectedModelProvider}
+                onChange={(e) => handleProviderChange(e.target.value)}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${
+                  isDarkMode 
+                    ? 'bg-gray-700/50 border-gray-600 text-gray-200' 
+                    : 'bg-gray-50 border-gray-200 text-gray-900'
+                }`}
+              >
+                {Object.keys(modelProviders).map((provider) => (
+                  <option key={provider} value={provider}>{provider}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Model
+              </label>
               <select
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
-                className={`flex-1 px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 text-sm sm:text-base ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200' : 'border-gray-200 bg-white/80 text-gray-900'}`}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${
+                  isDarkMode 
+                    ? 'bg-gray-700/50 border-gray-600 text-gray-200' 
+                    : 'bg-gray-50 border-gray-200 text-gray-900'
+                }`}
               >
                 {modelProviders[selectedModelProvider as keyof typeof modelProviders]?.models.map((model) => (
                   <option key={model} value={model}>{model}</option>
                 ))}
               </select>
-              <button
-                onClick={handleModelConfiguration}
-                disabled={isLoadingModel}
-                className={`px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base w-full sm:w-auto ${isLoadingModel
-                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
-              >
-                {isLoadingModel ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  getStatusIcon(modelConfigStatus)
-                )}
-                <span className="whitespace-nowrap">{isLoadingModel ? 'Configuring...' : 'Configure'}</span>
-              </button>
             </div>
-          </div>
-        </div>
-
-        {/* First Message */}
-        <div>
-          <label className={`flex items-center gap-2 text-xs sm:text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-            First Message
-            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-gray-500 flex items-center justify-center">
-              <span className="text-xs text-white">i</span>
-            </div>
-          </label>
-          <div className="relative">
-            <textarea
-              rows={3}
-              value={firstMessage}
-              onChange={(e) => setFirstMessage(e.target.value)}
-              className={`w-full px-3 sm:px-4 py-2 sm:py-3 pr-16 sm:pr-24 border rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 backdrop-blur-sm transition-all duration-300 resize-none text-sm sm:text-base ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'}`}
-              placeholder="Enter the agent's first message..."
-            />
-            <button className={`absolute right-2 sm:right-3 top-2 sm:top-3 px-2 sm:px-3 py-1 rounded-md sm:rounded-lg text-xs sm:text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition-colors flex items-center gap-1 whitespace-nowrap`}>
-              <Sparkles className="h-3 w-3" />
-              <span className="hidden sm:inline">Generate</span>
+            
+            <button
+              onClick={handleModelConfiguration}
+              disabled={isLoadingModel}
+              className={`w-full p-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base ${
+                isLoadingModel 
+                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                  : isModelConfigured
+                    ? 'bg-green-600 text-white hover:bg-green-700 transform hover:scale-105'
+                    : 'bg-blue-600 text-white hover:bg-blue-700 transform hover:scale-105'
+              }`}
+            >
+              {isLoadingModel ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : isModelConfigured ? (
+                <CheckCircle className="h-4 w-4" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              {isLoadingModel ? 'Configuring...' : isModelConfigured ? 'Model Configured ✓' : 'Configure Model'}
             </button>
           </div>
         </div>
 
         {/* System Prompt */}
-        <div>
-          <label className={`flex items-center gap-2 text-xs sm:text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-            System Prompt
-            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-gray-500 flex items-center justify-center">
-              <span className="text-xs text-white">i</span>
+        <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
+          <div className="flex items-center gap-3 mb-4">
+            <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-green-900/50' : 'bg-green-100'}`}>
+              <Sparkles className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
             </div>
-          </label>
-          <div className="relative">
-            <textarea
-              rows={8}
-              value={systemPrompt}
-              onChange={(e) => setSystemPrompt(e.target.value)}
-              className={`w-full px-3 sm:px-4 py-2 sm:py-3 pr-14 sm:pr-20 border rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 resize-none text-sm sm:text-base ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'}`}
-              placeholder="Enter system prompt..."
-            />
-            <div className="absolute right-2 sm:right-3 top-2 sm:top-3 flex flex-col sm:flex-row gap-1 sm:gap-2">
-              <button
-                onClick={handlePromptConfiguration}
-                disabled={isLoadingPrompt}
-                className={`p-1.5 sm:p-2 rounded-md sm:rounded-lg transition-colors flex items-center justify-center gap-1 ${isLoadingPrompt
-                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
-              >
-                {isLoadingPrompt ? (
-                  <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
-                ) : (
-                  getStatusIcon(promptConfigStatus)
-                )}
-                <span className="hidden sm:inline text-xs sm:text-sm">{isLoadingPrompt ? 'Saving...' : 'Save'}</span>
-              </button>
-              <button className={`p-1.5 sm:p-2 rounded-md sm:rounded-lg text-gray-400 hover:text-gray-600 transition-colors`}>
-                <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                </svg>
-              </button>
+            <div>
+              <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>System Prompt</h4>
+              <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Define your agent's behavior and personality</p>
             </div>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                First Message
+              </label>
+              <textarea
+                value={firstMessage}
+                onChange={(e) => setFirstMessage(e.target.value)}
+                placeholder="Enter the first message your agent will say..."
+                rows={3}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base resize-none ${
+                  isDarkMode 
+                    ? 'bg-gray-700/50 border-gray-600 text-gray-200 placeholder-gray-400' 
+                    : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                }`}
+              />
+            </div>
+            
+            <div>
+              <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                System Prompt
+              </label>
+              <textarea
+                value={systemPrompt}
+                onChange={(e) => setSystemPrompt(e.target.value)}
+                placeholder="Enter the system prompt that defines your agent's behavior..."
+                rows={8}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base resize-none ${
+                  isDarkMode 
+                    ? 'bg-gray-700/50 border-gray-600 text-gray-200 placeholder-gray-400' 
+                    : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                }`}
+              />
+            </div>
+            
+            <button
+              onClick={handlePromptConfiguration}
+              disabled={isLoadingPrompt}
+              className={`w-full p-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base ${
+                isLoadingPrompt 
+                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                  : isPromptConfigured
+                    ? 'bg-green-600 text-white hover:bg-green-700 transform hover:scale-105'
+                    : 'bg-green-600 text-white hover:bg-green-700 transform hover:scale-105'
+              }`}
+            >
+              {isLoadingPrompt ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : isPromptConfigured ? (
+                <CheckCircle className="h-4 w-4" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              {isLoadingPrompt ? 'Saving...' : isPromptConfigured ? 'Prompt Saved ✓' : 'Save Prompt'}
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Current Configuration Display */}
+      <div className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/30 border-gray-700/50' : 'bg-white/30 border-gray-200/50'}`}>
+        <h4 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+          Current Configuration Status
+        </h4>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Model Configuration Status */}
+            <div className={`p-4 rounded-xl border ${
+              isModelConfigured 
+                ? isDarkMode ? 'bg-green-900/20 border-green-700/30' : 'bg-green-50 border-green-200'
+                : isDarkMode ? 'bg-red-900/20 border-red-700/30' : 'bg-red-50 border-red-200'
+            }`}>
+              <div className="flex items-center gap-2 mb-3">
+                <CheckCircle className={`h-5 w-5 ${isModelConfigured ? 'text-green-500' : 'text-red-500'}`} />
+                <h5 className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  Model Configuration
+                </h5>
+              </div>
+              
+              {isModelConfigured && currentModelConfig ? (
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Provider:</span>
+                    <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {Object.keys(modelProviders).find(key => 
+                        modelProviders[key as keyof typeof modelProviders].apiProvider === currentModelConfig.provider
+                      ) || currentModelConfig.provider}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Model:</span>
+                    <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {currentModelConfig.model}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  No model configuration found
+                </p>
+              )}
+            </div>
+            
+            {/* Prompt Configuration Status */}
+            <div className={`p-4 rounded-xl border ${
+              isPromptConfigured 
+                ? isDarkMode ? 'bg-green-900/20 border-green-700/30' : 'bg-green-50 border-green-200'
+                : isDarkMode ? 'bg-red-900/20 border-red-700/30' : 'bg-red-50 border-red-200'
+            }`}>
+              <div className="flex items-center gap-2 mb-3">
+                <CheckCircle className={`h-5 w-5 ${isPromptConfigured ? 'text-green-500' : 'text-red-500'}`} />
+                <h5 className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  System Prompt
+                </h5>
+              </div>
+              
+              {isPromptConfigured && currentPromptConfig ? (
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Status:</span>
+                    <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      Configured
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Length:</span>
+                    <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {currentPromptConfig.prompt?.length || 0} characters
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  No system prompt configured
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+      {/* Status Messages */}
+      {(modelConfigStatus === 'success' || modelConfigStatus === 'error' || promptConfigStatus === 'success' || promptConfigStatus === 'error') && (
+        <div className={`p-4 rounded-xl border ${
+          (modelConfigStatus === 'success' || promptConfigStatus === 'success')
+            ? isDarkMode 
+              ? 'bg-green-900/20 border-green-700/50' 
+              : 'bg-green-50 border-green-200'
+            : isDarkMode 
+              ? 'bg-red-900/20 border-red-700/50' 
+              : 'bg-red-50 border-red-200'
+        }`}>
+          <div className="flex items-center gap-3">
+            {(modelConfigStatus === 'success' || promptConfigStatus === 'success') ? (
+              <CheckCircle className={`h-5 w-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+            ) : (
+              <AlertCircle className={`h-5 w-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`} />
+            )}
+            <span className={`text-sm sm:text-base ${
+              (modelConfigStatus === 'success' || promptConfigStatus === 'success')
+                ? isDarkMode ? 'text-green-300' : 'text-green-800'
+                : isDarkMode ? 'text-red-300' : 'text-red-800'
+            }`}>
+              {modelConfigStatus === 'success' && 'Model configured successfully!'}
+              {promptConfigStatus === 'success' && 'System prompt saved successfully!'}
+              {modelConfigStatus === 'error' && 'Failed to configure model'}
+              {promptConfigStatus === 'error' && 'Failed to save system prompt'}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Error Message Display */}
+      {errorMessage && (
+        <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200'}`}>
+          <div className="flex items-center gap-3">
+            <AlertCircle className={`h-5 w-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`} />
+            <span className={`text-sm sm:text-base ${isDarkMode ? 'text-red-300' : 'text-red-800'}`}>
+              {errorMessage}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 });

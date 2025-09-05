@@ -3,13 +3,13 @@
 import React from 'react';
 import { Code, Bot, TrendingUp, Phone, Activity, Zap, Clock, Sparkles, BarChart3, Database } from 'lucide-react';
 import { useAuthInfo } from '@propelauth/react';
+import { useTheme } from '../contexts/ThemeContext';
 
-interface OverviewTabProps {
-    isDarkMode?: boolean;
-}
+interface OverviewTabProps {}
 
-export default function OverviewTab({ isDarkMode = false }: OverviewTabProps) {
+export default function OverviewTab({}: OverviewTabProps) {
     const { user } = useAuthInfo();
+    const { isDarkMode } = useTheme();
 
     return (
         <div className="max-w-9xl  mx-auto space-y-8">
