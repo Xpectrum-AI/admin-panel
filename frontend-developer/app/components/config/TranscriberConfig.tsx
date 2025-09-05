@@ -1,14 +1,14 @@
 'use client';
 
-import React, { forwardRef, useState, useEffect, useRef } from 'react';
+import React, { forwardRef, useState, useEffect, useRef, useCallback } from 'react';
 import { Mic, Settings, Zap, Loader2, MessageSquare, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 import { agentConfigService, maskApiKey } from '../../../service/agentConfigService';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface TranscriberConfigProps {
   agentName?: string;
-  onConfigChange?: (config: any) => void;
-  existingConfig?: any;
+  onConfigChange?: (config: Record<string, unknown>) => void;
+  existingConfig?: Record<string, unknown>;
   isEditing?: boolean;
 }
 
@@ -18,7 +18,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
   try {
     const theme = useTheme();
     isDarkMode = theme?.isDarkMode || false;
-  } catch (error) {
+  } catch {
     isDarkMode = false;
   }
   // Local state for UI updates
@@ -32,13 +32,11 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
   const [isConfiguring, setIsConfiguring] = useState(false);
   const [isLoadingConfig, setIsLoadingConfig] = useState(false);
   const [configStatus, setConfigStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [isUserChangingProvider, setIsUserChangingProvider] = useState(false);
   const providerChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Configuration status states
   const [isTranscriberConfigured, setIsTranscriberConfigured] = useState(false);
-  const [currentTranscriberConfig, setCurrentTranscriberConfig] = useState<any>(null);
+  const [currentTranscriberConfig, setCurrentTranscriberConfig] = useState<Record<string, unknown> | null>(null);
 
   const transcriberProviders = {
     'Deepgram': ['nova-2', 'nova-2-general', 'nova-2-meeting', 'nova-2-phonecall', 'nova-2-finance', 'nova-2-conversationalai', 'nova-2-video', 'nova-2-medical', 'nova-2-drivethru', 'nova-2-automotivesales', 'nova-2-legal', 'nova-2-ppc', 'nova-2-government', 'nova-2-entertainment', 'nova-2-streaming', 'nova-2-restaurants'],
@@ -46,17 +44,9 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
     'Groq': ['llama-3.1-8b', 'llama-3.1-70b', 'mixtral-8x7b']
   };
 
-  // Load current configuration from API on component mount
-  useEffect(() => {
-    if (isEditing) {
-      loadCurrentConfiguration();
-    }
-  }, [isEditing, agentName]);
-
   // Load current configuration from API
-  const loadCurrentConfiguration = async () => {
+  const loadCurrentConfiguration = useCallback(async () => {
     setIsLoadingConfig(true);
-    setErrorMessage('');
 
     try {
       const result = await agentConfigService.getCurrentTranscriberConfig(agentName);
@@ -119,12 +109,19 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
         setIsTranscriberConfigured(false);
         setCurrentTranscriberConfig(null);
       }
-    } catch (error) {
-      setErrorMessage('Failed to load current transcriber configuration');
+    } catch {
+      // Error handled by service layer
     } finally {
       setIsLoadingConfig(false);
     }
-  };
+  }, [agentName]);
+
+  // Load current configuration from API on component mount
+  useEffect(() => {
+    if (isEditing) {
+      loadCurrentConfiguration();
+    }
+  }, [isEditing, agentName, loadCurrentConfiguration]);
 
   // Load existing configuration when provided
   useEffect(() => {
@@ -137,48 +134,48 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
         if (provider === 'deepgram') provider = 'Deepgram';
         if (provider === 'whisper') provider = 'Whisper';
         
-        setSelectedTranscriberProvider(provider);
+        setSelectedTranscriberProvider(provider as string);
         
         // Set language - check provider-specific object first, then fallback to root level
-        if (existingConfig[provider.toLowerCase()]?.language) {
-          setSelectedLanguage(existingConfig[provider.toLowerCase()].language);
+        if ((existingConfig as any)[(provider as string).toLowerCase()]?.language) {
+          setSelectedLanguage((existingConfig as any)[(provider as string).toLowerCase()].language);
         } else if (existingConfig.language) {
-          setSelectedLanguage(existingConfig.language);
+          setSelectedLanguage(existingConfig.language as string);
         }
         
         // Set model - check provider-specific object first, then fallback to root level
-        if (existingConfig[provider.toLowerCase()]?.model) {
-          setSelectedModel(existingConfig[provider.toLowerCase()].model);
+        if ((existingConfig as any)[(provider as string).toLowerCase()]?.model) {
+          setSelectedModel((existingConfig as any)[(provider as string).toLowerCase()].model);
         } else if (existingConfig.model) {
-          setSelectedModel(existingConfig.model);
+          setSelectedModel(existingConfig.model as string);
         }
         
         // Set API key - check provider-specific object first, then fallback to root level
-        if (existingConfig[provider.toLowerCase()]?.api_key) {
-          setApiKey(existingConfig[provider.toLowerCase()].api_key);
+        if ((existingConfig as any)[(provider as string).toLowerCase()]?.api_key) {
+          setApiKey((existingConfig as any)[(provider as string).toLowerCase()].api_key);
         } else if (existingConfig.api_key) {
-          setApiKey(existingConfig.api_key);
+          setApiKey(existingConfig.api_key as string);
         }
         
         // Set punctuate - check provider-specific object first, then fallback to root level
-        if (existingConfig[provider.toLowerCase()]?.punctuate !== undefined) {
-          setPunctuateEnabled(existingConfig[provider.toLowerCase()].punctuate);
+        if ((existingConfig as any)[(provider as string).toLowerCase()]?.punctuate !== undefined) {
+          setPunctuateEnabled((existingConfig as any)[(provider as string).toLowerCase()].punctuate);
         } else if (existingConfig.punctuate !== undefined) {
-          setPunctuateEnabled(existingConfig.punctuate);
+          setPunctuateEnabled(existingConfig.punctuate as boolean);
         }
         
         // Set smart format - check provider-specific object first, then fallback to root level
-        if (existingConfig[provider.toLowerCase()]?.smart_format !== undefined) {
-          setSmartFormatEnabled(existingConfig[provider.toLowerCase()].smart_format);
+        if ((existingConfig as any)[(provider as string).toLowerCase()]?.smart_format !== undefined) {
+          setSmartFormatEnabled((existingConfig as any)[(provider as string).toLowerCase()].smart_format);
         } else if (existingConfig.smart_format !== undefined) {
-          setSmartFormatEnabled(existingConfig.smart_format);
+          setSmartFormatEnabled(existingConfig.smart_format as boolean);
         }
         
         // Set interim results - check provider-specific object first, then fallback to root level
-        if (existingConfig[provider.toLowerCase()]?.interim_results !== undefined) {
-          setInterimResultEnabled(existingConfig[provider.toLowerCase()].interim_results);
+        if ((existingConfig as any)[(provider as string).toLowerCase()]?.interim_results !== undefined) {
+          setInterimResultEnabled((existingConfig as any)[(provider as string).toLowerCase()].interim_results);
         } else if (existingConfig.interim_results !== undefined) {
-          setInterimResultEnabled(existingConfig.interim_results);
+          setInterimResultEnabled(existingConfig.interim_results as boolean);
         }
       }
     }
@@ -275,7 +272,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
       } else {
         setConfigStatus('error');
       }
-    } catch (error) {
+    } catch {
       setConfigStatus('error');
       
       // Clear error message after 3 seconds
@@ -289,15 +286,11 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
   const handleRefreshConfig = () => {
     if (existingConfig) {
       // Force a refresh by temporarily clearing the flag
-      setIsUserChangingProvider(false);
       // The existingConfig useEffect will now run and update the state
     }
   };
 
   const handleProviderChange = (provider: string) => {
-    
-    // Set flag to prevent existingConfig from overriding user selection
-    setIsUserChangingProvider(true);
     
     // Clear any pending timeouts
     if (providerChangeTimeoutRef.current) {
@@ -311,12 +304,6 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
     if (providerData && providerData.length > 0) {
       setSelectedModel(providerData[0]);
     }
-    
-    
-    // Reset the flag after a delay
-    providerChangeTimeoutRef.current = setTimeout(() => {
-      setIsUserChangingProvider(false);
-    }, 300);
   };
 
   return (
@@ -374,7 +361,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
           </div>
           {isTranscriberConfigured && currentTranscriberConfig && (
             <p className="text-xs mt-1 opacity-80">
-              Provider: {currentTranscriberConfig.provider || 'Unknown'}
+              Provider: {(currentTranscriberConfig.provider as string) || 'Unknown'}
             </p>
           )}
         </div>

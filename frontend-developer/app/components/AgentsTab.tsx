@@ -21,7 +21,7 @@ interface Agent {
   latency: string;
   avatar?: string;
   description?: string;
-  config?: any;
+  config?: Record<string, unknown>;
 }
 
 const sampleAgents: Agent[] = [
@@ -49,19 +49,21 @@ const sampleAgents: Agent[] = [
   }
 ];
 
-interface AgentsTabProps {}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface AgentsTabProps {
+  // No props needed for this component
+}
 
 export default function AgentsTab({}: AgentsTabProps) {
   const { isDarkMode } = useTheme();
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(sampleAgents[0]);
   const [activeConfigTab, setActiveConfigTab] = useState('model');
-  const [isCreating, setIsCreating] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
   // Configuration state variables
-  const [modelConfig, setModelConfig] = useState<any>(null);
-  const [voiceConfig, setVoiceConfig] = useState<any>(null);
-  const [transcriberConfig, setTranscriberConfig] = useState<any>(null);
+  const [modelConfig] = useState<Record<string, unknown> | null>(null);
+  const [voiceConfig] = useState<Record<string, unknown> | null>(null);
+  const [transcriberConfig] = useState<Record<string, unknown> | null>(null);
 
   // Refs for scrolling to sections
   const modelSectionRef = useRef<HTMLDivElement>(null);
@@ -143,7 +145,7 @@ export default function AgentsTab({}: AgentsTabProps) {
               <p className={`text-sm sm:text-base lg:text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Craft and configure intelligent agents</p>
             </div>
             <button
-              onClick={() => setIsCreating(true)}
+              onClick={() => {}}
               className="group relative px-4 sm:px-5 lg:px-6 py-2 sm:py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg sm:rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-lg sm:rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
@@ -347,7 +349,7 @@ export default function AgentsTab({}: AgentsTabProps) {
                       transcriberConfig={transcriberConfig}
                       onAgentCreated={handleAgentCreated}
                       isEditing={!!selectedAgent}
-                      existingAgent={selectedAgent}
+                      existingAgent={selectedAgent as unknown as Record<string, unknown>}
                       existingConfig={selectedAgent?.config}
                     />
                   )}

@@ -1,14 +1,14 @@
 'use client';
 
-import React, { forwardRef, useState, useEffect, useRef } from 'react';
-import { Mic, Volume2, Settings, Loader2, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
+import React, { forwardRef, useState, useEffect, useRef, useCallback } from 'react';
+import { Mic, Settings, Loader2, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 import { agentConfigService, maskApiKey } from '../../../service/agentConfigService';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface VoiceConfigProps {
   agentName?: string;
-  onConfigChange?: (config: any) => void;
-  existingConfig?: any;
+  onConfigChange?: (config: Record<string, unknown>) => void;
+  existingConfig?: Record<string, unknown>;
   isEditing?: boolean;
 }
 
@@ -18,7 +18,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
   try {
     const theme = useTheme();
     isDarkMode = theme?.isDarkMode || false;
-  } catch (error) {
+  } catch {
     isDarkMode = false;
   }
   // Local state for UI updates
@@ -33,13 +33,11 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
   const [isConfiguring, setIsConfiguring] = useState(false);
   const [isLoadingConfig, setIsLoadingConfig] = useState(false);
   const [configStatus, setConfigStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [isUserChangingProvider, setIsUserChangingProvider] = useState(false);
   const providerChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Configuration status states
   const [isVoiceConfigured, setIsVoiceConfigured] = useState(false);
-  const [currentVoiceConfig, setCurrentVoiceConfig] = useState<any>(null);
+  const [currentVoiceConfig, setCurrentVoiceConfig] = useState<Record<string, unknown> | null>(null);
 
   const [voiceProviders, setVoiceProviders] = useState({
     'OpenAI': ['Alloy', 'Echo', 'Fable', 'Onyx', 'Nova', 'Shimmer'],
@@ -76,17 +74,9 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
     'Hindi': 'hindi',
   };
 
-  // Load current configuration from API on component mount
-  useEffect(() => {
-    if (isEditing) {
-      loadCurrentConfiguration();
-    }
-  }, [isEditing, agentName]);
-
   // Load current configuration from API
-  const loadCurrentConfiguration = async () => {
+  const loadCurrentConfiguration = useCallback(async () => {
     setIsLoadingConfig(true);
-    setErrorMessage('');
 
     try {
       const result = await agentConfigService.getCurrentVoiceConfig(agentName);
@@ -175,12 +165,19 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
         setIsVoiceConfigured(false);
         setCurrentVoiceConfig(null);
       }
-    } catch (error) {
-      setErrorMessage('Failed to load current voice configuration');
+    } catch {
+      // Error handled by service layer
     } finally {
       setIsLoadingConfig(false);
     }
-  };
+  }, [agentName]);
+
+  // Load current configuration from API on component mount
+  useEffect(() => {
+    if (isEditing) {
+      loadCurrentConfiguration();
+    }
+  }, [isEditing, agentName, loadCurrentConfiguration]);
 
   // Load existing configuration when provided
   useEffect(() => {
@@ -195,72 +192,72 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
       if (provider === 'elevenlabs') provider = '11Labs';
       if (provider === 'openai') provider = 'OpenAI';
       
-      setSelectedVoiceProvider(provider);
+      setSelectedVoiceProvider(provider as string);
       
       // Set language (convert backend format to UI format)
-      if (ttsConfig.cartesian?.language) {
-        const backendLang = ttsConfig.cartesian.language;
+      if ((ttsConfig as any).cartesian?.language) {
+        const backendLang = (ttsConfig as any).cartesian.language;
         const uiLang = languageMapping[backendLang as keyof typeof languageMapping] || 'English';
         setSelectedLanguage(uiLang);
       }
       
       // Set speed
-      if (ttsConfig.cartesian?.speed !== undefined) {
-        setSpeedValue(ttsConfig.cartesian.speed);
+      if ((ttsConfig as any).cartesian?.speed !== undefined) {
+        setSpeedValue((ttsConfig as any).cartesian.speed);
       }
       
       // Set voice ID
-      if (ttsConfig.cartesian?.voice_id) {
-        setVoiceId(ttsConfig.cartesian.voice_id);
+      if ((ttsConfig as any).cartesian?.voice_id) {
+        setVoiceId((ttsConfig as any).cartesian.voice_id);
       }
       
       // Set API key
-      if (ttsConfig.cartesian?.tts_api_key) {
-        setApiKey(ttsConfig.cartesian.tts_api_key);
+      if ((ttsConfig as any).cartesian?.tts_api_key) {
+        setApiKey((ttsConfig as any).cartesian.tts_api_key);
       }
       
       // Set voice model
-      if (ttsConfig.cartesian?.model) {
-        setSelectedVoice(ttsConfig.cartesian.model);
+      if ((ttsConfig as any).cartesian?.model) {
+        setSelectedVoice((ttsConfig as any).cartesian.model);
         
         // Update Cartesia voice options to include the backend model if it's not already there
-        if (ttsConfig.provider === 'cartesian' && ttsConfig.cartesian.model) {
+        if ((ttsConfig as any).provider === 'cartesian' && (ttsConfig as any).cartesian.model) {
           setVoiceProviders(prev => ({
             ...prev,
-            'Cartesia': [...new Set([...prev.Cartesia, ttsConfig.cartesian.model])]
+            'Cartesia': [...new Set([...prev.Cartesia, (ttsConfig as any).cartesian.model])]
           }));
         }
       }
       
       // Handle OpenAI config if present
-      if (ttsConfig.openai) {
-        if (ttsConfig.openai.voice) {
-          setSelectedVoice(ttsConfig.openai.voice);
+      if ((ttsConfig as any).openai) {
+        if ((ttsConfig as any).openai.voice) {
+          setSelectedVoice((ttsConfig as any).openai.voice);
         }
-        if (ttsConfig.openai.speed !== undefined) {
-          setSpeedValue(ttsConfig.openai.speed);
+        if ((ttsConfig as any).openai.speed !== undefined) {
+          setSpeedValue((ttsConfig as any).openai.speed);
         }
-        if (ttsConfig.openai.api_key) {
-          setApiKey(ttsConfig.openai.api_key);
+        if ((ttsConfig as any).openai.api_key) {
+          setApiKey((ttsConfig as any).openai.api_key);
         }
       }
       
       // Handle 11Labs config if present
-      if (ttsConfig.elevenlabs) {
-        if (ttsConfig.elevenlabs.voice_id) {
-          setVoiceId(ttsConfig.elevenlabs.voice_id);
+      if ((ttsConfig as any).elevenlabs) {
+        if ((ttsConfig as any).elevenlabs.voice_id) {
+          setVoiceId((ttsConfig as any).elevenlabs.voice_id);
         }
-        if (ttsConfig.elevenlabs.speed !== undefined) {
-          setSpeedValue(ttsConfig.elevenlabs.speed);
+        if ((ttsConfig as any).elevenlabs.speed !== undefined) {
+          setSpeedValue((ttsConfig as any).elevenlabs.speed);
         }
-        if (ttsConfig.elevenlabs.api_key) {
-          setApiKey(ttsConfig.elevenlabs.api_key);
+        if ((ttsConfig as any).elevenlabs.api_key) {
+          setApiKey((ttsConfig as any).elevenlabs.api_key);
         }
-        if (ttsConfig.elevenlabs.stability !== undefined) {
-          setStability(ttsConfig.elevenlabs.stability);
+        if ((ttsConfig as any).elevenlabs.stability !== undefined) {
+          setStability((ttsConfig as any).elevenlabs.stability);
         }
-        if (ttsConfig.elevenlabs.similarity_boost !== undefined) {
-          setSimilarityBoost(ttsConfig.elevenlabs.similarity_boost);
+        if ((ttsConfig as any).elevenlabs.similarity_boost !== undefined) {
+          setSimilarityBoost((ttsConfig as any).elevenlabs.similarity_boost);
         }
       }
     }
@@ -352,7 +349,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
       } else {
         setConfigStatus('error');
       }
-    } catch (error) {
+    } catch {
       setConfigStatus('error');
       
       // Clear error message after 3 seconds
@@ -392,13 +389,10 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
 
       onConfigChange(backendConfig);
     }
-  }, [selectedVoiceProvider, selectedVoice, selectedLanguage, speedValue, apiKey, voiceId, stability, similarityBoost, onConfigChange]);
+  }, [selectedVoiceProvider, selectedVoice, selectedLanguage, speedValue, apiKey, voiceId, stability, similarityBoost, onConfigChange, reverseLanguageMapping]);
 
   // Handle provider changes with proper state management
   const handleProviderChange = (newProvider: string) => {
-    
-    // Set flag to prevent existingConfig from overriding user selection
-    setIsUserChangingProvider(true);
     
     // Clear any pending timeouts
     if (providerChangeTimeoutRef.current) {
@@ -418,19 +412,12 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
     // Update the provider and voice state
     setSelectedVoiceProvider(newProvider);
     setSelectedVoice(defaultVoice);
-    
-    
-    // Reset the flag after a delay
-    providerChangeTimeoutRef.current = setTimeout(() => {
-      setIsUserChangingProvider(false);
-    }, 300);
   };
 
   // Manual refresh function
   const handleRefreshConfig = () => {
     if (existingConfig) {
       // Force a refresh by temporarily clearing the flag
-      setIsUserChangingProvider(false);
       // The existingConfig useEffect will now run and update the state
     }
   };
@@ -605,7 +592,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
           </div>
         </div>
         <p className={`max-w-2xl mx-auto text-sm sm:text-base ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-          Select a voice from the list, or sync your voice library if it's missing. If errors persist, enable custom voice and add a voice ID.
+          Select a voice from the list, or sync your voice library if it&apos;s missing. If errors persist, enable custom voice and add a voice ID.
         </p>
       </div>
 
@@ -636,7 +623,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
           </div>
           {isVoiceConfigured && currentVoiceConfig && (
             <p className="text-xs mt-1 opacity-80">
-              Provider: {currentVoiceConfig.provider || 'Unknown'}
+              Provider: {(currentVoiceConfig.provider as string) || 'Unknown'}
             </p>
           )}
         </div>

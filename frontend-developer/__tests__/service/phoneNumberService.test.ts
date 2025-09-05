@@ -21,8 +21,8 @@ describe('phoneNumberService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Set default environment variables for testing
-    process.env.NEXT_PUBLIC_PHONE_API_BASE_URL = 'https://api.example.com';
-    process.env.NEXT_PUBLIC_PHONE_API_KEY = 'test-api-key';
+    process.env.NEXT_PUBLIC_LIVE_API_URL = 'https://d25b4i9wbz6f8t.cloudfront.net';
+    process.env.NEXT_PUBLIC_PHONE_API_KEY = 'xpectrum-ai@123';
   });
 
   afterEach(() => {

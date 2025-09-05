@@ -20,14 +20,21 @@ jest.mock('@/app/contexts/ThemeContext', () => ({
     }),
 }));
 
-// Mock the window.location.href assignment
-delete (window as any).location;
-(window as any).location = {
-    href: '',
-    assign: jest.fn(),
-    replace: jest.fn(),
-    reload: jest.fn(),
-};
+// Suppress JSDOM navigation warnings
+const originalConsoleError = console.error;
+beforeAll(() => {
+    console.error = (...args) => {
+        // Suppress JSDOM navigation warnings
+        if (args[0]?.includes?.('Not implemented: navigation')) {
+            return;
+        }
+        originalConsoleError(...args);
+    };
+});
+
+afterAll(() => {
+    console.error = originalConsoleError;
+});
 
 describe('Navbar', () => {
     const user = userEvent.setup();
