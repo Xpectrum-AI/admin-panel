@@ -21,7 +21,6 @@ export default function DeveloperDashboard() {
             activeTitle={activeNavItem}
             sidebarOpen={true}
             onToggleSidebar={() => { }}
-            onToggleDarkMode={toggleTheme}
             onLogout={async () => {
               // Logout handled by Navbar
             }}

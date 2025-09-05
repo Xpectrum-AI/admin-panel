@@ -20,7 +20,6 @@ interface NavbarProps {
     activeTitle: string;
     sidebarOpen: boolean;
     onToggleSidebar: () => void;
-    onToggleDarkMode: () => void;
     onLogout: () => Promise<void> | void;
 }
 
@@ -30,7 +29,6 @@ export default function Navbar({
     activeTitle: _activeTitle,
     sidebarOpen: _sidebarOpen,
     onToggleSidebar: _onToggleSidebar,
-    onToggleDarkMode,
     onLogout
 }: NavbarProps) {
     const tabs: Array<{ id: 'Overview' | 'Agents'; label: string }> = [
@@ -39,7 +37,7 @@ export default function Navbar({
     ];
 
     const { user } = useAuthInfo();
-    const { isDarkMode } = useTheme();
+    const { isDarkMode, toggleTheme } = useTheme();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -88,7 +86,7 @@ export default function Navbar({
 
                     <div className="flex items-center gap-3 sm:gap-4 z-50 w-full sm:w-auto justify-between sm:justify-end">
                         <button
-                            onClick={onToggleDarkMode}
+                            onClick={toggleTheme}
                             className={`p-2 rounded-xl transition-all duration-300 ${isDarkMode ? 'hover:bg-gray-800/50 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'}`}
                         >
                             {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}

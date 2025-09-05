@@ -130,17 +130,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
     }
   }, [isEditing, existingAgent, existingConfig]);
 
-  // Debug logging for configuration data
-  useEffect(() => {
-    console.log('=== ToolsConfig Debug Info ===');
-    console.log('voiceConfig:', voiceConfig);
-    console.log('transcriberConfig:', transcriberConfig);
-    console.log('existingAgent:', existingAgent);
-    console.log('existingConfig:', existingConfig);
-    console.log('isEditing:', isEditing);
-    console.log('agentName:', agentName);
-    console.log('=== End Debug Info ===');
-  }, [voiceConfig, transcriberConfig, existingAgent, existingConfig, isEditing, agentName]);
 
   const handleCreateAgent = async () => {
     setIsLoading(true);
@@ -148,9 +137,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
     setErrorMessage('');
 
     try {
-      console.log('=== Creating/Updating Agent ===');
-      console.log('Initial voiceConfig:', voiceConfig);
-      console.log('Initial transcriberConfig:', transcriberConfig);
       
       // Validate configurations
       if (!voiceConfig) {
@@ -168,14 +154,11 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
         if (voiceConfig.tts_config) {
           // Already in backend format, use as is
           ttsConfig = voiceConfig.tts_config;
-          console.log('Using existing TTS config from backend:', ttsConfig);
         } else if (voiceConfig.provider) {
           // Already in backend format, use as is
           ttsConfig = voiceConfig;
-          console.log('Using existing TTS config with provider:', ttsConfig);
         } else {
           // Convert from UI format to backend format
-          console.log('Converting UI format to backend format for TTS');
           switch (voiceConfig.voiceProvider) {
             case 'OpenAI':
               ttsConfig = {
@@ -215,10 +198,8 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
               };
               break;
           }
-          console.log('Converted TTS config:', ttsConfig);
         }
       } else {
-        console.log('No voiceConfig provided');
       }
 
       // Build STT configuration
@@ -228,10 +209,8 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
         if (transcriberConfig.provider) {
           // Already in backend format, use as is
           sttConfig = transcriberConfig;
-          console.log('Using existing STT config from backend:', sttConfig);
         } else {
           // Convert from UI format to backend format
-          console.log('Converting UI format to backend format for STT');
           switch (transcriberConfig.transcriberProvider) {
             case 'Deepgram':
               sttConfig = {
@@ -257,10 +236,8 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
               };
               break;
           }
-          console.log('Converted STT config:', sttConfig);
         }
       } else {
-        console.log('No transcriberConfig provided');
       }
 
       // Validate final configurations
@@ -285,7 +262,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
         stt_config: sttConfig
       };
 
-      console.log('Complete config to send:', completeConfig);
 
       const result = await agentConfigService.configureAgent(agentName, completeConfig);
 
@@ -306,12 +282,10 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
           try {
             // Add a small delay to ensure the backend has processed the creation
             setTimeout(async () => {
-              console.log('🔄 Refreshing agents list after creation...');
               await onAgentCreated();
             }, 1000);
           } catch (error) {
             // Ignore errors from refresh since backend doesn't support listing agents
-            console.log('Agent created successfully. Refresh may not work due to backend limitations.');
           }
         }
       } else {
