@@ -1,19 +1,19 @@
 'use client';
 
-import React, { forwardRef, useState, useEffect } from 'react';
+import React, { forwardRef, useState, useEffect, useCallback } from 'react';
 import { CheckCircle, AlertCircle, Loader2, Volume2, Clock, MessageSquare, Zap, Bot, Settings } from 'lucide-react';
 import { agentConfigService } from '../../../service/agentConfigService';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface ToolsConfigProps {
   agentName?: string;
-  modelConfig?: any;
-  voiceConfig?: any;
-  transcriberConfig?: any;
+  modelConfig?: Record<string, unknown>;
+  voiceConfig?: Record<string, unknown>;
+  transcriberConfig?: Record<string, unknown>;
   onAgentCreated?: () => void;
   isEditing?: boolean;
-  existingAgent?: any;
-  existingConfig?: any;
+  existingAgent?: Record<string, unknown>;
+  existingConfig?: Record<string, unknown>;
 }
 
 const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({ 
@@ -31,7 +31,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
   try {
     const theme = useTheme();
     isDarkMode = theme?.isDarkMode || false;
-  } catch (error) {
+  } catch {
     isDarkMode = false;
   }
   const [initialMessage, setInitialMessage] = useState('Hello! How can I help you today?');
@@ -44,23 +44,14 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
   // Loading and error states
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingConfig, setIsLoadingConfig] = useState(false);
-  const [configStatus, setConfigStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
   // Configuration status states
   const [isAgentConfigured, setIsAgentConfigured] = useState(false);
-  const [currentAgentConfig, setCurrentAgentConfig] = useState<any>(null);
-
-  // Load current configuration from API on component mount
-  useEffect(() => {
-    if (isEditing) {
-      loadCurrentConfiguration();
-    }
-  }, [isEditing, agentName]);
 
   // Load current configuration from API
-  const loadCurrentConfiguration = async () => {
+  const loadCurrentConfiguration = useCallback(async () => {
     setIsLoadingConfig(true);
     setErrorMessage('');
 
@@ -68,7 +59,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
       const result = await agentConfigService.getCurrentAgentConfig(agentName);
       if (result.success && result.data) {
         setIsAgentConfigured(true);
-        setCurrentAgentConfig(result.data);
         
         // Update form fields with current configuration
         if (result.data.initial_message) {
@@ -91,19 +81,25 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
         }
       } else {
         setIsAgentConfigured(false);
-        setCurrentAgentConfig(null);
       }
-    } catch (error) {
+    } catch {
       setErrorMessage('Failed to load current configuration');
     } finally {
       setIsLoadingConfig(false);
     }
-  };
+  }, [agentName]);
+
+  // Load current configuration from API on component mount
+  useEffect(() => {
+    if (isEditing) {
+      loadCurrentConfiguration();
+    }
+  }, [isEditing, agentName, loadCurrentConfiguration]);
 
   // Update initial message when modelConfig changes
   useEffect(() => {
     if (modelConfig?.firstMessage) {
-      setInitialMessage(modelConfig.firstMessage);
+      setInitialMessage(modelConfig.firstMessage as string);
     }
   }, [modelConfig]);
 
@@ -111,27 +107,26 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
   useEffect(() => {
     if (isEditing && existingConfig) {
       // Use existingConfig if available (from getAgentConfigData)
-      setInitialMessage(existingConfig.initialMessage || 'Hello! How can I help you today?');
-      setNudgeText(existingConfig.nudgeText || 'Hello, Are you still there?');
-      setNudgeInterval(existingConfig.nudgeInterval || 15);
-      setMaxNudges(existingConfig.maxNudges || 3);
-      setTypingVolume(existingConfig.typingVolume || 0.8);
-      setMaxCallDuration(existingConfig.maxCallDuration || 300);
+      setInitialMessage((existingConfig.initialMessage as string) || 'Hello! How can I help you today?');
+      setNudgeText((existingConfig.nudgeText as string) || 'Hello, Are you still there?');
+      setNudgeInterval((existingConfig.nudgeInterval as number) || 15);
+      setMaxNudges((existingConfig.maxNudges as number) || 3);
+      setTypingVolume((existingConfig.typingVolume as number) || 0.8);
+      setMaxCallDuration((existingConfig.maxCallDuration as number) || 300);
     } else if (isEditing && existingAgent) {
       // Fallback to existingAgent if existingConfig is not available
-      setInitialMessage(existingAgent.initial_message || 'Hello! How can I help you today?');
-      setNudgeText(existingAgent.nudge_text || 'Hello, Are you still there?');
-      setNudgeInterval(existingAgent.nudge_interval || 15);
-      setMaxNudges(existingAgent.max_nudges || 3);
-      setTypingVolume(existingAgent.typing_volume || 0.8);
-      setMaxCallDuration(existingAgent.max_call_duration || 300);
+      setInitialMessage((existingAgent.initial_message as string) || 'Hello! How can I help you today?');
+      setNudgeText((existingAgent.nudge_text as string) || 'Hello, Are you still there?');
+      setNudgeInterval((existingAgent.nudge_interval as number) || 15);
+      setMaxNudges((existingAgent.max_nudges as number) || 3);
+      setTypingVolume((existingAgent.typing_volume as number) || 0.8);
+      setMaxCallDuration((existingAgent.max_call_duration as number) || 300);
     }
   }, [isEditing, existingAgent, existingConfig]);
 
 
   const handleCreateAgent = async () => {
     setIsLoading(true);
-    setConfigStatus('idle');
     setErrorMessage('');
 
     try {
@@ -146,12 +141,12 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
       }
       
       // Build TTS configuration
-      let ttsConfig: any = {};
+      let ttsConfig: Record<string, unknown> = {};
       if (voiceConfig) {
         // Check if voiceConfig is already in backend format
         if (voiceConfig.tts_config) {
           // Already in backend format, use as is
-          ttsConfig = voiceConfig.tts_config;
+          ttsConfig = voiceConfig.tts_config as Record<string, unknown>;
         } else if (voiceConfig.provider) {
           // Already in backend format, use as is
           ttsConfig = voiceConfig;
@@ -163,7 +158,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                 provider: 'openai',
                 openai: {
                   api_key: voiceConfig.apiKey,
-                  voice: voiceConfig.voice.toLowerCase(),
+                  voice: (voiceConfig.voice as string).toLowerCase(),
                   response_format: 'mp3',
                   quality: 'standard',
                   speed: voiceConfig.speed
@@ -191,7 +186,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                   tts_api_key: voiceConfig.apiKey,
                   model: voiceConfig.voice,
                   speed: voiceConfig.speed,
-                  language: voiceConfig.language.toLowerCase()
+                  language: (voiceConfig.language as string).toLowerCase()
                 }
               };
               break;
@@ -201,7 +196,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
       }
 
       // Build STT configuration
-      let sttConfig: any = {};
+      let sttConfig: Record<string, unknown> = {};
       if (transcriberConfig) {
         // Check if transcriberConfig is already in backend format
         if (transcriberConfig.provider) {
@@ -264,14 +259,11 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
       const result = await agentConfigService.configureAgent(agentName, completeConfig);
 
       if (result.success) {
-        setConfigStatus('success');
         setSuccessMessage(isEditing ? `Agent "${agentName}" updated successfully!` : `Agent "${agentName}" created successfully!`);
         setErrorMessage('');
         setIsAgentConfigured(true);
-        setCurrentAgentConfig(completeConfig);
         
         setTimeout(() => {
-          setConfigStatus('idle');
           setSuccessMessage('');
         }, 3000);
         
@@ -282,32 +274,20 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
             setTimeout(async () => {
               await onAgentCreated();
             }, 1000);
-          } catch (error) {
+          } catch {
             // Ignore errors from refresh since backend doesn't support listing agents
           }
         }
       } else {
-        setConfigStatus('error');
         setErrorMessage(result.message || (isEditing ? 'Failed to update agent' : 'Failed to create agent'));
       }
     } catch (error) {
-      setConfigStatus('error');
       setErrorMessage(error instanceof Error ? error.message : 'Failed to create agent');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const getStatusIcon = (status: 'idle' | 'success' | 'error') => {
-    switch (status) {
-      case 'success':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'error':
-        return <AlertCircle className="h-4 w-4 text-red-500" />;
-      default:
-        return null;
-    }
-  };
 
   const formatDuration = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
@@ -372,7 +352,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
               </div>
               {voiceConfig && (
                 <p className="text-xs mt-1 opacity-80">
-                  Provider: {voiceConfig.provider || 'Unknown'}
+                  Provider: {(voiceConfig.provider as string) || 'Unknown'}
                 </p>
               )}
             </div>
@@ -391,7 +371,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
               </div>
               {transcriberConfig && (
                 <p className="text-xs mt-1 opacity-80">
-                  Provider: {transcriberConfig.provider || 'Unknown'}
+                  Provider: {(transcriberConfig.provider as string) || 'Unknown'}
                 </p>
               )}
             </div>

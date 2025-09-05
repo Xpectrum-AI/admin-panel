@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Phone, Search, User, AlertCircle, CheckCircle, XCircle, Loader2, Plus } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { 
@@ -12,7 +12,10 @@ import {
 } from '../../service/phoneNumberService';
 import { agentConfigService } from '../../service/agentConfigService';
 
-interface PhoneNumbersTabProps {}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface PhoneNumbersTabProps {
+  // No props needed for this component
+}
 
 export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
   // Use theme with fallback to prevent errors
@@ -20,7 +23,7 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
   try {
     const theme = useTheme();
     isDarkMode = theme?.isDarkMode || false;
-  } catch (error) {
+  } catch {
     isDarkMode = false;
   }
   const [phoneNumbers, setPhoneNumbers] = useState<AgentPhoneNumber[]>([]);
@@ -35,20 +38,14 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
   const [success, setSuccess] = useState<string | null>(null);
   
   // State for organization-based assignment
-  const [agents, setAgents] = useState<any[]>([]);
-  const [availablePhoneNumbers, setAvailablePhoneNumbers] = useState<any[]>([]);
+  const [agents, setAgents] = useState<Record<string, unknown>[]>([]);
+  const [availablePhoneNumbers, setAvailablePhoneNumbers] = useState<Record<string, unknown>[]>([]);
   const [loadingAgents, setLoadingAgents] = useState(false);
   const [loadingPhoneNumbers, setLoadingPhoneNumbers] = useState(false);
 
   // Load phone numbers on component mount
   useEffect(() => {
     loadPhoneNumbers();
-  }, []);
-
-  // Load agents and available phone numbers on component mount
-  useEffect(() => {
-    loadAgents();
-    loadAvailablePhoneNumbers();
   }, []);
 
   const loadPhoneNumbers = async () => {
@@ -93,8 +90,8 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
       } else {
         setError(response.message || 'Failed to load phone numbers');
       }
-    } catch (err: any) {
-      setError('Failed to load phone numbers: ' + (err.message || 'Unknown error'));
+    } catch {
+      setError('Failed to load phone numbers: Unknown error');
     } finally {
       setLoading(false);
     }
@@ -110,20 +107,20 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
       } else {
         setAgents([]);
       }
-    } catch (err) {
+    } catch {
       setAgents([]);
     } finally {
       setLoadingAgents(false);
     }
   };
 
-  const loadAvailablePhoneNumbers = async () => {
+  const loadAvailablePhoneNumbers = useCallback(async () => {
     setLoadingPhoneNumbers(true);
     try {
       const response = await getAvailablePhoneNumbersByOrg('developer');
       
       if (response.success && response.data) {
-        let phoneNumbersArray: any[] = [];
+        let phoneNumbersArray: Record<string, unknown>[] = [];
         
         if (Array.isArray(response.data)) {
           phoneNumbersArray = response.data;
@@ -145,12 +142,18 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
       } else {
         setAvailablePhoneNumbers([]);
       }
-    } catch (err) {
+    } catch {
       setAvailablePhoneNumbers([]);
     } finally {
       setLoadingPhoneNumbers(false);
     }
-  };
+  }, []);
+
+  // Load agents and available phone numbers on component mount
+  useEffect(() => {
+    loadAgents();
+    loadAvailablePhoneNumbers();
+  }, [loadAvailablePhoneNumbers]);
 
   const handleAssignPhoneNumber = async () => {
     if (!assigningPhoneNumber.trim()) {
@@ -192,43 +195,14 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
       loadPhoneNumbers(); // Refresh the list
       loadAvailablePhoneNumbers(); // Refresh available numbers
       
-    } catch (err: any) {
+    } catch {
       const action = !assigningAgent.trim() || assigningAgent.trim() === 'None' ? 'unassign' : 'assign';
-      setError(`Error ${action}ing phone number: ` + (err.message || 'Unknown error'));
+      setError(`Error ${action}ing phone number: Unknown error`);
     } finally {
       setAssigning(false);
     }
   };
 
-  const handleUnassignPhoneNumber = async () => {
-    if (!selectedPhoneNumber?.phone_number) {
-      setError('No phone number selected for unassignment.');
-      return;
-    }
-
-    setAssigning(true);
-    setError(null);
-    setSuccess(null);
-    
-    try {
-      const response = await unassignPhoneNumber(selectedPhoneNumber.phone_number);
-      
-      if (response.success) {
-        setSuccess(`Phone number ${selectedPhoneNumber.phone_number} unassigned successfully!`);
-        setShowAssignModal(false);
-        setAssigningAgent('');
-        setAssigningPhoneNumber('');
-        loadPhoneNumbers(); // Refresh the list
-        loadAvailablePhoneNumbers(); // Refresh available numbers
-      } else {
-        setError(response.message || 'Failed to unassign phone number.');
-      }
-    } catch (err: any) {
-      setError('Error unassigning phone number: ' + (err.message || 'Unknown error'));
-    } finally {
-      setAssigning(false);
-    }
-  };
 
   const filteredPhoneNumbers = phoneNumbers.filter(phone =>
     phone.prefix.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -615,8 +589,8 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
                     >
                       <option value="">None (Unassign)</option>
                       {Array.isArray(agents) && agents.map((agent, index) => (
-                        <option key={agent.id || agent.prefix || agent.name || `agent-${index}`} value={agent.prefix || agent.name}>
-                          {agent.name || agent.prefix} ({agent.prefix || agent.name})
+                        <option key={(agent as any).id || (agent as any).prefix || (agent as any).name || `agent-${index}`} value={(agent as any).prefix || (agent as any).name}>
+                          {(agent as any).name || (agent as any).prefix} ({(agent as any).prefix || (agent as any).name})
                         </option>
                       ))}
                     </select>
@@ -640,8 +614,8 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
                     >
                       <option value="">Select an agent</option>
                       {Array.isArray(agents) && agents.map((agent, index) => (
-                        <option key={agent.id || agent.prefix || agent.name || `agent-${index}`} value={agent.prefix || agent.name}>
-                          {agent.name || agent.prefix} ({agent.prefix || agent.name})
+                        <option key={(agent as any).id || (agent as any).prefix || (agent as any).name || `agent-${index}`} value={(agent as any).prefix || (agent as any).name}>
+                          {(agent as any).name || (agent as any).prefix} ({(agent as any).prefix || (agent as any).name})
                         </option>
                       ))}
                     </select>
@@ -662,9 +636,9 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
                     >
                       <option value="">Select a phone number</option>
                       {Array.isArray(availablePhoneNumbers) && availablePhoneNumbers.map((phoneNumber, index) => {
-                        const displayText = phoneNumber.prefix ? `${phoneNumber.prefix} - ${phoneNumber.phone_number}` : phoneNumber.phone_number;
+                        const displayText = (phoneNumber as any).prefix ? `${(phoneNumber as any).prefix} - ${(phoneNumber as any).phone_number}` : (phoneNumber as any).phone_number;
                         return (
-                          <option key={phoneNumber.phone_number || `phone-${index}`} value={phoneNumber.phone_number}>
+                          <option key={(phoneNumber as any).phone_number || `phone-${index}`} value={(phoneNumber as any).phone_number}>
                             {displayText}
                           </option>
                         );

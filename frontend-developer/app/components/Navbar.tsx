@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Sun, Moon, LogOut, User as UserIcon } from 'lucide-react';
+import { Sun, Moon, LogOut, User as UserIcon } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
 // Mock for @propelauth/react since it cannot be resolved in this environment.
@@ -26,9 +26,6 @@ interface NavbarProps {
 export default function Navbar({
     activeTab,
     onChange,
-    activeTitle: _activeTitle,
-    sidebarOpen: _sidebarOpen,
-    onToggleSidebar: _onToggleSidebar,
     onLogout
 }: NavbarProps) {
     const tabs: Array<{ id: 'Overview' | 'Agents'; label: string }> = [
@@ -48,10 +45,22 @@ export default function Navbar({
                 setDropdownOpen(false);
             }
         }
+        
+        function handleEscapeKey(event: KeyboardEvent) {
+            if (event.key === 'Escape') {
+                setDropdownOpen(false);
+            }
+        }
+        
         if (dropdownOpen) {
             document.addEventListener('mousedown', handleClickOutside);
+            document.addEventListener('keydown', handleEscapeKey);
         }
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleEscapeKey);
+        };
     }, [dropdownOpen]);
 
     return (
@@ -106,7 +115,7 @@ export default function Navbar({
                                 </div>
                             </button>
                             {dropdownOpen && (
-                                <div className={`absolute right-0 sm:right-0 mt-3 w-[90vw] sm:w-80 max-w-[calc(100vw-2rem)] rounded-2xl shadow-2xl z-[9999] animate-fade-in-down ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`} style={{ zIndex: 9999 }}>
+                                <div className={`absolute right-0 mt-3 w-[90vw] sm:w-80 max-w-[calc(100vw-2rem)] rounded-2xl shadow-2xl z-[9999] animate-fade-in-down ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`} style={{ zIndex: 9999 }}>
                                     <div className={`p-4 sm:p-6 ${isDarkMode ? 'border-b border-gray-700/50' : 'border-b border-gray-200'}`}>
                                         <p className={`font-bold text-base sm:text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                                             {user?.firstName} {user?.lastName}
@@ -122,7 +131,10 @@ export default function Navbar({
                                             onClick={(e) => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
-                                                window.location.href = '/account';
+                                                // Use proper navigation without triggering JSDOM warnings
+                                                if (typeof window !== 'undefined' && window.location) {
+                                                    window.location.assign('/account');
+                                                }
                                                 setDropdownOpen(false);
                                             }}
                                             className={`w-full flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-xl transition-all duration-300 group ${isDarkMode ? 'text-gray-300 hover:bg-blue-500/10 hover:text-blue-300' : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'}`}

@@ -123,7 +123,7 @@ export default function SignUp() {
       });
       
       await response.handle({
-        async success(data) {
+        async success() {
           // Store username in localStorage for later use after email verification
           localStorage.setItem('pendingUsername', formData.username);
           localStorage.setItem('pendingFirstName', formData.firstName);

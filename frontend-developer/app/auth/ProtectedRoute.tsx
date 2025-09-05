@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { loading, user } = useAuthInfo();
+  const { } = useAuthInfo();
   const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
 

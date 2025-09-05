@@ -1,19 +1,18 @@
 'use client';
 
-import React, { forwardRef, useState, useEffect } from 'react';
+import React, { forwardRef, useState, useEffect, useCallback } from 'react';
 import { Sparkles, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { modelConfigService } from '../../../service/modelConfigService';
 
 interface ModelConfigProps {
   agentName?: string;
-  onConfigChange?: (config: any) => void;
-  existingConfig?: any;
+  onConfigChange?: (config: Record<string, unknown>) => void;
+  existingConfig?: Record<string, unknown>;
   isEditing?: boolean;
   isDarkMode?: boolean;
 }
 
 const ModelConfig = forwardRef<HTMLDivElement, ModelConfigProps>(({ 
-  agentName = 'default', 
   onConfigChange, 
   existingConfig, 
   isEditing = false,
@@ -52,42 +51,11 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
   // Configuration status states
   const [isModelConfigured, setIsModelConfigured] = useState(false);
   const [isPromptConfigured, setIsPromptConfigured] = useState(false);
-  const [currentModelConfig, setCurrentModelConfig] = useState<any>(null);
-  const [currentPromptConfig, setCurrentPromptConfig] = useState<any>(null);
-
-  // Load existing configuration when provided
-  useEffect(() => {
-    if (existingConfig && isEditing) {
-      setSelectedModelProvider(existingConfig.selectedModelProvider || 'OpenAI');
-      setSelectedModel(existingConfig.selectedModel || 'GPT-4o');
-      setFirstMessage(existingConfig.firstMessage || 'Thank you for calling Wellness Partners. This is Riley, your scheduling agent. How may I help you today?');
-      setSystemPrompt(existingConfig.systemPrompt || `# Appointment Scheduling Agent Prompt
-
-## Identity & Purpose
-You are Riley, an appointment scheduling voice agent for Wellness Partners, a multi-specialty health clinic. Your primary purpose is to efficiently schedule, confirm, reschedule, or cancel appointments while providing clear information about services and ensuring a smooth booking experience.
-
-## Voice & Persona
-### Personality
-- Sound friendly, organized, and efficient
-- Project a helpful and patient demeanor, especially with elderly or confused callers
-- Maintain a warm but professional tone throughout the conversation
-- Convey confidence and competence in managing the scheduling system
-
-### Speech Characteristics
-- Speak clearly and at a moderate pace
-- Use simple, direct language that's easy to understand
-- Avoid medical jargon unless the caller uses it first
-- Be concise but thorough in your responses`);
-    }
-  }, [existingConfig, isEditing]);
-
-  // Load current configuration from API on component mount
-  useEffect(() => {
-    loadCurrentConfiguration();
-  }, []);
+  const [currentModelConfig, setCurrentModelConfig] = useState<Record<string, unknown> | null>(null);
+  const [currentPromptConfig, setCurrentPromptConfig] = useState<Record<string, unknown> | null>(null);
 
   // Load current configuration from API
-  const loadCurrentConfiguration = async () => {
+  const loadCurrentConfiguration = useCallback(async () => {
     setIsLoadingConfig(true);
     setErrorMessage('');
 
@@ -127,12 +95,43 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
         setIsPromptConfigured(false);
         setCurrentPromptConfig(null);
       }
-    } catch (error) {
+    } catch {
       setErrorMessage('Failed to load current configuration');
     } finally {
       setIsLoadingConfig(false);
     }
-  };
+  }, []);
+
+  // Load existing configuration when provided
+  useEffect(() => {
+    if (existingConfig && isEditing) {
+      setSelectedModelProvider((existingConfig.selectedModelProvider as string) || 'OpenAI');
+      setSelectedModel((existingConfig.selectedModel as string) || 'GPT-4o');
+      setFirstMessage((existingConfig.firstMessage as string) || 'Thank you for calling Wellness Partners. This is Riley, your scheduling agent. How may I help you today?');
+      setSystemPrompt((existingConfig.systemPrompt as string) || `# Appointment Scheduling Agent Prompt
+
+## Identity & Purpose
+You are Riley, an appointment scheduling voice agent for Wellness Partners, a multi-specialty health clinic. Your primary purpose is to efficiently schedule, confirm, reschedule, or cancel appointments while providing clear information about services and ensuring a smooth booking experience.
+
+## Voice & Persona
+### Personality
+- Sound friendly, organized, and efficient
+- Project a helpful and patient demeanor, especially with elderly or confused callers
+- Maintain a warm but professional tone throughout the conversation
+- Convey confidence and competence in managing the scheduling system
+
+### Speech Characteristics
+- Speak clearly and at a moderate pace
+- Use simple, direct language that's easy to understand
+- Avoid medical jargon unless the caller uses it first
+- Be concise but thorough in your responses`);
+    }
+  }, [existingConfig, isEditing]);
+
+  // Load current configuration from API on component mount
+  useEffect(() => {
+    loadCurrentConfiguration();
+  }, [loadCurrentConfiguration]);
 
   // Check current configuration status
   const checkConfigurationStatus = async () => {
@@ -141,7 +140,7 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
     
     try {
       await loadCurrentConfiguration();
-    } catch (error) {
+    } catch {
       setErrorMessage('Failed to check configuration status');
     } finally {
       setIsCheckingStatus(false);
@@ -316,16 +315,6 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
     }
   };
 
-  const getStatusIcon = (status: 'idle' | 'success' | 'error') => {
-    switch (status) {
-      case 'success':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'error':
-        return <AlertCircle className="h-4 w-4 text-red-500" />;
-      default:
-        return null;
-    }
-  };
 
   // Notify parent component of configuration changes (for first message only)
   useEffect(() => {
@@ -404,10 +393,10 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
         {/* Help Text */}
         <div className="text-center">
           <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            💡 Configuration status is loaded from the API. Use "Check Status" to refresh the current configuration.
+            💡 Configuration status is loaded from the API. Use &quot;Check Status&quot; to refresh the current configuration.
           </p>
-        </div>
-      </div>
+            </div>
+          </div>
 
       {/* Configuration Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -417,36 +406,36 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
             <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-blue-900/50' : 'bg-blue-100'}`}>
               <Sparkles className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
             </div>
-            <div>
+          <div>
               <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Model Selection</h4>
               <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Choose your AI model provider and model</p>
             </div>
-          </div>
+              </div>
           
           <div className="space-y-4">
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 Model Provider
-              </label>
-              <select
-                value={selectedModelProvider}
-                onChange={(e) => handleProviderChange(e.target.value)}
+            </label>
+            <select
+              value={selectedModelProvider}
+              onChange={(e) => handleProviderChange(e.target.value)}
                 className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${
                   isDarkMode 
                     ? 'bg-gray-700/50 border-gray-600 text-gray-200' 
                     : 'bg-gray-50 border-gray-200 text-gray-900'
                 }`}
-              >
-                {Object.keys(modelProviders).map((provider) => (
-                  <option key={provider} value={provider}>{provider}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
+            >
+              {Object.keys(modelProviders).map((provider) => (
+                <option key={provider} value={provider}>{provider}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Model
-              </label>
+              Model
+            </label>
               <select
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
@@ -462,27 +451,27 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
               </select>
             </div>
             
-            <button
-              onClick={handleModelConfiguration}
-              disabled={isLoadingModel}
+              <button
+                onClick={handleModelConfiguration}
+                disabled={isLoadingModel}
               className={`w-full p-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base ${
                 isLoadingModel 
-                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
                   : isModelConfigured
                     ? 'bg-green-600 text-white hover:bg-green-700 transform hover:scale-105'
                     : 'bg-blue-600 text-white hover:bg-blue-700 transform hover:scale-105'
-              }`}
-            >
-              {isLoadingModel ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                  }`}
+              >
+                {isLoadingModel ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
               ) : isModelConfigured ? (
                 <CheckCircle className="h-4 w-4" />
-              ) : (
+                ) : (
                 <Sparkles className="h-4 w-4" />
-              )}
+                )}
               {isLoadingModel ? 'Configuring...' : isModelConfigured ? 'Model Configured ✓' : 'Configure Model'}
-            </button>
-          </div>
+              </button>
+            </div>
         </div>
 
         {/* System Prompt */}
@@ -493,18 +482,18 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
             </div>
             <div>
               <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>System Prompt</h4>
-              <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Define your agent's behavior and personality</p>
-            </div>
+              <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Define your agent&apos;s behavior and personality</p>
           </div>
-          
+        </div>
+
           <div className="space-y-4">
-            <div>
+        <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                First Message
-              </label>
-              <textarea
-                value={firstMessage}
-                onChange={(e) => setFirstMessage(e.target.value)}
+            First Message
+          </label>
+            <textarea
+              value={firstMessage}
+              onChange={(e) => setFirstMessage(e.target.value)}
                 placeholder="Enter the first message your agent will say..."
                 rows={3}
                 className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base resize-none ${
@@ -513,16 +502,16 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
                     : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
                 }`}
               />
-            </div>
-            
-            <div>
+        </div>
+
+        <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                System Prompt
-              </label>
-              <textarea
-                value={systemPrompt}
-                onChange={(e) => setSystemPrompt(e.target.value)}
-                placeholder="Enter the system prompt that defines your agent's behavior..."
+            System Prompt
+          </label>
+            <textarea
+              value={systemPrompt}
+              onChange={(e) => setSystemPrompt(e.target.value)}
+                placeholder="Enter the system prompt that defines your agent&apos;s behavior..."
                 rows={8}
                 className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base resize-none ${
                   isDarkMode 
@@ -532,18 +521,18 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
               />
             </div>
             
-            <button
-              onClick={handlePromptConfiguration}
-              disabled={isLoadingPrompt}
+              <button
+                onClick={handlePromptConfiguration}
+                disabled={isLoadingPrompt}
               className={`w-full p-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base ${
                 isLoadingPrompt 
-                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
                   : isPromptConfigured
                     ? 'bg-green-600 text-white hover:bg-green-700 transform hover:scale-105'
                     : 'bg-green-600 text-white hover:bg-green-700 transform hover:scale-105'
-              }`}
-            >
-              {isLoadingPrompt ? (
+                  }`}
+              >
+                {isLoadingPrompt ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : isPromptConfigured ? (
                 <CheckCircle className="h-4 w-4" />
@@ -551,10 +540,10 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
                 <Sparkles className="h-4 w-4" />
               )}
               {isLoadingPrompt ? 'Saving...' : isPromptConfigured ? 'Prompt Saved ✓' : 'Save Prompt'}
-            </button>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
       {/* Current Configuration Display */}
       <div className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/30 border-gray-700/50' : 'bg-white/30 border-gray-200/50'}`}>
@@ -583,13 +572,13 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
                     <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                       {Object.keys(modelProviders).find(key => 
                         modelProviders[key as keyof typeof modelProviders].apiProvider === currentModelConfig.provider
-                      ) || currentModelConfig.provider}
+                      ) || (currentModelConfig.provider as string)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Model:</span>
                     <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                      {currentModelConfig.model}
+                      {currentModelConfig.model as string}
                     </span>
                   </div>
                 </div>
@@ -624,7 +613,7 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
                   <div className="flex justify-between">
                     <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Length:</span>
                     <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                      {currentPromptConfig.prompt?.length || 0} characters
+                      {(currentPromptConfig.prompt as string)?.length || 0} characters
                     </span>
                   </div>
                 </div>
@@ -676,7 +665,7 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
             <span className={`text-sm sm:text-base ${isDarkMode ? 'text-red-300' : 'text-red-800'}`}>
               {errorMessage}
             </span>
-          </div>
+      </div>
         </div>
       )}
     </div>

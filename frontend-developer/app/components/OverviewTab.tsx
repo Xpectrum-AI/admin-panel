@@ -5,7 +5,10 @@ import { Code, Bot, TrendingUp, Phone, Activity, Zap, Clock, Sparkles, BarChart3
 import { useAuthInfo } from '@propelauth/react';
 import { useTheme } from '../contexts/ThemeContext';
 
-interface OverviewTabProps {}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface OverviewTabProps {
+  // No props needed for this component
+}
 
 export default function OverviewTab({}: OverviewTabProps) {
     const { user } = useAuthInfo();

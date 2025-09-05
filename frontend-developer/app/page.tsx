@@ -7,7 +7,7 @@ import { useTheme } from './contexts/ThemeContext';
 
 export default function DeveloperDashboard() {
   const [activeNavItem, setActiveNavItem] = useState('Overview');
-  const { isDarkMode, toggleTheme } = useTheme();
+  const { isDarkMode } = useTheme();
 
   return (
     <div className={`flex h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-black' : 'bg-gray-50'}`}>

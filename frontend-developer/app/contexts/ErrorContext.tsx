@@ -32,6 +32,10 @@ interface ErrorProviderProps {
 export const ErrorProvider: React.FC<ErrorProviderProps> = ({ children }) => {
   const [errors, setErrors] = useState<ErrorPopup[]>([]);
 
+  const clearError = useCallback((id: string) => {
+    setErrors(prev => prev.filter(error => error.id !== id));
+  }, []);
+
   const showError = useCallback((message: string, type: 'error' | 'warning' | 'success' | 'info' = 'error', duration: number = 5000) => {
     const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
     const newError: ErrorPopup = {
@@ -49,11 +53,7 @@ export const ErrorProvider: React.FC<ErrorProviderProps> = ({ children }) => {
         clearError(id);
       }, duration);
     }
-  }, []);
-
-  const clearError = useCallback((id: string) => {
-    setErrors(prev => prev.filter(error => error.id !== id));
-  }, []);
+  }, [clearError]);
 
   const clearAllErrors = useCallback(() => {
     setErrors([]);
