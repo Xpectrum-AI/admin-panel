@@ -19,7 +19,6 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
     const theme = useTheme();
     isDarkMode = theme?.isDarkMode || false;
   } catch (error) {
-    console.warn('ThemeProvider not found, using light mode as fallback');
     isDarkMode = false;
   }
   // Local state for UI updates
@@ -121,7 +120,6 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
         setCurrentTranscriberConfig(null);
       }
     } catch (error) {
-      console.error('Error loading current transcriber configuration:', error);
       setErrorMessage('Failed to load current transcriber configuration');
     } finally {
       setIsLoadingConfig(false);
@@ -131,7 +129,6 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
   // Load existing configuration when provided
   useEffect(() => {
     if (existingConfig && isEditing) {
-      console.log('Loading existing transcriber config:', existingConfig);
       
       // Handle STT config from backend
       if (existingConfig.provider) {
@@ -272,16 +269,13 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
         setConfigStatus('success');
         setIsTranscriberConfigured(true);
         setCurrentTranscriberConfig(backendConfig);
-        console.log('Transcriber configuration saved successfully:', backendConfig);
         
         // Clear success message after 3 seconds
         setTimeout(() => setConfigStatus('idle'), 3000);
       } else {
         setConfigStatus('error');
-        console.error('Failed to configure transcriber:', result.message);
       }
     } catch (error) {
-      console.error('Failed to configure transcriber:', error);
       setConfigStatus('error');
       
       // Clear error message after 3 seconds
@@ -293,7 +287,6 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
 
   // Manual refresh function
   const handleRefreshConfig = () => {
-    console.log('🔄 Manually refreshing transcriber configuration from existingConfig');
     if (existingConfig) {
       // Force a refresh by temporarily clearing the flag
       setIsUserChangingProvider(false);
@@ -302,7 +295,6 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
   };
 
   const handleProviderChange = (provider: string) => {
-    console.log('🔄 Transcriber provider changing from', selectedTranscriberProvider, 'to', provider);
     
     // Set flag to prevent existingConfig from overriding user selection
     setIsUserChangingProvider(true);
@@ -320,7 +312,6 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
       setSelectedModel(providerData[0]);
     }
     
-    console.log('✅ Transcriber provider changed to', provider, 'with reset model');
     
     // Reset the flag after a delay
     providerChangeTimeoutRef.current = setTimeout(() => {

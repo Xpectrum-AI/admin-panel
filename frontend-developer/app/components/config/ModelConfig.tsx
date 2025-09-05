@@ -128,7 +128,6 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
         setCurrentPromptConfig(null);
       }
     } catch (error) {
-      console.error('Error loading current configuration:', error);
       setErrorMessage('Failed to load current configuration');
     } finally {
       setIsLoadingConfig(false);
@@ -142,14 +141,7 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
     
     try {
       await loadCurrentConfiguration();
-      console.log('Configuration status updated:', {
-        modelConfigured: isModelConfigured,
-        promptConfigured: isPromptConfigured,
-        currentModelConfig,
-        currentPromptConfig
-      });
     } catch (error) {
-      console.error('Error checking configuration status:', error);
       setErrorMessage('Failed to check configuration status');
     } finally {
       setIsCheckingStatus(false);
