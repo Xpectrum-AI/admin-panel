@@ -103,7 +103,7 @@ const getEnvironmentVariables = () => {
     CARTESIA_VOICE_ID: getEnvVar('NEXT_PUBLIC_CARTESIA_VOICE_ID')
   };
   
-  // If not available, try to get from window object or use defaults
+  // If not available, try to get from window object
   if (!env.API_BASE_URL || !env.API_KEY || !env.CHATBOT_API_URL || !env.CHATBOT_API_KEY) {
     console.log('🔍 Environment variables not found in process.env, trying alternatives...');
     
@@ -114,63 +114,6 @@ const getEnvironmentVariables = () => {
       env.CHATBOT_API_URL = env.CHATBOT_API_URL || (window as any).NEXT_PUBLIC_CHATBOT_API_URL;
       env.CHATBOT_API_KEY = env.CHATBOT_API_KEY || (window as any).NEXT_PUBLIC_CHATBOT_API_KEY;
     }
-    
-    // If still not available, use the values that were shown in the user's test
-    if (!env.API_BASE_URL) {
-      env.API_BASE_URL = 'https://d25b4i9wbz6f8t.cloudfront.net';
-      console.log('🔍 Using fallback API_BASE_URL');
-    }
-    
-    if (!env.API_KEY) {
-      env.API_KEY = 'xpectrum-ai@123';
-      console.log('🔍 Using fallback API_KEY');
-    }
-    
-    if (!env.CHATBOT_API_URL) {
-      env.CHATBOT_API_URL = 'https://d22yt2oewbcglh.cloudfront.net/v1/chat-messages';
-      console.log('🔍 Using fallback CHATBOT_API_URL');
-    }
-    
-    if (!env.CHATBOT_API_KEY) {
-      env.CHATBOT_API_KEY = 'REDACTED';
-      console.log('🔍 Using fallback CHATBOT_API_KEY');
-    }
-  }
-  
-  // Set default API keys and voice IDs if not available
-  if (!env.ELEVEN_LABS_API_KEY) {
-    env.ELEVEN_LABS_API_KEY = 'sk_8dfaa38b97cb01015e15c8041eec7b8563093c992f60db3a';
-    console.log('🔍 Using fallback ELEVEN_LABS_API_KEY');
-  }
-  
-  if (!env.OPEN_AI_API_KEY) {
-    env.OPEN_AI_API_KEY = 'REDACTED';
-    console.log('🔍 Using fallback OPEN_AI_API_KEY');
-  }
-  
-  if (!env.WHISPER_API_KEY) {
-    env.WHISPER_API_KEY = 'REDACTED';
-    console.log('🔍 Using fallback WHISPER_API_KEY');
-  }
-  
-  if (!env.DEEPGRAM_API_KEY) {
-    env.DEEPGRAM_API_KEY = 'd79f2d51f9950b3da033b6a22143c0ed513d039f';
-    console.log('🔍 Using fallback DEEPGRAM_API_KEY');
-  }
-  
-  if (!env.CARTESIA_API_KEY) {
-    env.CARTESIA_API_KEY = 'REDACTED';
-    console.log('🔍 Using fallback CARTESIA_API_KEY');
-  }
-  
-  if (!env.ELEVEN_LABS_VOICE_ID) {
-    env.ELEVEN_LABS_VOICE_ID = 'pNInz6obpgDQGcFmaJgB';
-    console.log('🔍 Using fallback ELEVEN_LABS_VOICE_ID');
-  }
-  
-  if (!env.CARTESIA_VOICE_ID) {
-    env.CARTESIA_VOICE_ID = 'e8e5fffb-252c-436d-b842-8879b84445b6';
-    console.log('🔍 Using fallback CARTESIA_VOICE_ID');
   }
   
   console.log('🔍 Environment variables result:', {
