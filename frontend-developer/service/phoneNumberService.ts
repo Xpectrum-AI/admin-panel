@@ -41,7 +41,6 @@ export interface PhoneNumberRequest {
       if (!value && key === 'NEXT_PUBLIC_LIVE_API_URL') {
         const manualUrl = localStorage.getItem('dev_api_url');
         if (manualUrl) {
-          console.log('🔍 Found manual API URL in localStorage:', manualUrl);
           value = manualUrl;
         }
       }
@@ -50,11 +49,6 @@ export interface PhoneNumberRequest {
       value = process.env[key];
     }
     
-    console.log(`🔍 Environment variable ${key}:`, value ? 'SET' : 'NOT SET');
-    console.log(`🔍 Value:`, value);
-    console.log(`🔍 Window object available:`, typeof window !== 'undefined');
-    console.log(`🔍 Next.js data:`, (window as any)?.__NEXT_DATA__);
-    console.log(`🔍 Global ENV:`, (window as any)?.ENV);
     
     return value;
   };
@@ -62,9 +56,6 @@ export interface PhoneNumberRequest {
   // Get API base URL from environment
   const getApiBaseUrl = (): string => {
     const baseUrl = getEnvVar('NEXT_PUBLIC_LIVE_API_URL');
-    console.log('🔍 Available environment variables:', Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_')));
-    console.log('🔍 NEXT_PUBLIC_LIVE_API_URL value:', baseUrl);
-    console.log('🔍 Full process.env:', process.env);
     
     if (!baseUrl) {
       // Try to get from window object as fallback
@@ -72,27 +63,19 @@ export interface PhoneNumberRequest {
                             (window as any)?.__NEXT_DATA__?.runtimeConfig?.NEXT_PUBLIC_LIVE_API_URL;
       
       if (windowBaseUrl) {
-        console.log('🔍 Found NEXT_PUBLIC_LIVE_API_URL in window object:', windowBaseUrl);
         const cleanUrl = windowBaseUrl.endsWith('/') ? windowBaseUrl.slice(0, -1) : windowBaseUrl;
-        console.log('🔍 Clean API base URL from window:', cleanUrl);
         return cleanUrl;
       }
       
       // Development fallback - remove this in production
       if (process.env.NODE_ENV === 'development') {
         const fallbackUrl = 'https://d25b4i9wbz6f8t.cloudfront.net';
-        console.warn('⚠️ Using development fallback URL:', fallbackUrl);
         return fallbackUrl;
       }
-      
-      console.error('❌ NEXT_PUBLIC_LIVE_API_URL is not set. Available NEXT_PUBLIC_ vars:', 
-        Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_')));
-      console.error('❌ Window object:', (window as any)?.__NEXT_DATA__);
       throw new Error('NEXT_PUBLIC_LIVE_API_URL environment variable is not set. Please check your .env file and restart the development server.');
     }
     
     const cleanUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-    console.log('🔍 Final API base URL:', cleanUrl);
     return cleanUrl;
   };
   
@@ -123,7 +106,6 @@ export interface PhoneNumberRequest {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('API request failed:', error);
       throw error;
     }
   };

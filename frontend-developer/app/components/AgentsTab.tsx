@@ -98,7 +98,6 @@ export default function AgentsTab({}: AgentsTabProps) {
 
   // Handle agent creation callback
   const handleAgentCreated = () => {
-    console.log('Agent created successfully!');
     // You can add additional logic here like refreshing the agent list
     // or showing a success message
   };

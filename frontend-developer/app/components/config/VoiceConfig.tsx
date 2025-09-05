@@ -19,7 +19,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
     const theme = useTheme();
     isDarkMode = theme?.isDarkMode || false;
   } catch (error) {
-    console.warn('ThemeProvider not found, using light mode as fallback');
     isDarkMode = false;
   }
   // Local state for UI updates
@@ -177,7 +176,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
         setCurrentVoiceConfig(null);
       }
     } catch (error) {
-      console.error('Error loading current voice configuration:', error);
       setErrorMessage('Failed to load current voice configuration');
     } finally {
       setIsLoadingConfig(false);
@@ -187,7 +185,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
   // Load existing configuration when provided
   useEffect(() => {
     if (existingConfig && isEditing) {
-      console.log('Loading existing config:', existingConfig);
       
       // Handle TTS config from backend - existingConfig is already the TTS config
       const ttsConfig = existingConfig;
@@ -349,16 +346,13 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
         setConfigStatus('success');
         setIsVoiceConfigured(true);
         setCurrentVoiceConfig(backendConfig);
-        console.log('Voice configuration saved successfully:', backendConfig);
         
         // Clear success message after 3 seconds
         setTimeout(() => setConfigStatus('idle'), 3000);
       } else {
         setConfigStatus('error');
-        console.error('Failed to configure voice:', result.message);
       }
     } catch (error) {
-      console.error('Failed to configure voice:', error);
       setConfigStatus('error');
       
       // Clear error message after 3 seconds
@@ -370,19 +364,9 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
 
   // Notify parent component of configuration changes
   React.useEffect(() => {
-    console.log('🔄 VoiceConfig: Configuration changed, updating parent:', {
-      provider: selectedVoiceProvider,
-      voice: selectedVoice,
-      language: selectedLanguage,
-      speed: speedValue,
-      apiKey: maskApiKey(apiKey),
-      voiceId: maskApiKey(voiceId),
-      stability,
-      similarityBoost
-    });
-    
-    // Convert UI format to backend format
-    const backendConfig = {
+    if (onConfigChange) {
+      // Convert UI format to backend format
+      const backendConfig = {
         provider: selectedVoiceProvider === 'Cartesia' ? 'cartesian' : 
                  selectedVoiceProvider === '11Labs' ? 'elevenlabs' : 'openai',
         cartesian: selectedVoiceProvider === 'Cartesia' ? {
@@ -404,16 +388,14 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
           stability,
           similarity_boost: similarityBoost
         } : null
-    };
+      };
 
-    if (onConfigChange) {
       onConfigChange(backendConfig);
     }
   }, [selectedVoiceProvider, selectedVoice, selectedLanguage, speedValue, apiKey, voiceId, stability, similarityBoost, onConfigChange]);
 
   // Handle provider changes with proper state management
   const handleProviderChange = (newProvider: string) => {
-    console.log('🔄 Provider changing from', selectedVoiceProvider, 'to', newProvider);
     
     // Set flag to prevent existingConfig from overriding user selection
     setIsUserChangingProvider(true);
@@ -437,7 +419,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
     setSelectedVoiceProvider(newProvider);
     setSelectedVoice(defaultVoice);
     
-    console.log('✅ Provider changed to', newProvider, 'with reset state');
     
     // Reset the flag after a delay
     providerChangeTimeoutRef.current = setTimeout(() => {
@@ -447,7 +428,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
 
   // Manual refresh function
   const handleRefreshConfig = () => {
-    console.log('🔄 Manually refreshing voice configuration from existingConfig');
     if (existingConfig) {
       // Force a refresh by temporarily clearing the flag
       setIsUserChangingProvider(false);

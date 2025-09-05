@@ -77,7 +77,6 @@ export const agentConfigService = {
         data: result,
       };
     } catch (error) {
-      console.error('Get agent configuration error:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to get agent configuration',
@@ -105,7 +104,6 @@ export const agentConfigService = {
         data: result,
       };
     } catch (error) {
-      console.error('Agent configuration error:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to configure agent',
@@ -133,7 +131,6 @@ export const agentConfigService = {
         data: result,
       };
     } catch (error) {
-      console.error('Voice configuration error:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to configure voice',
@@ -166,7 +163,6 @@ export const agentConfigService = {
         data: result,
       };
     } catch (error) {
-      console.error('Get voice configuration error:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to get voice configuration',
@@ -194,7 +190,6 @@ export const agentConfigService = {
         data: result,
       };
     } catch (error) {
-      console.error('Transcriber configuration error:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to configure transcriber',
@@ -227,7 +222,6 @@ export const agentConfigService = {
         data: result,
       };
     } catch (error) {
-      console.error('Get transcriber configuration error:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to get transcriber configuration',
@@ -257,7 +251,6 @@ export const agentConfigService = {
   // Get agents by specific organization
   async getAgentsByOrg(organizationId: string): Promise<{ success: boolean; data?: any[]; message: string }> {
     try {
-      console.log('🚀 Fetching agents for organization:', organizationId);
       
       const response = await fetch(`${AGENT_API_BASE_URL}/agents/by-org/${organizationId}`, {
         method: 'GET',
@@ -286,14 +279,12 @@ export const agentConfigService = {
         agents = result.data;
       }
 
-      console.log('✅ Successfully fetched agents for organization:', organizationId, agents.length);
       return {
         success: true,
         data: agents,
         message: 'Agents retrieved successfully'
       };
     } catch (error) {
-      console.error('Get agents by organization error:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to get agents by organization'

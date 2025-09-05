@@ -32,7 +32,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
     const theme = useTheme();
     isDarkMode = theme?.isDarkMode || false;
   } catch (error) {
-    console.warn('ThemeProvider not found, using light mode as fallback');
     isDarkMode = false;
   }
   const [initialMessage, setInitialMessage] = useState('Hello! How can I help you today?');
@@ -95,7 +94,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
         setCurrentAgentConfig(null);
       }
     } catch (error) {
-      console.error('Error loading current configuration:', error);
       setErrorMessage('Failed to load current configuration');
     } finally {
       setIsLoadingConfig(false);

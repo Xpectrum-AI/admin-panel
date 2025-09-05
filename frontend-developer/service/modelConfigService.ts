@@ -27,7 +27,6 @@ export const modelConfigService = {
   // Get current model configuration
   async getCurrentModelConfig(): Promise<ModelConfigResponse> {
     try {
-      console.log('🔍 Fetching current model configuration from:', `${MODEL_API_BASE_URL}/apps/current/model-config`);
       
       const response = await fetch(`${MODEL_API_BASE_URL}/apps/current/model-config`, {
         method: 'GET',
@@ -36,7 +35,6 @@ export const modelConfigService = {
 
       if (!response.ok) {
         if (response.status === 404) {
-          console.log('📝 No model configuration found (404)');
           return {
             success: false,
             message: 'No model configuration found',
@@ -47,13 +45,11 @@ export const modelConfigService = {
       }
 
       const result = await response.json();
-      console.log('✅ Model configuration fetched successfully');
       return {
         success: true,
         data: result,
       };
     } catch (error) {
-      console.error('❌ Get model configuration error:', error);
       // Return a more user-friendly error message
       return {
         success: false,
@@ -65,7 +61,6 @@ export const modelConfigService = {
   // Get current prompt configuration
   async getCurrentPromptConfig(): Promise<ModelConfigResponse> {
     try {
-      console.log('🔍 Fetching current prompt configuration from:', `${MODEL_API_BASE_URL}/apps/current/prompt`);
       
       const response = await fetch(`${MODEL_API_BASE_URL}/apps/current/prompt`, {
         method: 'GET',
@@ -74,7 +69,6 @@ export const modelConfigService = {
 
       if (!response.ok) {
         if (response.status === 404) {
-          console.log('📝 No prompt configuration found (404)');
           return {
             success: false,
             message: 'No prompt configuration found',
@@ -85,13 +79,11 @@ export const modelConfigService = {
       }
 
       const result = await response.json();
-      console.log('✅ Prompt configuration fetched successfully');
       return {
         success: true,
         data: result,
       };
     } catch (error) {
-      console.error('❌ Get prompt configuration error:', error);
       // Return a more user-friendly error message
       return {
         success: false,
@@ -120,7 +112,6 @@ export const modelConfigService = {
         data: result,
       };
     } catch (error) {
-      console.error('Model configuration error:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to configure model',
@@ -148,7 +139,6 @@ export const modelConfigService = {
         data: result,
       };
     } catch (error) {
-      console.error('Prompt configuration error:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to configure prompt',

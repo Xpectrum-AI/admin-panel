@@ -21,7 +21,6 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
     const theme = useTheme();
     isDarkMode = theme?.isDarkMode || false;
   } catch (error) {
-    console.warn('ThemeProvider not found, using light mode as fallback');
     isDarkMode = false;
   }
   const [phoneNumbers, setPhoneNumbers] = useState<AgentPhoneNumber[]>([]);
@@ -57,7 +56,6 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
     setError(null);
     try {
       const response = await getAllAgentsPhoneNumbers();
-      console.log('🔍 Phone numbers response:', response);
       
       // Handle different response formats - check both success and status fields
       const isSuccess = response.success || (response as any).status === 'success';
@@ -91,14 +89,12 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
           }));
         }
         
-        console.log('🔍 Transformed phone numbers array:', phoneNumbersArray);
         setPhoneNumbers(phoneNumbersArray);
       } else {
         setError(response.message || 'Failed to load phone numbers');
       }
     } catch (err: any) {
       setError('Failed to load phone numbers: ' + (err.message || 'Unknown error'));
-      console.error('Error loading phone numbers:', err);
     } finally {
       setLoading(false);
     }
@@ -108,16 +104,13 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
     setLoadingAgents(true);
     try {
       const response = await agentConfigService.getAgentsByOrg('developer');
-      console.log('🔍 Agents response:', response);
       
       if (response.success && response.data && Array.isArray(response.data)) {
         setAgents(response.data);
       } else {
-        console.warn('Failed to load agents:', response.message);
         setAgents([]);
       }
     } catch (err) {
-      console.error('Error loading agents:', err);
       setAgents([]);
     } finally {
       setLoadingAgents(false);
@@ -128,7 +121,6 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
     setLoadingPhoneNumbers(true);
     try {
       const response = await getAvailablePhoneNumbersByOrg('developer');
-      console.log('🔍 Available phone numbers response:', response);
       
       if (response.success && response.data) {
         let phoneNumbersArray: any[] = [];
@@ -149,14 +141,11 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
           !phoneNumbers.some(existing => existing.phone_number === phone.phone_number)
         );
         
-        console.log('🔍 Available unassigned phone numbers:', unassignedNumbers);
         setAvailablePhoneNumbers(unassignedNumbers);
       } else {
-        console.warn('Failed to load available phone numbers:', response.message);
         setAvailablePhoneNumbers([]);
       }
     } catch (err) {
-      console.error('Error loading available phone numbers:', err);
       setAvailablePhoneNumbers([]);
     } finally {
       setLoadingPhoneNumbers(false);
@@ -206,7 +195,6 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
     } catch (err: any) {
       const action = !assigningAgent.trim() || assigningAgent.trim() === 'None' ? 'unassign' : 'assign';
       setError(`Error ${action}ing phone number: ` + (err.message || 'Unknown error'));
-      console.error(`Error ${action}ing phone number:`, err);
     } finally {
       setAssigning(false);
     }
@@ -237,7 +225,6 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
       }
     } catch (err: any) {
       setError('Error unassigning phone number: ' + (err.message || 'Unknown error'));
-      console.error('Error unassigning phone number:', err);
     } finally {
       setAssigning(false);
     }
