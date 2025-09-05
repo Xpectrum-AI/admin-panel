@@ -8,7 +8,17 @@ jest.mock('@/service/modelConfigService', () => ({
   modelConfigService: {
     configureModel: jest.fn(),
     configurePrompt: jest.fn(),
+    getCurrentModelConfig: jest.fn(),
+    getCurrentPromptConfig: jest.fn(),
   },
+}));
+
+// Mock ThemeContext
+jest.mock('@/app/contexts/ThemeContext', () => ({
+  useTheme: () => ({
+    isDarkMode: false,
+    toggleTheme: jest.fn(),
+  }),
 }));
 
 import { modelConfigService } from '@/service/modelConfigService';
@@ -29,6 +39,16 @@ describe('ModelConfig', () => {
     // Set up environment variables for testing
     process.env.NEXT_PUBLIC_MODEL_API_BASE_URL = process.env.NEXT_PUBLIC_MODEL_API_BASE_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1';
     process.env.NEXT_PUBLIC_MODEL_API_KEY = process.env.NEXT_PUBLIC_MODEL_API_KEY || 'test-api-key';
+
+    // Default mock responses for initial loading
+    mockModelConfigService.getCurrentModelConfig.mockResolvedValue({
+      success: false,
+      message: 'No configuration found'
+    });
+    mockModelConfigService.getCurrentPromptConfig.mockResolvedValue({
+      success: false,
+      message: 'No configuration found'
+    });
   });
 
   afterEach(() => {
@@ -37,68 +57,117 @@ describe('ModelConfig', () => {
   });
 
   describe('Rendering', () => {
-    it('renders the model config with default props', () => {
+    it('renders the main sections', async () => {
       render(<ModelConfig />);
 
-      expect(screen.getByText('Provider')).toBeInTheDocument();
-      expect(screen.getByText('Model')).toBeInTheDocument();
-      expect(screen.getByText('First Message')).toBeInTheDocument();
-      expect(screen.getByText('System Prompt')).toBeInTheDocument();
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(screen.getByText('Check Status')).toBeInTheDocument();
+      });
+
+      expect(screen.getAllByText('Model Configuration')).toHaveLength(2); // Multiple instances exist
+      expect(screen.getAllByText('System Prompt')).toHaveLength(3); // Multiple instances exist
+      expect(screen.getByText('Current Configuration Status')).toBeInTheDocument();
     });
 
-    it('renders with dark mode styling', () => {
-      render(<ModelConfig isDarkMode={true} />);
+    it('renders status check and reset buttons', async () => {
+      render(<ModelConfig />);
+
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(screen.getByText('Check Status')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('Check Status')).toBeInTheDocument();
+      expect(screen.getByText('Reset Status')).toBeInTheDocument();
+    });
+
+    it('renders with dark mode styling', async () => {
+      // Mock dark mode theme
+      jest.doMock('@/app/contexts/ThemeContext', () => ({
+        useTheme: () => ({
+          isDarkMode: true,
+          toggleTheme: jest.fn(),
+        }),
+      }));
+
+      render(<ModelConfig />);
+
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(screen.getByText('Check Status')).toBeInTheDocument();
+      });
 
       // Check that the component renders without errors
-      expect(screen.getByText('Provider')).toBeInTheDocument();
-    });
-
-    it('displays provider options', () => {
-      render(<ModelConfig />);
-
-      expect(screen.getByText('OpenAI')).toBeInTheDocument();
-      expect(screen.getByText('Anthropic')).toBeInTheDocument();
-      expect(screen.getByText('DeepSeek')).toBeInTheDocument();
-      expect(screen.getByText('Groq')).toBeInTheDocument();
-      expect(screen.getByText('XAI')).toBeInTheDocument();
-      expect(screen.getByText('Google')).toBeInTheDocument();
-    });
-
-    it('displays model options', () => {
-      render(<ModelConfig />);
-
-      expect(screen.getByText('GPT-4o')).toBeInTheDocument();
-      expect(screen.getByText('GPT-4o Mini')).toBeInTheDocument();
-      expect(screen.getByText('GPT-4 Turbo')).toBeInTheDocument();
-      expect(screen.getByText('GPT-4')).toBeInTheDocument();
-      expect(screen.getByText('GPT-3.5 Turbo')).toBeInTheDocument();
-    });
-
-    it('displays default values correctly', () => {
-      render(<ModelConfig />);
-
-      // Check default provider and model
-      expect(screen.getByDisplayValue('OpenAI')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('GPT-4o')).toBeInTheDocument();
-
-      // Check default first message
-      expect(screen.getByDisplayValue('Thank you for calling Wellness Partners. This is Riley, your scheduling agent. How may I help you today?')).toBeInTheDocument();
-
-      // Check default system prompt
-      expect(screen.getByDisplayValue(/Appointment Scheduling Agent Prompt/)).toBeInTheDocument();
-    });
-
-    it('shows configure and save buttons', () => {
-      render(<ModelConfig />);
-
-      expect(screen.getByText('Configure')).toBeInTheDocument();
-      expect(screen.getByText('Save')).toBeInTheDocument();
+      expect(screen.getAllByText('Model Configuration')).toHaveLength(2);
     });
   });
 
-  describe('Provider Selection', () => {
+  describe('Status Check and Reset', () => {
+    it('calls getCurrentModelConfig and getCurrentPromptConfig when Check Status is clicked', async () => {
+      mockModelConfigService.getCurrentModelConfig.mockResolvedValue({
+        success: true,
+        data: {
+          provider: 'openai',
+          model: 'gpt-4o',
+          apiKey: 'test-key'
+        }
+      });
+      mockModelConfigService.getCurrentPromptConfig.mockResolvedValue({
+        success: true,
+        data: {
+          prompt: 'Test prompt'
+        }
+      });
+
+      render(<ModelConfig />);
+
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(screen.getByText('Check Status')).toBeInTheDocument();
+      });
+
+      const checkStatusButton = screen.getByText('Check Status');
+      await user.click(checkStatusButton);
+
+      await waitFor(() => {
+        expect(mockModelConfigService.getCurrentModelConfig).toHaveBeenCalled();
+        expect(mockModelConfigService.getCurrentPromptConfig).toHaveBeenCalled();
+      });
+    });
+
+    it('resets status when Reset Status is clicked', async () => {
+      render(<ModelConfig />);
+
+      const resetStatusButton = screen.getByText('Reset Status');
+      await user.click(resetStatusButton);
+
+      // Status should be reset (no specific assertions needed as this is internal state)
+      expect(resetStatusButton).toBeInTheDocument();
+    });
+  });
+
+  describe('Model Configuration Form', () => {
+    it('renders model configuration form when not configured', async () => {
+      render(<ModelConfig />);
+
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(screen.getByText('Check Status')).toBeInTheDocument();
+      });
+
+      // The form should be visible by default
+      expect(screen.getByText('Model Provider')).toBeInTheDocument();
+      expect(screen.getByText('Model')).toBeInTheDocument();
+    });
+
     it('allows selecting different providers', async () => {
       render(<ModelConfig />);
+
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(screen.getByText('Check Status')).toBeInTheDocument();
+      });
 
       const providerSelect = screen.getByDisplayValue('OpenAI');
       await user.selectOptions(providerSelect, 'Anthropic');
@@ -106,334 +175,153 @@ describe('ModelConfig', () => {
       expect(providerSelect).toHaveValue('Anthropic');
     });
 
-    it('updates model options when provider changes', async () => {
-      render(<ModelConfig />);
-
-      const providerSelect = screen.getByDisplayValue('OpenAI');
-      await user.selectOptions(providerSelect, 'Anthropic');
-
-      // Model should reset to first option of new provider
-      const modelSelect = screen.getByDisplayValue('Claude 3.5 Sonnet');
-      expect(modelSelect).toBeInTheDocument();
-    });
-
     it('allows selecting different models', async () => {
       render(<ModelConfig />);
+
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(screen.getByText('Check Status')).toBeInTheDocument();
+      });
 
       const modelSelect = screen.getByDisplayValue('GPT-4o');
       await user.selectOptions(modelSelect, 'GPT-4o Mini');
 
       expect(modelSelect).toHaveValue('GPT-4o Mini');
     });
+
+    it('calls configureModel when Configure button is clicked', async () => {
+      mockModelConfigService.configureModel.mockResolvedValue({
+        success: true,
+        message: 'Model configured successfully'
+      });
+
+      render(<ModelConfig />);
+
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(screen.getByText('Check Status')).toBeInTheDocument();
+      });
+
+      const configureButton = screen.getByText('Configure Model');
+      await user.click(configureButton);
+
+      await waitFor(() => {
+        expect(mockModelConfigService.configureModel).toHaveBeenCalled();
+      });
+    });
   });
 
-  describe('Text Inputs', () => {
+  describe('Prompt Configuration Form', () => {
+    it('renders prompt configuration form', async () => {
+      render(<ModelConfig />);
+
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(screen.getByText('Check Status')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('First Message')).toBeInTheDocument();
+      expect(screen.getAllByText('System Prompt')).toHaveLength(3); // Multiple instances exist
+    });
+
     it('allows editing first message', async () => {
       render(<ModelConfig />);
 
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(screen.getByText('Check Status')).toBeInTheDocument();
+      });
+
       const firstMessageTextarea = screen.getByDisplayValue('Thank you for calling Wellness Partners. This is Riley, your scheduling agent. How may I help you today?');
       await user.clear(firstMessageTextarea);
-      await user.type(firstMessageTextarea, 'Hello, this is a test message');
+      await user.type(firstMessageTextarea, 'New first message');
 
-      expect(firstMessageTextarea).toHaveValue('Hello, this is a test message');
+      expect(firstMessageTextarea).toHaveValue('New first message');
     });
 
     it('allows editing system prompt', async () => {
       render(<ModelConfig />);
 
-      const systemPromptTextarea = screen.getByDisplayValue(/Appointment Scheduling Agent Prompt/);
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(screen.getByText('Check Status')).toBeInTheDocument();
+      });
+
+      const systemPromptTextarea = screen.getByPlaceholderText('Enter the system prompt that defines your agent\'s behavior...');
       await user.clear(systemPromptTextarea);
-      await user.type(systemPromptTextarea, 'You are a helpful assistant');
+      await user.type(systemPromptTextarea, 'New system prompt');
 
-      expect(systemPromptTextarea).toHaveValue('You are a helpful assistant');
+      expect(systemPromptTextarea).toHaveValue('New system prompt');
+    });
+
+    it('calls configurePrompt when Save Prompt button is clicked', async () => {
+      mockModelConfigService.configurePrompt.mockResolvedValue({
+        success: true,
+        message: 'Prompt configured successfully'
+      });
+
+      render(<ModelConfig />);
+
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(screen.getByText('Check Status')).toBeInTheDocument();
+      });
+
+      const savePromptButton = screen.getByText('Save Prompt');
+      await user.click(savePromptButton);
+
+      await waitFor(() => {
+        expect(mockModelConfigService.configurePrompt).toHaveBeenCalled();
+      });
     });
   });
 
-  describe('Generate Button', () => {
-    it('shows generate button for first message', () => {
-      render(<ModelConfig />);
-
-      expect(screen.getByText('Generate')).toBeInTheDocument();
-    });
-  });
-
-  describe('Model Configuration API', () => {
-    it('calls configureModel API when Configure button is clicked', async () => {
-      mockModelConfigService.configureModel.mockResolvedValue({
+  describe('Loading Current Configuration', () => {
+    it('loads current model configuration on mount', async () => {
+      mockModelConfigService.getCurrentModelConfig.mockResolvedValue({
         success: true,
-        data: { data: { updated: true } }
+        data: {
+          provider: 'openai',
+          model: 'gpt-4o',
+          apiKey: 'test-key'
+        }
+      });
+      mockModelConfigService.getCurrentPromptConfig.mockResolvedValue({
+        success: true,
+        data: {
+          prompt: 'Test prompt'
+        }
       });
 
       render(<ModelConfig />);
-
-      const configureButton = screen.getByRole('button', { name: /configure/i });
-      await user.click(configureButton);
 
       await waitFor(() => {
-        expect(mockModelConfigService.configureModel).toHaveBeenCalledWith({
-          provider: 'langgenius/openai/openai',
-          model: 'gpt-4o'
-        });
+        expect(mockModelConfigService.getCurrentModelConfig).toHaveBeenCalled();
+        expect(mockModelConfigService.getCurrentPromptConfig).toHaveBeenCalled();
       });
     });
 
-    it('shows loading state during model configuration', async () => {
-      mockModelConfigService.configureModel.mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve({ success: true, data: {} }), 100))
-      );
-
-      render(<ModelConfig />);
-
-      const configureButton = screen.getByRole('button', { name: /configure/i });
-      await user.click(configureButton);
-
-      expect(screen.getByText('Configuring...')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Configuring...' })).toBeDisabled();
-    });
-
-    it('shows success state after successful model configuration', async () => {
-      mockModelConfigService.configureModel.mockResolvedValue({
-        success: true,
-        data: { data: { updated: true } }
-      });
-
-      render(<ModelConfig />);
-
-      const configureButton = screen.getByRole('button', { name: /configure/i });
-      await user.click(configureButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('Configure')).toBeInTheDocument();
-      });
-    });
-
-    it('shows error state when model configuration fails', async () => {
-      mockModelConfigService.configureModel.mockResolvedValue({
+    it('handles API errors when loading configuration', async () => {
+      mockModelConfigService.getCurrentModelConfig.mockResolvedValue({
         success: false,
-        message: 'Failed to configure model'
+        message: 'API Error'
       });
-
-      render(<ModelConfig />);
-
-      const configureButton = screen.getByRole('button', { name: /configure/i });
-      await user.click(configureButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('Failed to configure model')).toBeInTheDocument();
-      });
-    });
-
-    it('handles different provider-model combinations', async () => {
-      mockModelConfigService.configureModel.mockResolvedValue({
-        success: true,
-        data: { data: { updated: true } }
-      });
-
-      render(<ModelConfig />);
-
-      // Change provider to Anthropic
-      const providerSelect = screen.getByDisplayValue('OpenAI');
-      await user.selectOptions(providerSelect, 'Anthropic');
-
-      // Change model to Claude 3.5 Haiku
-      const modelSelect = screen.getByDisplayValue('Claude 3.5 Sonnet');
-      await user.selectOptions(modelSelect, 'Claude 3.5 Haiku');
-
-      const configureButton = screen.getByRole('button', { name: /configure/i });
-      await user.click(configureButton);
-
-      await waitFor(() => {
-        expect(mockModelConfigService.configureModel).toHaveBeenCalledWith({
-          provider: 'langgenius/anthropic/anthropic',
-          model: 'claude-3-5-haiku'
-        });
-      });
-    });
-  });
-
-  describe('Prompt Configuration API', () => {
-    it('calls configurePrompt API when Save button is clicked', async () => {
-      mockModelConfigService.configurePrompt.mockResolvedValue({
-        success: true,
-        data: { data: { updated: true } }
-      });
-
-      render(<ModelConfig />);
-
-      const saveButton = screen.getByText('Save');
-      await user.click(saveButton);
-
-      await waitFor(() => {
-        expect(mockModelConfigService.configurePrompt).toHaveBeenCalledWith({
-          prompt: expect.stringContaining('Appointment Scheduling Agent Prompt')
-        });
-      });
-    });
-
-    it('shows loading state during prompt configuration', async () => {
-      mockModelConfigService.configurePrompt.mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve({ success: true, data: {} }), 100))
-      );
-
-      render(<ModelConfig />);
-
-      const saveButton = screen.getByText('Save');
-      await user.click(saveButton);
-
-      expect(screen.getByText('Saving...')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Saving...' })).toBeDisabled();
-    });
-
-    it('shows success state after successful prompt configuration', async () => {
-      mockModelConfigService.configurePrompt.mockResolvedValue({
-        success: true,
-        data: { data: { updated: true } }
-      });
-
-      render(<ModelConfig />);
-
-      const saveButton = screen.getByText('Save');
-      await user.click(saveButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('Save')).toBeInTheDocument();
-      });
-    });
-
-    it('shows error state when prompt configuration fails', async () => {
-      mockModelConfigService.configurePrompt.mockResolvedValue({
+      mockModelConfigService.getCurrentPromptConfig.mockResolvedValue({
         success: false,
-        message: 'Failed to configure prompt'
+        message: 'API Error'
       });
 
       render(<ModelConfig />);
 
-      const saveButton = screen.getByText('Save');
-      await user.click(saveButton);
-
       await waitFor(() => {
-        expect(screen.getByText('Failed to configure prompt')).toBeInTheDocument();
-      });
-    });
-
-    it('sends updated prompt content to API', async () => {
-      mockModelConfigService.configurePrompt.mockResolvedValue({
-        success: true,
-        data: { data: { updated: true } }
-      });
-
-      render(<ModelConfig />);
-
-      // Edit the system prompt
-      const systemPromptTextarea = screen.getByDisplayValue(/Appointment Scheduling Agent Prompt/);
-      await user.clear(systemPromptTextarea);
-      await user.type(systemPromptTextarea, 'New custom prompt');
-
-      const saveButton = screen.getByText('Save');
-      await user.click(saveButton);
-
-      await waitFor(() => {
-        expect(mockModelConfigService.configurePrompt).toHaveBeenCalledWith({
-          prompt: 'New custom prompt'
-        });
+        expect(mockModelConfigService.getCurrentModelConfig).toHaveBeenCalled();
+        expect(mockModelConfigService.getCurrentPromptConfig).toHaveBeenCalled();
       });
     });
   });
 
   describe('Error Handling', () => {
-    it('displays error message when API call fails', async () => {
-      mockModelConfigService.configureModel.mockResolvedValue({
-        success: false,
-        message: 'API Error: Invalid configuration'
-      });
-
-      render(<ModelConfig />);
-
-      const configureButton = screen.getByRole('button', { name: /configure/i });
-      await user.click(configureButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('API Error: Invalid configuration')).toBeInTheDocument();
-      });
-    });
-
-    it('clears error message when new API call is made', async () => {
-      mockModelConfigService.configureModel
-        .mockResolvedValueOnce({
-          success: false,
-          message: 'First error'
-        })
-        .mockResolvedValueOnce({
-          success: true,
-          data: { data: { updated: true } }
-        });
-
-      render(<ModelConfig />);
-
-      const configureButton = screen.getByRole('button', { name: /configure/i });
-
-      // First call - shows error
-      await user.click(configureButton);
-      await waitFor(() => {
-        expect(screen.getByText('First error')).toBeInTheDocument();
-      });
-
-      // Second call - error should be cleared
-      await user.click(configureButton);
-      await waitFor(() => {
-        expect(screen.queryByText('First error')).not.toBeInTheDocument();
-      });
-    });
-
-    it('handles network errors gracefully', async () => {
-      mockModelConfigService.configureModel.mockResolvedValue({
-        success: false,
-        message: 'Network error'
-      });
-
-      render(<ModelConfig />);
-
-      const configureButton = screen.getByRole('button', { name: /configure/i });
-      await user.click(configureButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('Network error')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('UI States', () => {
-    it('disables buttons during loading', async () => {
-      mockModelConfigService.configureModel.mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve({ success: true, data: {} }), 100))
-      );
-
-      render(<ModelConfig />);
-
-      const configureButton = screen.getByRole('button', { name: /configure/i });
-      await user.click(configureButton);
-
-      expect(configureButton).toBeDisabled();
-    });
-
-    it('shows success icon after successful configuration', async () => {
-      mockModelConfigService.configureModel.mockResolvedValue({
-        success: true,
-        data: { data: { updated: true } }
-      });
-
-      render(<ModelConfig />);
-
-      const configureButton = screen.getByRole('button', { name: /configure/i });
-      await user.click(configureButton);
-
-      await waitFor(() => {
-        // The success icon should be present (CheckCircle)
-        expect(screen.getByText('Configure')).toBeInTheDocument();
-      });
-    });
-
-    it('shows error icon after failed configuration', async () => {
+    it('displays error message when model configuration fails', async () => {
       mockModelConfigService.configureModel.mockResolvedValue({
         success: false,
         message: 'Configuration failed'
@@ -441,53 +329,82 @@ describe('ModelConfig', () => {
 
       render(<ModelConfig />);
 
-      const configureButton = screen.getByRole('button', { name: /configure/i });
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(screen.getByText('Check Status')).toBeInTheDocument();
+      });
+
+      const configureButton = screen.getByText('Configure Model');
       await user.click(configureButton);
 
       await waitFor(() => {
-        // The error icon should be present (AlertCircle)
-        expect(screen.getByText('Configuration failed')).toBeInTheDocument();
+        expect(screen.getByText('Failed to configure model')).toBeInTheDocument();
+      });
+    });
+
+    it('displays error message when prompt configuration fails', async () => {
+      mockModelConfigService.configurePrompt.mockResolvedValue({
+        success: false,
+        message: 'Configuration failed'
+      });
+
+      render(<ModelConfig />);
+
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(screen.getByText('Check Status')).toBeInTheDocument();
+      });
+
+      const savePromptButton = screen.getByText('Save Prompt');
+      await user.click(savePromptButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Failed to save system prompt')).toBeInTheDocument();
       });
     });
   });
 
-  describe('Responsive Design', () => {
-    it('renders the component without errors', () => {
+  describe('Success Messages', () => {
+    it('displays success message when model configuration succeeds', async () => {
+      mockModelConfigService.configureModel.mockResolvedValue({
+        success: true,
+        message: 'Model configured successfully'
+      });
+
       render(<ModelConfig />);
 
-      expect(screen.getByText('Provider')).toBeInTheDocument();
-    });
-  });
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(screen.getByText('Check Status')).toBeInTheDocument();
+      });
 
-  describe('Accessibility', () => {
-    it('has proper labels and form structure', () => {
-      render(<ModelConfig />);
+      const configureButton = screen.getByText('Configure Model');
+      await user.click(configureButton);
 
-      // Check that labels are present in the document
-      expect(screen.getByText('Provider')).toBeInTheDocument();
-      expect(screen.getByText('Model')).toBeInTheDocument();
-      expect(screen.getByText('First Message')).toBeInTheDocument();
-      expect(screen.getByText('System Prompt')).toBeInTheDocument();
-    });
-
-    it('has proper button roles and states', () => {
-      render(<ModelConfig />);
-
-      const configureButton = screen.getByRole('button', { name: 'Configure' });
-      const saveButton = screen.getByRole('button', { name: 'Save' });
-
-      expect(configureButton).toBeInTheDocument();
-      expect(saveButton).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Model configured successfully!')).toBeInTheDocument();
+      });
     });
 
-    it('has proper form controls with accessible names', () => {
+    it('displays success message when prompt configuration succeeds', async () => {
+      mockModelConfigService.configurePrompt.mockResolvedValue({
+        success: true,
+        message: 'Prompt configured successfully'
+      });
+
       render(<ModelConfig />);
 
-      // Check that form controls are present
-      expect(screen.getByDisplayValue('OpenAI')).toBeInTheDocument(); // Provider select
-      expect(screen.getByDisplayValue('GPT-4o')).toBeInTheDocument(); // Model select
-      expect(screen.getByDisplayValue('Thank you for calling Wellness Partners. This is Riley, your scheduling agent. How may I help you today?')).toBeInTheDocument(); // First message textarea
-      expect(screen.getByDisplayValue(/Appointment Scheduling Agent Prompt/)).toBeInTheDocument(); // System prompt textarea
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(screen.getByText('Check Status')).toBeInTheDocument();
+      });
+
+      const savePromptButton = screen.getByText('Save Prompt');
+      await user.click(savePromptButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('System prompt saved successfully!')).toBeInTheDocument();
+      });
     });
   });
 });

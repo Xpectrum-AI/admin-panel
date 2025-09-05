@@ -24,6 +24,74 @@ export interface ModelConfigResponse {
 }
 
 export const modelConfigService = {
+  // Get current model configuration
+  async getCurrentModelConfig(): Promise<ModelConfigResponse> {
+    try {
+      
+      const response = await fetch(`${MODEL_API_BASE_URL}/apps/current/model-config`, {
+        method: 'GET',
+        headers,
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return {
+            success: false,
+            message: 'No model configuration found',
+          };
+        }
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      return {
+        success: true,
+        data: result,
+      };
+    } catch (error) {
+      // Return a more user-friendly error message
+      return {
+        success: false,
+        message: 'Unable to connect to model configuration service. Please check your network connection.',
+      };
+    }
+  },
+
+  // Get current prompt configuration
+  async getCurrentPromptConfig(): Promise<ModelConfigResponse> {
+    try {
+      
+      const response = await fetch(`${MODEL_API_BASE_URL}/apps/current/prompt`, {
+        method: 'GET',
+        headers,
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return {
+            success: false,
+            message: 'No prompt configuration found',
+          };
+        }
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      return {
+        success: true,
+        data: result,
+      };
+    } catch (error) {
+      // Return a more user-friendly error message
+      return {
+        success: false,
+        message: 'Unable to connect to prompt configuration service. Please check your network connection.',
+      };
+    }
+  },
+
   // Configure model provider and model
   async configureModel(config: ModelConfigRequest): Promise<ModelConfigResponse> {
     try {
@@ -44,7 +112,6 @@ export const modelConfigService = {
         data: result,
       };
     } catch (error) {
-      console.error('Model configuration error:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to configure model',
@@ -72,7 +139,6 @@ export const modelConfigService = {
         data: result,
       };
     } catch (error) {
-      console.error('Prompt configuration error:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to configure prompt',

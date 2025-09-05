@@ -5,9 +5,11 @@ import { Bot, Mic, Wrench, Globe, MessageSquare, Sparkles, Activity, Search, Pho
 import ModelConfig from './config/ModelConfig';
 import VoiceConfig from './config/VoiceConfig';
 import TranscriberConfig from './config/TranscriberConfig';
+import ToolsConfig from './config/ToolsConfig';
 import PhoneNumbersTab from './PhoneNumbersTab';
 import SMSTab from './SMSTab';
 import WhatsAppTab from './WhatsAppTab';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface Agent {
   id: string;
@@ -19,6 +21,7 @@ interface Agent {
   latency: string;
   avatar?: string;
   description?: string;
+  config?: Record<string, unknown>;
 }
 
 const sampleAgents: Agent[] = [
@@ -46,15 +49,21 @@ const sampleAgents: Agent[] = [
   }
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface AgentsTabProps {
-  isDarkMode?: boolean;
+  // No props needed for this component
 }
 
-export default function AgentsTab({ isDarkMode = false }: AgentsTabProps) {
+export default function AgentsTab({}: AgentsTabProps) {
+  const { isDarkMode } = useTheme();
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(sampleAgents[0]);
   const [activeConfigTab, setActiveConfigTab] = useState('model');
-  const [isCreating, setIsCreating] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  
+  // Configuration state variables
+  const [modelConfig] = useState<Record<string, unknown> | null>(null);
+  const [voiceConfig] = useState<Record<string, unknown> | null>(null);
+  const [transcriberConfig] = useState<Record<string, unknown> | null>(null);
 
   // Refs for scrolling to sections
   const modelSectionRef = useRef<HTMLDivElement>(null);
@@ -87,6 +96,12 @@ export default function AgentsTab({ isDarkMode = false }: AgentsTabProps) {
           break;
       }
     }, 100);
+  };
+
+  // Handle agent creation callback
+  const handleAgentCreated = () => {
+    // You can add additional logic here like refreshing the agent list
+    // or showing a success message
   };
 
   // Close dropdown when clicking outside
@@ -130,7 +145,7 @@ export default function AgentsTab({ isDarkMode = false }: AgentsTabProps) {
               <p className={`text-sm sm:text-base lg:text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Craft and configure intelligent agents</p>
             </div>
             <button
-              onClick={() => setIsCreating(true)}
+              onClick={() => {}}
               className="group relative px-4 sm:px-5 lg:px-6 py-2 sm:py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg sm:rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-lg sm:rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
@@ -318,29 +333,29 @@ export default function AgentsTab({ isDarkMode = false }: AgentsTabProps) {
                   )}
 
                   {activeConfigTab === 'voice' && (
-                    <VoiceConfig ref={voiceSectionRef} isDarkMode={isDarkMode} />
+                    <VoiceConfig ref={voiceSectionRef} />
                   )}
 
                   {activeConfigTab === 'transcriber' && (
-                    <TranscriberConfig ref={transcriberSectionRef} isDarkMode={isDarkMode} />
+                    <TranscriberConfig ref={transcriberSectionRef} />
                   )}
 
                   {activeConfigTab === 'tools' && (
-                    <div ref={toolsSectionRef}>
-                      <div className="text-center py-12">
-                        <div className={`p-4 rounded-2xl inline-block mb-4 ${isDarkMode ? 'bg-gradient-to-r from-gray-800 to-gray-700' : 'bg-gradient-to-r from-gray-100 to-gray-200'}`}>
-                          <Wrench className={`h-8 w-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-                        </div>
-                        <h4 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Tools Configuration</h4>
-                        <p className={`max-w-md mx-auto ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                          This section is under development and will be available soon with advanced configuration options.
-                        </p>
-                      </div>
-                    </div>
+                    <ToolsConfig 
+                      ref={toolsSectionRef} 
+                      agentName={selectedAgent?.name || 'default'}
+                      modelConfig={modelConfig}
+                      voiceConfig={voiceConfig}
+                      transcriberConfig={transcriberConfig}
+                      onAgentCreated={handleAgentCreated}
+                      isEditing={!!selectedAgent}
+                      existingAgent={selectedAgent as unknown as Record<string, unknown>}
+                      existingConfig={selectedAgent?.config}
+                    />
                   )}
 
                   {activeConfigTab === 'phone' && (
-                    <PhoneNumbersTab isDarkMode={isDarkMode} />
+                    <PhoneNumbersTab />
                   )}
 
                   {activeConfigTab === 'sms' && (
