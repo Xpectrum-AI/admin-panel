@@ -1,410 +1,723 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Phone, Plus, Search, Sparkles, Activity, Zap, Menu, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Phone, Search, User, AlertCircle, CheckCircle, XCircle, Loader2, Plus } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
+import { 
+  getAllAgentsPhoneNumbers,
+  addUpdateAgentPhoneNumber,
+  getAvailablePhoneNumbersByOrg,
+  AgentPhoneNumber,
+  unassignPhoneNumber
+} from '../../service/phoneNumberService';
+import { agentConfigService } from '../../service/agentConfigService';
 
-interface PhoneNumber {
-  id: string;
-  number: string;
-  status: 'active' | 'inactive' | 'pending';
-  type: 'inbound' | 'outbound' | 'both';
-  assignedAgent?: string;
-  description?: string;
-}
+interface PhoneNumbersTabProps {}
 
-const samplePhoneNumbers: PhoneNumber[] = [
-  {
-    id: '1',
-    number: '+1 (555) 123-4567',
-    status: 'active',
-    type: 'both',
-    assignedAgent: 'Riley',
-    description: 'Main customer support line'
-  },
-  {
-    id: '2',
-    number: '+1 (555) 987-6543',
-    status: 'inactive',
-    type: 'inbound',
-    assignedAgent: 'Elliot',
-    description: 'Appointment scheduling line'
+export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
+  // Use theme with fallback to prevent errors
+  let isDarkMode = false;
+  try {
+    const theme = useTheme();
+    isDarkMode = theme?.isDarkMode || false;
+  } catch (error) {
+    console.warn('ThemeProvider not found, using light mode as fallback');
+    isDarkMode = false;
   }
-];
+  const [phoneNumbers, setPhoneNumbers] = useState<AgentPhoneNumber[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedPhoneNumber, setSelectedPhoneNumber] = useState<AgentPhoneNumber | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assigningAgent, setAssigningAgent] = useState('');
+  const [assigningPhoneNumber, setAssigningPhoneNumber] = useState('');
+  const [assigning, setAssigning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  
+  // State for organization-based assignment
+  const [agents, setAgents] = useState<any[]>([]);
+  const [availablePhoneNumbers, setAvailablePhoneNumbers] = useState<any[]>([]);
+  const [loadingAgents, setLoadingAgents] = useState(false);
+  const [loadingPhoneNumbers, setLoadingPhoneNumbers] = useState(false);
 
-interface PhoneNumbersTabProps {
-  isDarkMode?: boolean;
-}
+  // Load phone numbers on component mount
+  useEffect(() => {
+    loadPhoneNumbers();
+  }, []);
 
-export default function PhoneNumbersTab({ isDarkMode = false }: PhoneNumbersTabProps) {
-  const [activeTab, setActiveTab] = useState<'inbound' | 'outbound'>('inbound');
-  const [selectedNumber, setSelectedNumber] = useState<PhoneNumber | null>(samplePhoneNumbers[0]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // Load agents and available phone numbers on component mount
+  useEffect(() => {
+    loadAgents();
+    loadAvailablePhoneNumbers();
+  }, []);
 
-  const handleNumberSelect = (phoneNumber: PhoneNumber) => {
-    setSelectedNumber(phoneNumber);
-    setIsSidebarOpen(false); // Close sidebar when a number is selected
+  const loadPhoneNumbers = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await getAllAgentsPhoneNumbers();
+      console.log('🔍 Phone numbers response:', response);
+      
+      // Handle different response formats - check both success and status fields
+      const isSuccess = response.success || (response as any).status === 'success';
+      
+      if (isSuccess) {
+        let phoneNumbersArray: AgentPhoneNumber[] = [];
+        
+        // Check if data exists in response.data or response directly
+        const responseData = response.data || response;
+        
+        if (Array.isArray(responseData)) {
+          // If data is already an array, use it directly
+          phoneNumbersArray = responseData;
+        } else if ((responseData as any).phonenumbers && typeof (responseData as any).phonenumbers === 'object') {
+          // Transform the object format to array format
+          phoneNumbersArray = Object.entries((responseData as any).phonenumbers).map(([prefix, data]: [string, any]) => ({
+            prefix: prefix,
+            phone_number: data.phone_number || '',
+            organization_id: data.organization_id || 'developer',
+            created_at: data.created_at || new Date().toISOString(),
+            updated_at: data.updated_at || new Date().toISOString()
+          }));
+        } else if ((response as any).phonenumbers && typeof (response as any).phonenumbers === 'object') {
+          // Handle case where phonenumbers is at the top level
+          phoneNumbersArray = Object.entries((response as any).phonenumbers).map(([prefix, data]: [string, any]) => ({
+            prefix: prefix,
+            phone_number: data.phone_number || '',
+            organization_id: data.organization_id || 'developer',
+            created_at: data.created_at || new Date().toISOString(),
+            updated_at: data.updated_at || new Date().toISOString()
+          }));
+        }
+        
+        console.log('🔍 Transformed phone numbers array:', phoneNumbersArray);
+        setPhoneNumbers(phoneNumbersArray);
+      } else {
+        setError(response.message || 'Failed to load phone numbers');
+      }
+    } catch (err: any) {
+      setError('Failed to load phone numbers: ' + (err.message || 'Unknown error'));
+      console.error('Error loading phone numbers:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadAgents = async () => {
+    setLoadingAgents(true);
+    try {
+      const response = await agentConfigService.getAgentsByOrg('developer');
+      console.log('🔍 Agents response:', response);
+      
+      if (response.success && response.data && Array.isArray(response.data)) {
+        setAgents(response.data);
+      } else {
+        console.warn('Failed to load agents:', response.message);
+        setAgents([]);
+      }
+    } catch (err) {
+      console.error('Error loading agents:', err);
+      setAgents([]);
+    } finally {
+      setLoadingAgents(false);
+    }
+  };
+
+  const loadAvailablePhoneNumbers = async () => {
+    setLoadingPhoneNumbers(true);
+    try {
+      const response = await getAvailablePhoneNumbersByOrg('developer');
+      console.log('🔍 Available phone numbers response:', response);
+      
+      if (response.success && response.data) {
+        let phoneNumbersArray: any[] = [];
+        
+        if (Array.isArray(response.data)) {
+          phoneNumbersArray = response.data;
+        } else if ((response.data as any).phonenumbers && typeof (response.data as any).phonenumbers === 'object') {
+          // Transform the object format to array format
+          phoneNumbersArray = Object.entries((response.data as any).phonenumbers).map(([prefix, data]: [string, any]) => ({
+            prefix: prefix,
+            phone_number: data.phone_number || '',
+            organization_id: data.organization_id || 'developer',
+          }));
+        }
+        
+        // Filter out already assigned phone numbers
+        const unassignedNumbers = phoneNumbersArray.filter(phone => 
+          !phoneNumbers.some(existing => existing.phone_number === phone.phone_number)
+        );
+        
+        console.log('🔍 Available unassigned phone numbers:', unassignedNumbers);
+        setAvailablePhoneNumbers(unassignedNumbers);
+      } else {
+        console.warn('Failed to load available phone numbers:', response.message);
+        setAvailablePhoneNumbers([]);
+      }
+    } catch (err) {
+      console.error('Error loading available phone numbers:', err);
+      setAvailablePhoneNumbers([]);
+    } finally {
+      setLoadingPhoneNumbers(false);
+    }
+  };
+
+  const handleAssignPhoneNumber = async () => {
+    if (!assigningPhoneNumber.trim()) {
+      setError('Please select a phone number.');
+      return;
+    }
+
+    setAssigning(true);
+    setError(null);
+    setSuccess(null);
+    
+    try {
+      let response;
+      
+      if (!assigningAgent.trim() || assigningAgent.trim() === 'None') {
+        // Unassign the phone number
+        response = await unassignPhoneNumber(assigningPhoneNumber);
+        if (response.success) {
+          setSuccess(`Phone number ${assigningPhoneNumber} unassigned successfully!`);
+        } else {
+          setError(response.message || 'Failed to unassign phone number.');
+          return;
+        }
+      } else {
+        // Assign the phone number to an agent
+        response = await addUpdateAgentPhoneNumber(assigningAgent, assigningPhoneNumber);
+        if (response.success) {
+          setSuccess(`Phone number ${assigningPhoneNumber} assigned to ${assigningAgent} successfully!`);
+        } else {
+          setError(response.message || 'Failed to assign phone number.');
+          return;
+        }
+      }
+      
+      // Close modal and refresh data on success
+      setShowAssignModal(false);
+      setAssigningAgent('');
+      setAssigningPhoneNumber('');
+      loadPhoneNumbers(); // Refresh the list
+      loadAvailablePhoneNumbers(); // Refresh available numbers
+      
+    } catch (err: any) {
+      const action = !assigningAgent.trim() || assigningAgent.trim() === 'None' ? 'unassign' : 'assign';
+      setError(`Error ${action}ing phone number: ` + (err.message || 'Unknown error'));
+      console.error(`Error ${action}ing phone number:`, err);
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const handleUnassignPhoneNumber = async () => {
+    if (!selectedPhoneNumber?.phone_number) {
+      setError('No phone number selected for unassignment.');
+      return;
+    }
+
+    setAssigning(true);
+    setError(null);
+    setSuccess(null);
+    
+    try {
+      const response = await unassignPhoneNumber(selectedPhoneNumber.phone_number);
+      
+      if (response.success) {
+        setSuccess(`Phone number ${selectedPhoneNumber.phone_number} unassigned successfully!`);
+        setShowAssignModal(false);
+        setAssigningAgent('');
+        setAssigningPhoneNumber('');
+        loadPhoneNumbers(); // Refresh the list
+        loadAvailablePhoneNumbers(); // Refresh available numbers
+      } else {
+        setError(response.message || 'Failed to unassign phone number.');
+      }
+    } catch (err: any) {
+      setError('Error unassigning phone number: ' + (err.message || 'Unknown error'));
+      console.error('Error unassigning phone number:', err);
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const filteredPhoneNumbers = phoneNumbers.filter(phone =>
+    phone.prefix.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    phone.phone_number.includes(searchTerm)
+  );
+
+  const clearMessages = () => {
+    setError(null);
+    setSuccess(null);
+  };
+
+  useEffect(() => {
+    if (error || success) {
+      const timer = setTimeout(clearMessages, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, success]);
+
+  // Add keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSelectedPhoneNumber(null);
+        setShowAssignModal(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const isAssigned = (phoneNumber: AgentPhoneNumber) => {
+    return phoneNumber.prefix && phoneNumber.prefix !== 'unassigned';
+  };
+
+  const handleSelectPhoneNumber = (phoneNumber: AgentPhoneNumber) => {
+    setSelectedPhoneNumber(phoneNumber);
+  };
+
+  const handleEditPhoneNumber = (phoneNumber: AgentPhoneNumber) => {
+    setSelectedPhoneNumber(phoneNumber);
+    setAssigningPhoneNumber(phoneNumber.phone_number);
+    setAssigningAgent(phoneNumber.prefix || '');
+    setShowAssignModal(true);
   };
 
   return (
-    <div className=" w-full space-y-4 sm:space-y-6">
-      <div className={` border shadow-xl backdrop-blur-sm ${isDarkMode ? 'bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800 border-gray-700/50' : 'bg-gradient-to-br from-white via-gray-50 to-white border-gray-200/50'}`}>
+    <div className="max-w-7xl mx-auto p-6" onClick={() => setSelectedPhoneNumber(null)}>
+      <div className={`rounded-2xl border shadow-xl backdrop-blur-sm ${isDarkMode ? 'bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800 border-gray-700/50' : 'bg-gradient-to-br from-white via-gray-50 to-white border-gray-200/50'}`}>
+        
         {/* Header */}
-        <div className={`p-4 sm:p-6 lg:p-8 border-b   ${isDarkMode ? 'border-gray-700/50 bg-gradient-to-r from-blue-900/20 to-indigo-900/20' : 'border-gray-200/50 bg-gradient-to-r from-blue-50 to-indigo-50'}`}>
-          <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
-            <div className="space-y-2 text-center sm:text-left">
-              <div className="flex items-center justify-center sm:justify-start gap-3">
-                <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg sm:rounded-xl">
-                  <Phone className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+        <div className={`p-8 border-b rounded-t-2xl ${isDarkMode ? 'border-gray-700/50 bg-gradient-to-r from-blue-900/20 to-indigo-900/20' : 'border-gray-200/50 bg-gradient-to-r from-blue-50 to-indigo-50'}`}>
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl">
+                  <Phone className="h-6 w-6 text-white" />
                 </div>
-                <h2 className={`text-xl sm:text-2xl lg:text-3xl font-bold bg-clip-text text-transparent ${isDarkMode ? 'bg-gradient-to-r from-white to-gray-300' : 'bg-gradient-to-r from-gray-900 to-gray-700'}`}>
-                  Phone Numbers
+                <h2 className={`text-3xl font-bold bg-clip-text text-transparent ${isDarkMode ? 'bg-gradient-to-r from-white to-gray-300' : 'bg-gradient-to-r from-gray-900 to-gray-700'}`}>
+                  Phone Numbers Management
                 </h2>
               </div>
-              <p className={`text-sm sm:text-base lg:text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Manage your communication channels</p>
+              <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                View and manage phone number assignments to agents
+              </p>
             </div>
-            <button className="group relative px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg sm:rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-lg sm:rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-              <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="font-semibold text-sm sm:text-base">Add Phone Number</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className={`border-b ${isDarkMode ? 'border-gray-700/50 bg-gray-900' : 'border-gray-200/50 bg-white'} `}>
-          <nav className="flex space-x-1 px-4 sm:px-8 py-2 overflow-x-auto no-scrollbar">
-            <button
-              onClick={() => setActiveTab('inbound')}
-              className={`group relative px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium text-xs sm:text-sm transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${activeTab === 'inbound'
-                ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg'
-                : isDarkMode
-                  ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-            >
-              <div className="w-2 h-2 rounded-full bg-current"></div>
-              Inbound
-              {activeTab === 'inbound' && (
-                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-white rounded-full"></div>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('outbound')}
-              className={`group relative px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium text-xs sm:text-sm transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${activeTab === 'outbound'
-                ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg'
-                : isDarkMode
-                  ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-            >
-              <div className="w-2 h-2 rounded-full bg-current"></div>
-              Outbound
-              {activeTab === 'outbound' && (
-                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-white rounded-full"></div>
-              )}
-            </button>
-          </nav>
-        </div>
-
-        {/* Tab Content */}
-        <div className={`p-4 sm:p-6 lg:p-8 ${isDarkMode ? 'bg-gray-900' : ''} rounded-b-2xl`}>
-          {/* Sidebar Toggle - All Screens */}
-          <div className="mb-4">
-            <button
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center gap-2 ${isDarkMode
-                ? 'bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-600'
-                : 'bg-white hover:bg-gray-50 text-gray-900 border border-gray-200'
-                } shadow-sm hover:shadow-md`}
-            >
-              <Menu className="h-4 w-4" />
-              <span className="text-sm font-medium">
-                {isSidebarOpen ? 'Hide Phone Numbers' : 'Show Phone Numbers'}
-              </span>
-              {selectedNumber && !isSidebarOpen && (
-                <span className={`text-xs px-2 py-1 rounded-full ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'
-                  }`}>
-                  {selectedNumber.number}
+            <div className="flex gap-3">
+              <div className="flex items-center gap-2">
+                <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Organization: Developer
                 </span>
-              )}
+            </div>
+              <button
+                onClick={() => {
+                  setAssigningAgent('');
+                  setAssigningPhoneNumber('');
+                  setShowAssignModal(true);
+                }}
+                className="group relative px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-3"
+              >
+                <Plus className="h-5 w-4" />
+                <span className="font-semibold">Assign Number</span>
             </button>
           </div>
+        </div>
+        </div>
 
-          {/* Backdrop for all screens */}
-          {isSidebarOpen && (
-            <div
-              className="fixed inset-0 bg-black/50 z-40"
-              onClick={() => setIsSidebarOpen(false)}
-            />
-          )}
-
-          {/* Sliding Sidebar - All Screens */}
-          <div className={`fixed top-0 bottom-0 left-0 z-50 w-64 sm:w-72 lg:w-80 xl:w-96 transform transition-all duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'
-            } ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r shadow-xl overflow-hidden`}>
-            {/* Sidebar Header */}
-            <div className={`flex items-center justify-between p-3 sm:p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-              <h3 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                Phone Numbers
-              </h3>
-              <button
-                onClick={() => setIsSidebarOpen(false)}
-                className={`p-1 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'
-                  }`}
-              >
-                <X className="h-3 w-3 sm:h-4 sm:w-4" />
+        {/* Messages */}
+        {(error || success) && (
+          <div className={`p-4 border-b ${isDarkMode ? 'border-gray-700/50' : 'border-gray-200/50'}`}>
+            {error && (
+              <div className="flex items-center gap-3 p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg">
+                <AlertCircle className="h-5 w-5" />
+                <span>{error}</span>
+                <button onClick={clearMessages} className="ml-auto">
+                  <XCircle className="h-4 w-4" />
+            </button>
+          </div>
+            )}
+            {success && (
+              <div className="flex items-center gap-3 p-3 bg-green-100 border border-green-300 text-green-700 rounded-lg">
+                <CheckCircle className="h-5 w-5" />
+                <span>{success}</span>
+                <button onClick={clearMessages} className="ml-auto">
+                  <XCircle className="h-4 w-4" />
               </button>
             </div>
-
-            {/* Sidebar Content */}
-            <div className="p-2 sm:p-4 h-full overflow-y-auto pb-20">
-
-              <div className="mb-3 sm:mb-4">
+            )}
+        </div>
+        )}
+        
+        {/* Search and Content */}
+        <div className={`p-8 ${isDarkMode ? 'bg-gray-900' : ''}`}>
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Phone Numbers List */}
+            <div className="w-full lg:w-96" onClick={(e) => e.stopPropagation()}>
+              <div className="mb-6">
                 <div className="relative group">
-                  <Search className={`absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 transition-colors ${isDarkMode ? 'text-gray-500 group-focus-within:text-blue-400' : 'text-gray-400 group-focus-within:text-blue-500'}`} />
+                  <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 transition-colors ${isDarkMode ? 'text-gray-500 group-focus-within:text-blue-400' : 'text-gray-400 group-focus-within:text-blue-500'}`} />
                   <input
                     type="text"
                     placeholder="Search phone numbers..."
-                    className={`w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 text-xs sm:text-sm ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'}`}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className={`w-full pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'}`}
                   />
                 </div>
               </div>
 
-              <div className="space-y-2 sm:space-y-3">
-                {samplePhoneNumbers.map((phoneNumber) => (
-                  <button
-                    key={phoneNumber.id}
-                    onClick={() => handleNumberSelect(phoneNumber)}
-                    className={`w-full p-2 sm:p-3 rounded-lg text-left transition-all duration-300 transform hover:scale-[1.02] ${selectedNumber?.id === phoneNumber.id
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                </div>
+              ) : filteredPhoneNumbers.length === 0 ? (
+                <div className="text-center py-12">
+                  <Phone className={`h-12 w-12 mx-auto mb-4 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`} />
+                  <p className={`text-lg font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    No phone numbers found
+                  </p>
+                  <p className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                    {searchTerm ? 'Try adjusting your search' : 'No phone numbers available'}
+                  </p>
+                </div>
+              ) : (
+                        <div className="space-y-2">
+                          {filteredPhoneNumbers.map((phoneNumber) => (
+                            <div
+                              key={phoneNumber.phone_number}
+                              onClick={() => handleSelectPhoneNumber(phoneNumber)}
+                                                             className={`w-full p-4 rounded-xl text-left transition-all duration-300 cursor-pointer ${
+                                 selectedPhoneNumber?.phone_number === phoneNumber.phone_number
                       ? isDarkMode
-                        ? 'bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border-2 border-blue-700/50 shadow-lg'
-                        : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 shadow-lg'
+                                     ? 'bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border-2 border-blue-700/50 shadow-lg ring-2 ring-blue-500/30'
+                                     : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 shadow-lg ring-2 ring-blue-400/30'
                       : isDarkMode
-                        ? 'hover:bg-gray-800/80 border-2 border-transparent hover:border-gray-600 shadow-sm'
-                        : 'hover:bg-white/80 border-2 border-transparent hover:border-gray-200 shadow-sm'
-                      }`}
-                  >
-                    <div className="flex items-start gap-2 sm:gap-3">
-                      <div className={`text-sm sm:text-xl p-1 sm:p-1.5 rounded-lg flex-shrink-0 ${phoneNumber.status === 'active'
-                        ? isDarkMode ? 'bg-blue-900/50' : 'bg-blue-100'
-                        : phoneNumber.status === 'inactive'
-                          ? isDarkMode ? 'bg-red-900/50' : 'bg-red-100'
-                          : isDarkMode ? 'bg-yellow-900/50' : 'bg-yellow-100'
-                        }`}>
-                        📞
-                      </div>
+                                     ? 'border border-white/20 shadow-sm'
+                                     : 'border border-gray-200 shadow-sm'
+                               }`}
+                            >
+                                                             <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-0.5 sm:mb-1 gap-1 sm:gap-2">
-                          <h3 className={`font-semibold truncate text-xs sm:text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{phoneNumber.number}</h3>
-                          <div className={`px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-medium self-start sm:self-auto ${phoneNumber.status === 'active'
-                            ? isDarkMode ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-800'
-                            : phoneNumber.status === 'inactive'
-                              ? isDarkMode ? 'bg-red-900/50 text-red-300' : 'bg-red-100 text-red-800'
-                              : isDarkMode ? 'bg-yellow-900/50 text-yellow-300' : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                            {phoneNumber.status}
+                                   <div className="flex items-center gap-3 mb-2">
+                                     <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
+                                       <Phone className={`h-4 w-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
                           </div>
+                                     <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                                       {phoneNumber.phone_number}
+                                     </h3>
                         </div>
-                        <p className={`text-xs mb-0.5 sm:mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{phoneNumber.description}</p>
-                        <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                          {phoneNumber.assignedAgent && `Assigned to ${phoneNumber.assignedAgent}`}
+                                   <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                     {phoneNumber.prefix && phoneNumber.prefix !== 'unassigned' 
+                                       ? `Agent: ${phoneNumber.prefix}` 
+                                       : 'Agent: None'
+                                     }
                         </p>
                       </div>
+                                 <div className="flex items-center gap-4">
+                                   <div className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 ${
+                                     phoneNumber.prefix && phoneNumber.prefix !== 'unassigned'
+                                       ? isDarkMode 
+                                         ? 'bg-green-900/40 text-green-300 border border-green-600/50 shadow-sm'
+                                         : 'bg-green-100 text-green-700 border border-green-300 shadow-sm'
+                                       : isDarkMode
+                                         ? 'bg-gray-700/50 text-gray-300 border border-gray-600/50 shadow-sm'
+                                         : 'bg-gray-100 text-gray-600 border border-gray-300 shadow-sm'
+                                   }`}>
+                                     {phoneNumber.prefix && phoneNumber.prefix !== 'unassigned' ? (
+                                       <>
+                                         <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
+                                         <span>Assigned</span>
+                                       </>
+                                     ) : (
+                                       <>
+                                         <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
+                                         <span>Unassigned</span>
+                                       </>
+                                     )}
                     </div>
+                                   {phoneNumber.prefix && phoneNumber.prefix !== 'unassigned' && (
+                                     <button
+                                       onClick={(e) => {
+                                         e.stopPropagation();
+                                         handleEditPhoneNumber(phoneNumber);
+                                       }}
+                                       className={`p-2.5 rounded-xl transition-all duration-200 ${
+                                         isDarkMode 
+                                           ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg border border-blue-500/30' 
+                                           : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg border border-blue-400/30'
+                                       }`}
+                                       title="Edit Assignment"
+                                     >
+                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                       </svg>
                   </button>
-                ))}
+                                   )}
               </div>
             </div>
           </div>
-
-          {/* Main Content Area */}
-          <div className="flex-1">
-            <div className="flex flex-col h-full">
-              {selectedNumber ? (
-                <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 border ${isDarkMode ? 'bg-gradient-to-br from-gray-800/30 to-gray-900 border-gray-700/50' : 'bg-gradient-to-br from-gray-50/30 to-white border-gray-200/50'}`}>
-                  <div className="mb-4 sm:mb-6 lg:mb-8">
-                    <div className="flex flex-col items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
-                      <div className={`text-2xl sm:text-3xl p-2 sm:p-3 rounded-lg sm:rounded-xl ${isDarkMode ? 'bg-gradient-to-r from-blue-900/50 to-indigo-900/50' : 'bg-gradient-to-r from-blue-100 to-indigo-100'}`}>
-                        📞
-                      </div>
-                      <div className="text-center">
-                        <h3 className={`text-lg sm:text-xl lg:text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                          {activeTab === 'inbound' ? 'Inbound' : 'Outbound'} Configuration
-                        </h3>
-                        <p className={`text-sm sm:text-base ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{selectedNumber.number}</p>
-                        <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{selectedNumber.description}</p>
-                      </div>
+                          ))}
                     </div>
-
-                    {/* Status Indicator */}
-                    <div className="flex items-center justify-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${selectedNumber.status === 'active' ? 'bg-green-500 animate-pulse' :
-                        selectedNumber.status === 'inactive' ? 'bg-red-500' :
-                          'bg-yellow-500'
-                        }`}></div>
-                      <span className={`text-xs sm:text-sm font-medium capitalize ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{selectedNumber.status}</span>
-                      {selectedNumber.status === 'active' && (
-                        <Activity className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 animate-pulse" />
-                      )}
-                    </div>
+              )}
                   </div>
 
-                  {activeTab === 'inbound' ? (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                      <div className="space-y-3 sm:space-y-4">
-                        <div>
-                          <label className={`block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Assigned Agent</label>
-                          <select className={`w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200' : 'border-gray-200 bg-white/80 text-gray-900'}`}>
-                            <option>Riley</option>
-                            <option>Elliot</option>
-                            <option>None</option>
-                          </select>
+            {/* Details Panel */}
+             <div className="flex-1 w-full lg:w-auto" onClick={(e) => e.stopPropagation()}>
+              {selectedPhoneNumber ? (
+                 <div className={`rounded-2xl p-8 border transition-all duration-300 transform animate-in slide-in-from-right-4 ${isDarkMode ? 'bg-gradient-to-br from-gray-800/30 to-gray-900 border-gray-700/50' : 'bg-gradient-to-br from-gray-50/30 to-white border-gray-200/50'}`}>
+                   <div className="mb-8">
+                     <div className="flex items-center gap-4 mb-4">
+                       <div className={`text-3xl p-3 rounded-xl ${isDarkMode ? 'bg-gradient-to-r from-blue-900/50 to-indigo-900/50' : 'bg-gradient-to-r from-blue-100 to-indigo-100'}`}>
+                         📞
                         </div>
-
                         <div>
-                          <label className={`block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Greeting Message</label>
-                          <textarea
-                            rows={3}
-                            className={`w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border h-32 sm:h-40 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 resize-none ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'}`}
-                            placeholder="Enter greeting message..."
-                            defaultValue="Thank you for calling. Please wait while we connect you to an agent."
-                          />
+                         <h3 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                          Phone Number Details
+                         </h3>
+                        <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                          {selectedPhoneNumber.phone_number}
+                        </p>
                         </div>
-
-                        <div>
-                          <label className={`block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Call Routing</label>
-                          <select className={`w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200' : 'border-gray-200 bg-white/80 text-gray-900'}`}>
-                            <option>Direct to Agent</option>
-                            <option>Queue System</option>
-                            <option>IVR Menu</option>
-                          </select>
                         </div>
                       </div>
 
-                      <div className="space-y-3 sm:space-y-4">
+                  {isAssigned(selectedPhoneNumber) ? (
+                    // Show agent details if assigned
+                    <div className="space-y-6">
+                      <div className="p-6 bg-green-50 border border-green-200 rounded-xl">
+                        <div className="flex items-center gap-3 mb-4">
+                          <User className="h-6 w-6 text-green-600" />
+                          <h4 className="text-lg font-semibold text-green-800">Assigned to Agent</h4>
+                           </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className={`block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Business Hours</label>
-                          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                            <div>
-                              <label className={`block text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Start Time</label>
+                            <label className="block text-sm font-semibold mb-2 text-green-700">
+                              Agent Prefix
+                            </label>
                               <input
-                                type="time"
-                                className={`w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200' : 'border-gray-200 bg-white/80 text-gray-900'}`}
-                                defaultValue="09:00"
+                            type="text"
+                              value={selectedPhoneNumber.prefix}
+                              readOnly
+                              className="w-full px-4 py-3 border border-green-200 rounded-xl bg-green-50 text-green-800"
                               />
                             </div>
                             <div>
-                              <label className={`block text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>End Time</label>
+                            <label className="block text-sm font-semibold mb-2 text-green-700">
+                              Organization
+                            </label>
                               <input
-                                type="time"
-                                className={`w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200' : 'border-gray-200 bg-white/80 text-gray-900'}`}
-                                defaultValue="17:00"
+                              type="text"
+                              value={selectedPhoneNumber.organization_id || 'Not specified'}
+                              readOnly
+                              className="w-full px-4 py-3 border border-green-200 rounded-xl bg-green-50 text-green-800"
                               />
                             </div>
                           </div>
                         </div>
-
-                        <div className="pt-2 sm:pt-4">
-                          <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                            <Zap className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
-                            <span className={`text-xs sm:text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Quick Actions</span>
-                          </div>
-                          <div className="flex flex-col sm:flex-row gap-2">
-                            <button className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm font-medium ${isDarkMode ? 'bg-blue-900/50 text-blue-300 hover:bg-blue-800/50' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'}`}>
-                              Test Call
-                            </button>
-                            <button className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm font-medium ${isDarkMode ? 'bg-green-900/50 text-green-300 hover:bg-green-800/50' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}>
-                              Activate
-                            </button>
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                      <div className="space-y-3 sm:space-y-4">
-                        <div>
-                          <label className={`block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Outbound Agent</label>
-                          <select className={`w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 backdrop-blur-sm transition-all duration-300 ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200' : 'border-gray-200 bg-white/80 text-gray-900'}`}>
-                            <option>Riley</option>
-                            <option>Elliot</option>
-                            <option>None</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className={`block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Caller ID</label>
-                          <input
-                            type="text"
-                            className={`w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 backdrop-blur-sm transition-all duration-300 ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'}`}
-                            placeholder="Enter caller ID..."
-                            defaultValue="Wellness Partners"
-                          />
-                        </div>
-
-                        <div>
-                          <label className={`block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Dialing Strategy</label>
-                          <select className={`w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 backdrop-blur-sm transition-all duration-300 ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200' : 'border-gray-200 bg-white/80 text-gray-900'}`}>
-                            <option>Sequential</option>
-                            <option>Random</option>
-                            <option>Priority-based</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3 sm:space-y-4">
-                        <div>
-                          <label className={`block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Retry Settings</label>
-                          <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                            <div>
-                              <label className={`block text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Max Retries</label>
-                              <input
-                                type="number"
-                                className={`w-full px-2 sm:px-4 py-2 sm:py-3 text-sm border rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 backdrop-blur-sm transition-all duration-300 ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200' : 'border-gray-200 bg-white/80 text-gray-900'}`}
-                                defaultValue="3"
-                              />
-                            </div>
-                            <div>
-                              <label className={`block text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Retry Delay (min)</label>
-                              <input
-                                type="number"
-                                className={`w-full px-2 sm:px-4 py-2 sm:py-3 text-sm border rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 backdrop-blur-sm transition-all duration-300 ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200' : 'border-gray-200 bg-white/80 text-gray-900'}`}
-                                defaultValue="5"
-                              />
-                            </div>
+                    // Show assignment prompt if unassigned
+                    <div className="space-y-6">
+                      <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-xl">
+                        <div className="flex items-center gap-3 mb-4">
+                          <AlertCircle className="h-6 w-6 text-yellow-600" />
+                          <h4 className="text-lg font-semibold text-yellow-800">Unassigned Phone Number</h4>
                           </div>
-                        </div>
-
-                        <div className="pt-2 sm:pt-4">
-                          <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                            <Zap className="h-3 w-3 sm:h-4 sm:w-4 text-purple-500" />
-                            <span className={`text-xs sm:text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Quick Actions</span>
-                          </div>
-                          <div className="flex flex-col sm:flex-row gap-2">
-                            <button className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm font-medium ${isDarkMode ? 'bg-purple-900/50 text-purple-300 hover:bg-purple-800/50' : 'bg-purple-100 text-purple-700 hover:bg-purple-200'}`}>
-                              Test Dial
-                            </button>
-                            <button className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm font-medium ${isDarkMode ? 'bg-green-900/50 text-green-300 hover:bg-green-800/50' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}>
-                              Start Campaign
+                        <p className="text-yellow-700 mb-4">
+                          This phone number is not assigned to any agent. Click the button below to assign it.
+                        </p>
+                        <button
+                          onClick={() => {
+                            setAssigningPhoneNumber(selectedPhoneNumber.phone_number);
+                            setShowAssignModal(true);
+                          }}
+                          className="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors flex items-center gap-2"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Assign to Agent
                             </button>
                           </div>
-                        </div>
-                      </div>
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="text-center py-8 sm:py-12">
-                  <div className={`p-4 sm:p-6 rounded-xl sm:rounded-2xl inline-block mb-4 sm:mb-6 ${isDarkMode ? 'bg-gradient-to-r from-blue-900/50 to-indigo-900/50' : 'bg-gradient-to-r from-blue-100 to-indigo-100'}`}>
-                    <Phone className={`h-8 w-8 sm:h-12 sm:w-12 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                             ) : (
+                 <div className="text-center py-12 transition-all duration-300 transform animate-in fade-in">
+                   <div className={`p-6 rounded-2xl inline-block mb-6 ${isDarkMode ? 'bg-gradient-to-r from-blue-900/50 to-indigo-900/50' : 'bg-gradient-to-r from-blue-100 to-indigo-100'}`}>
+                     <Phone className={`h-12 w-12 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                   </div>
+                  <h3 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    Select a Phone Number
+                  </h3>
+                  <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
+                    Choose a phone number from the sidebar to view its details
+                  </p>
+                 </div>
+               )}
+                        </div>
+                      </div>
+                    </div>
+                        </div>
+
+      {/* Assignment Modal */}
+      {showAssignModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowAssignModal(false)}>
+          <div className={`rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-md' : 'bg-white/95 backdrop-blur-md'}`} onClick={(e) => e.stopPropagation()}>
+            <h3 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+              {selectedPhoneNumber ? 'Edit Assignment' : 'Assign Agent'}
+            </h3>
+            
+            {!selectedPhoneNumber && (
+              <p className={`text-sm mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                Select an agent prefix and phone number to create a new assignment.
+              </p>
+            )}
+            
+            {error && (
+              <div className="p-3 mb-4 rounded-lg bg-red-500/20 text-red-200 flex items-center gap-2 text-sm">
+                <AlertCircle className="h-4 w-4" />
+                <p>{error}</p>
+              </div>
+            )}
+
+            {success && (
+              <div className="p-3 mb-4 rounded-lg bg-green-500/20 text-green-200 flex items-center gap-2 text-sm">
+                <CheckCircle className="h-4 w-4" />
+                <p>{success}</p>
+              </div>
+            )}
+
+            <div className="space-y-6">
+              {selectedPhoneNumber ? (
+                // Edit Assignment - Show current phone number and assignment
+                <>
+                        <div>
+                    <label className={`block text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Phone Number
+                    </label>
+                          <input
+                            type="text"
+                      value={selectedPhoneNumber.phone_number}
+                      className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-gray-100 text-gray-900'}`}
+                      disabled
+                          />
+                        </div>
+
+                        <div>
+                    <label className={`block text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Current Assignment
+                    </label>
+                    <div className={`w-full px-4 py-3 border rounded-xl ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-gray-100 text-gray-900'}`}>
+                      Currently assigned to: {selectedPhoneNumber.prefix}
+                        </div>
+                      </div>
+
+                        <div>
+                    <label className={`block text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      New Agent Prefix
+                    </label>
+                    <select
+                      value={assigningAgent}
+                      onChange={(e) => setAssigningAgent(e.target.value)}
+                      className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
+                      disabled={loadingAgents}
+                    >
+                      <option value="">None (Unassign)</option>
+                      {Array.isArray(agents) && agents.map((agent, index) => (
+                        <option key={agent.id || agent.prefix || agent.name || `agent-${index}`} value={agent.prefix || agent.name}>
+                          {agent.name || agent.prefix} ({agent.prefix || agent.name})
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <h3 className={`text-lg sm:text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Select a Phone Number</h3>
-                  <p className={`text-sm sm:text-base ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Choose a phone number from the sidebar to configure its settings</p>
+                </>
+              ) : (
+                // New Assignment - Show only agent and phone number fields
+                <>
+                  <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-blue-900/20 border border-blue-700/30' : 'bg-blue-50 border border-blue-200'}`}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <User className={`h-4 w-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                      <label className={`block text-sm font-semibold ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                        Agent Prefix
+                      </label>
+                    </div>
+                    <select
+                      value={assigningAgent}
+                      onChange={(e) => setAssigningAgent(e.target.value)}
+                      className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-blue-600 bg-gray-700 text-gray-200' : 'border-blue-200 bg-white text-gray-900'}`}
+                      disabled={loadingAgents}
+                    >
+                      <option value="">Select an agent</option>
+                      {Array.isArray(agents) && agents.map((agent, index) => (
+                        <option key={agent.id || agent.prefix || agent.name || `agent-${index}`} value={agent.prefix || agent.name}>
+                          {agent.name || agent.prefix} ({agent.prefix || agent.name})
+                        </option>
+                      ))}
+                    </select>
+                            </div>
+
+                  <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-green-900/20 border border-green-700/30' : 'bg-green-50 border border-green-200'}`}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Phone className={`h-4 w-4 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+                      <label className={`block text-sm font-semibold ${isDarkMode ? 'text-green-300' : 'text-green-700'}`}>
+                        Phone Number
+                      </label>
+                            </div>
+                    <select
+                      value={assigningPhoneNumber}
+                      onChange={(e) => setAssigningPhoneNumber(e.target.value)}
+                      className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-green-600 bg-gray-700 text-gray-200' : 'border-green-200 bg-white text-gray-900'}`}
+                      disabled={loadingPhoneNumbers}
+                    >
+                      <option value="">Select a phone number</option>
+                      {Array.isArray(availablePhoneNumbers) && availablePhoneNumbers.map((phoneNumber, index) => {
+                        const displayText = phoneNumber.prefix ? `${phoneNumber.prefix} - ${phoneNumber.phone_number}` : phoneNumber.phone_number;
+                        return (
+                          <option key={phoneNumber.phone_number || `phone-${index}`} value={phoneNumber.phone_number}>
+                            {displayText}
+                          </option>
+                        );
+                      })}
+                    </select>
+                          </div>
+                </>
+              )}
+                        </div>
+
+            <div className="flex gap-3 mt-8">
+              <button
+                onClick={() => {
+                  setShowAssignModal(false);
+                  setSelectedPhoneNumber(null);
+                  setAssigningAgent('');
+                  setAssigningPhoneNumber('');
+                  setError(null);
+                  setSuccess(null);
+                }}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={assigning}
+              >
+                Cancel
+                            </button>
+              <button
+                onClick={handleAssignPhoneNumber}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                disabled={assigning || (selectedPhoneNumber ? !assigningAgent.trim() : (!assigningAgent.trim() || !assigningPhoneNumber.trim()))}
+              >
+                {assigning ? <Loader2 className="h-4 w-4 animate-spin mx-auto mr-2" /> : null}
+                {selectedPhoneNumber 
+                  ? (!assigningAgent.trim() ? 'Unassign Number' : 'Update Assignment')
+                  : 'Assign Agent'
+                }
+                            </button>
+                          </div>
+                        </div>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

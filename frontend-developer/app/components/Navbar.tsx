@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Sun, Moon, LogOut, User as UserIcon } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 
 // Mock for @propelauth/react since it cannot be resolved in this environment.
 // This provides a sample user object for the component to use.
@@ -14,7 +15,6 @@ const useAuthInfo = () => ({
 });
 
 interface NavbarProps {
-    isDarkMode?: boolean;
     activeTab: 'Overview' | 'Agents';
     onChange: (tab: 'Overview' | 'Agents') => void;
     activeTitle: string;
@@ -25,7 +25,6 @@ interface NavbarProps {
 }
 
 export default function Navbar({
-    isDarkMode = false,
     activeTab,
     onChange,
     activeTitle: _activeTitle,
@@ -40,6 +39,7 @@ export default function Navbar({
     ];
 
     const { user } = useAuthInfo();
+    const { isDarkMode } = useTheme();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
