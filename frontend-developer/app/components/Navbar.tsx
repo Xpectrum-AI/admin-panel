@@ -2,16 +2,10 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Sun, Moon, LogOut, User as UserIcon } from 'lucide-react';
+import { useAuthInfo } from '@propelauth/react';
+import { SyncLoader } from 'react-spinners';
+import { useRouter } from 'next/navigation';
 
-// Mock for @propelauth/react since it cannot be resolved in this environment.
-// This provides a sample user object for the component to use.
-const useAuthInfo = () => ({
-    user: {
-        firstName: 'Karthik',
-        lastName: 'Konduru',
-        email: 'karthik.konduru@example.com',
-    }
-});
 
 interface NavbarProps {
     isDarkMode?: boolean;
@@ -39,10 +33,11 @@ export default function Navbar({
         { id: 'Agents', label: 'Agents' }
     ];
 
-    const { user } = useAuthInfo();
+    const { user, isLoggedIn } = useAuthInfo();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
