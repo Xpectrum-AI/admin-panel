@@ -1,11 +1,14 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Bot, Settings, Mic, Wrench, BarChart3, Globe, MessageSquare, Sparkles, Zap, Activity, Search, RefreshCw, Trash2 } from 'lucide-react';
+import { Bot, Settings, Mic, Wrench, BarChart3, Globe, MessageSquare, Sparkles, Zap, Activity, Search, RefreshCw, Trash2, Phone as PhoneIcon, ChevronDown } from 'lucide-react';
 import ModelConfig from './config/ModelConfig';
 import VoiceConfig from './config/VoiceConfig';
 import TranscriberConfig from './config/TranscriberConfig';
 import ToolsConfig from './config/ToolsConfig';
+import PhoneNumbersTab from './PhoneNumbersTab';
+import SMSTab from './SMSTab';
+import WhatsAppTab from './WhatsAppTab';
 import { agentConfigService } from '../../service/agentConfigService';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -69,6 +72,7 @@ export default function AgentsTab({}: AgentsTabProps) {
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [activeConfigTab, setActiveConfigTab] = useState('model');
   const [isCreating, setIsCreating] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showAgentPrefixModal, setShowAgentPrefixModal] = useState(false);
   const [agentPrefix, setAgentPrefix] = useState('');
@@ -86,9 +90,7 @@ export default function AgentsTab({}: AgentsTabProps) {
   const voiceSectionRef = useRef<HTMLDivElement>(null);
   const transcriberSectionRef = useRef<HTMLDivElement>(null);
   const toolsSectionRef = useRef<HTMLDivElement>(null);
-  const analysisSectionRef = useRef<HTMLDivElement>(null);
-  const advancedSectionRef = useRef<HTMLDivElement>(null);
-  const widgetSectionRef = useRef<HTMLDivElement>(null);
+  // Removed analysis, advanced, widget section refs
 
   // Fetch agents from backend
   const fetchAgents = useCallback(async () => {
@@ -405,7 +407,8 @@ export default function AgentsTab({}: AgentsTabProps) {
     }
     
     setActiveConfigTab(tabId);
-    
+    setIsDropdownOpen(false); // Close dropdown on mobile
+
     // Scroll to the corresponding section
     setTimeout(() => {
       switch (tabId) {
@@ -421,18 +424,24 @@ export default function AgentsTab({}: AgentsTabProps) {
         case 'tools':
           toolsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           break;
-        case 'analysis':
-          analysisSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          break;
-        case 'advanced':
-          advancedSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          break;
-        case 'widget':
-          widgetSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        default:
           break;
       }
     }, 100);
   }, [activeConfigTab]); // Remove voiceConfig and transcriberConfig from dependencies
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (isDropdownOpen && !target.closest('.dropdown-container')) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isDropdownOpen]);
 
   // Handle agent creation callback
   const handleAgentCreated = useCallback(async () => {
@@ -591,6 +600,9 @@ export default function AgentsTab({}: AgentsTabProps) {
     { id: 'voice', label: 'Voice', icon: Mic, color: 'from-green-500 to-teal-600' },
     { id: 'transcriber', label: 'Transcriber', icon: MessageSquare, color: 'from-orange-500 to-red-600' },
     { id: 'tools', label: 'Tools', icon: Wrench, color: 'from-gray-600 to-gray-800' },
+    { id: 'phone', label: 'Phone', icon: PhoneIcon, color: 'from-green-500 to-emerald-600' },
+    { id: 'sms', label: 'SMS', icon: MessageSquare, color: 'from-orange-500 to-red-600' },
+    { id: 'whatsapp', label: 'WhatsApp', icon: Globe, color: 'from-cyan-500 to-blue-600' },
     { id: 'analysis', label: 'Analysis', icon: BarChart3, color: 'from-indigo-500 to-blue-600' },
     { id: 'advanced', label: 'Advanced', icon: Settings, color: 'from-purple-500 to-pink-600' },
     { id: 'widget', label: 'Widget', icon: Globe, color: 'from-cyan-500 to-blue-600' }
@@ -812,39 +824,38 @@ export default function AgentsTab({}: AgentsTabProps) {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Status Indicator */}
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${
-                      selectedAgent.status === 'active' ? 'bg-green-500 animate-pulse' :
+                  <div className="flex items-center gap-2 justify-center sm:justify-start">
+                    <div className={`w-2 h-2 rounded-full ${selectedAgent.status === 'active' ? 'bg-green-500 animate-pulse' :
                       selectedAgent.status === 'draft' ? 'bg-yellow-500' :
-                      'bg-gray-500'
-                    }`}></div>
-                    <span className={`text-sm font-medium capitalize ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{selectedAgent.status}</span>
+                        'bg-gray-500'
+                      }`}></div>
+                    <span className={`text-xs sm:text-sm font-medium capitalize ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{selectedAgent.status}</span>
                     {selectedAgent.status === 'active' && (
-                      <Activity className="h-4 w-4 text-green-500 animate-pulse" />
+                      <Activity className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 animate-pulse" />
                     )}
                   </div>
                 </div>
 
                 {/* Configuration Tabs */}
                 <div className={`border-b ${isDarkMode ? 'border-gray-700/50 bg-gray-900' : 'border-gray-200/50 bg-white'}`}>
-                  <nav className="flex flex-wrap gap-1 px-4 sm:px-6 lg:px-8 py-2 overflow-x-auto">
+                  {/* Desktop: Horizontal Tabs */}
+                  <nav className="hidden sm:flex justify-start space-x-1 px-2 lg:px-8 py-2 overflow-x-auto no-scrollbar">
                     {configTabs.map((tab) => {
                       const Icon = tab.icon;
                       return (
                         <button
                           key={tab.id}
                           onClick={() => handleTabClick(tab.id)}
-                          className={`group relative px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-medium text-xs sm:text-sm transition-all duration-300 flex items-center gap-1 sm:gap-2 whitespace-nowrap ${
-                            activeConfigTab === tab.id
-                              ? `bg-gradient-to-r ${tab.color} text-white shadow-lg`
-                              : isDarkMode 
-                                ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
-                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                          }`}
+                          className={`group relative px-3 lg:px-4 py-3 rounded-lg font-medium text-sm transition-all duration-300 flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${activeConfigTab === tab.id
+                            ? `bg-gradient-to-r ${tab.color} text-white shadow-lg`
+                            : isDarkMode
+                              ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+                              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                            }`}
                         >
-                          <Icon className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <Icon className="h-4 w-4 flex-shrink-0" />
                           {tab.label}
                           {activeConfigTab === tab.id && (
                             <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-white rounded-full"></div>
@@ -853,10 +864,63 @@ export default function AgentsTab({}: AgentsTabProps) {
                       );
                     })}
                   </nav>
+
+                  {/* Mobile: Dropdown */}
+                  <div className="sm:hidden px-4 py-2 dropdown-container">
+                    <div className="relative">
+                      <button
+                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                        className={`w-full flex items-center justify-between px-4 py-3 rounded-lg font-medium text-sm transition-all duration-300 ${activeConfigTab
+                          ? `bg-gradient-to-r ${configTabs.find(tab => tab.id === activeConfigTab)?.color} text-white shadow-lg`
+                          : isDarkMode
+                            ? 'text-gray-400 bg-gray-800 border border-gray-600'
+                            : 'text-gray-600 bg-white border border-gray-200'
+                          }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          {(() => {
+                            const activeTab = configTabs.find(tab => tab.id === activeConfigTab);
+                            const Icon = activeTab?.icon || Bot;
+                            return <Icon className="h-4 w-4" />;
+                          })()}
+                          {configTabs.find(tab => tab.id === activeConfigTab)?.label || 'Select Tab'}
+                        </div>
+                        <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {isDropdownOpen && (
+                        <div className={`absolute top-full left-0 right-0 mt-1 rounded-lg shadow-lg border z-50 ${isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'}`}>
+                          {configTabs.map((tab) => {
+                            const Icon = tab.icon;
+                            return (
+                              <button
+                                key={tab.id}
+                                onClick={() => handleTabClick(tab.id)}
+                                className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-colors duration-200 first:rounded-t-lg last:rounded-b-lg ${activeConfigTab === tab.id
+                                  ? isDarkMode
+                                    ? 'bg-gray-700 text-white'
+                                    : 'bg-gray-100 text-gray-900'
+                                  : isDarkMode
+                                    ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                  }`}
+                              >
+                                <Icon className="h-4 w-4 flex-shrink-0" />
+                                {tab.label}
+                                {activeConfigTab === tab.id && (
+                                  <div className="ml-auto w-2 h-2 bg-green-500 rounded-full"></div>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Configuration Content */}
-                <div className={`p-4 sm:p-6 lg:p-8 ${isDarkMode ? 'bg-gradient-to-br from-gray-800/30 to-gray-900' : 'bg-gradient-to-br from-gray-50/30 to-white'}`}>
+                <div className={` ${isDarkMode ? 'bg-gradient-to-br from-gray-800/30 to-gray-900' : 'bg-gradient-to-br from-gray-50/30 to-white'} max-w-4xl mx-auto lg:max-w-none overflow-y-auto`}>
                   {activeConfigTab === 'model' && (
                     <ModelConfig 
                       ref={modelSectionRef} 
@@ -901,52 +965,22 @@ export default function AgentsTab({}: AgentsTabProps) {
                     />
                   )}
 
-                  {activeConfigTab === 'analysis' && (
-                    <div ref={analysisSectionRef}>
-                      <div className="text-center py-12">
-                        <div className={`p-4 rounded-2xl inline-block mb-4 ${isDarkMode ? 'bg-gradient-to-r from-gray-800 to-gray-700' : 'bg-gradient-to-r from-gray-100 to-gray-200'}`}>
-                          <BarChart3 className={`h-8 w-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-                        </div>
-                        <h4 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Analysis Configuration</h4>
-                        <p className={`max-w-md mx-auto ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                          This section is under development and will be available soon with advanced configuration options.
-                        </p>
-                      </div>
-                    </div>
+                  {activeConfigTab === 'phone' && (
+                    <PhoneNumbersTab />
                   )}
 
-                  {activeConfigTab === 'advanced' && (
-                    <div ref={advancedSectionRef}>
-                      <div className="text-center py-12">
-                        <div className={`p-4 rounded-2xl inline-block mb-4 ${isDarkMode ? 'bg-gradient-to-r from-gray-800 to-gray-700' : 'bg-gradient-to-r from-gray-100 to-gray-200'}`}>
-                          <Settings className={`h-8 w-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-                        </div>
-                        <h4 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Advanced Configuration</h4>
-                        <p className={`max-w-md mx-auto ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                          This section is under development and will be available soon with advanced configuration options.
-                        </p>
-                      </div>
-                    </div>
+                  {activeConfigTab === 'sms' && (
+                    <SMSTab />
                   )}
 
-                  {activeConfigTab === 'widget' && (
-                    <div ref={widgetSectionRef}>
-                      <div className="text-center py-12">
-                        <div className={`p-4 rounded-2xl inline-block mb-4 ${isDarkMode ? 'bg-gradient-to-r from-gray-800 to-gray-700' : 'bg-gradient-to-r from-gray-100 to-gray-200'}`}>
-                          <Globe className={`h-8 w-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-                        </div>
-                        <h4 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Widget Configuration</h4>
-                        <p className={`max-w-md mx-auto ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                          This section is under development and will be available soon with advanced configuration options.
-                        </p>
-                      </div>
-                    </div>
+                  {activeConfigTab === 'whatsapp' && (
+                    <WhatsAppTab />
                   )}
                 </div>
               </>
             ) : (
               <div className="p-8 sm:p-12 text-center">
-                <div className={`p-4 sm:p-6 rounded-2xl inline-block mb-4 sm:mb-6 ${isDarkMode ? 'bg-gradient-to-r from-gray-800 to-gray-700' : 'bg-gradient-to-r from-gray-100 to-gray-200'}`}>
+                <div className={`p-4 sm:p-6 rounded-xl sm:rounded-2xl inline-block mb-4 sm:mb-6 ${isDarkMode ? 'bg-gradient-to-r from-gray-800 to-gray-700' : 'bg-gradient-to-r from-gray-100 to-gray-200'}`}>
                   <Bot className={`h-8 w-8 sm:h-12 sm:w-12 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
                 </div>
                 <h3 className={`text-lg sm:text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>

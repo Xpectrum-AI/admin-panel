@@ -1,0 +1,13 @@
+# AI Model API Configuration
+# Copy this content to a new file called .env.local and fill in your actual values
+
+# Your Custom AI Service API
+NEXT_PUBLIC_MODEL_API_BASE_URL=https://d22yt2oewbcglh.cloudfront.net/v1
+NEXT_PUBLIC_MODEL_API_KEY=app-CV6dxVdo4K226Yvm3vBj3iUO
+
+# Chatbot API Configuration (for chat functionality)
+NEXT_PUBLIC_CHATBOT_API_URL=https://d22yt2oewbcglh.cloudfront.net/v1/chat-messages
+NEXT_PUBLIC_CHATBOT_API_KEY=app-y6KZcETrVIOgJTMIHb06UUFG
+
+# Note: This service handles multiple AI providers (OpenAI, Anthropic, etc.)
+# through your custom API endpoints, so you don't need individual provider keys.
