@@ -73,37 +73,20 @@ export const maskApiKey = (apiKey: string): string => {
 };
 
 // Get environment variables
-const getEnvironmentVariables = () => {
-  console.log('🔍 Getting environment variables...');
-
-  return {
-    API_BASE_URL: process.env.NEXT_PUBLIC_LIVE_API_URL || '',
-    API_KEY: process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
-    CHATBOT_API_URL: process.env.NEXT_PUBLIC_CHATBOT_API_URL || '',
-    CHATBOT_API_KEY: process.env.NEXT_PUBLIC_CHATBOT_API_KEY || '',
-    ELEVEN_LABS_API_KEY: process.env.NEXT_PUBLIC_ELEVEN_LABS_API_KEY || '',
-    OPEN_AI_API_KEY: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
-    WHISPER_API_KEY: process.env.NEXT_PUBLIC_WHISPER_API_KEY || '',
-    DEEPGRAM_API_KEY: process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY || '',
-    CARTESIA_API_KEY: process.env.NEXT_PUBLIC_CARTESIA_API_KEY || '',
-    ELEVEN_LABS_VOICE_ID: process.env.NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID || '',
-    CARTESIA_VOICE_ID: process.env.NEXT_PUBLIC_CARTESIA_VOICE_ID || ''
-  };
-};
+// Environment variables are accessed directly using process.env.NEXT_PUBLIC_*
 
 export const agentConfigService = {
   // Configure agent with complete configuration
   async configureAgent(agentName: string, config: Partial<AgentConfigRequest>): Promise<AgentConfigResponse> {
     try {
       console.log('🚀 Starting agent configuration...');
-      // Get environment variables
-      const env = getEnvironmentVariables();
+      // Environment variables are accessed directly
       
       // Validate only the required ones for this API call
-      if (!env.API_BASE_URL || !env.API_KEY) {
+      if (!process.env.NEXT_PUBLIC_LIVE_API_URL || !process.env.NEXT_PUBLIC_LIVE_API_KEY) {
         console.error('❌ Missing required environment variables:', {
-          API_BASE_URL: !!env.API_BASE_URL,
-          API_KEY: !!env.API_KEY
+          API_BASE_URL: !!process.env.NEXT_PUBLIC_LIVE_API_URL,
+          API_KEY: !!process.env.NEXT_PUBLIC_LIVE_API_KEY
         });
         throw new Error('Missing required environment variables for agent configuration');
       }
@@ -111,13 +94,13 @@ export const agentConfigService = {
       // Fill in missing fields with defaults
       const completeConfig: AgentConfigRequest = {
         organization_id: config.organization_id || DEFAULT_ORGANIZATION_ID,
-        chatbot_api: config.chatbot_api || env.CHATBOT_API_URL,
-        chatbot_key: config.chatbot_key || env.CHATBOT_API_KEY,
+        chatbot_api: config.chatbot_api || process.env.NEXT_PUBLIC_CHATBOT_API_URL || '',
+        chatbot_key: config.chatbot_key || process.env.NEXT_PUBLIC_CHATBOT_API_KEY || '',
         tts_config: config.tts_config || {
           provider: 'elevenlabs',
           elevenlabs: {
-            api_key: env.ELEVEN_LABS_API_KEY || '',
-            voice_id: env.ELEVEN_LABS_VOICE_ID || '',
+            api_key: process.env.NEXT_PUBLIC_ELEVEN_LABS_API_KEY || '',
+            voice_id: process.env.NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID || '',
             model_id: 'eleven_monolingual_v1',
             stability: 0.5,
             similarity_boost: 0.5,
@@ -127,7 +110,7 @@ export const agentConfigService = {
         stt_config: config.stt_config || {
           provider: 'deepgram',
           deepgram: {
-            api_key: env.DEEPGRAM_API_KEY || '',
+            api_key: process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY || '',
             model: 'nova-2',
             language: 'en-US',
             punctuate: true,
@@ -145,11 +128,11 @@ export const agentConfigService = {
 
 
       // Use the live backend API URL directly
-      const response = await fetch(`${env.API_BASE_URL}/agents/update/${agentName}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/agents/update/${agentName}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': env.API_KEY,
+          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY,
         },
         body: JSON.stringify(completeConfig),
       });
@@ -178,20 +161,20 @@ export const agentConfigService = {
   // Get agent configuration
   async getAgentConfig(agentName: string): Promise<AgentConfigResponse> {
     try {
-      const env = getEnvironmentVariables();
+      // Environment variables are accessed directly
       
-      if (!env.API_BASE_URL || !env.API_KEY) {
+      if (!process.env.NEXT_PUBLIC_LIVE_API_URL || !process.env.NEXT_PUBLIC_LIVE_API_KEY ) {
         throw new Error('Missing required environment variables for getting agent configuration');
       }
 
       // Use the correct endpoint for getting agent info
       console.log('🚀 Fetching agent info for:', agentName);
       
-      const response = await fetch(`${env.API_BASE_URL}/agents/info/${agentName}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/agents/info/${agentName}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': env.API_KEY,
+          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY,
         },
       });
 
@@ -219,20 +202,20 @@ export const agentConfigService = {
   // Get all agents for the developer organization
   async getAllAgents(): Promise<{ success: boolean; data?: any[]; message: string }> {
     try {
-      const env = getEnvironmentVariables();
+      // Environment variables are accessed directly
       
-      if (!env.API_BASE_URL || !env.API_KEY) {
+      if (!process.env.NEXT_PUBLIC_LIVE_API_URL || !process.env.NEXT_PUBLIC_LIVE_API_KEY) {
         throw new Error('Missing required environment variables for getting agents');
       }
 
       // Use the organization-specific endpoint for getting agents
       console.log('🚀 Fetching agents for organization:', DEFAULT_ORGANIZATION_ID);
       
-      const response = await fetch(`${env.API_BASE_URL}/agents/by-org/${DEFAULT_ORGANIZATION_ID}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/agents/by-org/${DEFAULT_ORGANIZATION_ID}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': env.API_KEY,
+          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY,
         },
       });
 
@@ -311,19 +294,19 @@ export const agentConfigService = {
   // Get agents by specific organization
   async getAgentsByOrg(organizationId: string): Promise<{ success: boolean; data?: any[]; message: string }> {
     try {
-      const env = getEnvironmentVariables();
+      // Environment variables are accessed directly
       
-      if (!env.API_BASE_URL || !env.API_KEY) {
+      if (!process.env.NEXT_PUBLIC_LIVE_API_URL || !process.env.NEXT_PUBLIC_LIVE_API_KEY) {
         throw new Error('Missing required environment variables for getting agents by organization');
       }
 
       console.log('🚀 Fetching agents for organization:', organizationId);
       
-      const response = await fetch(`${env.API_BASE_URL}/agents/by-org/${organizationId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/agents/by-org/${organizationId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': env.API_KEY,
+          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY,
         },
       });
 
@@ -367,19 +350,19 @@ export const agentConfigService = {
   // Delete agent by organization
   async deleteAgent(agentName: string): Promise<{ success: boolean; message: string }> {
     try {
-      const env = getEnvironmentVariables();
+      // Environment variables are accessed directly
       
-      if (!env.API_BASE_URL || !env.API_KEY) {
+      if (!process.env.NEXT_PUBLIC_LIVE_API_URL || !process.env.NEXT_PUBLIC_LIVE_API_KEY) {
         throw new Error('Missing required environment variables for deleting agent');
       }
 
       console.log('🚀 Deleting agent:', agentName, 'from organization:', DEFAULT_ORGANIZATION_ID);
       
-      const response = await fetch(`${env.API_BASE_URL}/agents/delete-by-org/${DEFAULT_ORGANIZATION_ID}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/agents/delete-by-org/${DEFAULT_ORGANIZATION_ID}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': env.API_KEY,
+          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY,
         },
         body: JSON.stringify({ agent_name: agentName }),
       });
@@ -406,19 +389,19 @@ export const agentConfigService = {
   // Delete agent from specific organization
   async deleteAgentByOrg(agentName: string, organizationId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const env = getEnvironmentVariables();
+      // Environment variables are accessed directly
       
-      if (!env.API_BASE_URL || !env.API_KEY) {
+      if (!process.env.NEXT_PUBLIC_LIVE_API_URL || !process.env.NEXT_PUBLIC_LIVE_API_KEY) {
         throw new Error('Missing required environment variables for deleting agent by organization');
       }
 
       console.log('🚀 Deleting agent:', agentName, 'from organization:', organizationId);
       
-      const response = await fetch(`${env.API_BASE_URL}/agents/delete-by-org/${organizationId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/agents/delete-by-org/${organizationId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': env.API_KEY,
+          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY,
         },
         body: JSON.stringify({ agent_name: agentName }),
       });
@@ -444,34 +427,34 @@ export const agentConfigService = {
 
   // Get default API keys (masked for display)
   getDefaultApiKeys() {
-    const env = getEnvironmentVariables();
+    // Environment variables are accessed directly
     return {
-      ELEVEN_LABS_API_KEY: maskApiKey(env.ELEVEN_LABS_API_KEY || ''),
-      OPEN_AI_API_KEY: maskApiKey(env.OPEN_AI_API_KEY || ''),
-      WHISPER_API_KEY: maskApiKey(env.WHISPER_API_KEY || ''),
-      DEEPGRAM_API_KEY: maskApiKey(env.DEEPGRAM_API_KEY || ''),
-      CARTESIA_API_KEY: maskApiKey(env.CARTESIA_API_KEY || '')
+      ELEVEN_LABS_API_KEY: maskApiKey(process.env.NEXT_PUBLIC_ELEVEN_LABS_API_KEY || ''),
+      OPEN_AI_API_KEY: maskApiKey(process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || ''),
+      WHISPER_API_KEY: maskApiKey(process.env.NEXT_PUBLIC_WHISPER_API_KEY || ''),
+      DEEPGRAM_API_KEY: maskApiKey(process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY || ''),
+      CARTESIA_API_KEY: maskApiKey(process.env.NEXT_PUBLIC_CARTESIA_API_KEY || '')
     };
   },
 
   // Get default voice IDs
   getDefaultVoiceIds() {
-    const env = getEnvironmentVariables();
+    // Environment variables are accessed directly
     return {
-      elevenlabs: env.ELEVEN_LABS_VOICE_ID || '••••••••',
-      cartesia: env.CARTESIA_VOICE_ID || '••••••••'
+      elevenlabs: process.env.NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID || '••••••••',
+      cartesia: process.env.NEXT_PUBLIC_CARTESIA_VOICE_ID || '••••••••'
     };
   },
 
   // Get full API keys (for actual API calls)
   getFullApiKeys() {
-    const env = getEnvironmentVariables();
+    // Environment variables are accessed directly
     return {
-      elevenlabs: env.ELEVEN_LABS_API_KEY || '',
-      openai: env.OPEN_AI_API_KEY || '',
-      whisper: env.WHISPER_API_KEY || '',
-      deepgram: env.DEEPGRAM_API_KEY || '',
-      cartesia: env.CARTESIA_API_KEY || ''
+      elevenlabs: process.env.NEXT_PUBLIC_ELEVEN_LABS_API_KEY || '',
+      openai: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
+      whisper: process.env.NEXT_PUBLIC_WHISPER_API_KEY || '',
+      deepgram: process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY || '',
+      cartesia: process.env.NEXT_PUBLIC_CARTESIA_API_KEY || ''
     };
   },
 
