@@ -10,7 +10,6 @@ import {
   MessageSquare, 
   Clock, 
   LogOut, 
-  ArrowLeft,
   User,
   Settings,
   Shield,
@@ -59,37 +58,14 @@ const ChatIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// Navigation items for developer sidebar
+// Navigation items for top navbar
 const navigationItems = [
-  {
-    category: 'MANAGE',
-    items: [
-      { name: 'Overview', icon: Building2, active: true, color: 'from-blue-500 to-purple-600' },
-    ]
-  },
-  {
-    category: 'BUILD',
-    items: [
-      { name: 'Agents', icon: Bot, color: 'from-green-500 to-emerald-600' },
-      { name: 'Phone Numbers', icon: Phone, color: 'from-blue-500 to-indigo-600' },
-      { name: 'SMS', icon: MessageSquare, color: 'from-orange-500 to-red-600' },
-      { name: 'WhatsApp', icon: WhatsAppIcon, color: 'from-green-500 to-emerald-600' },
-    ]
-  },
-  {
-    category: 'OBSERVE',
-    items: [
-      { name: 'Metrics', icon: BarChart3, color: 'from-indigo-500 to-purple-600' },
-      { name: 'Call Logs', icon: FileText, color: 'from-gray-600 to-gray-800' },
-      { name: 'Chat Logs', icon: MessageSquare, color: 'from-cyan-500 to-blue-600' },
-      { name: 'Session Logs', icon: Clock, color: 'from-yellow-500 to-orange-600' },
-    ]
-  }
+  { name: 'Overview', icon: Building2, color: 'from-blue-500 to-purple-600' },
+  { name: 'Agents', icon: Bot, color: 'from-green-500 to-emerald-600' },
 ];
 
 export default function DeveloperDashboard() {
   const [activeNavItem, setActiveNavItem] = useState('Overview');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   
   // Chat state
   const [chatOpen, setChatOpen] = useState(false);
@@ -393,248 +369,159 @@ export default function DeveloperDashboard() {
 
   return (
     <>
-      <div className={`flex h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-black' : 'bg-gray-50'}`}>
-        {/* Sidebar */}
-        <div className={`${sidebarOpen ? 'w-72' : 'w-20'} ${isDarkMode ? 'bg-gray-900/80 backdrop-blur-xl text-white border-r border-gray-700/50' : 'bg-white text-gray-900 border-r border-gray-200'} transition-all duration-300 ease-in-out flex flex-col`}>
-          {/* Logo */}
-          <div className={`p-6 ${isDarkMode ? 'border-b border-gray-700/50' : 'border-b border-gray-200'}`}>
-            <div className="flex items-center">
-              <div className="h-10 w-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-lg">D</span>
-              </div>
-              {sidebarOpen && (
-                <div className="ml-4">
-                  <span className="text-xl font-bold bg-gradient-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent">Developer</span>
-                  <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Control Center</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* User Info */}
-          {sidebarOpen && (
-            <div className={`p-4 ${isDarkMode ? 'border-b border-gray-700/50' : 'border-b border-gray-200'}`}>
+      <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-black' : 'bg-gray-50'}`}>
+        {/* Top Navigation Header */}
+        <header className="bg-gray-900 px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* Logo and Navigation */}
+            <div className="flex items-center space-x-8">
               <div className="flex items-center">
-                <div className="h-10 w-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <span className="text-white font-bold text-sm">
-                    {(user?.firstName || localStorage.getItem('pendingFirstName'))?.[0]}{(user?.lastName || localStorage.getItem('pendingLastName'))?.[0]}
-                  </span>
+                <div className="h-10 w-10 bg-green-500 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">D</span>
                 </div>
-                <div className="ml-3">
-                  <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {user?.firstName || localStorage.getItem('pendingFirstName')} {user?.lastName || localStorage.getItem('pendingLastName')}
-                  </p>
-
-                  <p className="text-xs text-green-600 font-medium">Developer</p>
+                <div className="ml-4">
+                  <div className="text-white font-bold text-lg">Developer</div>
+                  <div className="text-gray-400 text-sm">Control Center</div>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* Navigation */}
-          <div className="flex-1 overflow-y-auto py-4">
-            {navigationItems.map((category, categoryIndex) => (
-              <div key={categoryIndex} className="mb-6">
-                {sidebarOpen && (
-                  <h3 className={`px-4 text-xs font-semibold uppercase tracking-wider mb-3 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {category.category}
-                  </h3>
-                )}
-                {category.items.map((item, itemIndex) => {
-                  const Icon = item.icon;
+              
+              {/* Navigation Tabs */}
+              <nav className="flex space-x-1">
+                {navigationItems.map((item) => {
                   const isActive = activeNavItem === item.name;
                   return (
                     <button
-                      key={itemIndex}
+                      key={item.name}
                       onClick={() => handleNavItemClick(item.name)}
-                      className={`w-full flex items-center px-4 py-3 text-sm font-medium transition-all duration-300 ${
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
                         isActive
-                          ? `bg-gradient-to-r ${item.color} text-white shadow-lg`
-                          : isDarkMode 
-                            ? 'text-gray-300 hover:bg-gray-800/50 hover:text-white'
-                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                          ? 'bg-green-500 text-white'
+                          : 'text-white hover:bg-gray-800'
                       }`}
                     >
-                      <Icon className="h-5 w-5 flex-shrink-0" />
-                      {sidebarOpen && (
-                        <span className="ml-3">{item.name}</span>
-                      )}
-                      {isActive && sidebarOpen && (
-                        <div className="ml-auto w-2 h-2 bg-white rounded-full"></div>
-                      )}
+                      {item.name}
                     </button>
                   );
                 })}
-              </div>
-            ))}
-          </div>
-
-          {/* Bottom Section */}
-          {sidebarOpen && (
-            <div className={`p-4 ${isDarkMode ? 'border-t border-gray-700/50' : 'border-t border-gray-200'}`}>
-              <div className="flex items-center justify-between mb-3">
-                <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>System Status</span>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-xs text-green-600 font-medium">Online</span>
-                </div>
-              </div>
-              <button 
-                onClick={async () => {
-                  try {
-                    setLoggingOut(true);
-                    // Clear chat history before logout
-                    localStorage.removeItem('chatMessages');
-                    await logout(true);
-                    // Redirect to login page
-                    window.location.href = '/login';
-                  } catch (error) {
-                    console.error('Logout error:', error);
-                    setLoggingOut(false);
-                    // Force redirect even if logout fails
-                    window.location.href = '/login';
+              </nav>
+            </div>
+            {/* Right side actions */}
+            <div className="flex items-center space-x-4">
+              {/* Chat Icon */}
+              <button
+                onClick={() => {
+                  setChatOpen(!chatOpen);
+                  // Clear new message notification when opening chat
+                  if (!chatOpen) {
+                    setHasNewMessages(false);
                   }
                 }}
-                className={`w-full text-sm py-3 rounded-xl transition-all duration-300 flex items-center justify-center border ${isDarkMode ? 'bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30 hover:border-red-400/50' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:border-red-300'}`}
+                className={`relative p-3 rounded-xl transition-all duration-300 group ${isDarkMode ? 'hover:bg-gradient-to-r hover:from-green-500/20 hover:to-blue-500/20 text-green-400 hover:text-green-300' : 'hover:bg-gradient-to-r hover:from-green-100 hover:to-blue-100 text-green-600 hover:text-green-700'}`}
+                title="Chat with Sales Agent (Ctrl+K)"
               >
-                <LogOut className="h-4 w-4 mr-2" />
-                {loggingOut ? 'Logging out...' : 'Logout'}
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Top Header */}
-          <header className={`${isDarkMode ? 'bg-gray-900/80 backdrop-blur-xl border-b border-gray-700/50' : 'bg-white border-b border-gray-200'} px-6 py-4`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <button
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className={`p-2 rounded-xl transition-all duration-300 ${isDarkMode ? 'hover:bg-gray-800/50 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'}`}
-                >
-                  <ArrowLeft className={`h-5 w-5 transition-transform duration-300 ${sidebarOpen ? 'rotate-0' : 'rotate-180'}`} />
-                </button>
-                <h1 className={`ml-4 text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{activeNavItem}</h1>
-              </div>
-              <div className="flex items-center space-x-4">
-                                 {/* Chat Icon */}
-                 <button
-                   onClick={() => {
-                     setChatOpen(!chatOpen);
-                     // Clear new message notification when opening chat
-                     if (!chatOpen) {
-                       setHasNewMessages(false);
-                     }
-                   }}
-                                       className={`relative p-3 rounded-xl transition-all duration-300 group ${isDarkMode ? 'hover:bg-gradient-to-r hover:from-green-500/20 hover:to-blue-500/20 text-green-400 hover:text-green-300' : 'hover:bg-gradient-to-r hover:from-green-100 hover:to-blue-100 text-green-600 hover:text-green-700'}`}
-                                       title="Chat with Sales Agent (Ctrl+K)"
-                 >
-                                       <div className={`absolute inset-0 rounded-xl bg-gradient-to-r from-green-500/10 to-blue-500/10 opacity-100 transition-opacity duration-300 ${isDarkMode ? 'from-green-500/20 to-blue-500/20' : 'from-green-100 to-blue-100'}`} />
-                                       <ChatIcon className="h-5 w-5 relative z-10 text-current" />
-                    
-                    {/* Message count indicator */}
-                   {(() => {
-                     try {
-                       const savedMessages = localStorage.getItem('chatMessages');
-                       if (savedMessages) {
-                         const parsed = JSON.parse(savedMessages);
-                         const messageCount = parsed.length;
-                         // Only show count if there are messages and more than just the welcome message
-                         if (messageCount > 1) {
-                           return (
-                             <div className={`absolute -bottom-1 -right-1 min-w-[20px] h-5 px-1 rounded-full text-xs font-medium flex items-center justify-center ${isDarkMode ? 'bg-blue-500 text-white' : 'bg-blue-600 text-white'}`}>
-                               {messageCount}
-                             </div>
-                           );
-                         }
-                       }
-                     } catch (error) {
-                       console.error('Error getting message count:', error);
-                     }
-                     return null;
-                   })()}
-                 </button>
+                <div className={`absolute inset-0 rounded-xl bg-gradient-to-r from-green-500/10 to-blue-500/10 opacity-100 transition-opacity duration-300 ${isDarkMode ? 'from-green-500/20 to-blue-500/20' : 'from-green-100 to-blue-100'}`} />
+                <ChatIcon className="h-5 w-5 relative z-10 text-current" />
                 
-                {/* Theme Toggle */}
-                <button
-                  onClick={toggleTheme}
-                  className={`p-2 rounded-xl transition-all duration-300 ${isDarkMode ? 'hover:bg-gray-800/50 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'}`}
-                >
-                  {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-                </button>
-                
-                <div className={`px-4 py-2 rounded-xl border ${isDarkMode ? 'bg-gradient-to-r from-green-500/20 to-emerald-600/20 backdrop-blur-sm border-green-500/30' : 'bg-green-50 border-green-200'}`}>
-                  <span className={`text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-700'}`}>Developer Access</span>
-                </div>
-                <div className="relative" ref={dropdownRef}>
-                  <button
-                    onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className={`transition-colors duration-300 ${isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
-                  >
-                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                      <span className="text-white text-lg font-bold">
-                        {(user?.firstName || localStorage.getItem('pendingFirstName'))?.[0]}{(user?.lastName || localStorage.getItem('pendingLastName'))?.[0]}
-                      </span>
-                    </div>
-                  </button>
-                  {dropdownOpen && (
-                    <>
-                      {/* Backdrop overlay */}
-                      <div 
-                        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
-                        onClick={() => setDropdownOpen(false)}
-                      />
-                      {/* Dropdown */}
-                      <div className={`fixed top-20 right-6 w-80 max-w-[calc(100vw-3rem)] rounded-2xl shadow-2xl z-50 animate-fade-in-down ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-xl border border-gray-700/50' : 'bg-white border border-gray-200'}`} style={{ right: '1.5rem', maxWidth: 'calc(100vw - 3rem)' }}>
-                        <div className={`p-6 ${isDarkMode ? 'border-b border-gray-700/50' : 'border-b border-gray-200'}`}>
-                          <p className={`font-bold text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                            {user?.firstName || localStorage.getItem('pendingFirstName')} {user?.lastName || localStorage.getItem('pendingLastName')}
-                          </p>
-
-                          <p className={`mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{user?.email}</p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <p className={`text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>Developer</p>
+                {/* Message count indicator */}
+                {(() => {
+                  try {
+                    const savedMessages = localStorage.getItem('chatMessages');
+                    if (savedMessages) {
+                      const parsed = JSON.parse(savedMessages);
+                      const messageCount = parsed.length;
+                      // Only show count if there are messages and more than just the welcome message
+                      if (messageCount > 1) {
+                        return (
+                          <div className={`absolute -bottom-1 -right-1 min-w-[20px] h-5 px-1 rounded-full text-xs font-medium flex items-center justify-center ${isDarkMode ? 'bg-blue-500 text-white' : 'bg-blue-600 text-white'}`}>
+                            {messageCount}
                           </div>
+                        );
+                      }
+                    }
+                  } catch (error) {
+                    console.error('Error getting message count:', error);
+                  }
+                  return null;
+                })()}
+              </button>
+              
+              {/* Theme Toggle */}
+              <button
+                onClick={toggleTheme}
+                className={`p-2 rounded-xl transition-all duration-300 ${isDarkMode ? 'hover:bg-gray-800/50 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'}`}
+              >
+                {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              </button>
+              
+              <div className={`px-4 py-2 rounded-xl border ${isDarkMode ? 'bg-gradient-to-r from-green-500/20 to-emerald-600/20 backdrop-blur-sm border-green-500/30' : 'bg-green-50 border-green-200'}`}>
+                <span className={`text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-700'}`}>Developer Access</span>
+              </div>
+              
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className={`transition-colors duration-300 ${isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+                >
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                    <span className="text-white text-lg font-bold">
+                      {(user?.firstName || localStorage.getItem('pendingFirstName'))?.[0]}{(user?.lastName || localStorage.getItem('pendingLastName'))?.[0]}
+                    </span>
+                  </div>
+                </button>
+                {dropdownOpen && (
+                  <>
+                    {/* Backdrop overlay */}
+                    <div 
+                      className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+                      onClick={() => setDropdownOpen(false)}
+                    />
+                    {/* Dropdown */}
+                    <div className={`fixed top-20 right-6 w-80 max-w-[calc(100vw-3rem)] rounded-2xl shadow-2xl z-50 animate-fade-in-down ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-xl border border-gray-700/50' : 'bg-white border border-gray-200'}`} style={{ right: '1.5rem', maxWidth: 'calc(100vw - 3rem)' }}>
+                      <div className={`p-6 ${isDarkMode ? 'border-b border-gray-700/50' : 'border-b border-gray-200'}`}>
+                        <p className={`font-bold text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {user?.firstName || localStorage.getItem('pendingFirstName')} {user?.lastName || localStorage.getItem('pendingLastName')}
+                        </p>
+                        <p className={`mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{user?.email}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                          <p className={`text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>Developer</p>
                         </div>
-                        <nav className="p-4">
-                          <button
-                            onClick={async () => {
-                              try {
-                                setLoggingOut(true);
-                                // Clear chat history before logout
-                                localStorage.removeItem('chatMessages');
-                                await logout(true);
-                                // Redirect to login page
-                                window.location.href = '/login';
-                              } catch (error) {
-                                console.error('Logout error:', error);
-                                setLoggingOut(false);
-                                // Force redirect even if logout fails
-                                window.location.href = '/login';
-                              }
-                            }}
-                            className={`w-full flex items-center px-4 py-3 rounded-xl transition-all duration-300 group ${isDarkMode ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300' : 'text-red-600 hover:bg-red-50 hover:text-red-700'}`}
-                          >
-                            <LogOut className="h-5 w-5 mr-3" />
-                            {loggingOut ? 'Logging out...' : 'Log out'}
-                          </button>
-                        </nav>
                       </div>
-                    </>
-                  )}
-                </div>
+                      <nav className="p-4">
+                        <button
+                          onClick={async () => {
+                            try {
+                              setLoggingOut(true);
+                              // Clear chat history before logout
+                              localStorage.removeItem('chatMessages');
+                              await logout(true);
+                              // Redirect to login page
+                              window.location.href = '/login';
+                            } catch (error) {
+                              console.error('Logout error:', error);
+                              setLoggingOut(false);
+                              // Force redirect even if logout fails
+                              window.location.href = '/login';
+                            }
+                          }}
+                          className={`w-full flex items-center px-4 py-3 rounded-xl transition-all duration-300 group ${isDarkMode ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300' : 'text-red-600 hover:bg-red-50 hover:text-red-700'}`}
+                        >
+                          <LogOut className="h-5 w-5 mr-3" />
+                          {loggingOut ? 'Logging out...' : 'Log out'}
+                        </button>
+                      </nav>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
-          </header>
+          </div>
+        </header>
 
-          {/* Main Content Area */}
-          <main className="flex-1 overflow-y-auto p-6">
-            {renderContent()}
-          </main>
-        </div>
+        {/* Main Content Area */}
+        <main className="p-6">
+          {renderContent()}
+        </main>
         
         {/* Chat Sidebar */}
         {chatOpen && (

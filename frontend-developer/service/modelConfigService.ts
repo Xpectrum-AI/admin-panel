@@ -15,66 +15,14 @@ export interface ModelConfigResponse {
   data?: any;
 }
 
-// Helper function to get environment variables safely
-const getEnvVar = (key: string): string | undefined => {
-  // Only access environment variables on client side
-  if (typeof window === 'undefined') {
-    console.log('🔍 Server-side rendering detected, skipping environment variable access');
-    return undefined;
-  }
-  
-  // Try different ways to access environment variables
-  const value = process.env[key];
-  console.log(`🔍 Environment variable ${key}:`, value ? 'SET' : 'NOT SET');
-  
-  // Also try accessing it directly from window object (for debugging)
-  if (typeof window !== 'undefined') {
-    console.log(`🔍 Window object check for ${key}:`, (window as any)[key] ? 'SET' : 'NOT SET');
-  }
-  
-  // Log all available environment variables for debugging
-  console.log('🔍 All available process.env keys:', Object.keys(process.env).filter(k => k.startsWith('NEXT_PUBLIC_')));
-  
-  return value;
-};
-
-// Get environment variables without validation (for display purposes)
+// Get environment variables
 const getEnvironmentVariables = () => {
   console.log('🔍 Getting environment variables...');
-  
-  // Try to get from process.env first
-  let env = {
-    MODEL_API_BASE_URL: getEnvVar('NEXT_PUBLIC_MODEL_API_BASE_URL'),
-    MODEL_API_KEY: getEnvVar('NEXT_PUBLIC_MODEL_API_KEY')
+
+  return {
+    MODEL_API_BASE_URL: process.env.NEXT_PUBLIC_MODEL_API_BASE_URL || '',
+    MODEL_API_KEY: process.env.NEXT_PUBLIC_MODEL_API_KEY || ''
   };
-  
-  // If not available, try to get from window object or use defaults
-  if (!env.MODEL_API_BASE_URL || !env.MODEL_API_KEY) {
-    console.log('🔍 Environment variables not found in process.env, trying alternatives...');
-    
-    // Try to get from window object
-    if (typeof window !== 'undefined') {
-      env.MODEL_API_BASE_URL = env.MODEL_API_BASE_URL || (window as any).NEXT_PUBLIC_MODEL_API_BASE_URL;
-      env.MODEL_API_KEY = env.MODEL_API_KEY || (window as any).NEXT_PUBLIC_MODEL_API_KEY;
-    }
-    
-    // If still not available, use the values that were shown in the user's test
-    if (!env.MODEL_API_BASE_URL) {
-      env.MODEL_API_BASE_URL = 'https://d22yt2oewbcglh.cloudfront.net/v1';
-      console.log('🔍 Using fallback MODEL_API_BASE_URL');
-    }
-    
-    if (!env.MODEL_API_KEY) {
-      env.MODEL_API_KEY = 'app-CV6dxVdo4K226Yvm3vBj3iUO';
-      console.log('🔍 Using fallback MODEL_API_KEY');
-    }
-  }
-  
-  console.log('🔍 Environment variables result:', {
-    MODEL_API_BASE_URL: env.MODEL_API_BASE_URL ? 'SET' : 'NOT SET',
-    MODEL_API_KEY: env.MODEL_API_KEY ? 'SET' : 'NOT SET'
-  });
-  return env;
 };
 
 export const modelConfigService = {

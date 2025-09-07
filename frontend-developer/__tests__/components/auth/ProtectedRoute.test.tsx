@@ -1,11 +1,7 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import { render } from '../../utils/test-utils';
 import { ProtectedRoute } from '@/app/auth/ProtectedRoute';
-
-// Mock next/navigation
-jest.mock('next/navigation', () => ({
-  usePathname: jest.fn(),
-}));
 
 describe('ProtectedRoute', () => {
   beforeEach(() => {
@@ -14,9 +10,6 @@ describe('ProtectedRoute', () => {
 
   describe('Rendering', () => {
     it('renders children when client-side hydration is complete', () => {
-      const { usePathname } = require('next/navigation');
-      usePathname.mockReturnValue('/');
-      
       render(<ProtectedRoute>Test Content</ProtectedRoute>);
       
       expect(screen.getByText('Test Content')).toBeInTheDocument();
@@ -38,8 +31,6 @@ describe('ProtectedRoute', () => {
 
   describe('Route Protection', () => {
     it('allows access to public routes', () => {
-      const { usePathname } = require('next/navigation');
-      usePathname.mockReturnValue('/login');
       
       render(<ProtectedRoute>Login Content</ProtectedRoute>);
       
@@ -47,8 +38,6 @@ describe('ProtectedRoute', () => {
     });
 
     it('allows access to signup route', () => {
-      const { usePathname } = require('next/navigation');
-      usePathname.mockReturnValue('/signup');
       
       render(<ProtectedRoute>Signup Content</ProtectedRoute>);
       
@@ -56,8 +45,6 @@ describe('ProtectedRoute', () => {
     });
 
     it('allows access to protected routes (development bypass)', () => {
-      const { usePathname } = require('next/navigation');
-      usePathname.mockReturnValue('/');
       
       render(<ProtectedRoute>Developer Content</ProtectedRoute>);
       

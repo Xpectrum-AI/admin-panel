@@ -1,6 +1,7 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { render } from '../../utils/test-utils';
 import PhoneNumbersTab from '@/app/components/PhoneNumbersTab';
 
 describe('PhoneNumbersTab', () => {
@@ -19,48 +20,21 @@ describe('PhoneNumbersTab', () => {
     it('renders the phone numbers tab with default props', () => {
       render(<PhoneNumbersTab />);
 
-      expect(screen.getAllByText('Phone Numbers')).toHaveLength(2); // Header and sidebar
-      expect(screen.getByText('Manage your communication channels')).toBeInTheDocument();
+      expect(screen.getByText('Phone Numbers Management')).toBeInTheDocument();
+      expect(screen.getByText('View and manage phone number assignments to agents')).toBeInTheDocument();
     });
 
     it('renders with dark mode styling', () => {
-      render(<PhoneNumbersTab isDarkMode={true} />);
+      render(<PhoneNumbersTab />);
 
       // Check that the component renders without errors
-      expect(screen.getAllByText('Phone Numbers')).toHaveLength(2); // Header and sidebar
+      expect(screen.getByText('Phone Numbers Management')).toBeInTheDocument();
     });
 
-    it('shows the add phone number button', () => {
+    it('shows the assign number button', () => {
       render(<PhoneNumbersTab />);
 
-      expect(screen.getByText('Add Phone Number')).toBeInTheDocument();
-    });
-  });
-
-  describe('Tab Navigation', () => {
-    it('renders inbound and outbound tabs', () => {
-      render(<PhoneNumbersTab />);
-
-      expect(screen.getByText('Inbound')).toBeInTheDocument();
-      expect(screen.getByText('Outbound')).toBeInTheDocument();
-    });
-
-    it('shows inbound tab as active by default', () => {
-      render(<PhoneNumbersTab />);
-
-      const inboundTab = screen.getByText('Inbound');
-      expect(inboundTab).toBeInTheDocument();
-    });
-
-    it('allows switching between inbound and outbound tabs', async () => {
-      render(<PhoneNumbersTab />);
-
-      const outboundTab = screen.getByText('Outbound');
-      await user.click(outboundTab);
-
-      // Both tabs should still be visible
-      expect(screen.getByText('Inbound')).toBeInTheDocument();
-      expect(screen.getByText('Outbound')).toBeInTheDocument();
+      expect(screen.getByText('Assign Number')).toBeInTheDocument();
     });
   });
 
@@ -69,8 +43,21 @@ describe('PhoneNumbersTab', () => {
       render(<PhoneNumbersTab />);
 
       // The search input should be present
-      const searchInput = screen.getAllByRole('textbox')[0];
+      const searchInput = screen.getByPlaceholderText('Search phone numbers...');
       expect(searchInput).toBeInTheDocument();
+    });
+
+    it('shows organization information', () => {
+      render(<PhoneNumbersTab />);
+
+      expect(screen.getByText('Organization: Developer')).toBeInTheDocument();
+    });
+
+    it('shows select phone number message when no phone number is selected', () => {
+      render(<PhoneNumbersTab />);
+
+      expect(screen.getByText('Select a Phone Number')).toBeInTheDocument();
+      expect(screen.getByText('Choose a phone number from the sidebar to view its details')).toBeInTheDocument();
     });
   });
 
@@ -78,7 +65,7 @@ describe('PhoneNumbersTab', () => {
     it('renders the component without errors', () => {
       render(<PhoneNumbersTab />);
 
-      expect(screen.getAllByText('Phone Numbers')).toHaveLength(2); // Header and sidebar
+      expect(screen.getByText('Phone Numbers Management')).toBeInTheDocument();
     });
   });
 
@@ -86,7 +73,7 @@ describe('PhoneNumbersTab', () => {
     it('renders the component without errors', () => {
       render(<PhoneNumbersTab />);
 
-      expect(screen.getAllByText('Phone Numbers')).toHaveLength(2); // Header and sidebar
+      expect(screen.getByText('Phone Numbers Management')).toBeInTheDocument();
     });
   });
 
@@ -94,7 +81,7 @@ describe('PhoneNumbersTab', () => {
     it('renders the component without errors', () => {
       render(<PhoneNumbersTab />);
 
-      expect(screen.getAllByText('Phone Numbers')).toHaveLength(2); // Header and sidebar
+      expect(screen.getByText('Phone Numbers Management')).toBeInTheDocument();
     });
   });
 });

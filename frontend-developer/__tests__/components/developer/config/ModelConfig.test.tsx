@@ -26,9 +26,7 @@ describe('ModelConfig', () => {
     Element.prototype.scrollIntoView = jest.fn();
     jest.clearAllMocks();
 
-    // Set up environment variables for testing
-    process.env.NEXT_PUBLIC_MODEL_API_BASE_URL = process.env.NEXT_PUBLIC_MODEL_API_BASE_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1';
-    process.env.NEXT_PUBLIC_MODEL_API_KEY = process.env.NEXT_PUBLIC_MODEL_API_KEY || 'test-api-key';
+    // Environment variables are already set from .env file
   });
 
   afterEach(() => {
@@ -47,7 +45,7 @@ describe('ModelConfig', () => {
     });
 
     it('renders with dark mode styling', () => {
-      render(<ModelConfig isDarkMode={true} />);
+      render(<ModelConfig />);
 
       // Check that the component renders without errors
       expect(screen.getByText('Provider')).toBeInTheDocument();

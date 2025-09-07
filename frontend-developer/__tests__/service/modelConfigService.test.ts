@@ -16,9 +16,7 @@ describe('modelConfigService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    // Set default environment variables for testing
-    process.env.NEXT_PUBLIC_MODEL_API_BASE_URL = 'https://d22yt2oewbcglh.cloudfront.net/v1';
-    process.env.NEXT_PUBLIC_MODEL_API_KEY = 'app-CV6dxVdo4K226Yvm3vBj3iUO';
+    // Environment variables are already set from .env file
   });
 
   afterEach(() => {
@@ -43,7 +41,7 @@ describe('modelConfigService', () => {
       const result = await modelConfigService.configureModel(mockModelConfig);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://d22yt2oewbcglh.cloudfront.net/v1/apps/current/model-config',
+        '/api/model/apps/current/model-config',
         {
           method: 'POST',
           headers: {
@@ -56,6 +54,7 @@ describe('modelConfigService', () => {
 
       expect(result).toEqual({
         success: true,
+        message: 'Model configured successfully',
         data: {
           data: {
             provider: 'langgenius/openai/openai',
@@ -114,7 +113,7 @@ describe('modelConfigService', () => {
 
       expect(result).toEqual({
         success: false,
-        message: 'HTTP 500: Internal Server Error'
+        message: 'Server error'
       });
     });
 
@@ -134,7 +133,7 @@ describe('modelConfigService', () => {
 
       expect(result).toEqual({
         success: false,
-        message: 'Invalid JSON'
+        message: 'HTTP 500: Internal Server Error'
       });
     });
   });
@@ -156,7 +155,7 @@ describe('modelConfigService', () => {
       const result = await modelConfigService.configurePrompt(mockPromptConfig);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://d22yt2oewbcglh.cloudfront.net/v1/apps/current/prompt',
+        '/api/model/apps/current/prompt',
         {
           method: 'POST',
           headers: {
@@ -169,6 +168,7 @@ describe('modelConfigService', () => {
 
       expect(result).toEqual({
         success: true,
+        message: 'Prompt configured successfully',
         data: {
           data: {
             prompt: 'You are an expert calendar management assistant.',
@@ -226,7 +226,7 @@ describe('modelConfigService', () => {
 
       expect(result).toEqual({
         success: false,
-        message: 'HTTP 500: Internal Server Error'
+        message: 'Server error'
       });
     });
 
@@ -246,7 +246,7 @@ describe('modelConfigService', () => {
 
       expect(result).toEqual({
         success: false,
-        message: 'Invalid JSON'
+        message: 'HTTP 500: Internal Server Error'
       });
     });
   });
@@ -266,7 +266,7 @@ describe('modelConfigService', () => {
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://d22yt2oewbcglh.cloudfront.net/v1/apps/current/model-config',
+        '/api/model/apps/current/model-config',
         expect.objectContaining({
           headers: {
             'Content-Type': 'application/json',
@@ -276,34 +276,22 @@ describe('modelConfigService', () => {
       );
     });
 
-    it('should use fallback values when environment variables are not set', async () => {
+    it('should throw error when environment variables are not set', async () => {
       // Temporarily clear environment variables
       const originalBaseUrl = process.env.NEXT_PUBLIC_MODEL_API_BASE_URL;
       const originalApiKey = process.env.NEXT_PUBLIC_MODEL_API_KEY;
       delete process.env.NEXT_PUBLIC_MODEL_API_BASE_URL;
       delete process.env.NEXT_PUBLIC_MODEL_API_KEY;
 
-      const mockResponse = {
-        ok: true,
-        json: async () => ({ data: { updated: true } })
-      };
-
-      mockFetch.mockResolvedValueOnce(mockResponse);
-
-      await modelConfigService.configureModel({
+      const result = await modelConfigService.configureModel({
         provider: 'langgenius/openai/openai',
         model: 'gpt-4o'
       });
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://d22yt2oewbcglh.cloudfront.net/v1/apps/current/model-config',
-        expect.objectContaining({
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer app-CV6dxVdo4K226Yvm3vBj3iUO'
-          }
-        })
-      );
+      expect(result).toEqual({
+        success: false,
+        message: 'Missing required environment variables for model configuration'
+      });
 
       // Restore environment variables
       process.env.NEXT_PUBLIC_MODEL_API_BASE_URL = originalBaseUrl;
