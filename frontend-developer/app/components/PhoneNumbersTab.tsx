@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Phone, Search, User, AlertCircle, CheckCircle, XCircle, Loader2, Plus } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { 
@@ -12,10 +12,21 @@ import {
 } from '../../service/phoneNumberService';
 import { agentConfigService } from '../../service/agentConfigService';
 
-interface PhoneNumbersTabProps {}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface PhoneNumbersTabProps {
+  // No props needed for this component
+}
 
 export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
-  const { isDarkMode } = useTheme();
+  // Use theme with fallback to prevent errors
+  let isDarkMode = false;
+  try {
+    const theme = useTheme();
+    isDarkMode = theme?.isDarkMode || false;
+  } catch {
+    isDarkMode = false;
+  }
+  
   const [phoneNumbers, setPhoneNumbers] = useState<AgentPhoneNumber[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedPhoneNumber, setSelectedPhoneNumber] = useState<AgentPhoneNumber | null>(null);
@@ -28,20 +39,14 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
   const [success, setSuccess] = useState<string | null>(null);
   
   // State for organization-based assignment
-  const [agents, setAgents] = useState<any[]>([]);
-  const [availablePhoneNumbers, setAvailablePhoneNumbers] = useState<any[]>([]);
+  const [agents, setAgents] = useState<Record<string, unknown>[]>([]);
+  const [availablePhoneNumbers, setAvailablePhoneNumbers] = useState<Record<string, unknown>[]>([]);
   const [loadingAgents, setLoadingAgents] = useState(false);
   const [loadingPhoneNumbers, setLoadingPhoneNumbers] = useState(false);
 
   // Load phone numbers on component mount
   useEffect(() => {
     loadPhoneNumbers();
-  }, []);
-
-  // Load agents and available phone numbers on component mount
-  useEffect(() => {
-    loadAgents();
-    loadAvailablePhoneNumbers();
   }, []);
 
   const loadPhoneNumbers = async () => {
@@ -100,7 +105,7 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
     setLoadingAgents(true);
     try {
       const response = await agentConfigService.getAgentsByOrg('developer');
-      console.log('🔍 Agents response:', response);
+      console.log('�� Agents response:', response);
       
       if (response.success && response.data && Array.isArray(response.data)) {
         setAgents(response.data);
@@ -116,14 +121,14 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
     }
   };
 
-  const loadAvailablePhoneNumbers = async () => {
+  const loadAvailablePhoneNumbers = useCallback(async () => {
     setLoadingPhoneNumbers(true);
     try {
       const response = await getAvailablePhoneNumbersByOrg('developer');
       console.log('🔍 Available phone numbers response:', response);
       
       if (response.success && response.data) {
-        let phoneNumbersArray: any[] = [];
+        let phoneNumbersArray: Record<string, unknown>[] = [];
         
         if (Array.isArray(response.data)) {
           phoneNumbersArray = response.data;
@@ -153,7 +158,13 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
     } finally {
       setLoadingPhoneNumbers(false);
     }
-  };
+  }, [phoneNumbers]);
+
+  // Load agents and available phone numbers on component mount
+  useEffect(() => {
+    loadAgents();
+    loadAvailablePhoneNumbers();
+  }, [loadAvailablePhoneNumbers]);
 
   const handleAssignPhoneNumber = async () => {
     if (!assigningPhoneNumber.trim()) {
@@ -199,37 +210,6 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
       const action = !assigningAgent.trim() || assigningAgent.trim() === 'None' ? 'unassign' : 'assign';
       setError(`Error ${action}ing phone number: ` + (err.message || 'Unknown error'));
       console.error(`Error ${action}ing phone number:`, err);
-    } finally {
-      setAssigning(false);
-    }
-  };
-
-  const handleUnassignPhoneNumber = async () => {
-    if (!selectedPhoneNumber?.phone_number) {
-      setError('No phone number selected for unassignment.');
-      return;
-    }
-
-    setAssigning(true);
-    setError(null);
-    setSuccess(null);
-    
-    try {
-      const response = await unassignPhoneNumber(selectedPhoneNumber.phone_number);
-      
-      if (response.success) {
-        setSuccess(`Phone number ${selectedPhoneNumber.phone_number} unassigned successfully!`);
-        setShowAssignModal(false);
-        setAssigningAgent('');
-        setAssigningPhoneNumber('');
-        loadPhoneNumbers(); // Refresh the list
-        loadAvailablePhoneNumbers(); // Refresh available numbers
-      } else {
-        setError(response.message || 'Failed to unassign phone number.');
-      }
-    } catch (err: any) {
-      setError('Error unassigning phone number: ' + (err.message || 'Unknown error'));
-      console.error('Error unassigning phone number:', err);
     } finally {
       setAssigning(false);
     }
@@ -339,10 +319,10 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
                 <span>{success}</span>
                 <button onClick={clearMessages} className="ml-auto">
                   <XCircle className="h-4 w-4" />
-            </button>
+                </button>
               </div>
             )}
-        </div>
+          </div>
         )}
         
         {/* Search and Content */}
@@ -378,106 +358,106 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
                   </p>
                 </div>
               ) : (
-                        <div className="space-y-2">
-                          {filteredPhoneNumbers.map((phoneNumber) => (
-                            <div
-                              key={phoneNumber.phone_number}
-                              onClick={() => handleSelectPhoneNumber(phoneNumber)}
-                                                             className={`w-full p-4 rounded-xl text-left transition-all duration-300 cursor-pointer ${
-                                 selectedPhoneNumber?.phone_number === phoneNumber.phone_number
-                                   ? isDarkMode 
-                                     ? 'bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border-2 border-blue-700/50 shadow-lg ring-2 ring-blue-500/30'
-                                     : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 shadow-lg ring-2 ring-blue-400/30'
-                                   : isDarkMode
-                                     ? 'border border-white/20 shadow-sm'
-                                     : 'border border-gray-200 shadow-sm'
-                               }`}
-                            >
-                                                             <div className="flex items-center justify-between">
-                                 <div className="flex-1 min-w-0">
-                                   <div className="flex items-center gap-3 mb-2">
-                                     <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
-                                       <Phone className={`h-4 w-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-                                     </div>
-                                     <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-                                       {phoneNumber.phone_number}
-                                     </h3>
-                                   </div>
-                                   <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                     {phoneNumber.prefix && phoneNumber.prefix !== 'unassigned' 
-                                       ? `Agent: ${phoneNumber.prefix}` 
-                                       : 'Agent: None'
-                                     }
-                                   </p>
-                                 </div>
-                                 <div className="flex items-center gap-4">
-                                   <div className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 ${
-                                     phoneNumber.prefix && phoneNumber.prefix !== 'unassigned'
-                                       ? isDarkMode 
-                                         ? 'bg-green-900/40 text-green-300 border border-green-600/50 shadow-sm'
-                                         : 'bg-green-100 text-green-700 border border-green-300 shadow-sm'
-                                       : isDarkMode
-                                         ? 'bg-gray-700/50 text-gray-300 border border-gray-600/50 shadow-sm'
-                                         : 'bg-gray-100 text-gray-600 border border-gray-300 shadow-sm'
-                                   }`}>
-                                     {phoneNumber.prefix && phoneNumber.prefix !== 'unassigned' ? (
-                                       <>
-                                         <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
-                                         <span>Assigned</span>
-                                       </>
-                                     ) : (
-                                       <>
-                                         <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
-                                         <span>Unassigned</span>
-                                       </>
-                                     )}
-                                   </div>
-                                   {phoneNumber.prefix && phoneNumber.prefix !== 'unassigned' && (
-                                     <button
-                                       onClick={(e) => {
-                                         e.stopPropagation();
-                                         handleEditPhoneNumber(phoneNumber);
-                                       }}
-                                       className={`p-2.5 rounded-xl transition-all duration-200 ${
-                                         isDarkMode 
-                                           ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg border border-blue-500/30' 
-                                           : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg border border-blue-400/30'
-                                       }`}
-                                       title="Edit Assignment"
-                                     >
-                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                       </svg>
-                                     </button>
-                                   )}
-                                 </div>
-                              </div>
+                <div className="space-y-2">
+                  {filteredPhoneNumbers.map((phoneNumber) => (
+                    <div
+                      key={phoneNumber.phone_number}
+                      onClick={() => handleSelectPhoneNumber(phoneNumber)}
+                      className={`w-full p-4 rounded-xl text-left transition-all duration-300 cursor-pointer ${
+                        selectedPhoneNumber?.phone_number === phoneNumber.phone_number
+                          ? isDarkMode 
+                            ? 'bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border-2 border-blue-700/50 shadow-lg ring-2 ring-blue-500/30'
+                            : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 shadow-lg ring-2 ring-blue-400/30'
+                          : isDarkMode
+                            ? 'border border-white/20 shadow-sm'
+                            : 'border border-gray-200 shadow-sm'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
+                              <Phone className={`h-4 w-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
                             </div>
-                          ))}
+                            <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                              {phoneNumber.phone_number}
+                            </h3>
+                          </div>
+                          <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {phoneNumber.prefix && phoneNumber.prefix !== 'unassigned' 
+                              ? `Agent: ${phoneNumber.prefix}` 
+                              : 'Agent: None'
+                            }
+                          </p>
                         </div>
+                        <div className="flex items-center gap-4">
+                          <div className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 ${
+                            phoneNumber.prefix && phoneNumber.prefix !== 'unassigned'
+                              ? isDarkMode 
+                                ? 'bg-green-900/40 text-green-300 border border-green-600/50 shadow-sm'
+                                : 'bg-green-100 text-green-700 border border-green-300 shadow-sm'
+                              : isDarkMode
+                                ? 'bg-gray-700/50 text-gray-300 border border-gray-600/50 shadow-sm'
+                                : 'bg-gray-100 text-gray-600 border border-gray-300 shadow-sm'
+                          }`}>
+                            {phoneNumber.prefix && phoneNumber.prefix !== 'unassigned' ? (
+                              <>
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
+                                <span>Assigned</span>
+                              </>
+                            ) : (
+                              <>
+                                <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
+                                <span>Unassigned</span>
+                              </>
+                            )}
+                          </div>
+                          {phoneNumber.prefix && phoneNumber.prefix !== 'unassigned' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditPhoneNumber(phoneNumber);
+                              }}
+                              className={`p-2.5 rounded-xl transition-all duration-200 ${
+                                isDarkMode 
+                                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg border border-blue-500/30' 
+                                  : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg border border-blue-400/30'
+                              }`}
+                              title="Edit Assignment"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 
             {/* Details Panel */}
-             <div className="flex-1 w-full lg:w-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex-1 w-full lg:w-auto" onClick={(e) => e.stopPropagation()}>
               {selectedPhoneNumber ? (
-                 <div className={`rounded-2xl p-8 border transition-all duration-300 transform animate-in slide-in-from-right-4 ${isDarkMode ? 'bg-gradient-to-br from-gray-800/30 to-gray-900 border-gray-700/50' : 'bg-gradient-to-br from-gray-50/30 to-white border-gray-200/50'}`}>
-                   <div className="mb-8">
-                     <div className="flex items-center gap-4 mb-4">
-                       <div className={`text-3xl p-3 rounded-xl ${isDarkMode ? 'bg-gradient-to-r from-blue-900/50 to-indigo-900/50' : 'bg-gradient-to-r from-blue-100 to-indigo-100'}`}>
-                         📞
-                       </div>
-                       <div>
-                         <h3 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                <div className={`rounded-2xl p-8 border transition-all duration-300 transform animate-in slide-in-from-right-4 ${isDarkMode ? 'bg-gradient-to-br from-gray-800/30 to-gray-900 border-gray-700/50' : 'bg-gradient-to-br from-gray-50/30 to-white border-gray-200/50'}`}>
+                  <div className="mb-8">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className={`text-3xl p-3 rounded-xl ${isDarkMode ? 'bg-gradient-to-r from-blue-900/50 to-indigo-900/50' : 'bg-gradient-to-r from-blue-100 to-indigo-100'}`}>
+                        📞
+                      </div>
+                      <div>
+                        <h3 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                           Phone Number Details
-                         </h3>
+                        </h3>
                         <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                           {selectedPhoneNumber.phone_number}
                         </p>
-                             </div>
-                           </div>
-                         </div>
-                         
+                      </div>
+                    </div>
+                  </div>
+                  
                   {isAssigned(selectedPhoneNumber) ? (
                     // Show agent details if assigned
                     <div className="space-y-6">
@@ -485,32 +465,32 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
                         <div className="flex items-center gap-3 mb-4">
                           <User className="h-6 w-6 text-green-600" />
                           <h4 className="text-lg font-semibold text-green-800">Assigned to Agent</h4>
-                           </div>
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
+                          <div>
                             <label className="block text-sm font-semibold mb-2 text-green-700">
                               Agent Prefix
                             </label>
-                          <input
-                            type="text"
+                            <input
+                              type="text"
                               value={selectedPhoneNumber.prefix}
                               readOnly
                               className="w-full px-4 py-3 border border-green-200 rounded-xl bg-green-50 text-green-800"
-                              />
-                            </div>
-                            <div>
+                            />
+                          </div>
+                          <div>
                             <label className="block text-sm font-semibold mb-2 text-green-700">
                               Organization
                             </label>
-                              <input
+                            <input
                               type="text"
                               value={selectedPhoneNumber.organization_id || 'Not specified'}
                               readOnly
                               className="w-full px-4 py-3 border border-green-200 rounded-xl bg-green-50 text-green-800"
-                              />
-                            </div>
+                            />
                           </div>
                         </div>
+                      </div>
                     </div>
                   ) : (
                     // Show assignment prompt if unassigned
@@ -519,7 +499,7 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
                         <div className="flex items-center gap-3 mb-4">
                           <AlertCircle className="h-6 w-6 text-yellow-600" />
                           <h4 className="text-lg font-semibold text-yellow-800">Unassigned Phone Number</h4>
-                          </div>
+                        </div>
                         <p className="text-yellow-700 mb-4">
                           This phone number is not assigned to any agent. Click the button below to assign it.
                         </p>
@@ -532,24 +512,24 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
                         >
                           <Plus className="h-4 w-4" />
                           Assign to Agent
-                            </button>
+                        </button>
                       </div>
                     </div>
                   )}
                 </div>
-                             ) : (
-                 <div className="text-center py-12 transition-all duration-300 transform animate-in fade-in">
-                   <div className={`p-6 rounded-2xl inline-block mb-6 ${isDarkMode ? 'bg-gradient-to-r from-blue-900/50 to-indigo-900/50' : 'bg-gradient-to-r from-blue-100 to-indigo-100'}`}>
-                     <Phone className={`h-12 w-12 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-                   </div>
+              ) : (
+                <div className="text-center py-12 transition-all duration-300 transform animate-in fade-in">
+                  <div className={`p-6 rounded-2xl inline-block mb-6 ${isDarkMode ? 'bg-gradient-to-r from-blue-900/50 to-indigo-900/50' : 'bg-gradient-to-r from-blue-100 to-indigo-100'}`}>
+                    <Phone className={`h-12 w-12 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                  </div>
                   <h3 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                     Select a Phone Number
                   </h3>
                   <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
                     Choose a phone number from the sidebar to view its details
                   </p>
-                 </div>
-               )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -620,8 +600,8 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
                     >
                       <option value="">None (Unassign)</option>
                       {Array.isArray(agents) && agents.map((agent, index) => (
-                        <option key={agent.id || agent.prefix || agent.name || `agent-${index}`} value={agent.prefix || agent.name}>
-                          {agent.name || agent.prefix} ({agent.prefix || agent.name})
+                        <option key={(agent as any).id || (agent as any).prefix || (agent as any).name || `agent-${index}`} value={(agent as any).prefix || (agent as any).name}>
+                          {(agent as any).name || (agent as any).prefix} ({(agent as any).prefix || (agent as any).name})
                         </option>
                       ))}
                     </select>
@@ -645,8 +625,8 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
                     >
                       <option value="">Select an agent</option>
                       {Array.isArray(agents) && agents.map((agent, index) => (
-                        <option key={agent.id || agent.prefix || agent.name || `agent-${index}`} value={agent.prefix || agent.name}>
-                          {agent.name || agent.prefix} ({agent.prefix || agent.name})
+                        <option key={(agent as any).id || (agent as any).prefix || (agent as any).name || `agent-${index}`} value={(agent as any).prefix || (agent as any).name}>
+                          {(agent as any).name || (agent as any).prefix} ({(agent as any).prefix || (agent as any).name})
                         </option>
                       ))}
                     </select>
@@ -667,9 +647,9 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
                     >
                       <option value="">Select a phone number</option>
                       {Array.isArray(availablePhoneNumbers) && availablePhoneNumbers.map((phoneNumber, index) => {
-                        const displayText = phoneNumber.prefix ? `${phoneNumber.prefix} - ${phoneNumber.phone_number}` : phoneNumber.phone_number;
+                        const displayText = (phoneNumber as any).prefix ? `${(phoneNumber as any).prefix} - ${(phoneNumber as any).phone_number}` : (phoneNumber as any).phone_number;
                         return (
-                          <option key={phoneNumber.phone_number || `phone-${index}`} value={phoneNumber.phone_number}>
+                          <option key={(phoneNumber as any).phone_number || `phone-${index}`} value={(phoneNumber as any).phone_number}>
                             {displayText}
                           </option>
                         );
