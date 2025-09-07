@@ -6,13 +6,17 @@ import VoiceConfig from '@/app/components/config/VoiceConfig';
 // Mock the agentConfigService
 jest.mock('@/service/agentConfigService', () => ({
   agentConfigService: {
-    getCurrentVoiceConfig: jest.fn(),
-    configureVoice: jest.fn(),
-    getFullApiKeys: jest.fn(),
+    configureAgent: jest.fn(),
+    getAgentConfig: jest.fn(),
+    getAllAgents: jest.fn(),
+    getAgentsByOrg: jest.fn(),
+    deleteAgent: jest.fn(),
+    deleteAgentByOrg: jest.fn(),
+    getDefaultApiKeys: jest.fn(),
     getDefaultVoiceIds: jest.fn(),
-    maskApiKey: jest.fn(),
+    getFullApiKeys: jest.fn(),
+    getCurrentOrganizationId: jest.fn(),
   },
-  maskApiKey: jest.fn(),
 }));
 
 // Mock ThemeContext
@@ -23,7 +27,8 @@ jest.mock('@/app/contexts/ThemeContext', () => ({
   }),
 }));
 
-import { agentConfigService, maskApiKey } from '@/service/agentConfigService';
+import { agentConfigService } from '@/service/agentConfigService';
+import { maskApiKey } from '@/config/environment';
 
 const mockAgentConfigService = agentConfigService as jest.Mocked<typeof agentConfigService>;
 const mockMaskApiKey = maskApiKey as jest.MockedFunction<typeof maskApiKey>;
@@ -50,10 +55,6 @@ describe('VoiceConfig', () => {
       cartesia: 'test-voice-id',
     });
     
-    mockAgentConfigService.maskApiKey.mockImplementation((key: string) => {
-      if (!key || key.length < 8) return '••••••••••••••••••••••••••••••••';
-      return key.substring(0, 4) + '••••••••••••••••••••••••••••••••' + key.substring(key.length - 4);
-    });
     
     mockMaskApiKey.mockImplementation((key: string) => {
       if (!key || key.length < 8) return '••••••••••••••••••••••••••••••••';
@@ -166,58 +167,8 @@ describe('VoiceConfig', () => {
   });
 
   describe('Voice Configuration API', () => {
-    it('loads current voice configuration on mount', async () => {
-      mockAgentConfigService.getCurrentVoiceConfig.mockResolvedValue({
-        success: true,
-        data: {
-          provider: 'OpenAI',
-          voice: 'Elliot',
-          language: 'English',
-          speed: -0.5
-        }
-      });
-
+    it('renders configuration status', () => {
       render(<VoiceConfig />);
-
-      // The component shows configuration status instead of making API calls on mount
-      expect(screen.getByText('Configuration Status')).toBeInTheDocument();
-    });
-
-    it('calls configureVoice API when Save button is clicked', async () => {
-      mockAgentConfigService.configureVoice.mockResolvedValue({
-        success: true,
-        data: { updated: true }
-      });
-
-      render(<VoiceConfig />);
-
-      // Save button is not visible in the initial status-based UI
-      // The component shows configuration status instead
-      expect(screen.getByText('Configuration Status')).toBeInTheDocument();
-    });
-
-    it('shows loading state during voice configuration', async () => {
-      mockAgentConfigService.configureVoice.mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve({ success: true, data: {} }), 100))
-      );
-
-      render(<VoiceConfig />);
-
-      // Save button is not visible in the initial status-based UI
-      // The component shows configuration status instead
-      expect(screen.getByText('Configuration Status')).toBeInTheDocument();
-    });
-
-    it('shows error state when voice configuration fails', async () => {
-      mockAgentConfigService.configureVoice.mockResolvedValue({
-        success: false,
-        message: 'Failed to configure voice'
-      });
-
-      render(<VoiceConfig />);
-
-      // Save button is not visible in the initial status-based UI
-      // The component shows configuration status instead
       expect(screen.getByText('Configuration Status')).toBeInTheDocument();
     });
   });

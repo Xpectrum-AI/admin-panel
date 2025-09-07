@@ -56,7 +56,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
     setErrorMessage('');
 
     try {
-      const result = await agentConfigService.getCurrentAgentConfig(agentName);
+      const result = await agentConfigService.getAgentConfig(agentName);
       if (result.success && result.data) {
         setIsAgentConfigured(true);
         
@@ -251,8 +251,8 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
         max_nudges: maxNudges,
         typing_volume: typingVolume,
         max_call_duration: maxCallDuration,
-        tts_config: ttsConfig,
-        stt_config: sttConfig
+        tts_config: ttsConfig as any,
+        stt_config: sttConfig as any
       };
 
 

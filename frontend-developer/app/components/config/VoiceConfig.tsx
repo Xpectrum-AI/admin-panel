@@ -1,8 +1,9 @@
 'use client';
 
-import React, { forwardRef, useState, useEffect, useRef, useCallback } from 'react';
+import React, { forwardRef, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Mic, Settings, Loader2, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
-import { agentConfigService, maskApiKey } from '../../../service/agentConfigService';
+import { agentConfigService } from '../../../service/agentConfigService';
+import { maskApiKey, getFullApiKeys, getDefaultVoiceIds } from '../../../config/environment';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface VoiceConfigProps {
@@ -79,7 +80,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
     setIsLoadingConfig(true);
 
     try {
-      const result = await agentConfigService.getCurrentVoiceConfig(agentName);
+      const result = await agentConfigService.getAgentConfig(agentName);
       if (result.success && result.data) {
         setIsVoiceConfigured(true);
         setCurrentVoiceConfig(result.data);
@@ -263,11 +264,12 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
     }
   }, [existingConfig, isEditing]);
 
+  // Memoize default values to prevent infinite re-renders
+  const defaultApiKeys = useMemo(() => getFullApiKeys(), []);
+  const defaultVoiceIds = useMemo(() => getDefaultVoiceIds(), []);
+
   // Load default values on component mount
   useEffect(() => {
-    const defaultApiKeys = agentConfigService.getFullApiKeys();
-    const defaultVoiceIds = agentConfigService.getDefaultVoiceIds();
-    
     // Set default API key based on selected provider
     switch (selectedVoiceProvider) {
       case 'OpenAI':
@@ -282,7 +284,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
         setVoiceId(defaultVoiceIds.cartesia || '');
         break;
     }
-  }, [selectedVoiceProvider]);
+  }, [selectedVoiceProvider, defaultApiKeys, defaultVoiceIds]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -337,7 +339,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
         } : null
       };
 
-      const result = await agentConfigService.configureVoice(agentName, backendConfig);
+      const result = await agentConfigService.configureAgent(agentName, backendConfig as any);
 
       if (result.success) {
         setConfigStatus('success');
@@ -389,7 +391,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
 
       onConfigChange(backendConfig);
     }
-  }, [selectedVoiceProvider, selectedVoice, selectedLanguage, speedValue, apiKey, voiceId, stability, similarityBoost, onConfigChange, reverseLanguageMapping]);
+  }, [selectedVoiceProvider, selectedVoice, selectedLanguage, speedValue, apiKey, voiceId, stability, similarityBoost]); // Removed onConfigChange and reverseLanguageMapping to prevent infinite loops
 
   // Handle provider changes with proper state management
   const handleProviderChange = (newProvider: string) => {

@@ -1,8 +1,9 @@
 'use client';
 
-import React, { forwardRef, useState, useEffect, useRef, useCallback } from 'react';
+import React, { forwardRef, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Mic, Settings, Zap, Loader2, MessageSquare, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
-import { agentConfigService, maskApiKey } from '../../../service/agentConfigService';
+import { agentConfigService } from '../../../service/agentConfigService';
+import { maskApiKey, getFullApiKeys } from '../../../config/environment';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface TranscriberConfigProps {
@@ -49,7 +50,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
     setIsLoadingConfig(true);
 
     try {
-      const result = await agentConfigService.getCurrentTranscriberConfig(agentName);
+      const result = await agentConfigService.getAgentConfig(agentName);
       if (result.success && result.data) {
         setIsTranscriberConfigured(true);
         setCurrentTranscriberConfig(result.data);
@@ -190,10 +191,11 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
     };
   }, []);
 
+  // Memoize default values to prevent infinite re-renders
+  const defaultApiKeys = useMemo(() => getFullApiKeys(), []);
+
   // Load default values on component mount
   useEffect(() => {
-    const defaultApiKeys = agentConfigService.getFullApiKeys();
-    
     // Set default API key based on selected provider
     switch (selectedTranscriberProvider) {
       case 'Deepgram':
@@ -203,7 +205,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
         setApiKey(defaultApiKeys.whisper || '');
         break;
     }
-  }, [selectedTranscriberProvider]);
+  }, [selectedTranscriberProvider, defaultApiKeys]);
 
   // Helper function to get display value for API key
   const getApiKeyDisplayValue = (actualKey: string) => {
@@ -234,7 +236,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
     if (onConfigChange) {
       onConfigChange(backendConfig);
     }
-  }, [selectedTranscriberProvider, selectedModel, selectedLanguage, apiKey, punctuateEnabled, smartFormatEnabled, interimResultEnabled, onConfigChange]);
+  }, [selectedTranscriberProvider, selectedModel, selectedLanguage, apiKey, punctuateEnabled, smartFormatEnabled, interimResultEnabled]); // Removed onConfigChange to prevent infinite loops
 
   // Handle configure button click
   const handleConfigure = async () => {
@@ -260,7 +262,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
         } : null
       };
 
-      const result = await agentConfigService.configureTranscriber(agentName, backendConfig);
+      const result = await agentConfigService.configureAgent(agentName, backendConfig as any);
 
       if (result.success) {
         setConfigStatus('success');

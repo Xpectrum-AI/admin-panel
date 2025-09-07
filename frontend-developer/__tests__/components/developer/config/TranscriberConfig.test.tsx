@@ -6,13 +6,17 @@ import TranscriberConfig from '@/app/components/config/TranscriberConfig';
 // Mock the agentConfigService
 jest.mock('@/service/agentConfigService', () => ({
   agentConfigService: {
-    getCurrentTranscriberConfig: jest.fn(),
-    configureTranscriber: jest.fn(),
-    getFullApiKeys: jest.fn(),
+    configureAgent: jest.fn(),
+    getAgentConfig: jest.fn(),
+    getAllAgents: jest.fn(),
+    getAgentsByOrg: jest.fn(),
+    deleteAgent: jest.fn(),
+    deleteAgentByOrg: jest.fn(),
+    getDefaultApiKeys: jest.fn(),
     getDefaultVoiceIds: jest.fn(),
-    maskApiKey: jest.fn(),
+    getFullApiKeys: jest.fn(),
+    getCurrentOrganizationId: jest.fn(),
   },
-  maskApiKey: jest.fn(),
 }));
 
 // Mock ThemeContext
@@ -23,7 +27,8 @@ jest.mock('@/app/contexts/ThemeContext', () => ({
   }),
 }));
 
-import { agentConfigService, maskApiKey } from '@/service/agentConfigService';
+import { agentConfigService } from '@/service/agentConfigService';
+import { maskApiKey } from '@/config/environment';
 
 const mockAgentConfigService = agentConfigService as jest.Mocked<typeof agentConfigService>;
 const mockMaskApiKey = maskApiKey as jest.MockedFunction<typeof maskApiKey>;
@@ -50,10 +55,6 @@ describe('TranscriberConfig', () => {
       cartesia: 'test-voice-id',
     });
     
-    mockAgentConfigService.maskApiKey.mockImplementation((key: string) => {
-      if (!key || key.length < 8) return '••••••••••••••••••••••••••••••••';
-      return key.substring(0, 4) + '••••••••••••••••••••••••••••••••' + key.substring(key.length - 4);
-    });
     
     mockMaskApiKey.mockImplementation((key: string) => {
       if (!key || key.length < 8) return '••••••••••••••••••••••••••••••••';
@@ -174,60 +175,8 @@ describe('TranscriberConfig', () => {
   });
 
   describe('Transcriber Configuration API', () => {
-    it('loads current transcriber configuration on mount', async () => {
-      mockAgentConfigService.getCurrentTranscriberConfig.mockResolvedValue({
-        success: true,
-        data: {
-          provider: 'OpenAI',
-          language: 'En',
-          model: 'Nova 2',
-          punctuate: true,
-          smart_format: true,
-          interim_result: false
-        }
-      });
-
+    it('renders configuration status', () => {
       render(<TranscriberConfig />);
-
-      // The component shows configuration status instead of making API calls on mount
-      expect(screen.getByText('Configuration Status')).toBeInTheDocument();
-    });
-
-    it('calls configureTranscriber API when Save button is clicked', async () => {
-      mockAgentConfigService.configureTranscriber.mockResolvedValue({
-        success: true,
-        data: { updated: true }
-      });
-
-      render(<TranscriberConfig />);
-
-      // Save button is not visible in the initial status-based UI
-      // The component shows configuration status instead
-      expect(screen.getByText('Configuration Status')).toBeInTheDocument();
-    });
-
-    it('shows loading state during transcriber configuration', async () => {
-      mockAgentConfigService.configureTranscriber.mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve({ success: true, data: {} }), 100))
-      );
-
-      render(<TranscriberConfig />);
-
-      // Save button is not visible in the initial status-based UI
-      // The component shows configuration status instead
-      expect(screen.getByText('Configuration Status')).toBeInTheDocument();
-    });
-
-    it('shows error state when transcriber configuration fails', async () => {
-      mockAgentConfigService.configureTranscriber.mockResolvedValue({
-        success: false,
-        message: 'Failed to configure transcriber'
-      });
-
-      render(<TranscriberConfig />);
-
-      // Save button is not visible in the initial status-based UI
-      // The component shows configuration status instead
       expect(screen.getByText('Configuration Status')).toBeInTheDocument();
     });
   });

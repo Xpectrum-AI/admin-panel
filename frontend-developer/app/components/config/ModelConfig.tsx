@@ -61,7 +61,10 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
 
     try {
       // Load model configuration
-      const modelResult = await modelConfigService.getCurrentModelConfig();
+      const modelResult = await modelConfigService.configureModel({
+        provider: selectedModelProvider,
+        model: selectedModel
+      });
       if (modelResult.success && modelResult.data) {
         setIsModelConfigured(true);
         setCurrentModelConfig(modelResult.data);
@@ -82,7 +85,9 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
       }
 
       // Load prompt configuration
-      const promptResult = await modelConfigService.getCurrentPromptConfig();
+      const promptResult = await modelConfigService.configurePrompt({
+        prompt: systemPrompt
+      });
       if (promptResult.success && promptResult.data) {
         setIsPromptConfigured(true);
         setCurrentPromptConfig(promptResult.data);
@@ -323,7 +328,7 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
         firstMessage
       });
     }
-  }, [firstMessage, onConfigChange]);
+  }, [firstMessage]); // Remove onConfigChange from dependencies to prevent infinite loops
 
   return (
     <div ref={ref} className="space-y-6">
