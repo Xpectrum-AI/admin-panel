@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from 'react';
-import { Mail, Eye, EyeOff, Lock, X, User, Code } from 'lucide-react';
+import { Mail, Eye, EyeOff, Lock, X, Code } from 'lucide-react';
 import { useAuthFrontendApis } from '@propelauth/frontend-apis-react';
-import { useAuthInfo } from '@propelauth/react';
 import React from 'react';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import Link from 'next/link';
@@ -96,8 +95,7 @@ export default function Login() {
   });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { emailPasswordLogin, sendForgotPasswordEmail, resendEmailConfirmation, loginWithSocialProvider } = useAuthFrontendApis();
-  const { accessToken } = useAuthInfo();
+  const { emailPasswordLogin, sendForgotPasswordEmail, resendEmailConfirmation } = useAuthFrontendApis();
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
@@ -225,7 +223,7 @@ export default function Login() {
         setShowResetModal(false);
         setResetEmail('');
       }, 2000);
-    } catch (error) {
+    } catch {
       setResetError('Failed to send reset email. Please try again.');
     } finally {
       setResetLoading(false);

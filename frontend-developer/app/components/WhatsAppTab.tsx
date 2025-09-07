@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Plus, Search, Sparkles, Activity, Zap, MessageSquare, Users, Database, Settings, Bot, Phone, Clock, RefreshCw, Send, Menu, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, Sparkles, Activity, MessageSquare, Users, Database, Settings, Bot, Phone, Send, Menu, X } from 'lucide-react';
 
 // Custom WhatsApp icon component
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -108,8 +108,8 @@ interface WhatsAppTabProps {
 export default function WhatsAppTab({ isDarkMode = false }: WhatsAppTabProps) {
   const [activeTab, setActiveTab] = useState<'conversations' | 'configuration' | 'analytics' | 'health'>('conversations');
   const [selectedConversation, setSelectedConversation] = useState<WhatsAppConversation | null>(sampleConversations[0]);
-  const [selectedConfig, setSelectedConfig] = useState<WhatsAppConfig | null>(sampleWhatsAppConfigs[0]);
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [selectedConfig] = useState<WhatsAppConfig | null>(sampleWhatsAppConfigs[0]);
+  const [isStreaming] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -121,12 +121,10 @@ export default function WhatsAppTab({ isDarkMode = false }: WhatsAppTabProps) {
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation) return;
 
-    setIsStreaming(true);
-    // Simulate AI response streaming
+    // Simulate message sending
     setTimeout(() => {
-      setIsStreaming(false);
       setNewMessage('');
-    }, 2000);
+    }, 1000);
   };
 
   return (
