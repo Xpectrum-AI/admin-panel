@@ -1,6 +1,6 @@
 // Test script for agent configuration API integration
-const API_BASE_URL = 'https://d2batbqeoehmxe.cloudfront.net';
-const API_KEY = 'xpectrum-ai@123';
+const API_BASE_URL = process.env.NEXT_PUBLIC_LIVE_API_URL || 'https://test-api.example.com';
+const API_KEY = process.env.NEXT_PUBLIC_LIVE_API_KEY || 'test-api-key';
 
 async function testAgentConfiguration() {
   const testAgentName = 'test-agent-' + Date.now();

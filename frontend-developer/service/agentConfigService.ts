@@ -63,18 +63,6 @@ export interface AgentConfigResponse {
   data?: any;
 }
 
-// Helper function to get environment variables safely
-const getEnvVar = (key: string): string | undefined => {
-  // Only access environment variables on client side
-  if (typeof window === 'undefined') {
-    console.log('🔍 Server-side rendering detected, skipping environment variable access');
-    return undefined;
-  }
-  const value = process.env[key];
-  console.log(`🔍 Environment variable ${key}:`, value ? 'SET' : 'NOT SET');
-  return value;
-};
-
 // Default organization ID for developer dashboard
 const DEFAULT_ORGANIZATION_ID = 'developer';
 
@@ -84,45 +72,23 @@ export const maskApiKey = (apiKey: string): string => {
   return apiKey.substring(0, 4) + '••••••••' + apiKey.substring(apiKey.length - 4);
 };
 
-// Get environment variables without validation (for display purposes)
+// Get environment variables
 const getEnvironmentVariables = () => {
   console.log('🔍 Getting environment variables...');
-  
-  // Try to get from process.env first
-  let env = {
-    API_BASE_URL: getEnvVar('NEXT_PUBLIC_LIVE_API_URL'),
-    API_KEY: getEnvVar('NEXT_PUBLIC_LIVE_API_KEY'),
-    CHATBOT_API_URL: getEnvVar('NEXT_PUBLIC_CHATBOT_API_URL'),
-    CHATBOT_API_KEY: getEnvVar('NEXT_PUBLIC_CHATBOT_API_KEY'),
-    ELEVEN_LABS_API_KEY: getEnvVar('NEXT_PUBLIC_ELEVEN_LABS_API_KEY'),
-    OPEN_AI_API_KEY: getEnvVar('NEXT_PUBLIC_OPEN_AI_API_KEY'),
-    WHISPER_API_KEY: getEnvVar('NEXT_PUBLIC_WHISPER_API_KEY'),
-    DEEPGRAM_API_KEY: getEnvVar('NEXT_PUBLIC_DEEPGRAM_API_KEY'),
-    CARTESIA_API_KEY: getEnvVar('NEXT_PUBLIC_CARTESIA_API_KEY'),
-    ELEVEN_LABS_VOICE_ID: getEnvVar('NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID'),
-    CARTESIA_VOICE_ID: getEnvVar('NEXT_PUBLIC_CARTESIA_VOICE_ID')
+
+  return {
+    API_BASE_URL: process.env.NEXT_PUBLIC_LIVE_API_URL || '',
+    API_KEY: process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
+    CHATBOT_API_URL: process.env.NEXT_PUBLIC_CHATBOT_API_URL || '',
+    CHATBOT_API_KEY: process.env.NEXT_PUBLIC_CHATBOT_API_KEY || '',
+    ELEVEN_LABS_API_KEY: process.env.NEXT_PUBLIC_ELEVEN_LABS_API_KEY || '',
+    OPEN_AI_API_KEY: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
+    WHISPER_API_KEY: process.env.NEXT_PUBLIC_WHISPER_API_KEY || '',
+    DEEPGRAM_API_KEY: process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY || '',
+    CARTESIA_API_KEY: process.env.NEXT_PUBLIC_CARTESIA_API_KEY || '',
+    ELEVEN_LABS_VOICE_ID: process.env.NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID || '',
+    CARTESIA_VOICE_ID: process.env.NEXT_PUBLIC_CARTESIA_VOICE_ID || ''
   };
-  
-  // If not available, try to get from window object
-  if (!env.API_BASE_URL || !env.API_KEY || !env.CHATBOT_API_URL || !env.CHATBOT_API_KEY) {
-    console.log('🔍 Environment variables not found in process.env, trying alternatives...');
-    
-    // Try to get from window object
-    if (typeof window !== 'undefined') {
-      env.API_BASE_URL = env.API_BASE_URL || (window as any).NEXT_PUBLIC_LIVE_API_URL;
-      env.API_KEY = env.API_KEY || (window as any).NEXT_PUBLIC_LIVE_API_KEY;
-      env.CHATBOT_API_URL = env.CHATBOT_API_URL || (window as any).NEXT_PUBLIC_CHATBOT_API_URL;
-      env.CHATBOT_API_KEY = env.CHATBOT_API_KEY || (window as any).NEXT_PUBLIC_CHATBOT_API_KEY;
-    }
-  }
-  
-  console.log('🔍 Environment variables result:', {
-    API_BASE_URL: env.API_BASE_URL ? 'SET' : 'NOT SET',
-    API_KEY: env.API_KEY ? 'SET' : 'NOT SET',
-    CHATBOT_API_URL: env.CHATBOT_API_URL ? 'SET' : 'NOT SET',
-    CHATBOT_API_KEY: env.CHATBOT_API_KEY ? 'SET' : 'NOT SET'
-  });
-  return env;
 };
 
 export const agentConfigService = {
@@ -134,12 +100,10 @@ export const agentConfigService = {
       const env = getEnvironmentVariables();
       
       // Validate only the required ones for this API call
-      if (!env.API_BASE_URL || !env.API_KEY || !env.CHATBOT_API_URL || !env.CHATBOT_API_KEY) {
-        console.error('❌ Missing environment variables:', {
+      if (!env.API_BASE_URL || !env.API_KEY) {
+        console.error('❌ Missing required environment variables:', {
           API_BASE_URL: !!env.API_BASE_URL,
-          API_KEY: !!env.API_KEY,
-          CHATBOT_API_URL: !!env.CHATBOT_API_URL,
-          CHATBOT_API_KEY: !!env.CHATBOT_API_KEY
+          API_KEY: !!env.API_KEY
         });
         throw new Error('Missing required environment variables for agent configuration');
       }
@@ -153,7 +117,7 @@ export const agentConfigService = {
           provider: 'elevenlabs',
           elevenlabs: {
             api_key: env.ELEVEN_LABS_API_KEY || '',
-            voice_id: env.ELEVEN_LABS_VOICE_ID || 'pNInz6obpgDQGcFmaJgB',
+            voice_id: env.ELEVEN_LABS_VOICE_ID || '',
             model_id: 'eleven_monolingual_v1',
             stability: 0.5,
             similarity_boost: 0.5,
@@ -179,8 +143,6 @@ export const agentConfigService = {
         max_call_duration: config.max_call_duration || 300
       };
 
-      console.log('🚀 Making API call to live backend for agent:', agentName);
-      console.log('📦 Agent creation payload:', JSON.stringify(completeConfig, null, 2));
 
       // Use the live backend API URL directly
       const response = await fetch(`${env.API_BASE_URL}/agents/update/${agentName}`, {

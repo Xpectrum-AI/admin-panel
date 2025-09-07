@@ -603,9 +603,6 @@ export default function AgentsTab({}: AgentsTabProps) {
     { id: 'phone', label: 'Phone', icon: PhoneIcon, color: 'from-green-500 to-emerald-600' },
     { id: 'sms', label: 'SMS', icon: MessageSquare, color: 'from-orange-500 to-red-600' },
     { id: 'whatsapp', label: 'WhatsApp', icon: Globe, color: 'from-cyan-500 to-blue-600' },
-    { id: 'analysis', label: 'Analysis', icon: BarChart3, color: 'from-indigo-500 to-blue-600' },
-    { id: 'advanced', label: 'Advanced', icon: Settings, color: 'from-purple-500 to-pink-600' },
-    { id: 'widget', label: 'Widget', icon: Globe, color: 'from-cyan-500 to-blue-600' }
   ], []);
 
   return (

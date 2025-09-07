@@ -33,7 +33,7 @@ const nextConfig: NextConfig = {
         // Proxy agent API requests to the backend
         {
           source: '/api/agents/:path*',
-          destination: 'https://d25b4i9wbz6f8t.cloudfront.net/agents/:path*',
+          destination: 'https://d22yt2oewbcglh.cloudfront.net/agents/:path*',
         },
         // Proxy model configuration API requests to the backend
         {

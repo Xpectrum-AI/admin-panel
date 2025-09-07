@@ -13,8 +13,14 @@ export async function POST(request: NextRequest) {
     }
     
     // Get environment variables - use dedicated chatbot API URL and key
-    const CHATBOT_API_URL = process.env.NEXT_PUBLIC_CHATBOT_API_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1/chat-messages';
-    const CHATBOT_API_KEY = process.env.NEXT_PUBLIC_CHATBOT_API_KEY || 'REDACTED';
+    const CHATBOT_API_URL = process.env.NEXT_PUBLIC_CHATBOT_API_URL;
+    const CHATBOT_API_KEY = process.env.NEXT_PUBLIC_CHATBOT_API_KEY;
+    
+    if (!CHATBOT_API_URL || !CHATBOT_API_KEY) {
+      return NextResponse.json({ 
+        error: 'Missing required environment variables: NEXT_PUBLIC_CHATBOT_API_URL or NEXT_PUBLIC_CHATBOT_API_KEY' 
+      }, { status: 500 });
+    }
     
     console.log('🚀 Chat API - Making request to:', CHATBOT_API_URL);
     console.log('🚀 Chat API - Using model:', model);

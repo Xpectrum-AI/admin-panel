@@ -56,8 +56,8 @@ const sampleWhatsAppConfigs: WhatsAppConfig[] = [
     phone_number: 'whatsapp:+15558207167',
     provider: 'Twilio WhatsApp Business API',
     webhook_url: '/whatsapp/webhook',
-    agent_url: 'https://d22yt2oewbcglh.cloudfront.net/v1/chat-messages',
-    api_key: 'REDACTED',
+    agent_url: process.env.NEXT_PUBLIC_CHATBOT_API_URL || '',
+    api_key: process.env.NEXT_PUBLIC_CHATBOT_API_KEY || '',
     description: '24/7 customer support via WhatsApp'
   }
 ];
@@ -71,8 +71,8 @@ const sampleConversations: WhatsAppConversation[] = [
     status: 'active',
     last_activity: '2024-01-15T10:30:00',
     message_count: 5,
-    agent_url: 'https://d22yt2oewbcglh.cloudfront.net/v1/chat-messages',
-    api_key: 'REDACTED'
+    agent_url: process.env.NEXT_PUBLIC_CHATBOT_API_URL || '',
+    api_key: process.env.NEXT_PUBLIC_CHATBOT_API_KEY || ''
   },
   {
     conversation_id: 'conv_def456',
@@ -82,8 +82,8 @@ const sampleConversations: WhatsAppConversation[] = [
     status: 'pending',
     last_activity: '2024-01-15T09:15:00',
     message_count: 3,
-    agent_url: 'https://d22yt2oewbcglh.cloudfront.net/v1/chat-messages',
-    api_key: 'REDACTED'
+    agent_url: process.env.NEXT_PUBLIC_CHATBOT_API_URL || '',
+    api_key: process.env.NEXT_PUBLIC_CHATBOT_API_KEY || ''
   }
 ];
 
@@ -429,7 +429,7 @@ export default function WhatsAppTab({}: WhatsAppTabProps) {
                       <label className={`block text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Agent URL</label>
                       <input
                         type="text"
-                        value="https://d22yt2oewbcglh.cloudfront.net/v1/chat-messages"
+                        value={process.env.NEXT_PUBLIC_CHATBOT_API_URL || ''}
                         readOnly
                         className={`w-full px-4 py-3 border rounded-xl bg-gray-100 ${isDarkMode ? 'border-gray-600 text-gray-300' : 'border-gray-200 text-gray-600'}`}
                       />
@@ -438,7 +438,7 @@ export default function WhatsAppTab({}: WhatsAppTabProps) {
                       <label className={`block text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>API Key</label>
                       <input
                         type="password"
-                        value="REDACTED"
+                        value={process.env.NEXT_PUBLIC_CHATBOT_API_KEY || ''}
                         readOnly
                         className={`w-full px-4 py-3 border rounded-xl bg-gray-100 ${isDarkMode ? 'border-gray-600 text-gray-300' : 'border-gray-200 text-gray-600'}`}
                       />

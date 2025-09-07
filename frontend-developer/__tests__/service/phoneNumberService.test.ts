@@ -14,13 +14,11 @@ global.fetch = jest.fn();
 describe('phoneNumberService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Set required environment variable for tests
-    process.env.NEXT_PUBLIC_LIVE_API_URL = 'https://d25b4i9wbz6f8t.cloudfront.net';
+    // Environment variables are already set from .env file
   });
 
   afterEach(() => {
-    // Clean up environment variable
-    delete process.env.NEXT_PUBLIC_LIVE_API_URL;
+    // No cleanup needed - environment variables persist
   });
 
   describe('getAllAgentsPhoneNumbers', () => {
@@ -40,12 +38,12 @@ describe('phoneNumberService', () => {
       const result = await getAllAgentsPhoneNumbers();
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'https://d25b4i9wbz6f8t.cloudfront.net/agents/phonenumbers/all',
+        `${process.env.NEXT_PUBLIC_LIVE_API_URL}/agents/phonenumbers/all`,
         expect.objectContaining({
           method: 'GET',
           headers: { 
             'Content-Type': 'application/json',
-            'X-API-Key': 'xpectrum-ai@123'
+            'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY
           },
         })
       );
@@ -87,12 +85,12 @@ describe('phoneNumberService', () => {
       const result = await addUpdateAgentPhoneNumber('agent123', '+1234567890');
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'https://d25b4i9wbz6f8t.cloudfront.net/agents/phonenumber/agent123',
+        `${process.env.NEXT_PUBLIC_LIVE_API_URL}/agents/phonenumber/agent123`,
         expect.objectContaining({
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'X-API-Key': 'xpectrum-ai@123'
+            'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY
           },
           body: JSON.stringify({ phone_number: '+1234567890' }),
         })
@@ -136,12 +134,12 @@ describe('phoneNumberService', () => {
       const result = await unassignPhoneNumber('+1234567890');
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'https://d25b4i9wbz6f8t.cloudfront.net/agents/phonenumber/unassign',
+        `${process.env.NEXT_PUBLIC_LIVE_API_URL}/agents/phonenumber/unassign`,
         expect.objectContaining({
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'X-API-Key': 'xpectrum-ai@123'
+            'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY
           },
           body: JSON.stringify({ phone_number: '+1234567890' }),
         })
@@ -191,12 +189,12 @@ describe('phoneNumberService', () => {
       const result = await getAvailablePhoneNumbersByOrg('hospital_123');
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'https://d25b4i9wbz6f8t.cloudfront.net/agents/phonenumbers/by-org/hospital_123',
+        `${process.env.NEXT_PUBLIC_LIVE_API_URL}/agents/phonenumbers/by-org/hospital_123`,
         expect.objectContaining({
           method: 'GET',
           headers: { 
             'Content-Type': 'application/json',
-            'X-API-Key': 'xpectrum-ai@123'
+            'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY
           },
         })
       );
