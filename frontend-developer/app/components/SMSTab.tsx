@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
+
 import { MessageCircle, Plus, Search, Sparkles, Activity, Zap, Settings, Database, Users, Bot, Phone, Clock, RefreshCw } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+
 
 // Backend-aligned interfaces
 interface SMSConversation {
@@ -98,8 +100,8 @@ export default function SMSTab({}: SMSTabProps) {
   const { isDarkMode } = useTheme();
   const [activeTab, setActiveTab] = useState<'conversations' | 'configuration' | 'analytics' | 'health'>('conversations');
   const [selectedConversation, setSelectedConversation] = useState<SMSConversation | null>(sampleSMSConversations[0]);
-  const [selectedConfig, setSelectedConfig] = useState<SMSConfig | null>(sampleSMSConfigs[0]);
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [selectedConfig] = useState<SMSConfig | null>(sampleSMSConfigs[0]);
+  const [isStreaming] = useState(false);
   const [newMessage, setNewMessage] = useState('');
 
   return (

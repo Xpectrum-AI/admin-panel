@@ -22,6 +22,20 @@ jest.mock('@/app/components/config/TranscriberConfig', () => {
   };
 });
 
+jest.mock('@/app/components/config/ToolsConfig', () => {
+  return function MockToolsConfig() {
+    return <div data-testid="tools-config">Tools Configuration</div>;
+  };
+});
+
+// Mock ThemeContext
+jest.mock('@/app/contexts/ThemeContext', () => ({
+  useTheme: () => ({
+    isDarkMode: false,
+    toggleTheme: jest.fn(),
+  }),
+}));
+
 describe('AgentsTab', () => {
   const user = userEvent.setup();
 
@@ -44,7 +58,15 @@ describe('AgentsTab', () => {
     });
 
     it('renders with dark mode styling', () => {
-      render(<AgentsTab isDarkMode={true} />);
+      // Mock dark mode theme
+      jest.doMock('@/app/contexts/ThemeContext', () => ({
+        useTheme: () => ({
+          isDarkMode: true,
+          toggleTheme: jest.fn(),
+        }),
+      }));
+
+      render(<AgentsTab />);
 
       // Check that the component renders without errors
       expect(screen.getByText('AI Agents')).toBeInTheDocument();
@@ -135,6 +157,15 @@ describe('AgentsTab', () => {
       await user.click(transcriberTab);
 
       expect(screen.getByTestId('transcriber-config')).toBeInTheDocument();
+    });
+
+    it('switches to tools config when tools tab is clicked', async () => {
+      render(<AgentsTab />);
+
+      const toolsTab = screen.getByText('Tools');
+      await user.click(toolsTab);
+
+      expect(screen.getByTestId('tools-config')).toBeInTheDocument();
     });
 
     it('switches tabs when clicked', async () => {

@@ -27,8 +27,7 @@ export default function AccountSettings() {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const { updateUserMetadata, updatePassword } = useAuthFrontendApis();
-  const [editing, setEditing] = useState(false);
+  const { updatePassword } = useAuthFrontendApis();
   const [passwordEditing, setPasswordEditing] = useState(false);
   const [savedData, setSavedData] = useState({
     firstName: user?.firstName || '',
@@ -52,19 +51,6 @@ export default function AccountSettings() {
     }
   }, [user]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleEdit = () => {
-    setFormData(savedData);
-    setEditing(true);
-  };
-
-  const handleCancel = () => {
-    setFormData(savedData);
-    setEditing(false);
-  };
 
   const handlePasswordEdit = () => {
     setPasswordEditing(true);
@@ -78,43 +64,7 @@ export default function AccountSettings() {
     setPasswordEditing(false);
   };
 
-  const hasChanges = () => {
-    return (
-      formData.firstName !== savedData.firstName ||
-      formData.lastName !== savedData.lastName ||
-      formData.phone !== savedData.phone ||
-      formData.location !== savedData.location
-    );
-  };
 
-  const handleSaveChanges = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!hasChanges()) {
-      showError('No changes detected. Please make changes before saving.');
-      return;
-    }
-    try {
-      const response = await updateUserMetadata({
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-      });
-      await response.handle({
-        success: () => {
-          showSuccess('Account information updated successfully!');
-          setSavedData(formData);
-          setEditing(false);
-        },
-        badRequest: () => {
-          showError('Error updating account information.');
-        },
-        unexpectedOrUnhandled: () => {
-          showError('An unexpected error occurred. Please try again.');
-        },
-      });
-    } catch {
-      showError('Failed to update account information. Please try again.');
-    }
-  };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPasswordData({ ...passwordData, [e.target.name]: e.target.value });

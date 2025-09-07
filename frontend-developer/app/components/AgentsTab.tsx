@@ -9,7 +9,9 @@ import ToolsConfig from './config/ToolsConfig';
 import PhoneNumbersTab from './PhoneNumbersTab';
 import SMSTab from './SMSTab';
 import WhatsAppTab from './WhatsAppTab';
+
 import { agentConfigService } from '../../service/agentConfigService';
+
 import { useTheme } from '../contexts/ThemeContext';
 
 interface Agent {
@@ -22,6 +24,7 @@ interface Agent {
   latency?: string;
   avatar?: string;
   description?: string;
+
   organization_id?: string;
   chatbot_api?: string;
   chatbot_key?: string;
@@ -35,6 +38,9 @@ interface Agent {
   max_call_duration?: number;
   created_at?: string;
   updated_at?: string;
+
+  config?: Record<string, unknown>;
+
 }
 
 // Fallback sample agents in case API fails
@@ -63,16 +69,20 @@ const fallbackAgents: Agent[] = [
   }
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface AgentsTabProps {
+
 }
 
 export default function AgentsTab({}: AgentsTabProps) {
   const { isDarkMode } = useTheme();
+
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+
   const [activeConfigTab, setActiveConfigTab] = useState('model');
-  const [isCreating, setIsCreating] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   const [isEditing, setIsEditing] = useState(false);
   const [showAgentPrefixModal, setShowAgentPrefixModal] = useState(false);
   const [agentPrefix, setAgentPrefix] = useState('');
@@ -84,6 +94,7 @@ export default function AgentsTab({}: AgentsTabProps) {
   const [modelConfig, setModelConfig] = useState<any>(null);
   const [voiceConfig, setVoiceConfig] = useState<any>(null);
   const [transcriberConfig, setTranscriberConfig] = useState<any>(null);
+
 
   // Refs for scrolling to sections
   const modelSectionRef = useRef<HTMLDivElement>(null);
@@ -430,6 +441,12 @@ export default function AgentsTab({}: AgentsTabProps) {
     }, 100);
   }, [activeConfigTab]); // Remove voiceConfig and transcriberConfig from dependencies
 
+  // Handle agent creation callback
+  const handleAgentCreated = () => {
+    // You can add additional logic here like refreshing the agent list
+    // or showing a success message
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -646,6 +663,16 @@ export default function AgentsTab({}: AgentsTabProps) {
                 <span className="font-semibold">Create Agent</span>
               </button>
             </div>
+
+            <button
+              onClick={() => {}}
+              className="group relative px-4 sm:px-5 lg:px-6 py-2 sm:py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg sm:rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-lg sm:rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+              <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="font-semibold text-sm sm:text-base">Create Agent</span>
+            </button>
+
           </div>
         </div>
 
@@ -929,6 +956,7 @@ export default function AgentsTab({}: AgentsTabProps) {
                   )}
 
                   {activeConfigTab === 'voice' && (
+
                     <VoiceConfig 
                       ref={voiceSectionRef} 
                       agentName={selectedAgent?.name || 'default'}
@@ -946,6 +974,7 @@ export default function AgentsTab({}: AgentsTabProps) {
                       existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).transcriberConfig : null}
                       isEditing={isEditing}
                     />
+
                   )}
 
                   {activeConfigTab === 'tools' && (
@@ -956,9 +985,11 @@ export default function AgentsTab({}: AgentsTabProps) {
                       voiceConfig={voiceConfig}
                       transcriberConfig={transcriberConfig}
                       onAgentCreated={handleAgentCreated}
+
                       isEditing={isEditing}
                       existingAgent={isEditing ? selectedAgent : null}
                       existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).toolsConfig : null}
+
                     />
                   )}
 

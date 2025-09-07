@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import Home from '@/app/page';
+import { ThemeProvider } from '@/app/contexts/ThemeContext';
 
 // Mock Next.js navigation
 jest.mock('next/navigation', () => ({
@@ -10,19 +11,27 @@ jest.mock('next/navigation', () => ({
 }));
 
 describe('Home Page', () => {
+  const renderWithTheme = (component: React.ReactElement) => {
+    return render(
+      <ThemeProvider>
+        {component}
+      </ThemeProvider>
+    );
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   describe('Rendering', () => {
     it('renders the developer dashboard', () => {
-      render(<Home />);
+      renderWithTheme(<Home />);
 
       expect(screen.getByText('Developer Dashboard')).toBeInTheDocument();
     });
 
     it('renders the welcome message', () => {
-      render(<Home />);
+      renderWithTheme(<Home />);
 
       expect(screen.getByText(/Welcome back/)).toBeInTheDocument();
     });
@@ -30,18 +39,22 @@ describe('Home Page', () => {
 
   describe('Redirect Behavior', () => {
     it('renders the developer dashboard directly', () => {
-      render(<Home />);
+      renderWithTheme(<Home />);
 
       expect(screen.getByText('Developer Dashboard')).toBeInTheDocument();
     });
 
     it('renders the dashboard consistently', () => {
-      const { rerender } = render(<Home />);
+      const { rerender } = renderWithTheme(<Home />);
 
       expect(screen.getByText('Developer Dashboard')).toBeInTheDocument();
 
       // Re-render should still show the dashboard
-      rerender(<Home />);
+      rerender(
+        <ThemeProvider>
+          <Home />
+        </ThemeProvider>
+      );
 
       expect(screen.getByText('Developer Dashboard')).toBeInTheDocument();
     });
@@ -49,13 +62,13 @@ describe('Home Page', () => {
 
   describe('Dashboard Content', () => {
     it('shows the overview section', () => {
-      render(<Home />);
+      renderWithTheme(<Home />);
 
       expect(screen.getByRole('button', { name: 'Overview' })).toBeInTheDocument();
     });
 
     it('displays the stats grid', () => {
-      render(<Home />);
+      renderWithTheme(<Home />);
 
       expect(screen.getByText('Active Assistants')).toBeInTheDocument();
       expect(screen.getByText('Active Calls')).toBeInTheDocument();
@@ -64,14 +77,14 @@ describe('Home Page', () => {
 
   describe('Styling', () => {
     it('applies correct dashboard styling', () => {
-      render(<Home />);
+      renderWithTheme(<Home />);
 
       const dashboard = screen.getByText('Developer Dashboard');
       expect(dashboard).toBeInTheDocument();
     });
 
     it('applies correct sidebar styling', () => {
-      render(<Home />);
+      renderWithTheme(<Home />);
 
       expect(screen.getByText('Control Center')).toBeInTheDocument();
     });
