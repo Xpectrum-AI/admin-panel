@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const authUrl = process.env.NEXT_PUBLIC_PROPELAUTH_URL;
     const apiKey = process.env.NEXT_PUBLIC_PROPELAUTH_API_KEY;
