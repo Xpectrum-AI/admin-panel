@@ -1,42 +1,8 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { render } from '../../utils/test-utils';
 import PhoneNumbersTab from '@/app/components/PhoneNumbersTab';
-
-// Mock the phone number service
-jest.mock('@/service/phoneNumberService', () => ({
-  getAllAgentsPhoneNumbers: jest.fn(),
-  addUpdateAgentPhoneNumber: jest.fn(),
-  getAvailablePhoneNumbersByOrg: jest.fn(),
-  unassignPhoneNumber: jest.fn(),
-}));
-
-// Mock the agent config service
-jest.mock('@/service/agentConfigService', () => ({
-  agentConfigService: {
-    getAgentsByOrg: jest.fn(),
-  },
-}));
-
-// Mock ThemeContext
-jest.mock('@/app/contexts/ThemeContext', () => ({
-  useTheme: () => ({
-    isDarkMode: false,
-    toggleTheme: jest.fn(),
-  }),
-}));
-
-import { getAllAgentsPhoneNumbers, addUpdateAgentPhoneNumber, getAvailablePhoneNumbersByOrg, unassignPhoneNumber } from '@/service/phoneNumberService';
-import { agentConfigService } from '@/service/agentConfigService';
-
-const mockPhoneNumberService = {
-  getAllAgentsPhoneNumbers: getAllAgentsPhoneNumbers as jest.MockedFunction<typeof getAllAgentsPhoneNumbers>,
-  addUpdateAgentPhoneNumber: addUpdateAgentPhoneNumber as jest.MockedFunction<typeof addUpdateAgentPhoneNumber>,
-  getAvailablePhoneNumbersByOrg: getAvailablePhoneNumbersByOrg as jest.MockedFunction<typeof getAvailablePhoneNumbersByOrg>,
-  unassignPhoneNumber: unassignPhoneNumber as jest.MockedFunction<typeof unassignPhoneNumber>,
-};
-
-const mockAgentConfigService = agentConfigService as jest.Mocked<typeof agentConfigService>;
 
 describe('PhoneNumbersTab', () => {
   const user = userEvent.setup();
@@ -44,24 +10,6 @@ describe('PhoneNumbersTab', () => {
   beforeEach(() => {
     // Mock scrollIntoView
     Element.prototype.scrollIntoView = jest.fn();
-    jest.clearAllMocks();
-    
-    // Mock successful API responses to prevent act() warnings
-    mockPhoneNumberService.getAllAgentsPhoneNumbers.mockResolvedValue({
-      success: true,
-      data: []
-    });
-    
-    mockAgentConfigService.getAgentsByOrg.mockResolvedValue({
-      success: true,
-      data: [],
-      message: 'Agents retrieved successfully'
-    });
-    
-    mockPhoneNumberService.getAvailablePhoneNumbersByOrg.mockResolvedValue({
-      success: true,
-      data: []
-    });
   });
 
   afterEach(() => {
@@ -79,14 +27,6 @@ describe('PhoneNumbersTab', () => {
     });
 
     it('renders with dark mode styling', async () => {
-      // Mock dark mode theme
-      jest.doMock('@/app/contexts/ThemeContext', () => ({
-        useTheme: () => ({
-          isDarkMode: true,
-          toggleTheme: jest.fn(),
-        }),
-      }));
-
       await act(async () => {
         render(<PhoneNumbersTab />);
       });
@@ -95,43 +35,12 @@ describe('PhoneNumbersTab', () => {
       expect(screen.getByText('Phone Numbers Management')).toBeInTheDocument();
     });
 
-    it('shows the add phone number button', async () => {
+    it('shows the assign number button', async () => {
       await act(async () => {
         render(<PhoneNumbersTab />);
       });
 
       expect(screen.getByText('Assign Number')).toBeInTheDocument();
-    });
-  });
-
-  describe('Tab Navigation', () => {
-    it('renders inbound and outbound tabs', async () => {
-      await act(async () => {
-        render(<PhoneNumbersTab />);
-      });
-
-      // The component doesn't have Inbound/Outbound tabs
-      // It shows a search interface instead
-      expect(screen.getByPlaceholderText('Search phone numbers...')).toBeInTheDocument();
-    });
-
-    it('shows inbound tab as active by default', async () => {
-      await act(async () => {
-        render(<PhoneNumbersTab />);
-      });
-
-      // The component shows "Phone Numbers Management" instead of "Inbound" tabs
-      expect(screen.getByText('Phone Numbers Management')).toBeInTheDocument();
-    });
-
-    it('allows switching between inbound and outbound tabs', async () => {
-      await act(async () => {
-        render(<PhoneNumbersTab />);
-      });
-
-      // The component doesn't have Inbound/Outbound tabs
-      // It shows a search interface and "Select a Phone Number" message
-      expect(screen.getByText('Select a Phone Number')).toBeInTheDocument();
     });
   });
 
@@ -142,8 +51,25 @@ describe('PhoneNumbersTab', () => {
       });
 
       // The search input should be present
-      const searchInput = screen.getAllByRole('textbox')[0];
+      const searchInput = screen.getByPlaceholderText('Search phone numbers...');
       expect(searchInput).toBeInTheDocument();
+    });
+
+    it('shows organization information', async () => {
+      await act(async () => {
+        render(<PhoneNumbersTab />);
+      });
+
+      expect(screen.getByText('Organization: Developer')).toBeInTheDocument();
+    });
+
+    it('shows select phone number message when no phone number is selected', async () => {
+      await act(async () => {
+        render(<PhoneNumbersTab />);
+      });
+
+      expect(screen.getByText('Select a Phone Number')).toBeInTheDocument();
+      expect(screen.getByText('Choose a phone number from the sidebar to view its details')).toBeInTheDocument();
     });
   });
 

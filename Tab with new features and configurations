@@ -1,0 +1,267 @@
+[1mdiff --git a/frontend-developer/app/components/AgentsTab.tsx b/frontend-developer/app/components/AgentsTab.tsx[m
+[1mindex 0fb81f9..f50c913 100644[m
+[1m--- a/frontend-developer/app/components/AgentsTab.tsx[m
+[1m+++ b/frontend-developer/app/components/AgentsTab.tsx[m
+[36m@@ -1,11 +1,14 @@[m
+ 'use client';[m
+ [m
+ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';[m
+[31m-import { Bot, Settings, Mic, Wrench, BarChart3, Globe, MessageSquare, Sparkles, Zap, Activity, Search, RefreshCw, Trash2 } from 'lucide-react';[m
+[32m+[m[32mimport { Bot, Settings, Mic, Wrench, BarChart3, Globe, MessageSquare, Sparkles, Zap, Activity, Search, RefreshCw, Trash2, Phone as PhoneIcon, ChevronDown } from 'lucide-react';[m
+ import ModelConfig from './config/ModelConfig';[m
+ import VoiceConfig from './config/VoiceConfig';[m
+ import TranscriberConfig from './config/TranscriberConfig';[m
+ import ToolsConfig from './config/ToolsConfig';[m
+[32m+[m[32mimport PhoneNumbersTab from './PhoneNumbersTab';[m
+[32m+[m[32mimport SMSTab from './SMSTab';[m
+[32m+[m[32mimport WhatsAppTab from './WhatsAppTab';[m
+ import { agentConfigService } from '../../service/agentConfigService';[m
+ import { useTheme } from '../contexts/ThemeContext';[m
+ [m
+[36m@@ -86,9 +89,6 @@[m [mexport default function AgentsTab({}: AgentsTabProps) {[m
+   const voiceSectionRef = useRef<HTMLDivElement>(null);[m
+   const transcriberSectionRef = useRef<HTMLDivElement>(null);[m
+   const toolsSectionRef = useRef<HTMLDivElement>(null);[m
+[31m-  const analysisSectionRef = useRef<HTMLDivElement>(null);[m
+[31m-  const advancedSectionRef = useRef<HTMLDivElement>(null);[m
+[31m-  const widgetSectionRef = useRef<HTMLDivElement>(null);[m
+ [m
+   // Fetch agents from backend[m
+   const fetchAgents = useCallback(async () => {[m
+[36m@@ -405,7 +405,7 @@[m [mexport default function AgentsTab({}: AgentsTabProps) {[m
+     }[m
+     [m
+     setActiveConfigTab(tabId);[m
+[31m-    [m
+[32m+[m
+     // Scroll to the corresponding section[m
+     setTimeout(() => {[m
+       switch (tabId) {[m
+[36m@@ -421,14 +421,14 @@[m [mexport default function AgentsTab({}: AgentsTabProps) {[m
+         case 'tools':[m
+           toolsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });[m
+           break;[m
+[31m-        case 'analysis':[m
+[31m-          analysisSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });[m
+[32m+[m[32m        case 'phone':[m
+[32m+[m[32m          // Scroll to phone section if needed[m
+           break;[m
+[31m-        case 'advanced':[m
+[31m-          advancedSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });[m
+[32m+[m[32m        case 'sms':[m
+[32m+[m[32m          // Scroll to SMS section if needed[m
+           break;[m
+[31m-        case 'widget':[m
+[31m-          widgetSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });[m
+[32m+[m[32m        case 'whatsapp':[m
+[32m+[m[32m          // Scroll to WhatsApp section if needed[m
+           break;[m
+       }[m
+     }, 100);[m
+[36m@@ -591,71 +591,55 @@[m [mexport default function AgentsTab({}: AgentsTabProps) {[m
+     { id: 'voice', label: 'Voice', icon: Mic, color: 'from-green-500 to-teal-600' },[m
+     { id: 'transcriber', label: 'Transcriber', icon: MessageSquare, color: 'from-orange-500 to-red-600' },[m
+     { id: 'tools', label: 'Tools', icon: Wrench, color: 'from-gray-600 to-gray-800' },[m
+[31m-    { id: 'analysis', label: 'Analysis', icon: BarChart3, color: 'from-indigo-500 to-blue-600' },[m
+[31m-    { id: 'advanced', label: 'Advanced', icon: Settings, color: 'from-purple-500 to-pink-600' },[m
+[31m-    { id: 'widget', label: 'Widget', icon: Globe, color: 'from-cyan-500 to-blue-600' }[m
+[32m+[m[32m    { id: 'phone', label: 'Phone', icon: PhoneIcon, color: 'from-green-500 to-emerald-600' },[m
+[32m+[m[32m    { id: 'sms', label: 'SMS', icon: MessageSquare, color: 'from-orange-500 to-red-600' },[m
+[32m+[m[32m    { id: 'whatsapp', label: 'WhatsApp', icon: Globe, color: 'from-cyan-500 to-blue-600' }[m
+   ], []);[m
+ [m
+   return ([m
+[31m-    <div className="w-full max-w-full mx-auto p-2 sm:p-4 lg:p-6">[m
+[31m-      <div className={`rounded-2xl border shadow-xl backdrop-blur-sm ${isDarkMode ? 'bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800 border-gray-700/50' : 'bg-gradient-to-br from-white via-gray-50 to-white border-gray-200/50'}`}>[m
+[32m+[m[32m    <div className=" max-w-9xl mx-auto space-y-8 rounded-2xl">[m
+[32m+[m[32m      <div className={` mx-auto rounded-2xl border shadow-xl backdrop-blur-sm ${isDarkMode ? 'bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800 border-gray-700/50' : 'bg-gradient-to-br from-white via-gray-50 to-white border-gray-200/50'}`}>[m
+         {/* Header */}[m
+[31m-        <div className={`p-4 sm:p-6 lg:p-8 border-b rounded-t-2xl ${isDarkMode ? 'border-gray-700/50 bg-gradient-to-r from-green-900/20 to-emerald-900/20' : 'border-gray-200/50 bg-gradient-to-r from-green-50 to-emerald-50'}`}>[m
+[31m-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">[m
+[31m-            <div className="space-y-2">[m
+[31m-              <div className="flex items-center gap-3">[m
+[32m+[m[32m        <div className={`px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 border-b rounded-t-2xl ${isDarkMode ? 'border-gray-700/50 bg-gradient-to-r from-green-900/20 to-emerald-900/20' : 'border-gray-200/50 bg-gradient-to-r from-green-50 to-emerald-50'}`}>[m
+[32m+[m[32m          <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 sm:gap-6">[m
+[32m+[m[32m            <div className="space-y-2 text-center sm:text-left">[m
+[32m+[m[32m              <div className="flex items-center justify-center sm:justify-start gap-3">[m
+                 <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl">[m
+                   <Bot className="h-5 w-5 sm:h-6 sm:w-6 text-white" />[m
+                 </div>[m
+[31m-                <h2 className={`text-2xl sm:text-3xl font-bold bg-clip-text text-transparent ${isDarkMode ? 'bg-gradient-to-r from-white to-gray-300' : 'bg-gradient-to-r from-gray-900 to-gray-700'}`}>[m
+[32m+[m[32m                <h2 className={`text-xl sm:text-2xl lg:text-3xl font-bold bg-clip-text text-transparent ${isDarkMode ? 'bg-gradient-to-r from-white to-gray-300' : 'bg-gradient-to-r from-gray-900 to-gray-700'}`}>[m
+                   AI Agents[m
+                 </h2>[m
+               </div>[m
+[31m-              <p className={`text-base sm:text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>[m
+[31m-                Craft and configure intelligent agents for organization: <span className="font-semibold text-green-600">{currentOrganizationId}</span>[m
+[31m-              </p>[m
+[31m-            </div>[m
+[31m-            <div className="flex items-center gap-2 sm:gap-3">[m
+[31m-              <button[m
+[31m-                onClick={fetchAgents}[m
+[31m-                disabled={isLoadingAgents}[m
+[31m-                className={`group relative px-3 sm:px-4 py-2 sm:py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2 text-sm sm:text-base ${[m
+[31m-                  isDarkMode [m
+[31m-                    ? 'bg-gradient-to-r from-gray-700 to-gray-800 text-gray-300 hover:from-gray-600 hover:to-gray-700' [m
+[31m-                    : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300'[m
+[31m-                }`}[m
+[31m-              >[m
+[31m-                <RefreshCw className={`h-4 w-4 sm:h-5 sm:w-5 ${isLoadingAgents ? 'animate-spin' : ''}`} />[m
+[31m-                <span className="font-semibold hidden sm:inline">Refresh</span>[m
+[31m-              </button>[m
+[31m-              <button[m
+[31m-                onClick={handleCreateNewAgent}[m
+[31m-                className="group relative px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2 sm:gap-3 text-sm sm:text-base"[m
+[31m-              >[m
+[31m-                <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>[m
+[31m-                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />[m
+[31m-                <span className="font-semibold">Create Agent</span>[m
+[31m-              </button>[m
+[32m+[m[32m              <p className={`text-sm sm:text-base lg:text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Craft and configure intelligent agents</p>[m
+             </div>[m
+[32m+[m[32m            <button[m
+[32m+[m[32m              onClick={handleCreateNewAgent}[m
+[32m+[m[32m              className="group relative px-4 sm:px-5 lg:px-6 py-2 sm:py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg sm:rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center"[m
+[32m+[m[32m            >[m
+[32m+[m[32m              <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-lg sm:rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>[m
+[32m+[m[32m              <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />[m
+[32m+[m[32m              <span className="font-semibold text-sm sm:text-base">Create Agent</span>[m
+[32m+[m[32m            </button>[m
+           </div>[m
+         </div>[m
+ [m
+[31m-        <div className="flex flex-col lg:flex-row">[m
+[32m+[m[32m        <div className="flex flex-col lg:flex-row min-h-0 ">[m
+           {/* Left Sidebar - Agent List */}[m
+[31m-          <div className={`w-full lg:w-80 xl:w-96 border-b lg:border-b-0 lg:border-r ${isDarkMode ? 'border-gray-700/50 bg-gradient-to-b from-gray-800/50 to-gray-900' : 'border-gray-200/50 bg-gradient-to-b from-gray-50/50 to-white'}`}>[m
+[32m+[m[32m          <div className={`${isDarkMode ? 'border-gray-700/50 bg-gradient-to-b from-gray-800/50 to-gray-900' : 'border-gray-200/50 bg-gradient-to-b from-gray-50/50 to-white'} border-b lg:border-b-0 lg:border-r w-full lg:w-80 xl:w-96`}>[m
+             <div className="p-4 sm:p-6">[m
+               <div className="mb-4 sm:mb-6">[m
+                 <div className="relative group">[m
+[31m-                  <Search className={`absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 transition-colors ${isDarkMode ? 'text-gray-500 group-focus-within:text-green-400' : 'text-gray-400 group-focus-within:text-green-500'}`} />[m
+[32m+[m[32m                  <Search className={`absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 transition-colors ${isDarkMode ? 'text-gray-500 group-focus-within:text-green-400' : 'text-gray-400 group-focus-within:text-green-500'}`} />[m
+                   <input[m
+                     type="text"[m
+                     placeholder="Search your agents..."[m
+[31m-                    className={`w-full pl-10 sm:pl-12 pr-4 py-2 sm:py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 backdrop-blur-sm transition-all duration-300 text-sm sm:text-base ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'}`}[m
+[32m+[m[32m                    className={`w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 backdrop-blur-sm transition-all duration-300 text-sm sm:text-base ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'}`}[m
+                   />[m
+                 </div>[m
+               </div>[m
+[31m-              [m
+[31m-              <div className="space-y-3">[m
+[32m+[m
+[32m+[m[32m              <div className="space-y-2 sm:space-y-3">[m
+                 {isLoadingAgents ? ([m
+                   <div className="flex justify-center items-center py-8">[m
+                     <RefreshCw className="h-6 w-6 text-green-500 animate-spin" />[m
+[36m@@ -686,7 +670,7 @@[m [mexport default function AgentsTab({}: AgentsTabProps) {[m
+                   </div>[m
+                 ) : ([m
+                   agents.map((agent) => ([m
+[31m-                  <div[m
+[32m+[m[32m                  <button[m
+                     key={agent.id}[m
+                      onClick={() => {[m
+                        setSelectedAgent(agent);[m
+[36m@@ -698,8 +682,7 @@[m [mexport default function AgentsTab({}: AgentsTabProps) {[m
+                          setTranscriberConfig(agent.stt_config);[m
+                        }[m
+                      }}[m
+[31m-                      className={`w-full p-3 sm:p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-[1.02] cursor-pointer ${[m
+[31m-                      selectedAgent?.id === agent.id[m
+[32m+[m[32m                    className={`w-full p-3 sm:p-4 rounded-lg sm:rounded-xl text-left transition-all duration-300 transform hover:scale-[1.02] ${selectedAgent?.id === agent.id[m
+                         ? isDarkMode [m
+                           ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-2 border-green-700/50 shadow-lg'[m
+                           : 'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 shadow-lg'[m
+[36m@@ -709,8 +692,7 @@[m [mexport default function AgentsTab({}: AgentsTabProps) {[m
+                     }`}[m
+                   >[m
+                       <div className="flex items-start gap-3 sm:gap-4">[m
+[31m-                        <div className={`text-xl sm:text-2xl p-2 rounded-lg ${[m
+[31m-                          agent.status === 'active' [m
+[32m+[m[32m                      <div className={`text-xl sm:text-2xl p-1.5 sm:p-2 rounded-lg flex-shrink-0 ${agent.status === 'active'[m
+                             ? isDarkMode ? 'bg-green-900/50' : 'bg-green-100'[m
+                           : agent.status === 'draft' [m
+                             ? isDarkMode ? 'bg-yellow-900/50' : 'bg-yellow-100'[m
+[36m@@ -719,10 +701,9 @@[m [mexport default function AgentsTab({}: AgentsTabProps) {[m
+                           {agent.avatar}[m
+                         </div>[m
+                         <div className="flex-1 min-w-0">[m
+[31m-                          <div className="flex items-center justify-between mb-1">[m
+[32m+[m[32m                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 gap-1 sm:gap-2">[m
+                             <h3 className={`font-semibold truncate text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{agent.name}</h3>[m
+[31m-                            <div className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${[m
+[31m-                              agent.status === 'active' [m
+[32m+[m[32m                          <div className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium self-start sm:self-auto ${agent.status === 'active'[m
+                                 ? isDarkMode ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-800'[m
+                               : agent.status === 'draft' [m
+                                 ? isDarkMode ? 'bg-yellow-900/50 text-yellow-300' : 'bg-yellow-100 text-yellow-800'[m
+[36m@@ -765,7 +746,7 @@[m [mexport default function AgentsTab({}: AgentsTabProps) {[m
+                           </button>[m
+                         </div>[m
+                       </div>[m
+[31m-                    </div>[m
+[32m+[m[32m                   </button>[m
+                   ))[m
+                 )}[m
+               </div>[m
+[36m@@ -812,14 +793,14 @@[m [mexport default function AgentsTab({}: AgentsTabProps) {[m
+                       </div>[m
+                     )}[m
+                   </div>[m
+[31m-                  [m
+[32m+[m
+                   {/* Status Indicator */}[m
+                   <div className="flex items-center gap-2">[m
+                     <div className={`w-2 h-2 rounded-full ${[m
+                       selectedAgent.status === 'active' ? 'bg-green-500 animate-pulse' :[m
+                       selectedAgent.status === 'draft' ? 'bg-yellow-500' :[m
+[31m-                      'bg-gray-500'[m
+[31m-                    }`}></div>[m
+[32m+[m[32m                        'bg-gray-500'[m
+[32m+[m[32m                      }`}></div>[m
+                     <span className={`text-sm font-medium capitalize ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{selectedAgent.status}</span>[m
+                     {selectedAgent.status === 'active' && ([m
+                       <Activity className="h-4 w-4 text-green-500 animate-pulse" />[m
+[36m@@ -901,47 +882,23 @@[m [mexport default function AgentsTab({}: AgentsTabProps) {[m
+                     />[m
+                   )}[m
+ [m
+[31m-                  {activeConfigTab === 'analysis' && ([m
+[31m-                    <div ref={analysisSectionRef}>[m
+[31m-                      <div className="text-center py-12">[m
+[31m-                        <div className={`p-4 rounded-2xl inline-block mb-4 ${isDarkMode ? 'bg-gradient-to-r from-gray-800 to-gray-700' : 'bg-gradient-to-r from-gray-100 to-gray-200'}`}>[m
+[31m-                          <BarChart3 className={`h-8 w-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />[m
+[31m-                        </div>[m
+[31m-                        <h4 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Analysis Configuration</h4>[m
+[31m-                        <p className={`max-w-md mx-auto ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>[m
+[31m-                          This section is under development and will be available soon with advanced configuration options.[m
+[31m-                        </p>[m
+[31m-                      </div>[m
+[31m-                    </div>[m
+[32m+[m[32m                  {activeConfigTab === 'phone' && ([m
+[32m+[m[32m                    <PhoneNumbersTab />[m
+                   )}[m
+ [m
+[31m-                  {activeConfigTab === 'advanced' && ([m
+[31m-                    <div ref={advancedSectionRef}>[m
+[31m-                      <div className="text-center py-12">[m
+[31m-                        <div className={`p-4 rounded-2xl inline-block mb-4 ${isDarkMode ? 'bg-gradient-to-r from-gray-800 to-gray-700' : 'bg-gradient-to-r from-gray-100 to-gray-200'}`}>[m
+[31m-                          <Settings className={`h-8 w-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />[m
+[31m-                        </div>[m
+[31m-                        <h4 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Advanced Configuration</h4>[m
+[31m-                        <p className={`max-w-md mx-auto ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>[m
+[31m-                          This section is under development and will be available soon with advanced configuration options.[m
+[31m-                        </p>[m
+[31m-                      </div>[m
+[31m-                    </div>[m
+[32m+[m[32m                  {activeConfigTab === 'sms' && ([m
+[32m+[m[32m                    <SMSTab />[m
+                   )}[m
+ [m
+[31m-                  {activeConfigTab === 'widget' && ([m
+[31m-                    <div ref={widgetSectionRef}>[m
+[31m-                      <div className="text-center py-12">[m
+[31m-                        <div className={`p-4 rounded-2xl inline-block mb-4 ${isDarkMode ? 'bg-gradient-to-r from-gray-800 to-gray-700' : 'bg-gradient-to-r from-gray-100 to-gray-200'}`}>[m
+[31m-                          <Globe className={`h-8 w-8 ${

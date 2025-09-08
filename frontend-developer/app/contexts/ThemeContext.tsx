@@ -11,37 +11,27 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [isDarkMode, setIsDarkMode] = useState(false); // Default to light mode
+  const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark mode
 
   // Load theme preference from localStorage on mount
   useEffect(() => {
-    try {
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme !== null) {
-        setIsDarkMode(savedTheme === 'dark');
-      }
-    } catch (error) {
-      console.warn('Failed to load theme from localStorage:', error);
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme !== null) {
+      setIsDarkMode(savedTheme === 'dark');
     }
   }, []);
 
   // Save theme preference to localStorage whenever it changes
   useEffect(() => {
-    try {
-      localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
-    } catch (error) {
-      console.warn('Failed to save theme to localStorage:', error);
-    }
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
     
     // Apply theme to document body for global CSS variables
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
-      document.body.classList.add('dark', 'dark:bg-gray-900', 'dark:text-white');
-      document.body.classList.remove('bg-white', 'text-gray-900');
+      document.body.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
-      document.body.classList.remove('dark', 'dark:bg-gray-900', 'dark:text-white');
-      document.body.classList.add('bg-white', 'text-gray-900');
+      document.body.classList.remove('dark');
     }
   }, [isDarkMode]);
 

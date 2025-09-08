@@ -1,6 +1,7 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { render } from '../../utils/test-utils';
 import WhatsAppTab from '@/app/components/WhatsAppTab';
 
 describe('WhatsAppTab', () => {
@@ -19,15 +20,15 @@ describe('WhatsAppTab', () => {
     it('renders the WhatsApp tab with default props', () => {
       render(<WhatsAppTab />);
 
-      expect(screen.getByText('WhatsApp Business')).toBeInTheDocument();
+      expect(screen.getByText('WhatsApp Business Platform')).toBeInTheDocument();
       expect(screen.getByText('Conversational AI messaging with Dify integration')).toBeInTheDocument();
     });
 
     it('renders with dark mode styling', () => {
-      render(<WhatsAppTab isDarkMode={true} />);
+      render(<WhatsAppTab />);
 
       // Check that the component renders without errors
-      expect(screen.getByText('WhatsApp Business')).toBeInTheDocument();
+      expect(screen.getByText('WhatsApp Business Platform')).toBeInTheDocument();
     });
 
     it('shows the new conversation button', () => {
@@ -82,7 +83,7 @@ describe('WhatsAppTab', () => {
     it('renders the component without errors', () => {
       render(<WhatsAppTab />);
 
-      expect(screen.getByText('WhatsApp Business')).toBeInTheDocument();
+      expect(screen.getByText('WhatsApp Business Platform')).toBeInTheDocument();
     });
   });
 
@@ -90,7 +91,7 @@ describe('WhatsAppTab', () => {
     it('renders the component without errors', () => {
       render(<WhatsAppTab />);
 
-      expect(screen.getByText('WhatsApp Business')).toBeInTheDocument();
+      expect(screen.getByText('WhatsApp Business Platform')).toBeInTheDocument();
     });
   });
 
@@ -98,7 +99,7 @@ describe('WhatsAppTab', () => {
     it('renders the component without errors', () => {
       render(<WhatsAppTab />);
 
-      expect(screen.getByText('WhatsApp Business')).toBeInTheDocument();
+      expect(screen.getByText('WhatsApp Business Platform')).toBeInTheDocument();
     });
   });
 });
