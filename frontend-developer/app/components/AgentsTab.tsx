@@ -383,6 +383,11 @@ export default function AgentsTab({}: AgentsTabProps) {
     console.log('Transcriber config changed:', config);
   }, []);
 
+  const handleToolsConfigChange = useCallback((config: any) => {
+    // Don't update selectedAgent here to avoid infinite loops
+    console.log('Tools config changed:', config);
+  }, []);
+
   // Handle deleting an agent
   const handleDeleteAgent = useCallback(async (agent: Agent) => {
     if (window.confirm(`Are you sure you want to delete agent "${agent.name}"? This action cannot be undone.`)) {
@@ -977,7 +982,7 @@ export default function AgentsTab({}: AgentsTabProps) {
                     <ToolsConfig 
                       ref={toolsSectionRef} 
                       agentName={selectedAgent?.name || 'default'}
-                      onConfigChange={handleModelConfigChange}
+                      onConfigChange={handleToolsConfigChange}
                       existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).toolsConfig : null}
                       isEditing={isEditing}
                     />
