@@ -84,6 +84,7 @@ export default function AgentsTab({}: AgentsTabProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [showAgentPrefixModal, setShowAgentPrefixModal] = useState(false);
   const [agentPrefix, setAgentPrefix] = useState('');
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
@@ -441,11 +442,6 @@ export default function AgentsTab({}: AgentsTabProps) {
     }, 100);
   }, [activeConfigTab]); // Remove voiceConfig and transcriberConfig from dependencies
 
-  // Handle agent creation callback
-  const handleAgentCreated = () => {
-    // You can add additional logic here like refreshing the agent list
-    // or showing a success message
-  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -981,15 +977,9 @@ export default function AgentsTab({}: AgentsTabProps) {
                     <ToolsConfig 
                       ref={toolsSectionRef} 
                       agentName={selectedAgent?.name || 'default'}
-                      modelConfig={modelConfig}
-                      voiceConfig={voiceConfig}
-                      transcriberConfig={transcriberConfig}
-                      onAgentCreated={handleAgentCreated}
-
-                      isEditing={isEditing}
-                      existingAgent={isEditing ? selectedAgent : null}
+                      onConfigChange={handleModelConfigChange}
                       existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).toolsConfig : null}
-
+                      isEditing={isEditing}
                     />
                   )}
 
