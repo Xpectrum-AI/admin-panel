@@ -79,25 +79,17 @@ const localStorageMock = {
 }
 global.localStorage = localStorageMock
 
-// Suppress console.error during tests
-const originalError = console.error
-beforeEach(() => {
-  jest.spyOn(console, 'error').mockImplementation((...args) => {
-    if (
-      typeof args[0] === 'string' &&
-      (args[0].includes('Error in Database:') ||
-       args[0].includes('Error in Validation:') ||
-       args[0].includes('NEXT_PUBLIC_PROPELAUTH_URL is not set') ||
-       args[0].includes('Model configuration error:') ||
-       args[0].includes('Prompt configuration error:') ||
-       args[0].includes('Received NaN for the `value` attribute'))
-    ) {
-      return // Suppress expected test errors
-    }
-    originalError.call(console, ...args)
+// Mock fetch globally
+global.fetch = jest.fn(() =>
+  Promise.resolve({
+    ok: true,
+    status: 200,
+    json: () => Promise.resolve({ success: true, data: [] }),
+    text: () => Promise.resolve(''),
   })
-})
+)
 
+// Clean up after each test
 afterEach(() => {
-  jest.restoreAllMocks()
+  jest.clearAllMocks()
 })

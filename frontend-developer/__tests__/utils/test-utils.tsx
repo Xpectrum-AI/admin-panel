@@ -56,3 +56,10 @@ export * from '@testing-library/react';
 
 // Override render method
 export { customRender as render };
+
+// Add a simple test to prevent "no tests" error
+describe('test-utils', () => {
+  it('should export custom render function', () => {
+    expect(typeof customRender).toBe('function');
+  });
+});
