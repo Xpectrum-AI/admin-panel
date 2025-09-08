@@ -84,12 +84,6 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
     setTimeout(() => {
       setIsCheckingStatus(false);
       // Show current local status
-      console.log('Current configuration status:', {
-        modelConfigured: isModelConfigured,
-        promptConfigured: isPromptConfigured,
-        currentModelConfig,
-        currentPromptConfig
-      });
     }, 500);
   };
 
@@ -107,9 +101,8 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
     try {
       localStorage.removeItem(`modelConfig_${agentName}`);
       localStorage.removeItem(`promptConfig_${agentName}`);
-      console.log('Configuration status cleared from localStorage');
     } catch (error) {
-      console.error('Error clearing localStorage:', error);
+      // Silently handle localStorage errors
     }
     
     // Also reset the form fields to defaults
@@ -188,7 +181,6 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
           setSystemPrompt(promptData.prompt);
         }
       } catch (error) {
-        console.error('Error loading persistent configuration status:', error);
         // Fallback to unconfigured state
         setIsModelConfigured(false);
         setIsPromptConfigured(false);
@@ -263,9 +255,8 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
         // Save to localStorage for persistence
         try {
           localStorage.setItem(`modelConfig_${agentName}`, JSON.stringify(modelConfig));
-          console.log('Model configuration saved to localStorage');
         } catch (error) {
-          console.error('Error saving model configuration to localStorage:', error);
+          // Silently handle localStorage errors
         }
         
         setTimeout(() => setModelConfigStatus('idle'), 5000);
@@ -303,9 +294,8 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
         // Save to localStorage for persistence
         try {
           localStorage.setItem(`promptConfig_${agentName}`, JSON.stringify(promptConfig));
-          console.log('Prompt configuration saved to localStorage');
         } catch (error) {
-          console.error('Error saving prompt configuration to localStorage:', error);
+          // Silently handle localStorage errors
         }
         
         setTimeout(() => setPromptConfigStatus('idle'), 5000);
@@ -507,17 +497,33 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 First Message
               </label>
-              <textarea
-                value={firstMessage}
-                onChange={(e) => setFirstMessage(e.target.value)}
-                placeholder="Enter the first message your agent will say..."
-                rows={3}
-                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base resize-none ${
-                  isDarkMode 
-                    ? 'bg-gray-700/50 border-gray-600 text-gray-200 placeholder-gray-400' 
-                    : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-                }`}
-              />
+              <div className="relative">
+                <textarea
+                  value={firstMessage}
+                  onChange={(e) => setFirstMessage(e.target.value)}
+                  placeholder="Enter the first message your agent will say..."
+                  rows={3}
+                  className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base resize-none ${
+                    isDarkMode 
+                      ? 'bg-gray-700/50 border-gray-600 text-gray-200 placeholder-gray-400' 
+                      : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Generate a default first message
+                    setFirstMessage('Thank you for calling Wellness Partners. This is Riley, your scheduling agent. How may I help you today?');
+                  }}
+                  className={`absolute top-2 right-2 px-3 py-1 text-xs font-medium rounded-lg transition-all duration-300 ${
+                    isDarkMode
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  Generate
+                </button>
+              </div>
             </div>
             
             <div>
@@ -666,8 +672,8 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
             }`}>
               {modelConfigStatus === 'success' && 'Model configured successfully!'}
               {promptConfigStatus === 'success' && 'System prompt saved successfully!'}
-              {modelConfigStatus === 'error' && 'Failed to configure model'}
-              {promptConfigStatus === 'error' && 'Failed to save system prompt'}
+              {modelConfigStatus === 'error' && (errorMessage || 'Failed to configure model')}
+              {promptConfigStatus === 'error' && (errorMessage || 'Failed to save system prompt')}
             </span>
           </div>
         </div>

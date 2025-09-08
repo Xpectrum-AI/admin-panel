@@ -17,8 +17,6 @@ export interface ModelConfigResponse {
 
 // Get environment variables
 const getEnvironmentVariables = () => {
-  console.log('🔍 Getting environment variables...');
-
   return {
     MODEL_API_BASE_URL: process.env.NEXT_PUBLIC_MODEL_API_BASE_URL || '',
     MODEL_API_KEY: process.env.NEXT_PUBLIC_MODEL_API_KEY || ''
@@ -29,15 +27,10 @@ export const modelConfigService = {
   // Configure model
   async configureModel(config: ModelConfigRequest): Promise<ModelConfigResponse> {
     try {
-      console.log('🚀 Starting model configuration...');
       const env = getEnvironmentVariables();
       
       // Validate only when making the API call
       if (!env.MODEL_API_BASE_URL || !env.MODEL_API_KEY) {
-        console.error('❌ Missing environment variables:', {
-          MODEL_API_BASE_URL: !!env.MODEL_API_BASE_URL,
-          MODEL_API_KEY: !!env.MODEL_API_KEY
-        });
         throw new Error('Missing required environment variables for model configuration');
       }
 
@@ -81,10 +74,6 @@ export const modelConfigService = {
       
       // Validate only when making the API call
       if (!env.MODEL_API_BASE_URL || !env.MODEL_API_KEY) {
-        console.error('❌ Missing environment variables:', {
-          MODEL_API_BASE_URL: !!env.MODEL_API_BASE_URL,
-          MODEL_API_KEY: !!env.MODEL_API_KEY
-        });
         throw new Error('Missing required environment variables for prompt configuration');
       }
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { render } from '../../utils/test-utils';
 import PhoneNumbersTab from '@/app/components/PhoneNumbersTab';
@@ -17,44 +17,56 @@ describe('PhoneNumbersTab', () => {
   });
 
   describe('Rendering', () => {
-    it('renders the phone numbers tab with default props', () => {
-      render(<PhoneNumbersTab />);
+    it('renders the phone numbers tab with default props', async () => {
+      await act(async () => {
+        render(<PhoneNumbersTab />);
+      });
 
       expect(screen.getByText('Phone Numbers Management')).toBeInTheDocument();
       expect(screen.getByText('View and manage phone number assignments to agents')).toBeInTheDocument();
     });
 
-    it('renders with dark mode styling', () => {
-      render(<PhoneNumbersTab />);
+    it('renders with dark mode styling', async () => {
+      await act(async () => {
+        render(<PhoneNumbersTab />);
+      });
 
       // Check that the component renders without errors
       expect(screen.getByText('Phone Numbers Management')).toBeInTheDocument();
     });
 
-    it('shows the assign number button', () => {
-      render(<PhoneNumbersTab />);
+    it('shows the assign number button', async () => {
+      await act(async () => {
+        render(<PhoneNumbersTab />);
+      });
 
       expect(screen.getByText('Assign Number')).toBeInTheDocument();
     });
   });
 
   describe('Search Functionality', () => {
-    it('renders search input', () => {
-      render(<PhoneNumbersTab />);
+    it('renders search input', async () => {
+      await act(async () => {
+        render(<PhoneNumbersTab />);
+      });
 
       // The search input should be present
       const searchInput = screen.getByPlaceholderText('Search phone numbers...');
       expect(searchInput).toBeInTheDocument();
     });
 
-    it('shows organization information', () => {
-      render(<PhoneNumbersTab />);
+    it('shows organization information', async () => {
+      await act(async () => {
+        render(<PhoneNumbersTab />);
+      });
 
       expect(screen.getByText('Organization: Developer')).toBeInTheDocument();
     });
 
-    it('shows select phone number message when no phone number is selected', () => {
-      render(<PhoneNumbersTab />);
+    it('shows select phone number message when no phone number is selected', async () => {
+      await act(async () => {
+        render(<PhoneNumbersTab />);
+      });
 
       expect(screen.getByText('Select a Phone Number')).toBeInTheDocument();
       expect(screen.getByText('Choose a phone number from the sidebar to view its details')).toBeInTheDocument();
@@ -62,24 +74,30 @@ describe('PhoneNumbersTab', () => {
   });
 
   describe('Responsive Design', () => {
-    it('renders the component without errors', () => {
-      render(<PhoneNumbersTab />);
+    it('renders the component without errors', async () => {
+      await act(async () => {
+        render(<PhoneNumbersTab />);
+      });
 
       expect(screen.getByText('Phone Numbers Management')).toBeInTheDocument();
     });
   });
 
   describe('Error Handling', () => {
-    it('renders the component without errors', () => {
-      render(<PhoneNumbersTab />);
+    it('renders the component without errors', async () => {
+      await act(async () => {
+        render(<PhoneNumbersTab />);
+      });
 
       expect(screen.getByText('Phone Numbers Management')).toBeInTheDocument();
     });
   });
 
   describe('Accessibility', () => {
-    it('renders the component without errors', () => {
-      render(<PhoneNumbersTab />);
+    it('renders the component without errors', async () => {
+      await act(async () => {
+        render(<PhoneNumbersTab />);
+      });
 
       expect(screen.getByText('Phone Numbers Management')).toBeInTheDocument();
     });
