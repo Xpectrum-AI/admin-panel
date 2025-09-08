@@ -1,8 +1,10 @@
 'use client';
 
+
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Sparkles, Activity, Zap, MessageSquare, Users, Database, Settings, Bot, Phone, Clock, RefreshCw } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+
 
 // Custom WhatsApp icon component
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -109,19 +111,20 @@ export default function WhatsAppTab({}: WhatsAppTabProps) {
   const { isDarkMode } = useTheme();
   const [activeTab, setActiveTab] = useState<'conversations' | 'configuration' | 'analytics' | 'health'>('conversations');
   const [selectedConversation, setSelectedConversation] = useState<WhatsAppConversation | null>(sampleConversations[0]);
-  const [selectedConfig, setSelectedConfig] = useState<WhatsAppConfig | null>(sampleWhatsAppConfigs[0]);
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [selectedConfig] = useState<WhatsAppConfig | null>(sampleWhatsAppConfigs[0]);
+  const [isStreaming] = useState(false);
   const [newMessage, setNewMessage] = useState('');
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation) return;
+
     
     setIsStreaming(true);
     // Simulate AI response streaming
+
     setTimeout(() => {
-      setIsStreaming(false);
       setNewMessage('');
-    }, 2000);
+    }, 1000);
   };
 
   return (
