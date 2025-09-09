@@ -243,17 +243,17 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className={`flex items-center justify-between p-4 border-b ${isDarkMode ? 'border-gray-700/50' : 'border-gray-200'}`}>
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-green-500/20' : 'bg-green-100'}`}>
-            <MessageCircle className={`h-5 w-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+      <div className={`flex items-center justify-between p-3 sm:p-4 border-b ${isDarkMode ? 'border-gray-700/50' : 'border-gray-200'}`}>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className={`p-1.5 sm:p-2 rounded-lg ${isDarkMode ? 'bg-green-500/20' : 'bg-green-100'}`}>
+            <MessageCircle className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
           </div>
-          <div>
-            <h3 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+          <div className="min-w-0 flex-1">
+            <h3 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
               Sales Agent Chat
             </h3>
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${
+            <div className="flex items-center gap-1 sm:gap-2">
+              <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
                 agentStatus === 'configured' ? 'bg-green-500' : 
                 agentStatus === 'not-configured' ? 'bg-red-500' : 
                 'bg-yellow-500 animate-pulse'
@@ -263,56 +263,56 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
                 agentStatus === 'not-configured' ? (isDarkMode ? 'text-red-400' : 'text-red-600') :
                 (isDarkMode ? 'text-yellow-400' : 'text-yellow-600')
               }`}>
-                {agentStatus === 'configured' ? 'Sales Agent Ready' :
-                 agentStatus === 'not-configured' ? 'Sales Agent Not Configured' :
-                 'Checking Status...'}
+                {agentStatus === 'configured' ? 'Ready' :
+                 agentStatus === 'not-configured' ? 'Not Configured' :
+                 'Checking...'}
               </p>
             </div>
           </div>
         </div>
-                 <div className="flex items-center gap-2">
-           <button
-             onClick={clearChatHistory}
-             className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-red-500/20 text-red-400 hover:text-red-300' : 'hover:bg-red-100 text-red-600 hover:text-red-700'}`}
-             title="Clear chat history"
-           >
-             <Trash2 className="h-4 w-4" />
-           </button>
-           <button
-             onClick={onClose}
-             className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-700/50 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'}`}
-           >
-             <X className="h-5 w-5" />
-           </button>
-         </div>
+        <div className="flex items-center gap-1 sm:gap-2">
+          <button
+            onClick={clearChatHistory}
+            className={`p-1.5 sm:p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-red-500/20 text-red-400 hover:text-red-300' : 'hover:bg-red-100 text-red-600 hover:text-red-700'}`}
+            title="Clear chat history"
+          >
+            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+          </button>
+          <button
+            onClick={onClose}
+            className={`p-1.5 sm:p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-700/50 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'}`}
+          >
+            <X className="h-4 w-4 sm:h-5 sm:w-5" />
+          </button>
+        </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
         {messages.map((message) => (
           <div
             key={message.id}
             className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div className={`flex items-start gap-3 max-w-[80%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-              <div className={`p-2 rounded-lg ${
+            <div className={`flex items-start gap-2 sm:gap-3 max-w-[85%] sm:max-w-[80%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+              <div className={`p-1.5 sm:p-2 rounded-lg ${
                 message.type === 'user' 
                   ? isDarkMode ? 'bg-blue-500/20' : 'bg-blue-100'
                   : isDarkMode ? 'bg-green-500/20' : 'bg-green-100'
               }`}>
                 {message.type === 'user' ? (
-                  <User className={`h-4 w-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                  <User className={`h-3 w-3 sm:h-4 sm:w-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
                 ) : (
-                  <Bot className={`h-4 w-4 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+                  <Bot className={`h-3 w-3 sm:h-4 sm:w-4 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
                 )}
               </div>
-              <div className={`p-3 rounded-xl ${
+              <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${
                 message.type === 'user'
                   ? isDarkMode ? 'bg-blue-500/20 text-white' : 'bg-blue-100 text-blue-900'
                   : isDarkMode ? 'bg-gray-700/50 text-white' : 'bg-gray-100 text-gray-900'
               }`}>
-                <p className="text-sm">{message.content}</p>
-                <p className={`text-xs mt-2 ${
+                <p className="text-xs sm:text-sm leading-relaxed">{message.content}</p>
+                <p className={`text-xs mt-1 sm:mt-2 ${
                   message.type === 'user'
                     ? isDarkMode ? 'text-blue-300' : 'text-blue-600'
                     : isDarkMode ? 'text-gray-400' : 'text-gray-500'
@@ -326,14 +326,14 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
         
         {isLoading && (
           <div className="flex justify-start">
-            <div className="flex items-start gap-3">
-              <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-green-500/20' : 'bg-green-100'}`}>
-                <Bot className={`h-4 w-4 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+            <div className="flex items-start gap-2 sm:gap-3">
+              <div className={`p-1.5 sm:p-2 rounded-lg ${isDarkMode ? 'bg-green-500/20' : 'bg-green-100'}`}>
+                <Bot className={`h-3 w-3 sm:h-4 sm:w-4 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
               </div>
-              <div className={`p-3 rounded-xl ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`}>
+              <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`}>
                 <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                                     <span className="text-sm">Sales Agent is thinking...</span>
+                  <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                  <span className="text-xs sm:text-sm">Sales Agent is thinking...</span>
                 </div>
               </div>
             </div>
@@ -342,10 +342,10 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
         
         {agentStatus === 'not-configured' && (
           <div className="flex justify-center">
-            <div className={`p-4 rounded-xl border-2 border-dashed ${isDarkMode ? 'border-gray-600 bg-gray-800/30' : 'border-gray-300 bg-gray-50'}`}>
+            <div className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 border-dashed ${isDarkMode ? 'border-gray-600 bg-gray-800/30' : 'border-gray-300 bg-gray-50'}`}>
               <div className="text-center">
-                <Bot className={`h-8 w-8 mx-auto mb-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <Bot className={`h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   Agent Not Configured
                 </p>
                 <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -360,33 +360,33 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
       </div>
 
       {/* Input */}
-      <div className={`p-4 border-t ${isDarkMode ? 'border-gray-700/50' : 'border-gray-200'}`}>
+      <div className={`p-3 sm:p-4 border-t ${isDarkMode ? 'border-gray-700/50' : 'border-gray-200'}`}>
         <div className="flex gap-2">
-                      <input
-              ref={inputRef}
-              type="text"
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder={agentStatus === 'configured' ? "Type your message..." : "Configure agent first..."}
-              disabled={isLoading || agentStatus !== 'configured'}
-              className={`flex-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 ${
-                isDarkMode 
-                  ? 'bg-gray-700/50 border-gray-600 text-white placeholder-gray-400' 
-                  : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
-              } ${agentStatus !== 'configured' ? 'opacity-50 cursor-not-allowed' : ''}`}
-            />
-                      <button
-              onClick={sendMessage}
-              disabled={!inputMessage.trim() || isLoading || agentStatus !== 'configured'}
-              className={`p-2 rounded-lg transition-all duration-300 ${
-                !inputMessage.trim() || isLoading || agentStatus !== 'configured'
-                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                  : 'bg-green-600 text-white hover:bg-green-700 transform hover:scale-105'
-              }`}
-            >
-              <Send className="h-4 w-4" />
-            </button>
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder={agentStatus === 'configured' ? "Type your message..." : "Configure agent first..."}
+            disabled={isLoading || agentStatus !== 'configured'}
+            className={`flex-1 px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm ${
+              isDarkMode 
+                ? 'bg-gray-700/50 border-gray-600 text-white placeholder-gray-400' 
+                : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+            } ${agentStatus !== 'configured' ? 'opacity-50 cursor-not-allowed' : ''}`}
+          />
+          <button
+            onClick={sendMessage}
+            disabled={!inputMessage.trim() || isLoading || agentStatus !== 'configured'}
+            className={`p-2 sm:p-2.5 rounded-lg transition-all duration-300 ${
+              !inputMessage.trim() || isLoading || agentStatus !== 'configured'
+                ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                : 'bg-green-600 text-white hover:bg-green-700 transform hover:scale-105'
+            }`}
+          >
+            <Send className="h-3 w-3 sm:h-4 sm:w-4" />
+          </button>
         </div>
       </div>
     </div>
