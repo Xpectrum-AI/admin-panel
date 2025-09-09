@@ -71,111 +71,111 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
         console.log('🚫 Skipping initial config load - user is changing provider');
         return;
       }
-      
+
       // Additional safety check - if we just changed the provider, don't override
       if (providerChangeTimeoutRef.current) {
         console.log('🚫 Skipping initial config load - provider change timeout still active');
         return;
       }
-      
-      // If we have existing config from agent, use that (regardless of editing mode)
+
+      // If we have existing config from agent, use that
       if (existingConfig) {
         console.log('Loading existing config:', existingConfig);
-        
+
         // Handle TTS config from backend - existingConfig is already the TTS config
         const ttsConfig = existingConfig;
-          console.log('TTS Config from backend:', ttsConfig);
-          
-          // Set provider (convert backend format to UI format)
-          let provider = ttsConfig.provider;
-          if (provider === 'cartesian') provider = 'Cartesia';
-          if (provider === 'elevenlabs') provider = '11Labs';
-          if (provider === 'openai') provider = 'OpenAI';
-          
-          console.log('Backend provider:', ttsConfig.provider, '-> UI provider:', provider);
-          setSelectedVoiceProvider(provider);
-          
-          // Set language (convert backend format to UI format)
-          if (ttsConfig.cartesian?.language) {
-            const backendLang = ttsConfig.cartesian.language;
-            const uiLang = languageMapping[backendLang as keyof typeof languageMapping] || 'English';
-            console.log('Backend language:', backendLang, '-> UI language:', uiLang);
-            setSelectedLanguage(uiLang);
+        console.log('TTS Config from backend:', ttsConfig);
+
+        // Set provider (convert backend format to UI format)
+        let provider = ttsConfig.provider;
+        if (provider === 'cartesian') provider = 'Cartesia';
+        if (provider === 'elevenlabs') provider = '11Labs';
+        if (provider === 'openai') provider = 'OpenAI';
+
+        console.log('Backend provider:', ttsConfig.provider, '-> UI provider:', provider);
+        setSelectedVoiceProvider(provider);
+
+        // Set language (convert backend format to UI format)
+        if (ttsConfig.cartesian?.language) {
+          const backendLang = ttsConfig.cartesian.language;
+          const uiLang = languageMapping[backendLang as keyof typeof languageMapping] || 'English';
+          console.log('Backend language:', backendLang, '-> UI language:', uiLang);
+          setSelectedLanguage(uiLang);
+        }
+
+        // Set speed
+        if (ttsConfig.cartesian?.speed !== undefined) {
+          console.log('Backend speed:', ttsConfig.cartesian.speed);
+          setSpeedValue(ttsConfig.cartesian.speed);
+        }
+
+        // Set voice ID
+        if (ttsConfig.cartesian?.voice_id) {
+          console.log('Backend voice ID:', ttsConfig.cartesian.voice_id);
+          setVoiceId(ttsConfig.cartesian.voice_id);
+        }
+
+        // Set API key
+        if (ttsConfig.cartesian?.tts_api_key) {
+          console.log('Backend API key:', maskApiKey(ttsConfig.cartesian.tts_api_key));
+          setApiKey(ttsConfig.cartesian.tts_api_key);
+        }
+
+        // Set voice model
+        if (ttsConfig.cartesian?.model) {
+          console.log('Backend voice model:', ttsConfig.cartesian.model);
+          setSelectedVoice(ttsConfig.cartesian.model);
+
+          // Update Cartesia voice options to include the backend model if it's not already there
+          if (ttsConfig.provider === 'cartesian' && ttsConfig.cartesian.model) {
+            setVoiceProviders(prev => ({
+              ...prev,
+              'Cartesia': [...new Set([...prev.Cartesia, ttsConfig.cartesian.model])]
+            }));
           }
-          
-          // Set speed
-          if (ttsConfig.cartesian?.speed !== undefined) {
-            console.log('Backend speed:', ttsConfig.cartesian.speed);
-            setSpeedValue(ttsConfig.cartesian.speed);
-          }
-          
-          // Set voice ID
-          if (ttsConfig.cartesian?.voice_id) {
-            console.log('Backend voice ID:', ttsConfig.cartesian.voice_id);
-            setVoiceId(ttsConfig.cartesian.voice_id);
-          }
-          
-          // Set API key
-          if (ttsConfig.cartesian?.tts_api_key) {
-            console.log('Backend API key:', maskApiKey(ttsConfig.cartesian.tts_api_key));
-            setApiKey(ttsConfig.cartesian.tts_api_key);
-          }
-          
-          // Set voice model
-          if (ttsConfig.cartesian?.model) {
-            console.log('Backend voice model:', ttsConfig.cartesian.model);
-            setSelectedVoice(ttsConfig.cartesian.model);
-            
-            // Update Cartesia voice options to include the backend model if it's not already there
-            if (ttsConfig.provider === 'cartesian' && ttsConfig.cartesian.model) {
-              setVoiceProviders(prev => ({
-                ...prev,
-                'Cartesia': [...new Set([...prev.Cartesia, ttsConfig.cartesian.model])]
-              }));
-            }
-          }
-          
-          // Handle OpenAI config if present
-          if (ttsConfig.openai) {
-            if (ttsConfig.openai.voice) {
+        }
+
+        // Handle OpenAI config if present
+        if (ttsConfig.openai) {
+          if (ttsConfig.openai.voice) {
             console.log('Backend OpenAI voice:', ttsConfig.openai.voice);
-              setSelectedVoice(ttsConfig.openai.voice);
-            }
-            if (ttsConfig.openai.speed !== undefined) {
+            setSelectedVoice(ttsConfig.openai.voice);
+          }
+          if (ttsConfig.openai.speed !== undefined) {
             console.log('Backend OpenAI speed:', ttsConfig.openai.speed);
-              setSpeedValue(ttsConfig.openai.speed);
-            }
-            if (ttsConfig.openai.api_key) {
+            setSpeedValue(ttsConfig.openai.speed);
+          }
+          if (ttsConfig.openai.api_key) {
             console.log('Backend OpenAI API key:', maskApiKey(ttsConfig.openai.api_key));
-              setApiKey(ttsConfig.openai.api_key);
-            }
+            setApiKey(ttsConfig.openai.api_key);
           }
-          
-          // Handle 11Labs config if present
-          if (ttsConfig.elevenlabs) {
-            if (ttsConfig.elevenlabs.voice_id) {
+        }
+
+        // Handle 11Labs config if present
+        if (ttsConfig.elevenlabs) {
+          if (ttsConfig.elevenlabs.voice_id) {
             console.log('Backend 11Labs voice ID:', ttsConfig.elevenlabs.voice_id);
-              setVoiceId(ttsConfig.elevenlabs.voice_id);
-            }
-            if (ttsConfig.elevenlabs.speed !== undefined) {
-            console.log('Backend 11Labs speed:', ttsConfig.elevenlabs.speed);
-              setSpeedValue(ttsConfig.elevenlabs.speed);
-            }
-            if (ttsConfig.elevenlabs.api_key) {
-            console.log('Backend 11Labs API key:', maskApiKey(ttsConfig.elevenlabs.api_key));
-              setApiKey(ttsConfig.elevenlabs.api_key);
-            }
-            if (ttsConfig.elevenlabs.stability !== undefined) {
-            console.log('Backend 11Labs stability:', ttsConfig.elevenlabs.stability);
-              setStability(ttsConfig.elevenlabs.stability);
-            }
-            if (ttsConfig.elevenlabs.similarity_boost !== undefined) {
-            console.log('Backend 11Labs similarity_boost:', ttsConfig.elevenlabs.similarity_boost);
-              setSimilarityBoost(ttsConfig.elevenlabs.similarity_boost);
-            }
+            setVoiceId(ttsConfig.elevenlabs.voice_id);
           }
-          
-          console.log('Final UI state after loading backend config:', {
+          if (ttsConfig.elevenlabs.speed !== undefined) {
+            console.log('Backend 11Labs speed:', ttsConfig.elevenlabs.speed);
+            setSpeedValue(ttsConfig.elevenlabs.speed);
+          }
+          if (ttsConfig.elevenlabs.api_key) {
+            console.log('Backend 11Labs API key:', maskApiKey(ttsConfig.elevenlabs.api_key));
+            setApiKey(ttsConfig.elevenlabs.api_key);
+          }
+          if (ttsConfig.elevenlabs.stability !== undefined) {
+            console.log('Backend 11Labs stability:', ttsConfig.elevenlabs.stability);
+            setStability(ttsConfig.elevenlabs.stability);
+          }
+          if (ttsConfig.elevenlabs.similarity_boost !== undefined) {
+            console.log('Backend 11Labs similarity_boost:', ttsConfig.elevenlabs.similarity_boost);
+            setSimilarityBoost(ttsConfig.elevenlabs.similarity_boost);
+          }
+        }
+
+        console.log('Final UI state after loading backend config:', {
           provider: ttsConfig.provider,
           language: ttsConfig.cartesian?.language || ttsConfig.openai?.language || 'English',
           speed: ttsConfig.cartesian?.speed || ttsConfig.openai?.speed || 1.0,
@@ -203,126 +203,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
     }
   }, [existingConfig, isUserChangingProvider]);
 
-  // Handle changes to existingConfig prop (for agent updates)
-  useEffect(() => {
-    // Don't override user selections if they're actively changing the provider
-    if (isUserChangingProvider) {
-      console.log('🚫 Skipping existingConfig update - user is changing provider');
-      return;
-    }
-    
-    // Additional safety check - if we just changed the provider, don't override
-    if (providerChangeTimeoutRef.current) {
-      console.log('🚫 Skipping existingConfig update - provider change timeout still active');
-      return;
-    }
-    
-    if (existingConfig) {
-      console.log('🔄 VoiceConfig: existingConfig changed, updating state:', existingConfig);
-      
-      // Handle TTS config from backend - existingConfig is already the TTS config
-      const ttsConfig = existingConfig;
-      
-      // Set provider (convert backend format to UI format)
-      let provider = ttsConfig.provider;
-      if (provider === 'cartesian') provider = 'Cartesia';
-      if (provider === 'elevenlabs') provider = '11Labs';
-      if (provider === 'openai') provider = 'OpenAI';
-      
-      console.log('Backend provider:', ttsConfig.provider, '-> UI provider:', provider);
-      setSelectedVoiceProvider(provider);
-      
-      // Set language (convert backend format to UI format)
-      if (ttsConfig.cartesian?.language) {
-        const backendLang = ttsConfig.cartesian.language;
-        const uiLang = languageMapping[backendLang as keyof typeof languageMapping] || 'English';
-        console.log('Backend language:', backendLang, '-> UI language:', uiLang);
-        setSelectedLanguage(uiLang);
-      }
-      
-      // Set speed
-      if (ttsConfig.cartesian?.speed !== undefined) {
-        console.log('Backend speed:', ttsConfig.cartesian.speed);
-        setSpeedValue(ttsConfig.cartesian.speed);
-      }
-      
-      // Set voice ID
-      if (ttsConfig.cartesian?.voice_id) {
-        console.log('Backend voice ID:', ttsConfig.cartesian.voice_id);
-        setVoiceId(ttsConfig.cartesian.voice_id);
-      }
-      
-      // Set API key
-      if (ttsConfig.cartesian?.tts_api_key) {
-        console.log('Backend API key:', maskApiKey(ttsConfig.cartesian.tts_api_key));
-        setApiKey(ttsConfig.cartesian.tts_api_key);
-      }
-      
-      // Set voice model
-      if (ttsConfig.cartesian?.model) {
-        console.log('Backend voice model:', ttsConfig.cartesian.model);
-        setSelectedVoice(ttsConfig.cartesian.model);
-        
-        // Update Cartesia voice options to include the backend model if it's not already there
-        if (ttsConfig.provider === 'cartesian' && ttsConfig.cartesian.model) {
-          setVoiceProviders(prev => ({
-            ...prev,
-            'Cartesia': [...new Set([...prev.Cartesia, ttsConfig.cartesian.model])]
-          }));
-        }
-      }
-      
-      // Handle OpenAI config if present
-      if (ttsConfig.openai) {
-        if (ttsConfig.openai.voice) {
-          console.log('Backend OpenAI voice:', ttsConfig.openai.voice);
-          setSelectedVoice(ttsConfig.openai.voice);
-        }
-        if (ttsConfig.openai.speed !== undefined) {
-          console.log('Backend OpenAI speed:', ttsConfig.openai.speed);
-          setSpeedValue(ttsConfig.openai.speed);
-        }
-        if (ttsConfig.openai.api_key) {
-          console.log('Backend OpenAI API key:', maskApiKey(ttsConfig.openai.api_key));
-          setApiKey(ttsConfig.openai.api_key);
-        }
-      }
-      
-      // Handle 11Labs config if present
-      if (ttsConfig.elevenlabs) {
-        if (ttsConfig.elevenlabs.voice_id) {
-          console.log('Backend 11Labs voice ID:', ttsConfig.elevenlabs.voice_id);
-          setVoiceId(ttsConfig.elevenlabs.voice_id);
-        }
-        if (ttsConfig.elevenlabs.speed !== undefined) {
-          console.log('Backend 11Labs speed:', ttsConfig.elevenlabs.speed);
-          setSpeedValue(ttsConfig.elevenlabs.speed);
-        }
-        if (ttsConfig.elevenlabs.api_key) {
-          console.log('Backend 11Labs API key:', maskApiKey(ttsConfig.elevenlabs.api_key));
-          setApiKey(ttsConfig.elevenlabs.api_key);
-        }
-        if (ttsConfig.elevenlabs.stability !== undefined) {
-          console.log('Backend 11Labs stability:', ttsConfig.elevenlabs.stability);
-          setStability(ttsConfig.elevenlabs.stability);
-        }
-        if (ttsConfig.elevenlabs.similarity_boost !== undefined) {
-          console.log('Backend 11Labs similarity_boost:', ttsConfig.elevenlabs.similarity_boost);
-          setSimilarityBoost(ttsConfig.elevenlabs.similarity_boost);
-        }
-      }
-      
-      console.log('✅ VoiceConfig: State updated from existingConfig:', {
-        provider: ttsConfig.provider,
-        language: ttsConfig.cartesian?.language || ttsConfig.openai?.language || 'English',
-        speed: ttsConfig.cartesian?.speed || ttsConfig.openai?.speed || 1.0,
-        voiceId: ttsConfig.cartesian?.voice_id || ttsConfig.elevenlabs?.voice_id || '',
-        apiKey: maskApiKey(ttsConfig.cartesian?.tts_api_key || ttsConfig.openai?.api_key || ttsConfig.elevenlabs?.api_key || ''),
-        voice: ttsConfig.cartesian?.model || ttsConfig.openai?.voice || 'Alloy'
-      });
-    }
-  }, [existingConfig, isUserChangingProvider]);
-
   // Save state to localStorage whenever it changes
   const saveStateToLocalStorage = (updates: any) => {
     try {
@@ -347,7 +227,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
   useEffect(() => {
     const defaultApiKeys = agentConfigService.getFullApiKeys();
     const defaultVoiceIds = agentConfigService.getDefaultVoiceIds();
-    
+
     // Set default API key based on selected provider
     switch (selectedVoiceProvider) {
       case 'OpenAI':
@@ -391,7 +271,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
   const handleConfigure = async () => {
     setIsConfiguring(true);
     setConfigStatus('idle');
-    
+
     try {
       // Save current state to localStorage
       const config = {
@@ -404,21 +284,21 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
         stability,
         similarityBoost
       };
-      
+
       saveStateToLocalStorage(config);
-      
+
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       setConfigStatus('success');
       console.log('Voice configuration saved to localStorage:', config);
-      
+
       // Clear success message after 3 seconds
       setTimeout(() => setConfigStatus('idle'), 3000);
     } catch (error) {
       console.error('Failed to configure voice:', error);
       setConfigStatus('error');
-      
+
       // Clear error message after 3 seconds
       setTimeout(() => setConfigStatus('idle'), 3000);
     } finally {
@@ -438,30 +318,30 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
       stability,
       similarityBoost
     });
-    
+
     // Convert UI format to backend format
     const backendConfig = {
-        provider: selectedVoiceProvider === 'Cartesia' ? 'cartesian' : 
-                 selectedVoiceProvider === '11Labs' ? 'elevenlabs' : 'openai',
-        cartesian: selectedVoiceProvider === 'Cartesia' ? {
-          voice_id: voiceId,
-          tts_api_key: apiKey,
-          model: selectedVoice,
-          speed: speedValue,
-          language: reverseLanguageMapping[selectedLanguage as keyof typeof reverseLanguageMapping] || 'en'
-        } : null,
-        openai: selectedVoiceProvider === 'OpenAI' ? {
-          voice: selectedVoice,
-          speed: speedValue,
-          api_key: apiKey
-        } : null,
-        elevenlabs: selectedVoiceProvider === '11Labs' ? {
-          voice_id: voiceId,
-          api_key: apiKey,
-          speed: speedValue,
-          stability,
-          similarity_boost: similarityBoost
-        } : null
+      provider: selectedVoiceProvider === 'Cartesia' ? 'cartesian' :
+        selectedVoiceProvider === '11Labs' ? 'elevenlabs' : 'openai',
+      cartesian: selectedVoiceProvider === 'Cartesia' ? {
+        voice_id: voiceId,
+        tts_api_key: apiKey,
+        model: selectedVoice,
+        speed: speedValue,
+        language: reverseLanguageMapping[selectedLanguage as keyof typeof reverseLanguageMapping] || 'en'
+      } : null,
+      openai: selectedVoiceProvider === 'OpenAI' ? {
+        voice: selectedVoice,
+        speed: speedValue,
+        api_key: apiKey
+      } : null,
+      elevenlabs: selectedVoiceProvider === '11Labs' ? {
+        voice_id: voiceId,
+        api_key: apiKey,
+        speed: speedValue,
+        stability,
+        similarity_boost: similarityBoost
+      } : null
     };
 
     // Save to localStorage in UI format
@@ -485,15 +365,15 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
   // Handle provider changes with proper state management
   const handleProviderChange = (newProvider: string) => {
     console.log('🔄 Provider changing from', selectedVoiceProvider, 'to', newProvider);
-    
+
     // Set flag to prevent existingConfig from overriding user selection
     setIsUserChangingProvider(true);
-    
+
     // Clear any pending timeouts
     if (providerChangeTimeoutRef.current) {
       clearTimeout(providerChangeTimeoutRef.current);
     }
-    
+
     // Reset related state when provider changes
     let defaultVoice = 'Alloy';
     if (newProvider === 'OpenAI') {
@@ -503,19 +383,19 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
     } else if (newProvider === '11Labs') {
       defaultVoice = 'Rachel';
     }
-    
+
     // Update the provider and voice state
     setSelectedVoiceProvider(newProvider);
     setSelectedVoice(defaultVoice);
-    
+
     // Save to localStorage
-    saveStateToLocalStorage({ 
+    saveStateToLocalStorage({
       selectedVoiceProvider: newProvider,
       selectedVoice: defaultVoice
     });
-    
+
     console.log('✅ Provider changed to', newProvider, 'with reset state');
-    
+
     // Reset the flag after a delay
     providerChangeTimeoutRef.current = setTimeout(() => {
       setIsUserChangingProvider(false);
@@ -544,11 +424,10 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
               type="password"
               value={getApiKeyDisplayValue(apiKey)}
               readOnly
-              className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${
-                isDarkMode 
-                  ? 'border-gray-600 bg-gray-700/50 text-gray-400' 
-                  : 'border-gray-200 bg-gray-100/50 text-gray-500'
-              }`}
+              className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${isDarkMode
+                ? 'border-gray-600 bg-gray-700/50 text-gray-400'
+                : 'border-gray-200 bg-gray-100/50 text-gray-500'
+                }`}
               placeholder="Default API key loaded"
             />
           </div>
@@ -564,11 +443,10 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                 type="password"
                 value={getApiKeyDisplayValue(apiKey)}
                 readOnly
-                className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${
-                  isDarkMode 
-                    ? 'border-gray-600 bg-gray-700/50 text-gray-400' 
-                    : 'border-gray-200 bg-gray-100/50 text-gray-500'
-                }`}
+                className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${isDarkMode
+                  ? 'border-gray-600 bg-gray-700/50 text-gray-400'
+                  : 'border-gray-200 bg-gray-100/50 text-gray-500'
+                  }`}
                 placeholder="Default API key loaded"
               />
             </div>
@@ -580,11 +458,10 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                 type="password"
                 value={voiceId ? maskApiKey(voiceId) : '••••••••••••••••••••••••••••••••'}
                 readOnly
-                className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${
-                  isDarkMode 
-                    ? 'border-gray-600 bg-gray-700/50 text-gray-400' 
-                    : 'border-gray-200 bg-gray-100/50 text-gray-500'
-                }`}
+                className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${isDarkMode
+                  ? 'border-gray-600 bg-gray-700/50 text-gray-400'
+                  : 'border-gray-200 bg-gray-100/50 text-gray-500'
+                  }`}
                 placeholder="Default voice ID loaded"
               />
             </div>
@@ -647,11 +524,10 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                 type="password"
                 value={getApiKeyDisplayValue(apiKey)}
                 readOnly
-                className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${
-                  isDarkMode 
-                    ? 'border-gray-600 bg-gray-700/50 text-gray-400' 
-                    : 'border-gray-200 bg-gray-100/50 text-gray-500'
-                }`}
+                className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${isDarkMode
+                  ? 'border-gray-600 bg-gray-700/50 text-gray-400'
+                  : 'border-gray-200 bg-gray-100/50 text-gray-500'
+                  }`}
                 placeholder="Default API key loaded"
               />
             </div>
@@ -663,11 +539,10 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                 type="password"
                 value={voiceId ? maskApiKey(voiceId) : '••••••••••••••••••••••••••••••••'}
                 readOnly
-                className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${
-                  isDarkMode 
-                    ? 'border-gray-600 bg-gray-700/50 text-gray-400' 
-                    : 'border-gray-200 bg-gray-100/50 text-gray-500'
-                }`}
+                className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${isDarkMode
+                  ? 'border-gray-600 bg-gray-700/50 text-gray-400'
+                  : 'border-gray-200 bg-gray-100/50 text-gray-500'
+                  }`}
                 placeholder="Default voice ID loaded"
               />
             </div>
@@ -696,20 +571,23 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
             <h3 className={`text-xl sm:text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Voice Configuration</h3>
             <button
               onClick={handleRefreshConfig}
-              className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
-                isDarkMode 
-                  ? 'bg-blue-800/50 hover:bg-blue-700/50 text-blue-400' 
+              disabled={!isEditing}
+              className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${!isEditing
+                ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                : isDarkMode
+                  ? 'bg-blue-800/50 hover:bg-blue-700/50 text-blue-400'
                   : 'bg-blue-100 hover:bg-blue-200 text-blue-600'
-              }`}
-              title="Refresh configuration from agent"
+                }`}
+              title={isEditing ? "Refresh configuration from agent" : "Enable edit mode to refresh configuration"}
             >
               <RefreshCw className="h-4 w-4" />
             </button>
           </div>
         </div>
         <p className={`max-w-2xl mx-auto text-sm sm:text-base ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-          Select a voice from the list, or sync your voice library if it's missing. If errors persist, enable custom voice and add a voice ID.
+          {isEditing ? 'Select a voice from the list, or sync your voice library if it\'s missing. If errors persist, enable custom voice and add a voice ID.' : 'View your voice configuration settings'}
         </p>
+
       </div>
 
       {/* Configuration Grid */}
@@ -725,7 +603,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
               <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Choose your voice provider and voice</p>
             </div>
           </div>
-          
+
           <div className="space-y-4">
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -736,18 +614,22 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                 onChange={(e) => {
                   handleProviderChange(e.target.value);
                 }}
-                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${
-                  isDarkMode 
-                    ? 'bg-gray-700/50 border-gray-600 text-gray-200' 
+                disabled={!isEditing}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
+                  ? isDarkMode
+                    ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'bg-gray-700/50 border-gray-600 text-gray-200'
                     : 'bg-gray-100/50 border-gray-200 text-gray-900'
-                }`}
+                  }`}
               >
                 {Object.keys(voiceProviders).map((provider) => (
                   <option key={provider} value={provider}>{provider}</option>
                 ))}
               </select>
             </div>
-            
+
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 Voice
@@ -758,11 +640,15 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                   setSelectedVoice(e.target.value);
                   saveStateToLocalStorage({ selectedVoice: e.target.value });
                 }}
-                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${
-                  isDarkMode 
-                    ? 'bg-gray-700/50 border-gray-600 text-gray-200' 
+                disabled={!isEditing}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
+                  ? isDarkMode
+                    ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'bg-gray-700/50 border-gray-600 text-gray-200'
                     : 'bg-gray-50 border-gray-200 text-gray-900'
-                }`}
+                  }`}
               >
                 {voiceProviders[selectedVoiceProvider as keyof typeof voiceProviders]?.map((voice) => (
                   <option key={voice} value={voice}>{voice}</option>
@@ -783,7 +669,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
               <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Configure language and speed</p>
             </div>
           </div>
-          
+
           <div className="space-y-4">
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -795,18 +681,22 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                   setSelectedLanguage(e.target.value);
                   saveStateToLocalStorage({ selectedLanguage: e.target.value });
                 }}
-                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base ${
-                  isDarkMode 
-                    ? 'bg-gray-700/50 border-gray-600 text-gray-200' 
+                disabled={!isEditing}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
+                  ? isDarkMode
+                    ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'bg-gray-700/50 border-gray-600 text-gray-200'
                     : 'bg-gray-50 border-gray-200 text-gray-900'
-                }`}
+                  }`}
               >
                 {Object.keys(languageMapping).map((key) => (
                   <option key={key} value={languageMapping[key as keyof typeof languageMapping]}>{languageMapping[key as keyof typeof languageMapping]}</option>
                 ))}
               </select>
             </div>
-            
+
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 Speed: {speedValue}
@@ -822,7 +712,11 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                     handleSpeedChange(e.target.value);
                     saveStateToLocalStorage({ speedValue: parseFloat(e.target.value) });
                   }}
-                  className={`flex-1 h-2 rounded-lg appearance-none cursor-pointer ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}
+                  disabled={!isEditing}
+                  className={`flex-1 h-2 rounded-lg appearance-none ${!isEditing
+                    ? 'cursor-not-allowed opacity-50'
+                    : 'cursor-pointer'
+                    } ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}
                 />
                 <input
                   type="number"
@@ -834,11 +728,15 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                     handleSpeedChange(e.target.value);
                     saveStateToLocalStorage({ speedValue: parseFloat(e.target.value) });
                   }}
-                  className={`w-16 p-2 rounded-lg border text-center text-sm ${
-                    isDarkMode 
-                      ? 'bg-gray-700/50 border-gray-600 text-gray-200' 
+                  disabled={!isEditing}
+                  className={`w-16 p-2 rounded-lg border text-center text-sm ${!isEditing
+                    ? isDarkMode
+                      ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                    : isDarkMode
+                      ? 'bg-gray-700/50 border-gray-600 text-gray-200'
                       : 'bg-gray-50 border-gray-200 text-gray-900'
-                  }`}
+                    }`}
                 />
               </div>
               <div className="flex justify-between text-xs text-gray-500 mt-1">
@@ -866,7 +764,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
             </p>
           </div>
         </div>
-        
+
         {renderProviderSpecificFields()}
       </div>
 
@@ -882,22 +780,22 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
             </p>
           </div>
         </div>
-        
+
         <div className="flex justify-end">
-        <button
-          onClick={handleConfigure}
-          disabled={isConfiguring}
-              className={`group relative px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-          {isConfiguring ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-                <Settings className="h-5 w-5" />
-          )}
-              <span className="font-semibold">{isConfiguring ? 'Saving...' : 'Save Configuration'}</span>
-        </button>
-          </div>
+          <button
+            onClick={handleConfigure}
+            disabled={isConfiguring || !isEditing}
+            className={`group relative px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+            {isConfiguring ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Settings className="h-5 w-5" />
+            )}
+            <span className="font-semibold">{isConfiguring ? 'Saving...' : 'Save Configuration'}</span>
+          </button>
+        </div>
 
         {/* Status Messages */}
         {configStatus === 'success' && (
