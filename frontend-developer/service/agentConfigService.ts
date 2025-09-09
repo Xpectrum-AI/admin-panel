@@ -76,6 +76,85 @@ export const maskApiKey = (apiKey: string): string => {
 // Environment variables are accessed directly using process.env.NEXT_PUBLIC_*
 
 export const agentConfigService = {
+  // Create a new agent
+  async createAgent(agentData: { name: string; status: string; description: string; model: string; provider: string; organization_id: string }): Promise<AgentConfigResponse> {
+    try {
+      console.log('🚀 Creating new agent...');
+      
+      if (!process.env.NEXT_PUBLIC_LIVE_API_URL || !process.env.NEXT_PUBLIC_LIVE_API_KEY) {
+        console.error('❌ Missing required environment variables:', {
+          API_BASE_URL: !!process.env.NEXT_PUBLIC_LIVE_API_URL,
+          API_KEY: !!process.env.NEXT_PUBLIC_LIVE_API_KEY
+        });
+        throw new Error('Missing required environment variables for agent creation');
+      }
+
+      // Create a basic agent configuration with defaults
+      const basicConfig: AgentConfigRequest = {
+        organization_id: agentData.organization_id,
+        chatbot_api: process.env.NEXT_PUBLIC_CHATBOT_API_URL || '',
+        chatbot_key: process.env.NEXT_PUBLIC_CHATBOT_API_KEY || '',
+        tts_config: {
+          provider: 'elevenlabs',
+          elevenlabs: {
+            api_key: process.env.NEXT_PUBLIC_ELEVEN_LABS_API_KEY || '',
+            voice_id: process.env.NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID || '',
+            model_id: 'eleven_monolingual_v1',
+            stability: 0.5,
+            similarity_boost: 0.5,
+            speed: 1.0
+          }
+        },
+        stt_config: {
+          provider: 'deepgram',
+          deepgram: {
+            api_key: process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY || '',
+            model: 'nova-2',
+            language: 'en-US',
+            punctuate: true,
+            smart_format: true,
+            interim_results: true
+          }
+        },
+        initial_message: "Hello! I'm your AI assistant, how can I help you today?",
+        nudge_text: "Hello, Are you still there?",
+        nudge_interval: 15,
+        max_nudges: 3,
+        typing_volume: 0.8,
+        max_call_duration: 300
+      };
+
+      // Use the update endpoint to create the agent (it will create if it doesn't exist)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/agents/update/${agentData.name}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY,
+        },
+        body: JSON.stringify(basicConfig),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Agent creation response:', result);
+      return {
+        success: true,
+        data: { ...agentData, ...result },
+        message: 'Agent created successfully'
+      };
+    } catch (error) {
+      console.error('Agent creation error:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to create agent'
+      };
+    }
+  },
+
   // Configure agent with complete configuration
   async configureAgent(agentName: string, config: Partial<AgentConfigRequest>): Promise<AgentConfigResponse> {
     try {
