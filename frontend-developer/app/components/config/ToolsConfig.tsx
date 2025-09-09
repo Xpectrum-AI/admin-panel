@@ -530,15 +530,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
             {isEditing ? 'Configure agent behavior, call settings, and advanced options' : 'View your agent tools configuration settings'}
           </p>
 
-          {/* Mode Indicator */}
-          <div className="mt-4 flex justify-center">
-            <div className={`px-4 py-2 rounded-full text-sm font-medium ${isEditing
-              ? 'bg-gray-100 text-gray-800 border border-gray-200'
-              : 'bg-gray-100 text-gray-600 border border-gray-200'
-              }`}>
-              {isEditing ? '✏️ Edit Mode' : '👁️ View Mode'}
-            </div>
-          </div>
         </div>
 
         {/* Configuration Status */}
