@@ -588,15 +588,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
           {isEditing ? 'Select a voice from the list, or sync your voice library if it\'s missing. If errors persist, enable custom voice and add a voice ID.' : 'View your voice configuration settings'}
         </p>
 
-        {/* Mode Indicator */}
-        <div className="mt-4 flex justify-center">
-          <div className={`px-4 py-2 rounded-full text-sm font-medium ${isEditing
-            ? 'bg-blue-100 text-blue-800 border border-blue-200'
-            : 'bg-gray-100 text-gray-600 border border-gray-200'
-            }`}>
-            {isEditing ? '✏️ Edit Mode' : '👁️ View Mode'}
-          </div>
-        </div>
       </div>
 
       {/* Configuration Grid */}

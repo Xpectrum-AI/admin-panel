@@ -44,21 +44,6 @@ describe('ModelConfig', () => {
       expect(screen.getAllByText('System Prompt')).toHaveLength(3);
     });
 
-    it('renders in edit mode by default', async () => {
-      await act(async () => {
-        render(<ModelConfig />);
-      });
-
-      expect(screen.getByText('✏️ Edit Mode')).toBeInTheDocument();
-    });
-
-    it('renders in view mode when isEditing is false', async () => {
-      await act(async () => {
-        render(<ModelConfig isEditing={false} />);
-      });
-
-      expect(screen.getByText('👁️ View Mode')).toBeInTheDocument();
-    });
   });
 
   describe('Provider Selection', () => {
@@ -151,17 +136,4 @@ describe('ModelConfig', () => {
     });
   });
 
-  describe('Mode Switching', () => {
-    it('switches between edit and view modes', async () => {
-      const { rerender } = render(<ModelConfig isEditing={true} />);
-
-      expect(screen.getByText('✏️ Edit Mode')).toBeInTheDocument();
-
-      await act(async () => {
-        rerender(<ModelConfig isEditing={false} />);
-      });
-
-      expect(screen.getByText('👁️ View Mode')).toBeInTheDocument();
-    });
-  });
 });

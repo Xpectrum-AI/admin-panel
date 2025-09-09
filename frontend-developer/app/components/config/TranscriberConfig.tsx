@@ -339,15 +339,6 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
           {isEditing ? 'Configure speech-to-text settings for accurate transcription of conversations' : 'View your transcriber configuration settings'}
         </p>
 
-        {/* Mode Indicator */}
-        <div className="mt-4 flex justify-center">
-          <div className={`px-4 py-2 rounded-full text-sm font-medium ${isEditing
-            ? 'bg-orange-100 text-orange-800 border border-orange-200'
-            : 'bg-gray-100 text-gray-600 border border-gray-200'
-            }`}>
-            {isEditing ? '✏️ Edit Mode' : '👁️ View Mode'}
-          </div>
-        </div>
       </div>
 
       {/* Configuration Grid */}

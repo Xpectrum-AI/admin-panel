@@ -344,15 +344,6 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
           {isEditing ? 'Configure your AI model provider, model selection, and system prompt for optimal performance' : 'View your AI model configuration settings'}
         </p>
 
-        {/* Mode Indicator */}
-        <div className="mt-4 flex justify-center">
-          <div className={`px-4 py-2 rounded-full text-sm font-medium ${isEditing
-            ? 'bg-blue-100 text-blue-800 border border-blue-200'
-            : 'bg-gray-100 text-gray-600 border border-gray-200'
-            }`}>
-            {isEditing ? '✏️ Edit Mode' : '👁️ View Mode'}
-          </div>
-        </div>
 
         {/* Status Management Buttons */}
         <div className="mt-4 flex justify-center gap-3">
