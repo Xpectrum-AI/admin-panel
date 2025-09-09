@@ -17,18 +17,18 @@ interface ToolsConfigProps {
   existingConfig?: any;
 }
 
-const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({ 
-  agentName = 'default', 
-  modelConfig, 
-  voiceConfig, 
-  transcriberConfig, 
-  onAgentCreated, 
-  isEditing = false, 
-  existingAgent, 
-  existingConfig 
+const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
+  agentName = 'default',
+  modelConfig,
+  voiceConfig,
+  transcriberConfig,
+  onAgentCreated,
+  isEditing = false,
+  existingAgent,
+  existingConfig
 }, ref) => {
   const { isDarkMode } = useTheme();
-  
+
   // Tools configuration state
   const [initialMessage, setInitialMessage] = useState('Hello! How can I help you today?');
   const [nudgeText, setNudgeText] = useState('Hello, Are you still there?');
@@ -42,7 +42,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
   const [configStatus, setConfigStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  
+
   // Configuration status from localStorage
   const [localVoiceConfig, setLocalVoiceConfig] = useState<any>(null);
   const [localModelConfig, setLocalModelConfig] = useState<any>(null);
@@ -57,22 +57,26 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
 
   // Populate form fields when editing an existing agent
   useEffect(() => {
-    if (isEditing && existingConfig) {
-      // Use existingConfig if available (from getAgentConfigData)
-      setInitialMessage(existingConfig.initialMessage || 'Hello! How can I help you today?');
-      setNudgeText(existingConfig.nudgeText || 'Hello, Are you still there?');
-      setNudgeInterval(existingConfig.nudgeInterval || 15);
-      setMaxNudges(existingConfig.maxNudges || 3);
-      setTypingVolume(existingConfig.typingVolume || 0.8);
-      setMaxCallDuration(existingConfig.maxCallDuration || 300);
-    } else if (isEditing && existingAgent) {
-      // Fallback to existingAgent if existingConfig is not available
-      setInitialMessage(existingAgent.initial_message || 'Hello! How can I help you today?');
-      setNudgeText(existingAgent.nudge_text || 'Hello, Are you still there?');
-      setNudgeInterval(existingAgent.nudge_interval || 15);
-      setMaxNudges(existingAgent.max_nudges || 3);
-      setTypingVolume(existingAgent.typing_volume || 0.8);
-      setMaxCallDuration(existingAgent.max_call_duration || 300);
+    if (isEditing) {
+      if (existingConfig) {
+        // Use existingConfig if available (from getAgentConfigData)
+        console.log('🔄 ToolsConfig: Loading form with existing config:', existingConfig);
+        setInitialMessage(existingConfig.initialMessage || 'Hello! How can I help you today?');
+        setNudgeText(existingConfig.nudgeText || 'Hello, Are you still there?');
+        setNudgeInterval(existingConfig.nudgeInterval || 15);
+        setMaxNudges(existingConfig.maxNudges || 3);
+        setTypingVolume(existingConfig.typingVolume || 0.8);
+        setMaxCallDuration(existingConfig.maxCallDuration || 300);
+      } else if (existingAgent) {
+        // Fallback to existingAgent if existingConfig is not available
+        console.log('🔄 ToolsConfig: Loading form with existing agent:', existingAgent);
+        setInitialMessage(existingAgent.initial_message || 'Hello! How can I help you today?');
+        setNudgeText(existingAgent.nudge_text || 'Hello, Are you still there?');
+        setNudgeInterval(existingAgent.nudge_interval || 15);
+        setMaxNudges(existingAgent.max_nudges || 3);
+        setTypingVolume(existingAgent.typing_volume || 0.8);
+        setMaxCallDuration(existingAgent.max_call_duration || 300);
+      }
     }
   }, [isEditing, existingAgent, existingConfig]);
 
@@ -96,7 +100,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
       if (savedToolsConfig) {
         const parsedConfig = JSON.parse(savedToolsConfig);
         console.log('Loading saved tools config:', parsedConfig);
-        
+
         if (parsedConfig.initialMessage) setInitialMessage(parsedConfig.initialMessage);
         if (parsedConfig.nudgeText) setNudgeText(parsedConfig.nudgeText);
         if (parsedConfig.nudgeInterval) setNudgeInterval(parsedConfig.nudgeInterval);
@@ -128,7 +132,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
           try {
             const parsedVoiceConfig = JSON.parse(savedVoiceConfig);
             if (parsedVoiceConfig && (
-              parsedVoiceConfig.voiceProvider || 
+              parsedVoiceConfig.voiceProvider ||
               parsedVoiceConfig.selectedVoiceProvider ||
               parsedVoiceConfig.selectedVoice ||
               parsedVoiceConfig.voiceId
@@ -151,7 +155,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
           try {
             const parsedModelConfig = JSON.parse(savedModelConfig);
             if (parsedModelConfig && (
-              parsedModelConfig.selectedModelProvider || 
+              parsedModelConfig.selectedModelProvider ||
               parsedModelConfig.provider ||
               parsedModelConfig.model ||
               parsedModelConfig.selectedModel
@@ -174,7 +178,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
           try {
             const parsedTranscriberConfig = JSON.parse(savedTranscriberConfig);
             if (parsedTranscriberConfig && (
-              parsedTranscriberConfig.transcriberProvider || 
+              parsedTranscriberConfig.transcriberProvider ||
               parsedTranscriberConfig.selectedTranscriberProvider ||
               parsedTranscriberConfig.provider
             )) {
@@ -198,9 +202,9 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
             const value = localStorage.getItem(key);
             // Look for voice config by checking if the value contains voice-related data
             if (value && (
-              value.includes('11Labs') || 
-              value.includes('OpenAI') || 
-              value.includes('voiceProvider') || 
+              value.includes('11Labs') ||
+              value.includes('OpenAI') ||
+              value.includes('voiceProvider') ||
               value.includes('selectedVoiceProvider') ||
               value.includes('voiceId') ||
               value.includes('Rachel')
@@ -208,8 +212,8 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
               try {
                 const parsed = JSON.parse(value);
                 if (parsed && (
-                  parsed.voiceProvider || 
-                  parsed.selectedVoiceProvider || 
+                  parsed.voiceProvider ||
+                  parsed.selectedVoiceProvider ||
                   parsed.voiceId ||
                   parsed.selectedVoice
                 )) {
@@ -232,8 +236,8 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
           if (key) {
             const value = localStorage.getItem(key);
             if (value && (
-              value.includes('GPT') || 
-              value.includes('Claude') || 
+              value.includes('GPT') ||
+              value.includes('Claude') ||
               value.includes('gpt-4o') ||
               value.includes('gpt-4') ||
               value.includes('selectedModelProvider') ||
@@ -244,7 +248,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
               try {
                 const parsed = JSON.parse(value);
                 if (parsed && (
-                  parsed.selectedModelProvider || 
+                  parsed.selectedModelProvider ||
                   parsed.modelProvider ||
                   parsed.provider ||
                   parsed.model ||
@@ -266,7 +270,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
       if (!modelConfigFound) {
         const modelProvider = localStorage.getItem('selectedModelProvider') || localStorage.getItem('modelProvider');
         const model = localStorage.getItem('selectedModel') || localStorage.getItem('model');
-        
+
         if (modelProvider || model) {
           modelConfigFound = {
             selectedModelProvider: modelProvider,
@@ -305,20 +309,20 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
       console.log('=== Creating/Updating Agent ===');
       console.log('Initial voiceConfig:', voiceConfig);
       console.log('Initial transcriberConfig:', transcriberConfig);
-      
+
       // Validate configurations - check both props and localStorage
       const effectiveVoiceConfig = voiceConfig || localVoiceConfig;
       const effectiveModelConfig = modelConfig || localModelConfig;
       const effectiveTranscriberConfig = transcriberConfig || localTranscriberConfig;
-      
+
       if (!effectiveVoiceConfig) {
         throw new Error('Voice configuration is required. Please configure in the Voice tab.');
       }
-      
+
       if (!effectiveTranscriberConfig) {
         throw new Error('Transcriber configuration is required. Please configure in the Transcriber tab.');
       }
-      
+
       // Build TTS configuration
       let ttsConfig: any = {};
       if (effectiveVoiceConfig) {
@@ -425,7 +429,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
       if (!ttsConfig.provider) {
         throw new Error('Invalid TTS configuration: missing provider');
       }
-      
+
       if (!sttConfig.provider) {
         throw new Error('Invalid STT configuration: missing provider');
       }
@@ -456,17 +460,16 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
           setSuccessMessage('');
         }, 3000);
 
-        // Call the callback but don't wait for it to complete
+        // Call the callback to reset edit mode and refresh agents list
         if (onAgentCreated) {
           try {
-            // Add a small delay to ensure the backend has processed the creation
+            // Add a small delay to ensure the backend has processed the creation/update
             setTimeout(async () => {
-              console.log('🔄 Refreshing agents list after creation...');
+              console.log('🔄 Calling onAgentCreated callback to reset edit mode...');
               await onAgentCreated();
             }, 1000);
           } catch (error) {
-            // Ignore errors from refresh since backend doesn't support listing agents
-            console.log('Agent created successfully. Refresh may not work due to backend limitations.');
+            console.warn('Error calling onAgentCreated callback:', error);
           }
         }
       } else {
@@ -515,6 +518,29 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
           </div>
         )}
 
+        {/* Header */}
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className={`p-3 rounded-2xl ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+              <Wrench className={`h-6 w-6 sm:h-8 sm:w-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+            </div>
+            <h3 className={`text-xl sm:text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Tools Configuration</h3>
+          </div>
+          <p className={`max-w-2xl mx-auto text-sm sm:text-base ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            {isEditing ? 'Configure agent behavior, call settings, and advanced options' : 'View your agent tools configuration settings'}
+          </p>
+
+          {/* Mode Indicator */}
+          <div className="mt-4 flex justify-center">
+            <div className={`px-4 py-2 rounded-full text-sm font-medium ${isEditing
+              ? 'bg-gray-100 text-gray-800 border border-gray-200'
+              : 'bg-gray-100 text-gray-600 border border-gray-200'
+              }`}>
+              {isEditing ? '✏️ Edit Mode' : '👁️ View Mode'}
+            </div>
+          </div>
+        </div>
+
         {/* Configuration Status */}
         <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white/50 border-gray-200'}`}>
           <div className="flex items-center justify-between mb-4">
@@ -542,12 +568,14 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                   console.log('=== End localStorage Debug ===');
                   refreshConfigurations();
                 }}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  isDarkMode 
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                disabled={!isEditing}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${!isEditing
+                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-                title="Debug localStorage and refresh configurations"
+                  }`}
+                title={isEditing ? "Debug localStorage and refresh configurations" : "Enable edit mode to refresh configurations"}
               >
                 <RefreshCw className="h-4 w-4" />
               </button>
@@ -615,7 +643,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
               )}
             </div>
           </div>
-          
+
           {(!(voiceConfig || localVoiceConfig) || !(transcriberConfig || localTranscriberConfig)) && (
             <div className={`mt-4 p-3 rounded-lg ${isDarkMode ? 'bg-yellow-900/20 border border-yellow-700 text-yellow-300' : 'bg-yellow-50 border border-yellow-200 text-yellow-700'}`}>
               <p className="text-sm">
@@ -650,7 +678,15 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
               rows={3}
               value={initialMessage}
               onChange={(e) => setInitialMessage(e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 resize-none ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'}`}
+              disabled={!isEditing}
+              className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 resize-none ${!isEditing
+                ? isDarkMode
+                  ? 'border-gray-700 bg-gray-800/30 text-gray-400 placeholder-gray-500 cursor-not-allowed'
+                  : 'border-gray-300 bg-gray-100 text-gray-500 placeholder-gray-400 cursor-not-allowed'
+                : isDarkMode
+                  ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500'
+                  : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'
+                }`}
               placeholder="Enter the agent's first message..."
             />
             <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -684,7 +720,15 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                 rows={2}
                 value={nudgeText}
                 onChange={(e) => setNudgeText(e.target.value)}
-                className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 resize-none ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'}`}
+                disabled={!isEditing}
+                className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 resize-none ${!isEditing
+                  ? isDarkMode
+                    ? 'border-gray-700 bg-gray-800/30 text-gray-400 placeholder-gray-500 cursor-not-allowed'
+                    : 'border-gray-300 bg-gray-100 text-gray-500 placeholder-gray-400 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500'
+                    : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'
+                  }`}
                 placeholder="Message to send when user is silent..."
               />
               <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -705,13 +749,21 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                   max="60"
                   value={nudgeInterval}
                   onChange={(e) => setNudgeInterval(parseInt(e.target.value) || 15)}
-                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200' : 'border-gray-200 bg-white/80 text-gray-900'}`}
+                  disabled={!isEditing}
+                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 ${!isEditing
+                    ? isDarkMode
+                      ? 'border-gray-700 bg-gray-800/30 text-gray-400 cursor-not-allowed'
+                      : 'border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed'
+                    : isDarkMode
+                      ? 'border-gray-600 bg-gray-800/80 text-gray-200'
+                      : 'border-gray-200 bg-white/80 text-gray-900'
+                    }`}
                 />
                 <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   Time to wait before sending a nudge message.
                 </p>
               </div>
-              
+
               <div>
                 <label className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   <MessageSquare className="h-4 w-4" />
@@ -723,7 +775,15 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                   max="10"
                   value={maxNudges}
                   onChange={(e) => setMaxNudges(parseInt(e.target.value) || 3)}
-                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200' : 'border-gray-200 bg-white/80 text-gray-900'}`}
+                  disabled={!isEditing}
+                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 ${!isEditing
+                    ? isDarkMode
+                      ? 'border-gray-700 bg-gray-800/30 text-gray-400 cursor-not-allowed'
+                      : 'border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed'
+                    : isDarkMode
+                      ? 'border-gray-600 bg-gray-800/80 text-gray-200'
+                      : 'border-gray-200 bg-white/80 text-gray-900'
+                    }`}
                 />
                 <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   Maximum number of nudges per call.
@@ -763,7 +823,11 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                     step="0.1"
                     value={typingVolume}
                     onChange={(e) => setTypingVolume(parseFloat(e.target.value))}
-                    className={`flex-1 h-2 rounded-lg appearance-none cursor-pointer ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}
+                    disabled={!isEditing}
+                    className={`flex-1 h-2 rounded-lg appearance-none ${!isEditing
+                      ? 'cursor-not-allowed opacity-50'
+                      : 'cursor-pointer'
+                      } ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}
                   />
                   <input
                     type="number"
@@ -772,7 +836,15 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                     step="0.1"
                     value={typingVolume}
                     onChange={(e) => setTypingVolume(parseFloat(e.target.value) || 0.8)}
-                    className={`w-20 px-3 py-2 border rounded-lg text-center ${isDarkMode ? 'border-gray-600 bg-gray-800 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
+                    disabled={!isEditing}
+                    className={`w-20 px-3 py-2 border rounded-lg text-center ${!isEditing
+                      ? isDarkMode
+                        ? 'border-gray-700 bg-gray-800/30 text-gray-400 cursor-not-allowed'
+                        : 'border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed'
+                      : isDarkMode
+                        ? 'border-gray-600 bg-gray-800 text-gray-200'
+                        : 'border-gray-200 bg-white text-gray-900'
+                      }`}
                   />
                 </div>
                 <div className="flex justify-between text-xs text-gray-500">
@@ -800,13 +872,25 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                     step="30"
                     value={maxCallDuration}
                     onChange={(e) => setMaxCallDuration(parseInt(e.target.value))}
-                    className={`flex-1 h-2 rounded-lg appearance-none cursor-pointer ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}
+                    disabled={!isEditing}
+                    className={`flex-1 h-2 rounded-lg appearance-none ${!isEditing
+                      ? 'cursor-not-allowed opacity-50'
+                      : 'cursor-pointer'
+                      } ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}
                   />
                   <input
                     type="text"
                     value={formatDuration(maxCallDuration)}
                     onChange={(e) => setMaxCallDuration(parseDuration(e.target.value) || 300)}
-                    className={`w-24 px-3 py-2 border rounded-lg text-center ${isDarkMode ? 'border-gray-600 bg-gray-800 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
+                    disabled={!isEditing}
+                    className={`w-24 px-3 py-2 border rounded-lg text-center ${!isEditing
+                      ? isDarkMode
+                        ? 'border-gray-700 bg-gray-800/30 text-gray-400 cursor-not-allowed'
+                        : 'border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed'
+                      : isDarkMode
+                        ? 'border-gray-600 bg-gray-800 text-gray-200'
+                        : 'border-gray-200 bg-white text-gray-900'
+                      }`}
                     placeholder="5:00"
                   />
                 </div>
@@ -835,7 +919,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
               <Bot className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
             </div>
           </div>
-          
+
           <div className="flex justify-end gap-3">
             {/* Save Configuration Button */}
             <button
@@ -855,7 +939,8 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                 setSuccessMessage('Configuration saved successfully!');
                 setTimeout(() => setSuccessMessage(''), 3000);
               }}
-              className={`px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-3`}
+              disabled={!isEditing}
+              className={`px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
             >
               <Settings className="h-5 w-5" />
               <span className="font-semibold">Save Config</span>
@@ -864,7 +949,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
             {/* Create/Update Agent Button */}
             <button
               onClick={handleCreateAgent}
-              disabled={isLoading || !(voiceConfig || localVoiceConfig) || !(transcriberConfig || localTranscriberConfig)}
+              disabled={isLoading || !isEditing || !(voiceConfig || localVoiceConfig) || !(transcriberConfig || localTranscriberConfig)}
               className={`group relative px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
