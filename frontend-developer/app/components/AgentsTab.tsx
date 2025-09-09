@@ -194,12 +194,45 @@ export default function AgentsTab({}: AgentsTabProps) {
     }
   }, [selectedAgent]);
 
+  // Load configurations from localStorage
+  const loadConfigurationsFromStorage = useCallback(() => {
+    try {
+      // Load voice config
+      const savedVoiceConfig = localStorage.getItem('voiceConfigState');
+      if (savedVoiceConfig) {
+        const parsedVoiceConfig = JSON.parse(savedVoiceConfig);
+        setVoiceConfig(parsedVoiceConfig);
+        console.log('Loaded voice config from localStorage:', parsedVoiceConfig);
+      }
+
+      // Load transcriber config
+      const savedTranscriberConfig = localStorage.getItem('transcriberConfigState');
+      if (savedTranscriberConfig) {
+        const parsedTranscriberConfig = JSON.parse(savedTranscriberConfig);
+        setTranscriberConfig(parsedTranscriberConfig);
+        console.log('Loaded transcriber config from localStorage:', parsedTranscriberConfig);
+      }
+
+      // Load model config
+      const savedModelConfig = localStorage.getItem('modelConfigState');
+      if (savedModelConfig) {
+        const parsedModelConfig = JSON.parse(savedModelConfig);
+        setModelConfig(parsedModelConfig);
+        console.log('Loaded model config from localStorage:', parsedModelConfig);
+      }
+    } catch (error) {
+      console.warn('Failed to load configurations from localStorage:', error);
+    }
+  }, []);
+
   // Load agents on component mount
   useEffect(() => {
     fetchAgents();
     // Get current organization ID
     setCurrentOrganizationId(agentConfigService.getCurrentOrganizationId());
-  }, []);
+    // Load configurations from localStorage
+    loadConfigurationsFromStorage();
+  }, [loadConfigurationsFromStorage]);
 
   // Refresh configuration when selectedAgent changes
   useEffect(() => {
@@ -367,18 +400,39 @@ export default function AgentsTab({}: AgentsTabProps) {
   // Handle configuration changes from child components
   const handleModelConfigChange = useCallback((config: any) => {
     setModelConfig(config);
+    // Save to localStorage
+    try {
+      localStorage.setItem('modelConfigState', JSON.stringify(config));
+      console.log('Model config saved to localStorage:', config);
+    } catch (error) {
+      console.warn('Failed to save model config to localStorage:', error);
+    }
     // Don't update selectedAgent here to avoid infinite loops
     console.log('Model config changed:', config);
   }, []);
 
   const handleVoiceConfigChange = useCallback((config: any) => {
     setVoiceConfig(config);
+    // Save to localStorage
+    try {
+      localStorage.setItem('voiceConfigState', JSON.stringify(config));
+      console.log('Voice config saved to localStorage:', config);
+    } catch (error) {
+      console.warn('Failed to save voice config to localStorage:', error);
+    }
     // Don't update selectedAgent here to avoid infinite loops
     console.log('Voice config changed:', config);
   }, []);
 
   const handleTranscriberConfigChange = useCallback((config: any) => {
     setTranscriberConfig(config);
+    // Save to localStorage
+    try {
+      localStorage.setItem('transcriberConfigState', JSON.stringify(config));
+      console.log('Transcriber config saved to localStorage:', config);
+    } catch (error) {
+      console.warn('Failed to save transcriber config to localStorage:', error);
+    }
     // Don't update selectedAgent here to avoid infinite loops
     console.log('Transcriber config changed:', config);
   }, []);
@@ -426,6 +480,11 @@ export default function AgentsTab({}: AgentsTabProps) {
     setActiveConfigTab(tabId);
     setIsDropdownOpen(false); // Close dropdown on mobile
 
+    // Refresh configurations from localStorage when switching tabs
+    setTimeout(() => {
+      loadConfigurationsFromStorage();
+    }, 50);
+
     // Scroll to the corresponding section
     setTimeout(() => {
       switch (tabId) {
@@ -445,7 +504,7 @@ export default function AgentsTab({}: AgentsTabProps) {
           break;
       }
     }, 100);
-  }, [activeConfigTab]); // Remove voiceConfig and transcriberConfig from dependencies
+  }, [activeConfigTab, loadConfigurationsFromStorage]); // Add loadConfigurationsFromStorage to dependencies
 
 
   // Close dropdown when clicking outside
@@ -985,6 +1044,10 @@ export default function AgentsTab({}: AgentsTabProps) {
                       onConfigChange={handleToolsConfigChange}
                       existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).toolsConfig : null}
                       isEditing={isEditing}
+                      // Pass saved configurations from localStorage
+                      modelConfig={modelConfig}
+                      voiceConfig={voiceConfig}
+                      transcriberConfig={transcriberConfig}
                     />
                   )}
 
