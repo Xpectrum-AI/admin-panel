@@ -11,6 +11,7 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Developer Dashboard',
   description: 'Developer Dashboard for managing agents, phone numbers, and configurations',
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
 }
 
 export default function RootLayout({
@@ -21,7 +22,10 @@ export default function RootLayout({
   return (
 
     <html lang="en" className="dark">
-      <body className={`${inter.className} dark:bg-gray-900 dark:text-white`}>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+      </head>
+      <body className={`${inter.className} dark:bg-gray-900 dark:text-white min-h-screen overflow-x-hidden`}>
 
         <ThemeProvider>
           <AuthProviderWrapper>

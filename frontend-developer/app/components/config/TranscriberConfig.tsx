@@ -41,89 +41,89 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
         console.log('🚫 Skipping initial config load - user is changing provider');
         return;
       }
-      
+
       // Additional safety check - if we just changed the provider, don't override
       if (providerChangeTimeoutRef.current) {
         console.log('🚫 Skipping initial config load - provider change timeout still active');
         return;
       }
-      
-      // If we have existing config from agent, use that (regardless of editing mode)
+
+      // If we have existing config from agent, use that
       if (existingConfig) {
         console.log('Loading existing transcriber config:', existingConfig);
-        
+
         // Handle STT config from backend
         if (existingConfig.provider) {
           // Set provider (convert backend format to UI format)
           let provider = existingConfig.provider;
           if (provider === 'deepgram') provider = 'Deepgram';
           if (provider === 'whisper') provider = 'Whisper';
-          
+
           console.log('Backend transcriber provider:', existingConfig.provider, '-> UI provider:', provider);
           setSelectedTranscriberProvider(provider);
-          
-            // Set language - check provider-specific object first, then fallback to root level
-            if (existingConfig[provider.toLowerCase()]?.language) {
-              console.log('Backend language from provider object:', existingConfig[provider.toLowerCase()].language);
-              setSelectedLanguage(existingConfig[provider.toLowerCase()].language);
-            } else if (existingConfig.language) {
-              console.log('Backend language from root:', existingConfig.language);
+
+          // Set language - check provider-specific object first, then fallback to root level
+          if (existingConfig[provider.toLowerCase()]?.language) {
+            console.log('Backend language from provider object:', existingConfig[provider.toLowerCase()].language);
+            setSelectedLanguage(existingConfig[provider.toLowerCase()].language);
+          } else if (existingConfig.language) {
+            console.log('Backend language from root:', existingConfig.language);
             setSelectedLanguage(existingConfig.language);
           }
-          
-            // Set model - check provider-specific object first, then fallback to root level
-            if (existingConfig[provider.toLowerCase()]?.model) {
-              console.log('Backend model from provider object:', existingConfig[provider.toLowerCase()].model);
-              setSelectedModel(existingConfig[provider.toLowerCase()].model);
-            } else if (existingConfig.model) {
-              console.log('Backend model from root:', existingConfig.model);
+
+          // Set model - check provider-specific object first, then fallback to root level
+          if (existingConfig[provider.toLowerCase()]?.model) {
+            console.log('Backend model from provider object:', existingConfig[provider.toLowerCase()].model);
+            setSelectedModel(existingConfig[provider.toLowerCase()].model);
+          } else if (existingConfig.model) {
+            console.log('Backend model from root:', existingConfig.model);
             setSelectedModel(existingConfig.model);
           }
-          
-            // Set API key - check provider-specific object first, then fallback to root level
-            if (existingConfig[provider.toLowerCase()]?.api_key) {
-              console.log('Backend API key from provider object:', maskApiKey(existingConfig[provider.toLowerCase()].api_key));
-              setApiKey(existingConfig[provider.toLowerCase()].api_key);
-            } else if (existingConfig.api_key) {
-              console.log('Backend API key from root:', maskApiKey(existingConfig.api_key));
+
+          // Set API key - check provider-specific object first, then fallback to root level
+          if (existingConfig[provider.toLowerCase()]?.api_key) {
+            console.log('Backend API key from provider object:', maskApiKey(existingConfig[provider.toLowerCase()].api_key));
+            setApiKey(existingConfig[provider.toLowerCase()].api_key);
+          } else if (existingConfig.api_key) {
+            console.log('Backend API key from root:', maskApiKey(existingConfig.api_key));
             setApiKey(existingConfig.api_key);
           }
-          
-            // Set punctuate - check provider-specific object first, then fallback to root level
-            if (existingConfig[provider.toLowerCase()]?.punctuate !== undefined) {
-              console.log('Backend punctuate from provider object:', existingConfig[provider.toLowerCase()].punctuate);
-              setPunctuateEnabled(existingConfig[provider.toLowerCase()].punctuate);
-            } else if (existingConfig.punctuate !== undefined) {
-              console.log('Backend punctuate from root:', existingConfig.punctuate);
+
+          // Set punctuate - check provider-specific object first, then fallback to root level
+          if (existingConfig[provider.toLowerCase()]?.punctuate !== undefined) {
+            console.log('Backend punctuate from provider object:', existingConfig[provider.toLowerCase()].punctuate);
+            setPunctuateEnabled(existingConfig[provider.toLowerCase()].punctuate);
+          } else if (existingConfig.punctuate !== undefined) {
+            console.log('Backend punctuate from root:', existingConfig.punctuate);
             setPunctuateEnabled(existingConfig.punctuate);
           }
-          
-            // Set smart format - check provider-specific object first, then fallback to root level
-            if (existingConfig[provider.toLowerCase()]?.smart_format !== undefined) {
-              console.log('Backend smart_format from provider object:', existingConfig[provider.toLowerCase()].smart_format);
-              setSmartFormatEnabled(existingConfig[provider.toLowerCase()].smart_format);
-            } else if (existingConfig.smart_format !== undefined) {
-              console.log('Backend smart_format from root:', existingConfig.smart_format);
+
+          // Set smart format - check provider-specific object first, then fallback to root level
+          if (existingConfig[provider.toLowerCase()]?.smart_format !== undefined) {
+            console.log('Backend smart_format from provider object:', existingConfig[provider.toLowerCase()].smart_format);
+            setSmartFormatEnabled(existingConfig[provider.toLowerCase()].smart_format);
+          } else if (existingConfig.smart_format !== undefined) {
+            console.log('Backend smart_format from root:', existingConfig.smart_format);
             setSmartFormatEnabled(existingConfig.smart_format);
           }
-          
-                         // Set interim results - check provider-specific object first, then fallback to root level
-             if (existingConfig[provider.toLowerCase()]?.interim_results !== undefined) {
-               console.log('Backend interim_results from provider object:', existingConfig[provider.toLowerCase()].interim_results);
-               setInterimResultEnabled(existingConfig[provider.toLowerCase()].interim_results);
-             } else if (existingConfig.interim_results !== undefined) {
-               console.log('Backend interim_results from root:', existingConfig.interim_results);
+
+          // Set interim results - check provider-specific object first, then fallback to root level
+          if (existingConfig[provider.toLowerCase()]?.interim_results !== undefined) {
+            console.log('Backend interim_results from provider object:', existingConfig[provider.toLowerCase()].interim_results);
+            setInterimResultEnabled(existingConfig[provider.toLowerCase()].interim_results);
+          } else if (existingConfig.interim_results !== undefined) {
+            console.log('Backend interim_results from root:', existingConfig.interim_results);
             setInterimResultEnabled(existingConfig.interim_results);
           }
-          
+
           console.log('Final UI state after loading backend config:', {
-              provider: existingConfig.provider,
-              language: existingConfig[provider.toLowerCase()]?.language || existingConfig.language || 'en-US',
-              model: existingConfig[provider.toLowerCase()]?.model || existingConfig.model || 'nova-2',
-              apiKey: maskApiKey(existingConfig[provider.toLowerCase()]?.api_key || existingConfig.api_key || ''),
-              punctuate: existingConfig[provider.toLowerCase()]?.punctuate ?? existingConfig.punctuate ?? true,
-              smartFormat: existingConfig[provider.toLowerCase()]?.smart_format ?? existingConfig.smart_format ?? true,
-              interimResults: existingConfig[provider.toLowerCase()]?.interim_results ?? existingConfig.interim_results ?? false
+            provider: existingConfig.provider,
+            language: existingConfig[provider.toLowerCase()]?.language || existingConfig.language || 'en-US',
+            model: existingConfig[provider.toLowerCase()]?.model || existingConfig.model || 'nova-2',
+            apiKey: maskApiKey(existingConfig[provider.toLowerCase()]?.api_key || existingConfig.api_key || ''),
+            punctuate: existingConfig[provider.toLowerCase()]?.punctuate ?? existingConfig.punctuate ?? true,
+            smartFormat: existingConfig[provider.toLowerCase()]?.smart_format ?? existingConfig.smart_format ?? true,
+            interimResults: existingConfig[provider.toLowerCase()]?.interim_results ?? existingConfig.interim_results ?? false
           });
         }
       } else {
@@ -142,100 +142,6 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
       }
     } catch (error) {
       console.warn('Failed to load transcriber config state:', error);
-    }
-  }, [existingConfig, isUserChangingProvider]);
-
-  // Handle changes to existingConfig prop (for agent updates)
-  useEffect(() => {
-    // Don't override user selections if they're actively changing the provider
-    if (isUserChangingProvider) {
-      console.log('🚫 Skipping existingConfig update - user is changing provider');
-      return;
-    }
-    
-    // Additional safety check - if we just changed the provider, don't override
-    if (providerChangeTimeoutRef.current) {
-      console.log('🚫 Skipping existingConfig update - provider change timeout still active');
-      return;
-    }
-    
-    if (existingConfig) {
-      console.log('🔄 TranscriberConfig: existingConfig changed, updating state:', existingConfig);
-      
-      // Handle STT config from backend
-      if (existingConfig.provider) {
-        // Set provider (convert backend format to UI format)
-        let provider = existingConfig.provider;
-        if (provider === 'deepgram') provider = 'Deepgram';
-        if (provider === 'whisper') provider = 'Whisper';
-        
-        console.log('Backend transcriber provider:', existingConfig.provider, '-> UI provider:', provider);
-        setSelectedTranscriberProvider(provider);
-        
-        // Set language - check provider-specific object first, then fallback to root level
-        if (existingConfig[provider.toLowerCase()]?.language) {
-          console.log('Backend language from provider object:', existingConfig[provider.toLowerCase()].language);
-          setSelectedLanguage(existingConfig[provider.toLowerCase()].language);
-        } else if (existingConfig.language) {
-          console.log('Backend language from root:', existingConfig.language);
-          setSelectedLanguage(existingConfig.language);
-        }
-        
-        // Set model - check provider-specific object first, then fallback to root level
-        if (existingConfig[provider.toLowerCase()]?.model) {
-          console.log('Backend model from provider object:', existingConfig[provider.toLowerCase()].model);
-          setSelectedModel(existingConfig[provider.toLowerCase()].model);
-        } else if (existingConfig.model) {
-          console.log('Backend model from root:', existingConfig.model);
-          setSelectedModel(existingConfig.model);
-        }
-        
-        // Set API key - check provider-specific object first, then fallback to root level
-        if (existingConfig[provider.toLowerCase()]?.api_key) {
-          console.log('Backend API key from provider object:', maskApiKey(existingConfig[provider.toLowerCase()].api_key));
-          setApiKey(existingConfig[provider.toLowerCase()].api_key);
-        } else if (existingConfig.api_key) {
-          console.log('Backend API key from root:', maskApiKey(existingConfig.api_key));
-          setApiKey(existingConfig.api_key);
-        }
-        
-        // Set punctuate - check provider-specific object first, then fallback to root level
-        if (existingConfig[provider.toLowerCase()]?.punctuate !== undefined) {
-          console.log('Backend punctuate from provider object:', existingConfig[provider.toLowerCase()].punctuate);
-          setPunctuateEnabled(existingConfig[provider.toLowerCase()].punctuate);
-        } else if (existingConfig.punctuate !== undefined) {
-          console.log('Backend punctuate from root:', existingConfig.punctuate);
-          setPunctuateEnabled(existingConfig.punctuate);
-        }
-        
-        // Set smart format - check provider-specific object first, then fallback to root level
-        if (existingConfig[provider.toLowerCase()]?.smart_format !== undefined) {
-          console.log('Backend smart_format from provider object:', existingConfig[provider.toLowerCase()].smart_format);
-          setSmartFormatEnabled(existingConfig[provider.toLowerCase()].smart_format);
-        } else if (existingConfig.smart_format !== undefined) {
-          console.log('Backend smart_format from root:', existingConfig.smart_format);
-          setSmartFormatEnabled(existingConfig.smart_format);
-        }
-        
-        // Set interim results - check provider-specific object first, then fallback to root level
-        if (existingConfig[provider.toLowerCase()]?.interim_results !== undefined) {
-          console.log('Backend interim_results from provider object:', existingConfig[provider.toLowerCase()].interim_results);
-          setInterimResultEnabled(existingConfig[provider.toLowerCase()].interim_results);
-        } else if (existingConfig.interim_results !== undefined) {
-          console.log('Backend interim_results from root:', existingConfig.interim_results);
-          setInterimResultEnabled(existingConfig.interim_results);
-        }
-        
-        console.log('✅ TranscriberConfig: State updated from existingConfig:', {
-          provider: existingConfig.provider,
-          language: existingConfig[provider.toLowerCase()]?.language || existingConfig.language || 'en-US',
-          model: existingConfig[provider.toLowerCase()]?.model || existingConfig.model || 'nova-2',
-          apiKey: maskApiKey(existingConfig[provider.toLowerCase()]?.api_key || existingConfig.api_key || ''),
-          punctuate: existingConfig[provider.toLowerCase()]?.punctuate ?? existingConfig.punctuate ?? true,
-          smartFormat: existingConfig[provider.toLowerCase()]?.smart_format ?? existingConfig.smart_format ?? true,
-          interimResults: existingConfig[provider.toLowerCase()]?.interim_results ?? existingConfig.interim_results ?? false
-        });
-      }
     }
   }, [existingConfig, isUserChangingProvider]);
 
@@ -270,7 +176,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
   // Load default values on component mount
   useEffect(() => {
     const defaultApiKeys = agentConfigService.getFullApiKeys();
-    
+
     // Set default API key based on selected provider
     switch (selectedTranscriberProvider) {
       case 'Deepgram':
@@ -294,12 +200,12 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
     const backendConfig = {
       provider: selectedTranscriberProvider === 'Deepgram' ? 'deepgram' : 'whisper',
       deepgram: selectedTranscriberProvider === 'Deepgram' ? {
-      api_key: apiKey,
-      model: selectedModel,
-      language: selectedLanguage,
-      punctuate: punctuateEnabled,
-      smart_format: smartFormatEnabled,
-      interim_results: interimResultEnabled
+        api_key: apiKey,
+        model: selectedModel,
+        language: selectedLanguage,
+        punctuate: punctuateEnabled,
+        smart_format: smartFormatEnabled,
+        interim_results: interimResultEnabled
       } : null,
       whisper: selectedTranscriberProvider === 'Whisper' ? {
         api_key: apiKey,
@@ -329,7 +235,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
   const handleConfigure = async () => {
     setIsConfiguring(true);
     setConfigStatus('idle');
-    
+
     try {
       // Save current state to localStorage
       const config = {
@@ -341,21 +247,21 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
         smartFormat: smartFormatEnabled,
         interimResults: interimResultEnabled
       };
-      
+
       saveStateToLocalStorage(config);
-      
+
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       setConfigStatus('success');
       console.log('Transcriber configuration saved to localStorage:', config);
-      
+
       // Clear success message after 3 seconds
       setTimeout(() => setConfigStatus('idle'), 3000);
     } catch (error) {
       console.error('Failed to configure transcriber:', error);
       setConfigStatus('error');
-      
+
       // Clear error message after 3 seconds
       setTimeout(() => setConfigStatus('idle'), 3000);
     } finally {
@@ -375,29 +281,29 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
 
   const handleProviderChange = (provider: string) => {
     console.log('🔄 Transcriber provider changing from', selectedTranscriberProvider, 'to', provider);
-    
+
     // Set flag to prevent existingConfig from overriding user selection
     setIsUserChangingProvider(true);
-    
+
     // Clear any pending timeouts
     if (providerChangeTimeoutRef.current) {
       clearTimeout(providerChangeTimeoutRef.current);
     }
-    
+
     setSelectedTranscriberProvider(provider);
-    
+
     // Reset model to first available model for the new provider
     const providerData = transcriberProviders[provider as keyof typeof transcriberProviders];
     if (providerData && providerData.length > 0) {
       setSelectedModel(providerData[0]);
-      saveStateToLocalStorage({ 
-        selectedTranscriberProvider: provider, 
-        selectedModel: providerData[0] 
+      saveStateToLocalStorage({
+        selectedTranscriberProvider: provider,
+        selectedModel: providerData[0]
       });
     }
-    
+
     console.log('✅ Transcriber provider changed to', provider, 'with reset model');
-    
+
     // Reset the flag after a delay
     providerChangeTimeoutRef.current = setTimeout(() => {
       setIsUserChangingProvider(false);
@@ -416,20 +322,23 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
             <h3 className={`text-xl sm:text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Transcriber Configuration</h3>
             <button
               onClick={handleRefreshConfig}
-              className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
-                isDarkMode 
-                  ? 'bg-orange-800/50 hover:bg-orange-700/50 text-orange-400' 
+              disabled={!isEditing}
+              className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${!isEditing
+                ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                : isDarkMode
+                  ? 'bg-orange-800/50 hover:bg-orange-700/50 text-orange-400'
                   : 'bg-orange-100 hover:bg-orange-200 text-orange-600'
-              }`}
-              title="Refresh configuration from agent"
+                }`}
+              title={isEditing ? "Refresh configuration from agent" : "Enable edit mode to refresh configuration"}
             >
               <RefreshCw className="h-4 w-4" />
             </button>
           </div>
         </div>
         <p className={`max-w-2xl mx-auto text-sm sm:text-base ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-          Configure speech-to-text settings for accurate transcription of conversations
+          {isEditing ? 'Configure speech-to-text settings for accurate transcription of conversations' : 'View your transcriber configuration settings'}
         </p>
+
       </div>
 
       {/* Configuration Grid */}
@@ -445,7 +354,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
               <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Choose your transcription provider and language</p>
             </div>
           </div>
-          
+
           <div className="space-y-4">
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -454,18 +363,22 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
               <select
                 value={selectedTranscriberProvider}
                 onChange={(e) => handleProviderChange(e.target.value)}
-                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${
-                  isDarkMode 
-                    ? 'bg-gray-700/50 border-gray-600 text-gray-200' 
+                disabled={!isEditing}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
+                  ? isDarkMode
+                    ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'bg-gray-700/50 border-gray-600 text-gray-200'
                     : 'bg-gray-50 border-gray-200 text-gray-900'
-                }`}
+                  }`}
               >
                 <option value="Deepgram">Deepgram</option>
                 <option value="Whisper">Whisper</option>
                 <option value="Groq">Groq</option>
               </select>
             </div>
-            
+
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 Language
@@ -476,11 +389,15 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
                   setSelectedLanguage(e.target.value);
                   saveStateToLocalStorage({ selectedLanguage: e.target.value });
                 }}
-                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${
-                  isDarkMode 
-                    ? 'bg-gray-700/50 border-gray-600 text-gray-200' 
+                disabled={!isEditing}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
+                  ? isDarkMode
+                    ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'bg-gray-700/50 border-gray-600 text-gray-200'
                     : 'bg-gray-50 border-gray-200 text-gray-900'
-                }`}
+                  }`}
               >
                 <option value="en-US">English (US)</option>
                 <option value="multi">Multi-language</option>
@@ -504,7 +421,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
               <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Select model and configure API access</p>
             </div>
           </div>
-          
+
           <div className="space-y-4">
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -516,18 +433,17 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
                   setSelectedModel(e.target.value);
                   saveStateToLocalStorage({ selectedModel: e.target.value });
                 }}
-                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base ${
-                  isDarkMode 
-                    ? 'bg-gray-700/50 border-gray-600 text-gray-200' 
-                    : 'bg-gray-50 border-gray-200 text-gray-900'
-                }`}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base ${isDarkMode
+                  ? 'bg-gray-700/50 border-gray-600 text-gray-200'
+                  : 'bg-gray-50 border-gray-200 text-gray-900'
+                  }`}
               >
                 {transcriberProviders[selectedTranscriberProvider as keyof typeof transcriberProviders]?.map((model) => (
                   <option key={model} value={model}>{model}</option>
                 ))}
               </select>
             </div>
-            
+
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 API Key
@@ -536,11 +452,10 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
                 type="password"
                 value={getApiKeyDisplayValue(apiKey)}
                 readOnly
-                className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${
-                  isDarkMode 
-                    ? 'border-gray-600 bg-gray-700/50 text-gray-400' 
-                    : 'border-gray-200 bg-gray-100/50 text-gray-500'
-                }`}
+                className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${isDarkMode
+                  ? 'border-gray-600 bg-gray-700/50 text-gray-400'
+                  : 'border-gray-200 bg-gray-100/50 text-gray-500'
+                  }`}
                 placeholder="Default API key loaded"
               />
             </div>
@@ -574,7 +489,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
             <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Configure advanced transcription options</p>
           </div>
         </div>
-        
+
         <div className="space-y-4">
           {/* Punctuate Toggle */}
           <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
@@ -595,7 +510,13 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
                   setPunctuateEnabled(!punctuateEnabled);
                   saveStateToLocalStorage({ punctuateEnabled: !punctuateEnabled });
                 }}
-                className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${punctuateEnabled ? (isDarkMode ? 'bg-green-600' : 'bg-green-500') : (isDarkMode ? 'bg-gray-600' : 'bg-gray-300')}`}
+                disabled={!isEditing}
+                className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
+                  ? 'opacity-50 cursor-not-allowed'
+                  : punctuateEnabled
+                    ? (isDarkMode ? 'bg-green-600' : 'bg-green-500')
+                    : (isDarkMode ? 'bg-gray-600' : 'bg-gray-300')
+                  }`}
               >
                 <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out ${punctuateEnabled ? 'right-1' : 'left-1'}`}></div>
               </button>
@@ -621,7 +542,13 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
                   setSmartFormatEnabled(!smartFormatEnabled);
                   saveStateToLocalStorage({ smartFormatEnabled: !smartFormatEnabled });
                 }}
-                className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${smartFormatEnabled ? (isDarkMode ? 'bg-green-600' : 'bg-green-500') : (isDarkMode ? 'bg-gray-600' : 'bg-gray-300')}`}
+                disabled={!isEditing}
+                className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
+                  ? 'opacity-50 cursor-not-allowed'
+                  : smartFormatEnabled
+                    ? (isDarkMode ? 'bg-green-600' : 'bg-green-500')
+                    : (isDarkMode ? 'bg-gray-600' : 'bg-gray-300')
+                  }`}
               >
                 <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out ${smartFormatEnabled ? 'right-1' : 'left-1'}`}></div>
               </button>
@@ -647,7 +574,13 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
                   setInterimResultEnabled(!interimResultEnabled);
                   saveStateToLocalStorage({ interimResultEnabled: !interimResultEnabled });
                 }}
-                className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${interimResultEnabled ? (isDarkMode ? 'bg-green-600' : 'bg-green-500') : (isDarkMode ? 'bg-gray-600' : 'bg-gray-300')}`}
+                disabled={!isEditing}
+                className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
+                  ? 'opacity-50 cursor-not-allowed'
+                  : interimResultEnabled
+                    ? (isDarkMode ? 'bg-green-600' : 'bg-green-500')
+                    : (isDarkMode ? 'bg-gray-600' : 'bg-gray-300')
+                  }`}
               >
                 <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out ${interimResultEnabled ? 'right-1' : 'left-1'}`}></div>
               </button>
@@ -659,20 +592,20 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
       {/* Configure Button */}
       <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
         <div className="flex justify-end">
-        <button
-          onClick={handleConfigure}
-          disabled={isConfiguring}
-              className={`group relative px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-          {isConfiguring ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-                <Settings className="h-5 w-5" />
-          )}
-              <span className="font-semibold">{isConfiguring ? 'Saving...' : 'Save Configuration'}</span>
-        </button>
-          </div>
+          <button
+            onClick={handleConfigure}
+            disabled={isConfiguring || !isEditing}
+            className={`group relative px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+            {isConfiguring ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Settings className="h-5 w-5" />
+            )}
+            <span className="font-semibold">{isConfiguring ? 'Saving...' : 'Save Configuration'}</span>
+          </button>
+        </div>
 
         {/* Status Messages */}
         {configStatus === 'success' && (
