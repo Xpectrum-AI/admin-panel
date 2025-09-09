@@ -74,7 +74,7 @@ interface AgentsTabProps {
 
 }
 
-export default function AgentsTab({}: AgentsTabProps) {
+export default function AgentsTab({ }: AgentsTabProps) {
   const { isDarkMode } = useTheme();
 
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -109,47 +109,47 @@ export default function AgentsTab({}: AgentsTabProps) {
     console.log('🔄 Starting fetchAgents...');
     setIsLoadingAgents(true);
     setAgentsError('');
-    
+
     try {
       const result = await agentConfigService.getAllAgents();
       console.log('📊 getAllAgents result:', result);
-      
-              if (result.success) {
-          if (result.data && result.data.length > 0) {
-            console.log('📋 Processing agents data:', result.data);
-            console.log('📋 First agent sample:', result.data[0]);
-            // Transform backend data to match our Agent interface
-            const transformedAgents: Agent[] = result.data.map((agent: any, index: number) => {
-              console.log(`📋 Transforming agent ${index}:`, agent);
-              return {
-                id: agent.name || agent.id || `agent-${Date.now()}`,
-                name: agent.name || 'Unnamed Agent',
-                status: agent.status || 'draft',
-                model: agent.model || 'GPT-4o',
-                provider: agent.provider || 'OpenAI',
-                cost: agent.cost || '~$0.10/min',
-                latency: agent.latency || '~1000ms',
-                avatar: '🤖',
-                description: agent.description || 'AI Agent',
-                organization_id: agent.organization_id,
-                chatbot_api: agent.chatbot_api,
-                chatbot_key: agent.chatbot_key,
-                tts_config: agent.tts_config,
-                stt_config: agent.stt_config,
-                initial_message: agent.initial_message,
-                nudge_text: agent.nudge_text,
-                nudge_interval: agent.nudge_interval,
-                max_nudges: agent.max_nudges,
-                typing_volume: agent.typing_volume,
-                max_call_duration: agent.max_call_duration,
-                created_at: agent.created_at,
-                updated_at: agent.updated_at
-              };
-            });
-            
-            console.log('✅ Transformed agents:', transformedAgents);
-            setAgents(transformedAgents);
-          
+
+      if (result.success) {
+        if (result.data && result.data.length > 0) {
+          console.log('📋 Processing agents data:', result.data);
+          console.log('📋 First agent sample:', result.data[0]);
+          // Transform backend data to match our Agent interface
+          const transformedAgents: Agent[] = result.data.map((agent: any, index: number) => {
+            console.log(`📋 Transforming agent ${index}:`, agent);
+            return {
+              id: agent.name || agent.id || `agent-${Date.now()}`,
+              name: agent.name || 'Unnamed Agent',
+              status: agent.status || 'draft',
+              model: agent.model || 'GPT-4o',
+              provider: agent.provider || 'OpenAI',
+              cost: agent.cost || '~$0.10/min',
+              latency: agent.latency || '~1000ms',
+              avatar: '🤖',
+              description: agent.description || 'AI Agent',
+              organization_id: agent.organization_id,
+              chatbot_api: agent.chatbot_api,
+              chatbot_key: agent.chatbot_key,
+              tts_config: agent.tts_config,
+              stt_config: agent.stt_config,
+              initial_message: agent.initial_message,
+              nudge_text: agent.nudge_text,
+              nudge_interval: agent.nudge_interval,
+              max_nudges: agent.max_nudges,
+              typing_volume: agent.typing_volume,
+              max_call_duration: agent.max_call_duration,
+              created_at: agent.created_at,
+              updated_at: agent.updated_at
+            };
+          });
+
+          console.log('✅ Transformed agents:', transformedAgents);
+          setAgents(transformedAgents);
+
           // Select the first agent if none is selected
           if (transformedAgents.length > 0 && !selectedAgent) {
             setSelectedAgent(transformedAgents[0]);
@@ -238,19 +238,19 @@ export default function AgentsTab({}: AgentsTabProps) {
   useEffect(() => {
     if (selectedAgent) {
       console.log('🔄 Selected agent changed, refreshing configuration:', selectedAgent);
-      
+
       // Only update if the configurations are actually different to prevent loops
       if (selectedAgent.initial_message && (!modelConfig || modelConfig.firstMessage !== selectedAgent.initial_message)) {
         const modelConfigData = { firstMessage: selectedAgent.initial_message };
         setModelConfig(modelConfigData);
         console.log('Updated model config:', modelConfigData);
       }
-      
+
       if (selectedAgent.tts_config && JSON.stringify(voiceConfig) !== JSON.stringify(selectedAgent.tts_config)) {
         console.log('Updated voice config:', selectedAgent.tts_config);
         setVoiceConfig(selectedAgent.tts_config);
       }
-      
+
       if (selectedAgent.stt_config && JSON.stringify(transcriberConfig) !== JSON.stringify(selectedAgent.stt_config)) {
         console.log('Updated transcriber config:', selectedAgent.stt_config);
         setTranscriberConfig(selectedAgent.stt_config);
@@ -271,25 +271,25 @@ export default function AgentsTab({}: AgentsTabProps) {
       alert('Please enter an agent prefix');
       return;
     }
-    
+
     // Validate agent prefix format (lowercase, numbers, underscores only)
     const prefixRegex = /^[a-z0-9_]+$/;
     if (!prefixRegex.test(agentPrefix.trim())) {
       alert('Agent prefix can only contain lowercase letters, numbers, and underscores');
       return;
     }
-    
+
     // Check if prefix is too short or too long
     if (agentPrefix.trim().length < 3) {
       alert('Agent prefix must be at least 3 characters long');
       return;
     }
-    
+
     if (agentPrefix.trim().length > 50) {
       alert('Agent prefix must be less than 50 characters long');
       return;
     }
-    
+
     // Create a temporary new agent for configuration
     const newAgent: Agent = {
       id: agentPrefix.trim(),
@@ -302,19 +302,46 @@ export default function AgentsTab({}: AgentsTabProps) {
       cost: '~$0.15/min',
       latency: '~1050ms'
     };
-    
+
     setSelectedAgent(newAgent);
     setActiveConfigTab('model'); // Start with model configuration
     setIsCreating(true);
-    setIsEditing(false);
+    setIsEditing(true); // New agents default to edit mode
     setShowAgentPrefixModal(false);
     setAgentPrefix('');
-    
+
     // Add the new agent to the agents list
     setAgents(prev => [...prev, newAgent]);
-    
+
     console.log('Created new agent with prefix:', agentPrefix.trim());
   }, [agentPrefix]);
+
+  // Handle selecting an agent (view mode)
+  const handleSelectAgent = useCallback((agent: Agent) => {
+    console.log('Selecting agent for viewing:', agent);
+    setSelectedAgent(agent);
+    setIsEditing(false); // Always start in view mode when selecting
+    setIsCreating(false);
+
+    // Pre-populate configuration with existing agent data
+    if (agent.initial_message) {
+      const modelConfigData = { firstMessage: agent.initial_message };
+      setModelConfig(modelConfigData);
+      console.log('Set model config:', modelConfigData);
+    }
+
+    if (agent.tts_config) {
+      console.log('Setting voice config from agent:', agent.tts_config);
+      setVoiceConfig(agent.tts_config);
+    }
+
+    if (agent.stt_config) {
+      console.log('Setting transcriber config from agent:', agent.stt_config);
+      setTranscriberConfig(agent.stt_config);
+    }
+
+    setActiveConfigTab('model'); // Start with model configuration
+  }, []);
 
   // Handle editing an existing agent
   const handleEditAgent = useCallback((agent: Agent) => {
@@ -322,51 +349,93 @@ export default function AgentsTab({}: AgentsTabProps) {
     setSelectedAgent(agent);
     setIsEditing(true);
     setIsCreating(false);
-    
+
     // Pre-populate configuration with existing agent data
     if (agent.initial_message) {
       const modelConfigData = { firstMessage: agent.initial_message };
       setModelConfig(modelConfigData);
       console.log('Set model config:', modelConfigData);
     }
-    
+
     if (agent.tts_config) {
       console.log('Setting voice config from agent:', agent.tts_config);
       setVoiceConfig(agent.tts_config);
     }
-    
+
     if (agent.stt_config) {
       console.log('Setting transcriber config from agent:', agent.stt_config);
       setTranscriberConfig(agent.stt_config);
     }
-    
+
     setActiveConfigTab('model'); // Start with model configuration
   }, []);
+
+  // Handle successful agent creation/update - reset edit mode
+  const handleAgentCreated = useCallback(async () => {
+    console.log('Agent created/updated successfully, resetting edit mode');
+    setIsEditing(false);
+    setIsCreating(false);
+
+    // Refresh the agents list to get the updated data
+    try {
+      await fetchAgents();
+    } catch (error) {
+      console.warn('Failed to refresh agents list:', error);
+    }
+  }, [fetchAgents]);
+
+  // Update selected agent when agents list changes (after refresh)
+  useEffect(() => {
+    if (selectedAgent && agents.length > 0) {
+      const updatedAgent = agents.find(agent => agent.id === selectedAgent.id);
+      if (updatedAgent && updatedAgent !== selectedAgent) {
+        console.log('🔄 Updating selected agent with fresh data from agents list:', updatedAgent);
+        setSelectedAgent(updatedAgent);
+
+        // Update configuration state with fresh data
+        if (updatedAgent.initial_message) {
+          const modelConfigData = { firstMessage: updatedAgent.initial_message };
+          setModelConfig(modelConfigData);
+          console.log('Updated model config:', modelConfigData);
+        }
+
+        if (updatedAgent.tts_config) {
+          console.log('Updated voice config:', updatedAgent.tts_config);
+          setVoiceConfig(updatedAgent.tts_config);
+        }
+
+        if (updatedAgent.stt_config) {
+          console.log('Updated transcriber config:', updatedAgent.stt_config);
+          setTranscriberConfig(updatedAgent.stt_config);
+        }
+      }
+    }
+  }, [agents, selectedAgent]);
 
   // Refresh agent configuration after updates
   const refreshAgentConfiguration = useCallback((agent: Agent) => {
     console.log('🔄 Refreshing agent configuration:', agent);
-    
+
     // Update the selected agent
     setSelectedAgent(agent);
-    
+
     // Update configuration state
     if (agent.initial_message) {
       const modelConfigData = { firstMessage: agent.initial_message };
       setModelConfig(modelConfigData);
       console.log('Updated model config:', modelConfigData);
     }
-    
+
     if (agent.tts_config) {
       console.log('Updated voice config:', agent.tts_config);
       setVoiceConfig(agent.tts_config);
     }
-    
+
     if (agent.stt_config) {
       console.log('Updated transcriber config:', agent.stt_config);
       setTranscriberConfig(agent.stt_config);
     }
-    
+
     // Update agents list
     setAgents(prev => prev.map(a => a.id === agent.id ? agent : a));
   }, []); // Empty dependency array since this function doesn't depend on any state
@@ -471,7 +540,7 @@ export default function AgentsTab({}: AgentsTabProps) {
       // Ensure transcriber config is saved
       console.log('Saving transcriber config before tab switch:', transcriberConfig);
     }
-    
+
     setActiveConfigTab(tabId);
     setIsDropdownOpen(false); // Close dropdown on mobile
 
@@ -515,101 +584,19 @@ export default function AgentsTab({}: AgentsTabProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isDropdownOpen]);
 
-  // Handle agent creation callback
-  const handleAgentCreated = useCallback(async () => {
-    console.log('🔄 Refreshing agents list after creation/update...');
-    
-    try {
-      // Fetch updated agents list
-      await fetchAgents();
-      
-      // If we have a selected agent, refresh its configuration
-      if (selectedAgent) {
-        console.log('🔄 Refreshing selected agent configuration:', selectedAgent.name);
-        
-        // Wait a bit for the agents state to update
-        setTimeout(async () => {
-          try {
-            // Get the current agents list
-            const result = await agentConfigService.getAllAgents();
-            if (result.success && result.data) {
-              // Find the updated agent in the new list
-              const updatedAgent = result.data.find((a: any) => a.name === selectedAgent.name);
-              if (updatedAgent) {
-                console.log('✅ Found updated agent, refreshing configuration:', updatedAgent);
-                
-                // Transform the agent data
-                const transformedAgent: Agent = {
-                  id: updatedAgent.name || updatedAgent.id || `agent-${Date.now()}`,
-                  name: updatedAgent.name || 'Unnamed Agent',
-                  status: updatedAgent.status || 'draft',
-                  model: updatedAgent.model || 'Unknown Model',
-                  provider: updatedAgent.provider || 'Unknown Provider',
-                  cost: updatedAgent.cost || '~$0.10/min',
-                  latency: updatedAgent.latency || '~1000ms',
-                  avatar: '🤖',
-                  description: updatedAgent.description || 'AI Agent',
-                  organization_id: updatedAgent.organization_id,
-                  chatbot_api: updatedAgent.chatbot_api,
-                  chatbot_key: updatedAgent.chatbot_key,
-                  tts_config: updatedAgent.tts_config,
-                  stt_config: updatedAgent.stt_config,
-                  initial_message: updatedAgent.initial_message,
-                  nudge_text: updatedAgent.nudge_text,
-                  nudge_interval: updatedAgent.nudge_interval,
-                  max_nudges: updatedAgent.max_nudges,
-                  typing_volume: updatedAgent.typing_volume,
-                  max_call_duration: updatedAgent.max_call_duration,
-                  created_at: updatedAgent.created_at,
-                  updated_at: updatedAgent.updated_at
-                };
-                
-                // Update the selected agent with new configuration
-                setSelectedAgent(transformedAgent);
-                
-                // Update configuration state with new values
-                if (transformedAgent.initial_message) {
-                  const modelConfigData = { firstMessage: transformedAgent.initial_message };
-                  setModelConfig(modelConfigData);
-                  console.log('🔄 Updated model config:', modelConfigData);
-                }
-                
-                if (transformedAgent.tts_config) {
-                  console.log('🔄 Updated voice config:', transformedAgent.tts_config);
-                  setVoiceConfig(transformedAgent.tts_config);
-                }
-                
-                if (transformedAgent.stt_config) {
-                  console.log('🔄 Updated transcriber config:', transformedAgent.stt_config);
-                  setTranscriberConfig(transformedAgent.stt_config);
-                }
-              } else {
-                console.log('⚠️ Updated agent not found in agents list');
-              }
-            }
-          } catch (error) {
-            console.error('Error refreshing agent configuration:', error);
-          }
-        }, 500); // Wait 500ms for backend to process the update
-      }
-    } catch (error) {
-      console.error('Error refreshing agent configuration:', error);
-    }
-  }, [fetchAgents, selectedAgent?.name]); // Only depend on agent name, not the entire object
-
   // Manual refresh function for agent configuration
   const refreshSelectedAgentConfig = useCallback(async () => {
     if (!selectedAgent) return;
-    
+
     console.log('🔄 Manually refreshing selected agent configuration:', selectedAgent.name);
-    
+
     try {
       const result = await agentConfigService.getAllAgents();
       if (result.success && result.data) {
         const updatedAgent = result.data.find((a: any) => a.name === selectedAgent.name);
         if (updatedAgent) {
           console.log('✅ Found updated agent, refreshing configuration:', updatedAgent);
-          
+
           // Transform the agent data
           const transformedAgent: Agent = {
             id: updatedAgent.name || updatedAgent.id || `agent-${Date.now()}`,
@@ -635,27 +622,27 @@ export default function AgentsTab({}: AgentsTabProps) {
             created_at: updatedAgent.created_at,
             updated_at: updatedAgent.updated_at
           };
-          
+
           // Update the selected agent with new configuration
           setSelectedAgent(transformedAgent);
-          
+
           // Update the agents list in the sidebar with the updated agent
-          setAgents(prev => prev.map(agent => 
+          setAgents(prev => prev.map(agent =>
             agent.id === transformedAgent.id ? transformedAgent : agent
           ));
-          
+
           // Update configuration state with new values
           if (transformedAgent.initial_message) {
             const modelConfigData = { firstMessage: transformedAgent.initial_message };
             setModelConfig(modelConfigData);
             console.log('🔄 Updated model config:', modelConfigData);
           }
-          
+
           if (transformedAgent.tts_config) {
             console.log('🔄 Updated voice config:', transformedAgent.tts_config);
             setVoiceConfig(transformedAgent.tts_config);
           }
-          
+
           if (transformedAgent.stt_config) {
             console.log('🔄 Updated transcriber config:', transformedAgent.stt_config);
             setTranscriberConfig(transformedAgent.stt_config);
@@ -700,11 +687,10 @@ export default function AgentsTab({}: AgentsTabProps) {
               <button
                 onClick={fetchAgents}
                 disabled={isLoadingAgents}
-                className={`group relative px-3 sm:px-4 py-2 sm:py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2 text-sm sm:text-base ${
-                  isDarkMode 
-                    ? 'bg-gradient-to-r from-gray-700 to-gray-800 text-gray-300 hover:from-gray-600 hover:to-gray-700' 
-                    : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300'
-                }`}
+                className={`group relative px-3 sm:px-4 py-2 sm:py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2 text-sm sm:text-base ${isDarkMode
+                  ? 'bg-gradient-to-r from-gray-700 to-gray-800 text-gray-300 hover:from-gray-600 hover:to-gray-700'
+                  : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300'
+                  }`}
               >
                 <RefreshCw className={`h-4 w-4 sm:h-5 sm:w-5 ${isLoadingAgents ? 'animate-spin' : ''}`} />
                 <span className="font-semibold hidden sm:inline">Refresh</span>
@@ -719,14 +705,6 @@ export default function AgentsTab({}: AgentsTabProps) {
               </button>
             </div>
 
-            <button
-              onClick={() => {}}
-              className="group relative px-4 sm:px-5 lg:px-6 py-2 sm:py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg sm:rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-lg sm:rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-              <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="font-semibold text-sm sm:text-base">Create Agent</span>
-            </button>
 
           </div>
         </div>
@@ -745,7 +723,7 @@ export default function AgentsTab({}: AgentsTabProps) {
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-3">
                 {isLoadingAgents ? (
                   <div className="flex justify-center items-center py-8">
@@ -777,48 +755,36 @@ export default function AgentsTab({}: AgentsTabProps) {
                   </div>
                 ) : (
                   agents.map((agent) => (
-                  <div
-                    key={agent.id}
-                     onClick={() => {
-                       setSelectedAgent(agent);
-                       // Also refresh configuration when selecting an agent
-                       if (agent.tts_config) {
-                         setVoiceConfig(agent.tts_config);
-                       }
-                       if (agent.stt_config) {
-                         setTranscriberConfig(agent.stt_config);
-                       }
-                     }}
-                      className={`w-full p-3 sm:p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-[1.02] cursor-pointer ${
-                      selectedAgent?.id === agent.id
-                        ? isDarkMode 
+                    <div
+                      key={agent.id}
+                      onClick={() => handleSelectAgent(agent)}
+                      className={`w-full p-3 sm:p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-[1.02] cursor-pointer ${selectedAgent?.id === agent.id
+                        ? isDarkMode
                           ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-2 border-green-700/50 shadow-lg'
                           : 'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 shadow-lg'
                         : isDarkMode
                           ? 'hover:bg-gray-800/80 border-2 border-transparent hover:border-gray-600 shadow-sm'
                           : 'hover:bg-white/80 border-2 border-transparent hover:border-gray-200 shadow-sm'
-                    }`}
-                  >
+                        }`}
+                    >
                       <div className="flex items-start gap-3 sm:gap-4">
-                        <div className={`text-xl sm:text-2xl p-2 rounded-lg ${
-                          agent.status === 'active' 
-                            ? isDarkMode ? 'bg-green-900/50' : 'bg-green-100'
-                          : agent.status === 'draft' 
+                        <div className={`text-xl sm:text-2xl p-2 rounded-lg ${agent.status === 'active'
+                          ? isDarkMode ? 'bg-green-900/50' : 'bg-green-100'
+                          : agent.status === 'draft'
                             ? isDarkMode ? 'bg-yellow-900/50' : 'bg-yellow-100'
-                          : isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
-                        }`}>
+                            : isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
+                          }`}>
                           {agent.avatar}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1">
                             <h3 className={`font-semibold truncate text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{agent.name}</h3>
-                            <div className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${
-                              agent.status === 'active' 
-                                ? isDarkMode ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-800'
-                              : agent.status === 'draft' 
+                            <div className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${agent.status === 'active'
+                              ? isDarkMode ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-800'
+                              : agent.status === 'draft'
                                 ? isDarkMode ? 'bg-yellow-900/50 text-yellow-300' : 'bg-yellow-100 text-yellow-800'
-                              : isDarkMode ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-800'
-                            }`}>
+                                : isDarkMode ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-800'
+                              }`}>
                               {agent.status}
                             </div>
                           </div>
@@ -831,11 +797,10 @@ export default function AgentsTab({}: AgentsTabProps) {
                               e.stopPropagation();
                               handleEditAgent(agent);
                             }}
-                            className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
-                              isDarkMode 
-                                ? 'text-gray-400 hover:text-blue-400 hover:bg-gray-800' 
-                                : 'text-gray-500 hover:text-blue-600 hover:bg-gray-100'
-                            }`}
+                            className={`p-1.5 sm:p-2 rounded-lg transition-colors ${isDarkMode
+                              ? 'text-gray-400 hover:text-blue-400 hover:bg-gray-800'
+                              : 'text-gray-500 hover:text-blue-600 hover:bg-gray-100'
+                              }`}
                             title="Edit Agent"
                           >
                             <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -845,11 +810,10 @@ export default function AgentsTab({}: AgentsTabProps) {
                               e.stopPropagation();
                               handleDeleteAgent(agent);
                             }}
-                            className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
-                              isDarkMode 
-                                ? 'text-red-400 hover:text-red-300 hover:bg-gray-800' 
-                                : 'text-red-500 hover:text-red-600 hover:bg-gray-100'
-                            }`}
+                            className={`p-1.5 sm:p-2 rounded-lg transition-colors ${isDarkMode
+                              ? 'text-red-400 hover:text-red-300 hover:bg-gray-800'
+                              : 'text-red-500 hover:text-red-600 hover:bg-gray-100'
+                              }`}
                             title="Delete Agent"
                           >
                             <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -882,7 +846,7 @@ export default function AgentsTab({}: AgentsTabProps) {
                             const updatedAgent = { ...selectedAgent, name: e.target.value };
                             setSelectedAgent(updatedAgent);
                             // Update the agent in the list
-                            setAgents(prev => prev.map(agent => 
+                            setAgents(prev => prev.map(agent =>
                               agent.id === selectedAgent.id ? updatedAgent : agent
                             ));
                           }}
@@ -895,13 +859,14 @@ export default function AgentsTab({}: AgentsTabProps) {
                         ID: {selectedAgent.id} • Organization: {currentOrganizationId}
                       </p>
                     </div>
-                    {isEditing && (
-                      <div className="flex items-center gap-2">
-                        <div className={`px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800`}>
-                          Editing
-                        </div>
+                    <div className="flex items-center gap-2">
+                      <div className={`px-3 py-1 rounded-full text-xs font-medium ${isEditing
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-gray-100 text-gray-600'
+                        }`}>
+                        {isEditing ? '✏️ Editing' : '👁️ Viewing'}
                       </div>
-                    )}
+                    </div>
                   </div>
 
                   {/* Status Indicator */}
@@ -1000,63 +965,63 @@ export default function AgentsTab({}: AgentsTabProps) {
 
                 {/* Configuration Content */}
                 <div className={` ${isDarkMode ? 'bg-gradient-to-br from-gray-800/30 to-gray-900' : 'bg-gradient-to-br from-gray-50/30 to-white'} max-w-4xl mx-auto lg:max-w-none overflow-y-auto`}>
-                  {activeConfigTab === 'model' && (
-                    <ModelConfig 
-                      ref={modelSectionRef} 
+                  {/* Keep all components mounted but only show the active one */}
+                  <div style={{ display: activeConfigTab === 'model' ? 'block' : 'none' }}>
+                    <ModelConfig
+                      ref={modelSectionRef}
                       agentName={selectedAgent?.name || 'default'}
                       onConfigChange={handleModelConfigChange}
                       existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).modelConfig : null}
                       isEditing={isEditing}
                     />
-                  )}
+                  </div>
 
-                  {activeConfigTab === 'voice' && (
-
-                    <VoiceConfig 
-                      ref={voiceSectionRef} 
+                  <div style={{ display: activeConfigTab === 'voice' ? 'block' : 'none' }}>
+                    <VoiceConfig
+                      ref={voiceSectionRef}
                       agentName={selectedAgent?.name || 'default'}
                       onConfigChange={handleVoiceConfigChange}
                       existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).voiceConfig : null}
                       isEditing={isEditing}
                     />
-                  )}
+                  </div>
 
-                  {activeConfigTab === 'transcriber' && (
-                    <TranscriberConfig 
-                      ref={transcriberSectionRef} 
+                  <div style={{ display: activeConfigTab === 'transcriber' ? 'block' : 'none' }}>
+                    <TranscriberConfig
+                      ref={transcriberSectionRef}
                       agentName={selectedAgent?.name || 'default'}
                       onConfigChange={handleTranscriberConfigChange}
                       existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).transcriberConfig : null}
                       isEditing={isEditing}
                     />
+                  </div>
 
-                  )}
-
-                  {activeConfigTab === 'tools' && (
-                    <ToolsConfig 
-                      ref={toolsSectionRef} 
+                  <div style={{ display: activeConfigTab === 'tools' ? 'block' : 'none' }}>
+                    <ToolsConfig
+                      ref={toolsSectionRef}
                       agentName={selectedAgent?.name || 'default'}
                       onConfigChange={handleModelConfigChange}
                       existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).toolsConfig : null}
                       isEditing={isEditing}
+                      onAgentCreated={handleAgentCreated}
                       // Pass saved configurations from localStorage
                       modelConfig={modelConfig}
                       voiceConfig={voiceConfig}
                       transcriberConfig={transcriberConfig}
                     />
-                  )}
+                  </div>
 
-                  {activeConfigTab === 'phone' && (
+                  <div style={{ display: activeConfigTab === 'phone' ? 'block' : 'none' }}>
                     <PhoneNumbersTab />
-                  )}
+                  </div>
 
-                  {activeConfigTab === 'sms' && (
+                  <div style={{ display: activeConfigTab === 'sms' ? 'block' : 'none' }}>
                     <SMSTab />
-                  )}
+                  </div>
 
-                  {activeConfigTab === 'whatsapp' && (
+                  <div style={{ display: activeConfigTab === 'whatsapp' ? 'block' : 'none' }}>
                     <WhatsAppTab />
-                  )}
+                  </div>
                 </div>
               </>
             ) : (
@@ -1068,7 +1033,7 @@ export default function AgentsTab({}: AgentsTabProps) {
                   {agents.length === 0 ? 'Welcome to AI Agents!' : 'Select an Agent'}
                 </h3>
                 <p className={`mb-4 sm:mb-6 text-sm sm:text-base ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  {agents.length === 0 
+                  {agents.length === 0
                     ? 'Create your first AI agent to start building intelligent conversational experiences.'
                     : 'Choose an agent from the sidebar to configure its settings'
                   }
@@ -1086,7 +1051,7 @@ export default function AgentsTab({}: AgentsTabProps) {
           </div>
         </div>
       </div>
-      
+
       {/* Agent Prefix Modal */}
       {showAgentPrefixModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm">
@@ -1100,7 +1065,7 @@ export default function AgentsTab({}: AgentsTabProps) {
                 Enter a unique identifier for your new AI agent. This will be used as the agent's name and ID.
               </p>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -1116,37 +1081,34 @@ export default function AgentsTab({}: AgentsTabProps) {
                     }
                   }}
                   placeholder="e.g., customer_support, sales_agent, helpdesk"
-                  className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm ${
-                    isDarkMode 
-                      ? 'bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-400' 
-                      : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-                  }`}
+                  className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm ${isDarkMode
+                    ? 'bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-400'
+                    : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                    }`}
                   autoFocus
                 />
                 <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   Use lowercase letters, numbers, and underscores only
                 </p>
               </div>
-              
+
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowAgentPrefixModal(false)}
-                  className={`flex-1 px-4 py-3 rounded-xl border transition-all duration-300 text-sm font-medium ${
-                    isDarkMode 
-                      ? 'border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600' 
-                      : 'border-gray-200 bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  className={`flex-1 px-4 py-3 rounded-xl border transition-all duration-300 text-sm font-medium ${isDarkMode
+                    ? 'border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    : 'border-gray-200 bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAgentPrefixSubmit}
                   disabled={!agentPrefix.trim()}
-                  className={`flex-1 px-4 py-3 rounded-xl transition-all duration-300 text-sm font-medium ${
-                    agentPrefix.trim()
-                      ? 'bg-green-600 text-white hover:bg-green-700'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
+                  className={`flex-1 px-4 py-3 rounded-xl transition-all duration-300 text-sm font-medium ${agentPrefix.trim()
+                    ? 'bg-green-600 text-white hover:bg-green-700'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
                 >
                   Create Agent
                 </button>
