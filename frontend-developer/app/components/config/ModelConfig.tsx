@@ -333,7 +333,7 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
   }, [firstMessage, onConfigChange]);
 
   return (
-    <div ref={ref} className="space-y-6">
+    <div ref={ref} className="space-y-6 p-6">
       {/* Header */}
       <div className="text-center">
         <div className={`p-3 sm:p-4 rounded-2xl inline-block mb-4 ${isDarkMode ? 'bg-gradient-to-r from-gray-800 to-gray-700' : 'bg-gradient-to-r from-gray-100 to-gray-200'}`}>
