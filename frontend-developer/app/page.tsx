@@ -166,97 +166,97 @@ export default function DeveloperDashboard() {
     switch (activeNavItem) {
       case 'Overview':
         return (
-          <div className="max-w-7xl mx-auto space-y-8">
+          <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 lg:space-y-8">
             {/* Welcome Section */}
-            <div className={`${isDarkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white' : 'bg-white text-gray-900'} rounded-3xl p-8 relative overflow-hidden border ${isDarkMode ? 'border-gray-700/50' : 'border-gray-200'} shadow-xl`}>
+            <div className={`${isDarkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white' : 'bg-white text-gray-900'} rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 relative overflow-hidden border ${isDarkMode ? 'border-gray-700/50' : 'border-gray-200'} shadow-xl`}>
               <div className={`absolute inset-0 ${isDarkMode ? 'bg-gradient-to-r from-green-500/10 to-blue-500/10' : 'bg-gradient-to-r from-green-50 to-blue-50'}`}></div>
               <div className="relative z-10">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl">
-                    <Code className="h-8 w-8 text-white" />
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                  <div className="p-2 sm:p-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl sm:rounded-2xl">
+                    <Code className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                   </div>
-                  <div>
-                    <h1 className="text-4xl font-bold bg-gradient-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent">
+                  <div className="flex-1">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent">
                       Developer Dashboard
                     </h1>
-                    <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    <p className={`text-sm sm:text-base lg:text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                       Welcome back, {user?.firstName || localStorage.getItem('pendingFirstName')}!
                     </p>
                   </div>
                 </div>
-                <p className={`text-lg max-w-2xl ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                <p className={`text-sm sm:text-base lg:text-lg max-w-2xl ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                   Your central hub for managing AI assistants, communication channels, and monitoring system performance. 
                   Build, deploy, and observe your intelligent solutions.
                 </p>
               </div>
-              <div className="absolute top-4 right-4">
-                <div className={`flex items-center gap-2 rounded-full px-4 py-2 border ${isDarkMode ? 'bg-green-500/20 backdrop-blur-sm border-green-500/30' : 'bg-green-50 border-green-200'}`}>
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className={`text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-700'}`}>System Online</span>
+              <div className="absolute top-3 sm:top-4 right-3 sm:right-4">
+                <div className={`flex items-center gap-2 rounded-full px-2 sm:px-4 py-1 sm:py-2 border ${isDarkMode ? 'bg-green-500/20 backdrop-blur-sm border-green-500/30' : 'bg-green-50 border-green-200'}`}>
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-700'}`}>System Online</span>
                 </div>
               </div>
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className={`group rounded-2xl p-6 border transition-all duration-300 hover:scale-105 ${isDarkMode ? 'bg-gradient-to-br from-blue-500/10 to-purple-600/10 backdrop-blur-sm border-blue-500/20 hover:border-blue-400/40' : 'bg-white border-blue-200 hover:border-blue-300 shadow-lg hover:shadow-xl'}`}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
-                    <Bot className="h-6 w-6 text-white" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+              <div className={`group rounded-xl sm:rounded-2xl p-4 sm:p-6 border transition-all duration-300 hover:scale-105 ${isDarkMode ? 'bg-gradient-to-br from-blue-500/10 to-purple-600/10 backdrop-blur-sm border-blue-500/20 hover:border-blue-400/40' : 'bg-white border-blue-200 hover:border-blue-300 shadow-lg hover:shadow-xl'}`}>
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <div className="p-2 sm:p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg sm:rounded-xl">
+                    <Bot className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                   </div>
-                  <TrendingUp className={`h-5 w-5 transition-colors ${isDarkMode ? 'text-blue-400 group-hover:text-blue-300' : 'text-blue-600 group-hover:text-blue-700'}`} />
+                  <TrendingUp className={`h-4 w-4 sm:h-5 sm:w-5 transition-colors ${isDarkMode ? 'text-blue-400 group-hover:text-blue-300' : 'text-blue-600 group-hover:text-blue-700'}`} />
                 </div>
                 <div>
-                  <p className={`text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>12</p>
-                  <p className={`text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>Active Assistants</p>
+                  <p className={`text-xl sm:text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>12</p>
+                  <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>Active Assistants</p>
                 </div>
                 <div className={`mt-4 w-full rounded-full h-2 ${isDarkMode ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
                   <div className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full" style={{ width: '75%' }}></div>
                 </div>
               </div>
 
-              <div className={`group rounded-2xl p-6 border transition-all duration-300 hover:scale-105 ${isDarkMode ? 'bg-gradient-to-br from-green-500/10 to-emerald-600/10 backdrop-blur-sm border-green-500/20 hover:border-green-400/40' : 'bg-white border-green-200 hover:border-green-300 shadow-lg hover:shadow-xl'}`}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl">
-                    <Phone className="h-6 w-6 text-white" />
+              <div className={`group rounded-xl sm:rounded-2xl p-4 sm:p-6 border transition-all duration-300 hover:scale-105 ${isDarkMode ? 'bg-gradient-to-br from-green-500/10 to-emerald-600/10 backdrop-blur-sm border-green-500/20 hover:border-green-400/40' : 'bg-white border-green-200 hover:border-green-300 shadow-lg hover:shadow-xl'}`}>
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <div className="p-2 sm:p-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg sm:rounded-xl">
+                    <Phone className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                   </div>
-                  <Activity className={`h-5 w-5 transition-colors ${isDarkMode ? 'text-green-400 group-hover:text-green-300' : 'text-green-600 group-hover:text-green-700'}`} />
+                  <Activity className={`h-4 w-4 sm:h-5 sm:w-5 transition-colors ${isDarkMode ? 'text-green-400 group-hover:text-green-300' : 'text-green-600 group-hover:text-green-700'}`} />
                 </div>
                 <div>
-                  <p className={`text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>8</p>
-                  <p className={`text-sm ${isDarkMode ? 'text-green-300' : 'text-green-600'}`}>Phone Numbers</p>
+                  <p className={`text-xl sm:text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>8</p>
+                  <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-green-300' : 'text-green-600'}`}>Phone Numbers</p>
                 </div>
                 <div className={`mt-4 w-full rounded-full h-2 ${isDarkMode ? 'bg-green-500/20' : 'bg-green-100'}`}>
                   <div className="bg-gradient-to-r from-green-500 to-emerald-600 h-2 rounded-full" style={{ width: '60%' }}></div>
                 </div>
               </div>
 
-              <div className={`group rounded-2xl p-6 border transition-all duration-300 hover:scale-105 ${isDarkMode ? 'bg-gradient-to-br from-purple-500/10 to-pink-600/10 backdrop-blur-sm border-purple-500/20 hover:border-purple-400/40' : 'bg-white border-purple-200 hover:border-purple-300 shadow-lg hover:shadow-xl'}`}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl">
-                    <Activity className="h-6 w-6 text-white" />
+              <div className={`group rounded-xl sm:rounded-2xl p-4 sm:p-6 border transition-all duration-300 hover:scale-105 ${isDarkMode ? 'bg-gradient-to-br from-purple-500/10 to-pink-600/10 backdrop-blur-sm border-purple-500/20 hover:border-purple-400/40' : 'bg-white border-purple-200 hover:border-purple-300 shadow-lg hover:shadow-xl'}`}>
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <div className="p-2 sm:p-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg sm:rounded-xl">
+                    <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                   </div>
-                  <Zap className={`h-5 w-5 transition-colors ${isDarkMode ? 'text-purple-400 group-hover:text-purple-300' : 'text-purple-600 group-hover:text-purple-700'}`} />
+                  <Zap className={`h-4 w-4 sm:h-5 sm:w-5 transition-colors ${isDarkMode ? 'text-purple-400 group-hover:text-purple-300' : 'text-purple-600 group-hover:text-purple-700'}`} />
                 </div>
                 <div>
-                  <p className={`text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>3</p>
-                  <p className={`text-sm ${isDarkMode ? 'text-purple-300' : 'text-purple-600'}`}>Active Calls</p>
+                  <p className={`text-xl sm:text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>3</p>
+                  <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-purple-300' : 'text-purple-600'}`}>Active Calls</p>
                 </div>
                 <div className={`mt-4 w-full rounded-full h-2 ${isDarkMode ? 'bg-purple-500/20' : 'bg-purple-100'}`}>
                   <div className="bg-gradient-to-r from-purple-500 to-pink-600 h-2 rounded-full" style={{ width: '45%' }}></div>
                 </div>
               </div>
 
-              <div className={`group rounded-2xl p-6 border transition-all duration-300 hover:scale-105 ${isDarkMode ? 'bg-gradient-to-br from-orange-500/10 to-red-600/10 backdrop-blur-sm border-orange-500/20 hover:border-orange-400/40' : 'bg-white border-orange-200 hover:border-orange-300 shadow-lg hover:shadow-xl'}`}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl">
-                    <Clock className="h-6 w-6 text-white" />
+              <div className={`group rounded-xl sm:rounded-2xl p-4 sm:p-6 border transition-all duration-300 hover:scale-105 ${isDarkMode ? 'bg-gradient-to-br from-orange-500/10 to-red-600/10 backdrop-blur-sm border-orange-500/20 hover:border-orange-400/40' : 'bg-white border-orange-200 hover:border-orange-300 shadow-lg hover:shadow-xl'}`}>
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <div className="p-2 sm:p-3 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg sm:rounded-xl">
+                    <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                   </div>
-                  <Sparkles className={`h-5 w-5 transition-colors ${isDarkMode ? 'text-orange-400 group-hover:text-orange-300' : 'text-orange-600 group-hover:text-orange-700'}`} />
+                  <Sparkles className={`h-4 w-4 sm:h-5 sm:w-5 transition-colors ${isDarkMode ? 'text-orange-400 group-hover:text-orange-300' : 'text-orange-600 group-hover:text-orange-700'}`} />
                 </div>
                 <div>
-                  <p className={`text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>1,247</p>
-                  <p className={`text-sm ${isDarkMode ? 'text-orange-300' : 'text-orange-600'}`}>Total Sessions</p>
+                  <p className={`text-xl sm:text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>1,247</p>
+                  <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-orange-300' : 'text-orange-600'}`}>Total Sessions</p>
                 </div>
                 <div className={`mt-4 w-full rounded-full h-2 ${isDarkMode ? 'bg-orange-500/20' : 'bg-orange-100'}`}>
                   <div className="bg-gradient-to-r from-orange-500 to-red-600 h-2 rounded-full" style={{ width: '85%' }}></div>
@@ -265,58 +265,58 @@ export default function DeveloperDashboard() {
             </div>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className={`rounded-2xl p-6 border ${isDarkMode ? 'bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border-gray-700/50' : 'bg-white border-gray-200 shadow-lg'}`}>
-                <h3 className={`text-xl font-semibold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                  <Zap className="h-5 w-5 text-yellow-500" />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 border ${isDarkMode ? 'bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border-gray-700/50' : 'bg-white border-gray-200 shadow-lg'}`}>
+                <h3 className={`text-lg sm:text-xl font-semibold mb-3 sm:mb-4 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />
                   Quick Actions
                 </h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <button className={`p-4 rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-green-500/20 to-emerald-600/20 border-green-500/30 hover:border-green-400/50' : 'bg-green-50 border-green-200 hover:border-green-300 hover:bg-green-100'}`}>
-                    <Bot className={`h-6 w-6 mb-2 ${isDarkMode ? 'text-green-400 group-hover:text-green-300' : 'text-green-600 group-hover:text-green-700'}`} />
-                    <p className={`text-sm font-medium ${isDarkMode ? 'text-green-300' : 'text-green-700'}`}>Create Agent</p>
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                  <button className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-green-500/20 to-emerald-600/20 border-green-500/30 hover:border-green-400/50' : 'bg-green-50 border-green-200 hover:border-green-300 hover:bg-green-100'}`}>
+                    <Bot className={`h-5 w-5 sm:h-6 sm:w-6 mb-2 ${isDarkMode ? 'text-green-400 group-hover:text-green-300' : 'text-green-600 group-hover:text-green-700'}`} />
+                    <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-green-300' : 'text-green-700'}`}>Create Agent</p>
                   </button>
-                  <button className={`p-4 rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-blue-500/20 to-indigo-600/20 border-blue-500/30 hover:border-blue-400/50' : 'bg-blue-50 border-blue-200 hover:border-blue-300 hover:bg-blue-100'}`}>
-                    <Phone className={`h-6 w-6 mb-2 ${isDarkMode ? 'text-blue-400 group-hover:text-blue-300' : 'text-blue-600 group-hover:text-blue-700'}`} />
-                    <p className={`text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>Add Phone</p>
+                  <button className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-blue-500/20 to-indigo-600/20 border-blue-500/30 hover:border-blue-400/50' : 'bg-blue-50 border-blue-200 hover:border-blue-300 hover:bg-blue-100'}`}>
+                    <Phone className={`h-5 w-5 sm:h-6 sm:w-6 mb-2 ${isDarkMode ? 'text-blue-400 group-hover:text-blue-300' : 'text-blue-600 group-hover:text-blue-700'}`} />
+                    <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>Add Phone</p>
                   </button>
-                  <button className={`p-4 rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-purple-500/20 to-pink-600/20 border-purple-500/30 hover:border-purple-400/50' : 'bg-purple-50 border-purple-200 hover:border-purple-300 hover:bg-purple-100'}`}>
-                    <BarChart3 className={`h-6 w-6 mb-2 ${isDarkMode ? 'text-purple-400 group-hover:text-purple-300' : 'text-purple-600 group-hover:text-purple-700'}`} />
-                    <p className={`text-sm font-medium ${isDarkMode ? 'text-purple-300' : 'text-purple-700'}`}>View Metrics</p>
+                  <button className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-purple-500/20 to-pink-600/20 border-purple-500/30 hover:border-purple-400/50' : 'bg-purple-50 border-purple-200 hover:border-purple-300 hover:bg-purple-100'}`}>
+                    <BarChart3 className={`h-5 w-5 sm:h-6 sm:w-6 mb-2 ${isDarkMode ? 'text-purple-400 group-hover:text-purple-300' : 'text-purple-600 group-hover:text-purple-700'}`} />
+                    <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-purple-300' : 'text-purple-700'}`}>View Metrics</p>
                   </button>
-                  <button className={`p-4 rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-orange-500/20 to-red-600/20 border-orange-500/30 hover:border-orange-400/50' : 'bg-orange-50 border-orange-200 hover:border-orange-300 hover:bg-orange-100'}`}>
-                    <Database className={`h-6 w-6 mb-2 ${isDarkMode ? 'text-orange-400 group-hover:text-orange-300' : 'text-orange-600 group-hover:text-orange-700'}`} />
-                    <p className={`text-sm font-medium ${isDarkMode ? 'text-orange-300' : 'text-orange-700'}`}>System Logs</p>
+                  <button className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-orange-500/20 to-red-600/20 border-orange-500/30 hover:border-orange-400/50' : 'bg-orange-50 border-orange-200 hover:border-orange-300 hover:bg-orange-100'}`}>
+                    <Database className={`h-5 w-5 sm:h-6 sm:w-6 mb-2 ${isDarkMode ? 'text-orange-400 group-hover:text-orange-300' : 'text-orange-600 group-hover:text-orange-700'}`} />
+                    <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-orange-300' : 'text-orange-700'}`}>System Logs</p>
                   </button>
                 </div>
               </div>
 
-              <div className={`rounded-2xl p-6 border ${isDarkMode ? 'bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border-gray-700/50' : 'bg-white border-gray-200 shadow-lg'}`}>
-                <h3 className={`text-xl font-semibold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                  <Activity className="h-5 w-5 text-blue-500" />
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 border ${isDarkMode ? 'bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border-gray-700/50' : 'bg-white border-gray-200 shadow-lg'}`}>
+                <h3 className={`text-lg sm:text-xl font-semibold mb-3 sm:mb-4 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
                   System Status
                 </h3>
-                <div className="space-y-4">
-                  <div className={`flex items-center justify-between p-3 rounded-xl border ${isDarkMode ? 'bg-green-500/10 border-green-500/20' : 'bg-green-50 border-green-200'}`}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      <span className={isDarkMode ? 'text-green-300' : 'text-green-700'}>AI Services</span>
+                <div className="space-y-3 sm:space-y-4">
+                  <div className={`flex items-center justify-between p-2 sm:p-3 rounded-lg sm:rounded-xl border ${isDarkMode ? 'bg-green-500/10 border-green-500/20' : 'bg-green-50 border-green-200'}`}>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className={`text-xs sm:text-sm ${isDarkMode ? 'text-green-300' : 'text-green-700'}`}>AI Services</span>
                     </div>
-                    <span className={`text-sm ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>Operational</span>
+                    <span className={`text-xs sm:text-sm ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>Operational</span>
                   </div>
-                  <div className={`flex items-center justify-between p-3 rounded-xl border ${isDarkMode ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-200'}`}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                      <span className={isDarkMode ? 'text-blue-300' : 'text-blue-700'}>Communication</span>
+                  <div className={`flex items-center justify-between p-2 sm:p-3 rounded-lg sm:rounded-xl border ${isDarkMode ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-200'}`}>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                      <span className={`text-xs sm:text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>Communication</span>
                     </div>
-                    <span className={`text-sm ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Active</span>
+                    <span className={`text-xs sm:text-sm ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Active</span>
                   </div>
-                  <div className={`flex items-center justify-between p-3 rounded-xl border ${isDarkMode ? 'bg-purple-500/10 border-purple-500/20' : 'bg-purple-50 border-purple-200'}`}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
-                      <span className={isDarkMode ? 'text-purple-300' : 'text-purple-700'}>Database</span>
+                  <div className={`flex items-center justify-between p-2 sm:p-3 rounded-lg sm:rounded-xl border ${isDarkMode ? 'bg-purple-500/10 border-purple-500/20' : 'bg-purple-50 border-purple-200'}`}>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                      <span className={`text-xs sm:text-sm ${isDarkMode ? 'text-purple-300' : 'text-purple-700'}`}>Database</span>
                     </div>
-                    <span className={`text-sm ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>Connected</span>
+                    <span className={`text-xs sm:text-sm ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>Connected</span>
                   </div>
                 </div>
               </div>
@@ -371,29 +371,29 @@ export default function DeveloperDashboard() {
     <>
       <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-black' : 'bg-gray-50'}`}>
         {/* Top Navigation Header */}
-        <header className="bg-gray-900 px-6 py-4">
+        <header className="bg-gray-900 px-3 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             {/* Logo and Navigation */}
-            <div className="flex items-center space-x-8">
+            <div className="flex items-center space-x-2 sm:space-x-4 lg:space-x-8">
               <div className="flex items-center">
-                <div className="h-10 w-10 bg-green-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">D</span>
+                <div className="h-8 w-8 sm:h-10 sm:w-10 bg-green-500 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm sm:text-lg">D</span>
                 </div>
-                <div className="ml-4">
-                  <div className="text-white font-bold text-lg">Developer</div>
-                  <div className="text-gray-400 text-sm">Control Center</div>
+                <div className="ml-2 sm:ml-4">
+                  <div className="text-white font-bold text-sm sm:text-lg">Developer</div>
+                  <div className="text-gray-400 text-xs sm:text-sm">Control Center</div>
                 </div>
               </div>
               
-              {/* Navigation Tabs */}
-              <nav className="flex space-x-1">
+              {/* Navigation Tabs - Hidden on mobile, shown on tablet+ */}
+              <nav className="hidden md:flex space-x-1">
                 {navigationItems.map((item) => {
                   const isActive = activeNavItem === item.name;
                   return (
                     <button
                       key={item.name}
                       onClick={() => handleNavItemClick(item.name)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                      className={`px-3 lg:px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
                         isActive
                           ? 'bg-green-500 text-white'
                           : 'text-white hover:bg-gray-800'
@@ -406,7 +406,22 @@ export default function DeveloperDashboard() {
               </nav>
             </div>
             {/* Right side actions */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
+              {/* Mobile Navigation Menu - Only show on mobile */}
+              <div className="md:hidden">
+                <select
+                  value={activeNavItem}
+                  onChange={(e) => handleNavItemClick(e.target.value)}
+                  className={`px-2 py-1 rounded-lg text-sm font-medium transition-all duration-300 ${isDarkMode ? 'bg-gray-800 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-200'}`}
+                >
+                  {navigationItems.map((item) => (
+                    <option key={item.name} value={item.name}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {/* Chat Icon */}
               <button
                 onClick={() => {
@@ -416,11 +431,11 @@ export default function DeveloperDashboard() {
                     setHasNewMessages(false);
                   }
                 }}
-                className={`relative p-3 rounded-xl transition-all duration-300 group ${isDarkMode ? 'hover:bg-gradient-to-r hover:from-green-500/20 hover:to-blue-500/20 text-green-400 hover:text-green-300' : 'hover:bg-gradient-to-r hover:from-green-100 hover:to-blue-100 text-green-600 hover:text-green-700'}`}
+                className={`relative p-2 sm:p-3 rounded-xl transition-all duration-300 group ${isDarkMode ? 'hover:bg-gradient-to-r hover:from-green-500/20 hover:to-blue-500/20 text-green-400 hover:text-green-300' : 'hover:bg-gradient-to-r hover:from-green-100 hover:to-blue-100 text-green-600 hover:text-green-700'}`}
                 title="Chat with Sales Agent (Ctrl+K)"
               >
                 <div className={`absolute inset-0 rounded-xl bg-gradient-to-r from-green-500/10 to-blue-500/10 opacity-100 transition-opacity duration-300 ${isDarkMode ? 'from-green-500/20 to-blue-500/20' : 'from-green-100 to-blue-100'}`} />
-                <ChatIcon className="h-5 w-5 relative z-10 text-current" />
+                <ChatIcon className="h-4 w-4 sm:h-5 sm:w-5 relative z-10 text-current" />
                 
                 {/* Message count indicator */}
                 {(() => {
@@ -432,7 +447,7 @@ export default function DeveloperDashboard() {
                       // Only show count if there are messages and more than just the welcome message
                       if (messageCount > 1) {
                         return (
-                          <div className={`absolute -bottom-1 -right-1 min-w-[20px] h-5 px-1 rounded-full text-xs font-medium flex items-center justify-center ${isDarkMode ? 'bg-blue-500 text-white' : 'bg-blue-600 text-white'}`}>
+                          <div className={`absolute -bottom-1 -right-1 min-w-[16px] sm:min-w-[20px] h-4 sm:h-5 px-1 rounded-full text-xs font-medium flex items-center justify-center ${isDarkMode ? 'bg-blue-500 text-white' : 'bg-blue-600 text-white'}`}>
                             {messageCount}
                           </div>
                         );
@@ -450,11 +465,12 @@ export default function DeveloperDashboard() {
                 onClick={toggleTheme}
                 className={`p-2 rounded-xl transition-all duration-300 ${isDarkMode ? 'hover:bg-gray-800/50 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'}`}
               >
-                {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                {isDarkMode ? <Sun className="h-4 w-4 sm:h-5 sm:w-5" /> : <Moon className="h-4 w-4 sm:h-5 sm:w-5" />}
               </button>
               
-              <div className={`px-4 py-2 rounded-xl border ${isDarkMode ? 'bg-gradient-to-r from-green-500/20 to-emerald-600/20 backdrop-blur-sm border-green-500/30' : 'bg-green-50 border-green-200'}`}>
-                <span className={`text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-700'}`}>Developer Access</span>
+              {/* Developer Access Badge - Hidden on mobile */}
+              <div className={`hidden sm:block px-3 sm:px-4 py-2 rounded-xl border ${isDarkMode ? 'bg-gradient-to-r from-green-500/20 to-emerald-600/20 backdrop-blur-sm border-green-500/30' : 'bg-green-50 border-green-200'}`}>
+                <span className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-700'}`}>Developer Access</span>
               </div>
               
               <div className="relative" ref={dropdownRef}>
@@ -462,8 +478,8 @@ export default function DeveloperDashboard() {
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   className={`transition-colors duration-300 ${isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
                 >
-                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                    <span className="text-white text-lg font-bold">
+                  <div className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                    <span className="text-white text-sm sm:text-base lg:text-lg font-bold">
                       {(user?.firstName || localStorage.getItem('pendingFirstName'))?.[0]}{(user?.lastName || localStorage.getItem('pendingLastName'))?.[0]}
                     </span>
                   </div>
@@ -476,18 +492,18 @@ export default function DeveloperDashboard() {
                       onClick={() => setDropdownOpen(false)}
                     />
                     {/* Dropdown */}
-                    <div className={`fixed top-20 right-6 w-80 max-w-[calc(100vw-3rem)] rounded-2xl shadow-2xl z-50 animate-fade-in-down ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-xl border border-gray-700/50' : 'bg-white border border-gray-200'}`} style={{ right: '1.5rem', maxWidth: 'calc(100vw - 3rem)' }}>
-                      <div className={`p-6 ${isDarkMode ? 'border-b border-gray-700/50' : 'border-b border-gray-200'}`}>
-                        <p className={`font-bold text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    <div className={`fixed top-16 sm:top-20 right-3 sm:right-6 w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] sm:max-w-[calc(100vw-3rem)] rounded-2xl shadow-2xl z-50 animate-fade-in-down ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-xl border border-gray-700/50' : 'bg-white border border-gray-200'}`}>
+                      <div className={`p-4 sm:p-6 ${isDarkMode ? 'border-b border-gray-700/50' : 'border-b border-gray-200'}`}>
+                        <p className={`font-bold text-base sm:text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                           {user?.firstName || localStorage.getItem('pendingFirstName')} {user?.lastName || localStorage.getItem('pendingLastName')}
                         </p>
-                        <p className={`mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{user?.email}</p>
+                        <p className={`mt-1 text-sm sm:text-base ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{user?.email}</p>
                         <div className="flex items-center gap-2 mt-2">
                           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                          <p className={`text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>Developer</p>
+                          <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>Developer</p>
                         </div>
                       </div>
-                      <nav className="p-4">
+                      <nav className="p-3 sm:p-4">
                         <button
                           onClick={async () => {
                             try {
@@ -504,10 +520,10 @@ export default function DeveloperDashboard() {
                               window.location.href = '/login';
                             }
                           }}
-                          className={`w-full flex items-center px-4 py-3 rounded-xl transition-all duration-300 group ${isDarkMode ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300' : 'text-red-600 hover:bg-red-50 hover:text-red-700'}`}
+                          className={`w-full flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-xl transition-all duration-300 group ${isDarkMode ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300' : 'text-red-600 hover:bg-red-50 hover:text-red-700'}`}
                         >
-                          <LogOut className="h-5 w-5 mr-3" />
-                          {loggingOut ? 'Logging out...' : 'Log out'}
+                          <LogOut className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
+                          <span className="text-sm sm:text-base">{loggingOut ? 'Logging out...' : 'Log out'}</span>
                         </button>
                       </nav>
                     </div>
@@ -519,7 +535,7 @@ export default function DeveloperDashboard() {
         </header>
 
         {/* Main Content Area */}
-        <main className="p-6">
+        <main className="p-3 sm:p-4 lg:p-6">
           {renderContent()}
         </main>
         
@@ -532,7 +548,7 @@ export default function DeveloperDashboard() {
               onClick={() => setChatOpen(false)}
             />
             {/* Chat Sidebar */}
-            <div className={`fixed top-0 right-0 h-full w-96 max-w-[90vw] ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-xl border-l border-gray-700/50' : 'bg-white border-l border-gray-200'} shadow-2xl z-50 transform transition-transform duration-300 ${chatOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+            <div className={`fixed top-0 right-0 h-full w-full sm:w-96 sm:max-w-[90vw] ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-xl border-l border-gray-700/50' : 'bg-white border-l border-gray-200'} shadow-2xl z-50 transform transition-transform duration-300 ${chatOpen ? 'translate-x-0' : 'translate-x-full'}`}>
               <ChatSidebar onClose={() => setChatOpen(false)} />
             </div>
           </>

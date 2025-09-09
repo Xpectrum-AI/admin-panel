@@ -118,40 +118,37 @@ export default function WhatsAppTab({}: WhatsAppTabProps) {
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation) return;
 
-    
-    setIsStreaming(true);
     // Simulate AI response streaming
-
     setTimeout(() => {
       setNewMessage('');
     }, 1000);
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className={`rounded-2xl border shadow-xl backdrop-blur-sm ${isDarkMode ? 'bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800 border-gray-700/50' : 'bg-gradient-to-br from-white via-gray-50 to-white border-gray-200/50'}`}>
+    <div className="max-w-7xl mx-auto p-2 sm:p-4 lg:p-6">
+      <div className={`rounded-xl sm:rounded-2xl border shadow-xl backdrop-blur-sm ${isDarkMode ? 'bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800 border-gray-700/50' : 'bg-gradient-to-br from-white via-gray-50 to-white border-gray-200/50'}`}>
         {/* Header */}
-        <div className={`p-8 border-b rounded-t-2xl ${isDarkMode ? 'border-gray-700/50 bg-gradient-to-r from-green-900/20 to-emerald-900/20' : 'border-gray-200/50 bg-gradient-to-r from-green-50 to-emerald-50'}`}>
-          <div className="flex items-center justify-between">
+        <div className={`p-4 sm:p-6 lg:p-8 border-b rounded-t-xl sm:rounded-t-2xl ${isDarkMode ? 'border-gray-700/50 bg-gradient-to-r from-green-900/20 to-emerald-900/20' : 'border-gray-200/50 bg-gradient-to-r from-green-50 to-emerald-50'}`}>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl">
-                  <WhatsAppIcon className="h-6 w-6 text-white" />
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg sm:rounded-xl">
+                  <WhatsAppIcon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
                 </div>
-                <h2 className={`text-3xl font-bold bg-clip-text text-transparent ${isDarkMode ? 'bg-gradient-to-r from-white to-gray-300' : 'bg-gradient-to-r from-gray-900 to-gray-700'}`}>
+                <h2 className={`text-xl sm:text-2xl lg:text-3xl font-bold bg-clip-text text-transparent ${isDarkMode ? 'bg-gradient-to-r from-white to-gray-300' : 'bg-gradient-to-r from-gray-900 to-gray-700'}`}>
                   WhatsApp Business Platform
                 </h2>
               </div>
-              <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Conversational AI messaging with Dify integration</p>
+              <p className={`text-sm sm:text-base lg:text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Conversational AI messaging with Dify integration</p>
             </div>
-            <div className="flex gap-3">
-              <button className="group relative px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2">
-                <RefreshCw className="h-4 w-4" />
-                <span className="font-semibold">Refresh</span>
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <button className="group relative px-3 sm:px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg sm:rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+                <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="text-sm sm:text-base font-semibold">Refresh</span>
               </button>
-              <button className="group relative px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                <span className="font-semibold">New Conversation</span>
+              <button className="group relative px-3 sm:px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg sm:rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+                <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="text-sm sm:text-base font-semibold">New Conversation</span>
               </button>
             </div>
           </div>
@@ -159,10 +156,10 @@ export default function WhatsAppTab({}: WhatsAppTabProps) {
         
         {/* Main Tabs */}
         <div className={`border-b ${isDarkMode ? 'border-gray-700/50 bg-gray-900' : 'border-gray-200/50 bg-white'}`}>
-          <nav className="flex space-x-1 px-8 py-2">
+          <nav className="flex flex-wrap sm:flex-nowrap space-x-1 px-3 sm:px-6 lg:px-8 py-2 overflow-x-auto">
             <button
               onClick={() => setActiveTab('conversations')}
-              className={`group relative px-6 py-3 rounded-lg font-medium text-sm transition-all duration-300 flex items-center gap-2 ${
+              className={`group relative px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg font-medium text-xs sm:text-sm transition-all duration-300 flex items-center gap-1 sm:gap-2 whitespace-nowrap ${
                 activeTab === 'conversations'
                   ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg'
                   : isDarkMode 
@@ -170,12 +167,13 @@ export default function WhatsAppTab({}: WhatsAppTabProps) {
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
-              <MessageSquare className="h-4 w-4" />
-              Conversations
+              <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Conversations</span>
+              <span className="sm:hidden">Chat</span>
             </button>
             <button
               onClick={() => setActiveTab('configuration')}
-              className={`group relative px-6 py-3 rounded-lg font-medium text-sm transition-all duration-300 flex items-center gap-2 ${
+              className={`group relative px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg font-medium text-xs sm:text-sm transition-all duration-300 flex items-center gap-1 sm:gap-2 whitespace-nowrap ${
                 activeTab === 'configuration'
                   ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
                   : isDarkMode 
@@ -183,12 +181,13 @@ export default function WhatsAppTab({}: WhatsAppTabProps) {
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
-              <Settings className="h-4 w-4" />
-              Configuration
+              <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Configuration</span>
+              <span className="sm:hidden">Config</span>
             </button>
             <button
               onClick={() => setActiveTab('analytics')}
-              className={`group relative px-6 py-3 rounded-lg font-medium text-sm transition-all duration-300 flex items-center gap-2 ${
+              className={`group relative px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg font-medium text-xs sm:text-sm transition-all duration-300 flex items-center gap-1 sm:gap-2 whitespace-nowrap ${
                 activeTab === 'analytics'
                   ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg'
                   : isDarkMode 
@@ -196,12 +195,13 @@ export default function WhatsAppTab({}: WhatsAppTabProps) {
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
-              <Activity className="h-4 w-4" />
-              Analytics
+              <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Analytics</span>
+              <span className="sm:hidden">Stats</span>
             </button>
             <button
               onClick={() => setActiveTab('health')}
-              className={`group relative px-6 py-3 rounded-lg font-medium text-sm transition-all duration-300 flex items-center gap-2 ${
+              className={`group relative px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg font-medium text-xs sm:text-sm transition-all duration-300 flex items-center gap-1 sm:gap-2 whitespace-nowrap ${
                 activeTab === 'health'
                   ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg'
                   : isDarkMode 
@@ -209,35 +209,36 @@ export default function WhatsAppTab({}: WhatsAppTabProps) {
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
-              <Database className="h-4 w-4" />
-              System Health
+              <Database className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">System Health</span>
+              <span className="sm:hidden">Health</span>
             </button>
           </nav>
         </div>
         
         {/* Tab Content */}
-        <div className={`p-8 ${isDarkMode ? 'bg-gray-900' : ''}`}>
+        <div className={`p-3 sm:p-4 lg:p-8 ${isDarkMode ? 'bg-gray-900' : ''}`}>
           {activeTab === 'conversations' && (
-            <div className="flex gap-8 h-[600px]">
+            <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 h-[500px] sm:h-[600px]">
               {/* Conversations List */}
-              <div className="w-96">
-                <div className="mb-6">
+              <div className="w-full lg:w-96">
+                <div className="mb-4 sm:mb-6">
                   <div className="relative group">
-                    <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 transition-colors ${isDarkMode ? 'text-gray-500 group-focus-within:text-green-400' : 'text-gray-400 group-focus-within:text-green-500'}`} />
+                    <Search className={`absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 transition-colors ${isDarkMode ? 'text-gray-500 group-focus-within:text-green-400' : 'text-gray-400 group-focus-within:text-green-500'}`} />
                     <input
                       type="text"
                       placeholder="Search conversations..."
-                      className={`w-full pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 backdrop-blur-sm transition-all duration-300 ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'}`}
+                      className={`w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 border rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 backdrop-blur-sm transition-all duration-300 text-sm sm:text-base ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'}`}
                     />
                   </div>
                 </div>
                 
-                <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                <div className="space-y-2 sm:space-y-3 max-h-[400px] sm:max-h-[500px] overflow-y-auto">
                   {sampleConversations.map((conversation) => (
                     <button
                       key={conversation.conversation_id}
                       onClick={() => setSelectedConversation(conversation)}
-                      className={`w-full p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-[1.02] ${
+                      className={`w-full p-3 sm:p-4 rounded-lg sm:rounded-xl text-left transition-all duration-300 transform hover:scale-[1.02] ${
                         selectedConversation?.conversation_id === conversation.conversation_id
                           ? isDarkMode 
                             ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-2 border-green-700/50 shadow-lg'
@@ -247,19 +248,19 @@ export default function WhatsAppTab({}: WhatsAppTabProps) {
                             : 'hover:bg-white/80 border-2 border-transparent hover:border-gray-200 shadow-sm'
                       }`}
                     >
-                      <div className="flex items-start gap-4">
-                        <div className={`p-2 rounded-lg ${
+                      <div className="flex items-start gap-3 sm:gap-4">
+                        <div className={`p-1.5 sm:p-2 rounded-md sm:rounded-lg ${
                           conversation.status === 'active' 
                             ? isDarkMode ? 'bg-green-900/50' : 'bg-green-100'
                           : conversation.status === 'pending' 
                             ? isDarkMode ? 'bg-yellow-900/50' : 'bg-yellow-100'
                           : isDarkMode ? 'bg-gray-900/50' : 'bg-gray-100'
                         }`}>
-                          <WhatsAppIcon className={`h-6 w-6 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+                          <WhatsAppIcon className={`h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1">
-                            <h3 className={`font-semibold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                            <h3 className={`font-semibold truncate text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                               {conversation.user_phone}
                             </h3>
                             <div className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -272,7 +273,7 @@ export default function WhatsAppTab({}: WhatsAppTabProps) {
                               {conversation.status}
                             </div>
                           </div>
-                          <p className={`text-sm mb-1 truncate ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                          <p className={`text-xs sm:text-sm mb-1 truncate ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                             {conversation.last_message}
                           </p>
                           <div className="flex items-center justify-between text-xs">
@@ -291,28 +292,28 @@ export default function WhatsAppTab({}: WhatsAppTabProps) {
               </div>
 
               {/* Chat Interface */}
-              <div className="flex-1">
+              <div className="flex-1 min-h-0">
                 {selectedConversation ? (
-                  <div className={`h-full rounded-2xl border ${isDarkMode ? 'bg-gradient-to-br from-gray-800/30 to-gray-900 border-gray-700/50' : 'bg-gradient-to-br from-gray-50/30 to-white border-gray-200/50'}`}>
+                  <div className={`h-full rounded-xl sm:rounded-2xl border ${isDarkMode ? 'bg-gradient-to-br from-gray-800/30 to-gray-900 border-gray-700/50' : 'bg-gradient-to-br from-gray-50/30 to-white border-gray-200/50'}`}>
                     {/* Chat Header */}
-                    <div className={`p-4 border-b ${isDarkMode ? 'border-gray-700/50' : 'border-gray-200/50'}`}>
+                    <div className={`p-3 sm:p-4 border-b ${isDarkMode ? 'border-gray-700/50' : 'border-gray-200/50'}`}>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-green-900/50' : 'bg-green-100'}`}>
-                            <WhatsAppIcon className={`h-6 w-6 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <div className={`p-1.5 sm:p-2 rounded-md sm:rounded-lg ${isDarkMode ? 'bg-green-900/50' : 'bg-green-100'}`}>
+                            <WhatsAppIcon className={`h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
                           </div>
                           <div>
-                            <h3 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                            <h3 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                               {selectedConversation.user_phone}
                             </h3>
-                            <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                            <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                               AI Agent: {selectedConversation.ai_agent} | Conversation ID: {selectedConversation.conversation_id}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className={`w-2 h-2 rounded-full ${selectedConversation.status === 'active' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></div>
-                          <span className={`text-sm font-medium capitalize ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          <span className={`text-xs sm:text-sm font-medium capitalize ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                             {selectedConversation.status}
                           </span>
                         </div>
@@ -320,15 +321,15 @@ export default function WhatsAppTab({}: WhatsAppTabProps) {
                     </div>
 
                     {/* Messages */}
-                    <div className="flex-1 p-4 space-y-4 max-h-[400px] overflow-y-auto">
+                    <div className="flex-1 p-3 sm:p-4 space-y-3 sm:space-y-4 max-h-[300px] sm:max-h-[400px] overflow-y-auto">
                       {sampleMessages.map((message, index) => (
                         <div key={index} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                          <div className={`max-w-[80%] sm:max-w-xs lg:max-w-md px-3 sm:px-4 py-2 rounded-lg ${
                             message.type === 'user'
                               ? isDarkMode ? 'bg-green-600 text-white' : 'bg-green-500 text-white'
                               : isDarkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-200 text-gray-900'
                           }`}>
-                            <p className="text-sm">{message.message}</p>
+                            <p className="text-xs sm:text-sm">{message.message}</p>
                             <p className={`text-xs mt-1 ${message.type === 'user' ? 'text-green-100' : isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                               {new Date(message.timestamp).toLocaleTimeString()}
                             </p>
@@ -337,14 +338,14 @@ export default function WhatsAppTab({}: WhatsAppTabProps) {
                       ))}
                       {isStreaming && (
                         <div className="flex justify-start">
-                          <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${isDarkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-200 text-gray-900'}`}>
+                          <div className={`max-w-[80%] sm:max-w-xs lg:max-w-md px-3 sm:px-4 py-2 rounded-lg ${isDarkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-200 text-gray-900'}`}>
                             <div className="flex items-center gap-2">
                               <div className="flex space-x-1">
                                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
                                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
                               </div>
-                              <span className="text-sm">AI is typing...</span>
+                              <span className="text-xs sm:text-sm">AI is typing...</span>
                             </div>
                           </div>
                         </div>
@@ -352,7 +353,7 @@ export default function WhatsAppTab({}: WhatsAppTabProps) {
                     </div>
 
                     {/* Message Input */}
-                    <div className={`p-4 border-t ${isDarkMode ? 'border-gray-700/50' : 'border-gray-200/50'}`}>
+                    <div className={`p-3 sm:p-4 border-t ${isDarkMode ? 'border-gray-700/50' : 'border-gray-200/50'}`}>
                       <div className="flex gap-2">
                         <input
                           type="text"
@@ -360,30 +361,30 @@ export default function WhatsAppTab({}: WhatsAppTabProps) {
                           onChange={(e) => setNewMessage(e.target.value)}
                           onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                           placeholder="Type a message..."
-                          className={`flex-1 px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 backdrop-blur-sm transition-all duration-300 ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'}`}
+                          className={`flex-1 px-3 sm:px-4 py-2 border rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 backdrop-blur-sm transition-all duration-300 text-sm sm:text-base ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'}`}
                         />
                         <button
                           onClick={sendMessage}
                           disabled={!newMessage.trim() || isStreaming}
-                          className={`px-4 py-2 rounded-xl transition-all duration-300 flex items-center gap-2 ${
+                          className={`px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl transition-all duration-300 flex items-center gap-2 text-sm sm:text-base ${
                             newMessage.trim() && !isStreaming
                               ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 transform hover:scale-105'
                               : isDarkMode ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                           }`}
                         >
-                          <Zap className="h-4 w-4" />
-                          Send
+                          <Zap className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:inline">Send</span>
                         </button>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-12">
-                    <div className={`p-6 rounded-2xl inline-block mb-6 ${isDarkMode ? 'bg-gradient-to-r from-green-900/50 to-emerald-900/50' : 'bg-gradient-to-r from-green-100 to-emerald-100'}`}>
-                      <WhatsAppIcon className={`h-12 w-12 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+                  <div className="text-center py-8 sm:py-12">
+                    <div className={`p-4 sm:p-6 rounded-xl sm:rounded-2xl inline-block mb-4 sm:mb-6 ${isDarkMode ? 'bg-gradient-to-r from-green-900/50 to-emerald-900/50' : 'bg-gradient-to-r from-green-100 to-emerald-100'}`}>
+                      <WhatsAppIcon className={`h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
                     </div>
-                    <h3 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Select a Conversation</h3>
-                    <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>Choose a conversation from the sidebar to start chatting</p>
+                    <h3 className={`text-lg sm:text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Select a Conversation</h3>
+                    <p className={`text-sm sm:text-base ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Choose a conversation from the sidebar to start chatting</p>
                   </div>
                 )}
               </div>
