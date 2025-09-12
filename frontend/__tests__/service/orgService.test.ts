@@ -466,23 +466,23 @@ describe('orgService', () => {
 		});
 	});
 
-	// describe('API Key Configuration', () => {
-	// 	test('uses environment API key when available', async () => {
-	// 		process.env.NEXT_PUBLIC_LIVE_API_KEY = 'test-api-key';
-	// 		const { createOrg } = await loadOrgService();
-	// 		(global as any).fetch = jest.fn().mockResolvedValue({
-	// 			ok: true,
-	// 			json: async () => ({ data: { id: 'org1' } }),
-	// 		});
+	describe('API Key Configuration', () => {
+		test('uses environment API key when available', async () => {
+		process.env.NEXT_PUBLIC_LIVE_API_KEY = 'test-api-key';
+		const { createOrg } = await loadOrgService();
+		(global as any).fetch = jest.fn().mockResolvedValue({
+			ok: true,
+			json: async () => ({ data: { id: 'org1' } }),
+		});
 
-	// 		await createOrg('Test Org');
+		await createOrg('Test Org');
 
-	// 		expect(global.fetch).toHaveBeenCalledWith('/api/org/create-org', expect.objectContaining({
-	// 			headers: expect.objectContaining({
-	// 				'x-api-key': 'test-api-key',
-	// 			}),
-	// 		}));
-	// 	});
+		expect(global.fetch).toHaveBeenCalledWith('/api/org/create-org', expect.objectContaining({
+			headers: expect.objectContaining({
+				'x-api-key': 'test-api-key',
+			}),
+		}));
+	});
 
 	// 	test('uses default API key when environment variable is not set', async () => {
 	// 		delete process.env.NEXT_PUBLIC_LIVE_API_KEY;
@@ -500,5 +500,5 @@ describe('orgService', () => {
 	// 			}),
 	// 		}));
 	// 	});
-	// });
+	});
 });
