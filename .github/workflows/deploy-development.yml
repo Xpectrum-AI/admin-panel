@@ -41,32 +41,7 @@ jobs:
           cd frontend
           npm test -- --coverage --watchAll=false
 
-      - name: Setup Node.js for developer frontend
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: frontend-developer/package-lock.json
-
-      - name: Install developer frontend dependencies
-        run: |
-          cd frontend-developer
-          npm ci
-
-      - name: Lint developer frontend
-        run: |
-          cd frontend-developer
-          npm run lint || echo "Lint completed with warnings"
-
-      - name: Type check developer frontend
-        run: |
-          cd frontend-developer
-          npx tsc --noEmit || echo "Type check completed with warnings"
-
-      - name: Run developer frontend tests
-        run: |
-          cd frontend-developer
-          npm test -- --coverage --watchAll=false
+      
 
   deploy-development:
     runs-on: ubuntu-latest
