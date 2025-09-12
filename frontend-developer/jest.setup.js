@@ -1,5 +1,27 @@
 import '@testing-library/jest-dom'
 
+// Set up environment variables for tests
+process.env.NEXT_PUBLIC_PROPELAUTH_URL = 'https://test.propelauth.com'
+process.env.NEXT_PUBLIC_LIVE_API_KEY = 'test-api-key'
+
+// Suppress console errors during tests
+const originalError = console.error
+const originalWarn = console.warn
+const originalLog = console.log
+
+beforeEach(() => {
+  // Suppress all console output during tests for maximum performance
+  jest.spyOn(console, 'error').mockImplementation(() => {})
+  jest.spyOn(console, 'warn').mockImplementation(() => {})
+  jest.spyOn(console, 'log').mockImplementation(() => {})
+  jest.spyOn(console, 'info').mockImplementation(() => {})
+  jest.spyOn(console, 'debug').mockImplementation(() => {})
+})
+
+afterEach(() => {
+  jest.restoreAllMocks()
+})
+
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
   useRouter() {
@@ -79,17 +101,46 @@ const localStorageMock = {
 }
 global.localStorage = localStorageMock
 
-// Mock fetch globally
+// Mock fetch globally with proper error handling and fast responses
 global.fetch = jest.fn(() =>
   Promise.resolve({
     ok: true,
     status: 200,
     json: () => Promise.resolve({ success: true, data: [] }),
     text: () => Promise.resolve(''),
+    headers: new Headers(),
+    statusText: 'OK',
   })
 )
+
+// Mock setTimeout and setInterval to run immediately for faster tests
+global.setTimeout = jest.fn((callback) => {
+  callback()
+  return 1
+})
+
+global.setInterval = jest.fn((callback) => {
+  callback()
+  return 1
+})
+
+global.clearTimeout = jest.fn()
+global.clearInterval = jest.fn()
+
+// Mock Headers
+global.Headers = jest.fn().mockImplementation(() => ({
+  get: jest.fn(),
+  set: jest.fn(),
+  has: jest.fn(),
+  delete: jest.fn(),
+  forEach: jest.fn(),
+}))
 
 // Clean up after each test
 afterEach(() => {
   jest.clearAllMocks()
+  // Restore console methods
+  console.error = originalError
+  console.warn = originalWarn
+  console.log = originalLog
 })

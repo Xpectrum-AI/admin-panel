@@ -201,10 +201,29 @@ jobs:
 
     - name: Deploy CDK stack (development)
       env:
+        # Backend API
+        DEV_LIVE_API_URL: ${{ vars.DEV_LIVE_API_URL }}
+        DEV_LIVE_API_KEY: ${{ secrets.DEV_LIVE_API_KEY }}
+        # PropelAuth
         DEV_PROPELAUTH_URL: ${{ vars.DEV_PROPELAUTH_URL }}
         DEV_PROPELAUTH_API_KEY: ${{ secrets.DEV_PROPELAUTH_API_KEY }}
         DEV_DEVELOPER_PROPELAUTH_URL: ${{ vars.DEV_DEVELOPER_PROPELAUTH_URL }}
         DEV_DEVELOPER_PROPELAUTH_API_KEY: ${{ secrets.DEV_DEVELOPER_PROPELAUTH_API_KEY }}
+        # Model Configuration API
+        DEV_MODEL_API_BASE_URL: ${{ vars.DEV_MODEL_API_BASE_URL }}
+        DEV_MODEL_API_KEY: ${{ secrets.DEV_MODEL_API_KEY }}
+        # Chatbot API
+        DEV_CHATBOT_API_URL: ${{ vars.DEV_CHATBOT_API_URL }}
+        DEV_CHATBOT_API_KEY: ${{ secrets.DEV_CHATBOT_API_KEY }}
+        # Voice Provider API Keys
+        DEV_ELEVEN_LABS_API_KEY: ${{ secrets.DEV_ELEVEN_LABS_API_KEY }}
+        DEV_OPEN_AI_API_KEY: ${{ secrets.DEV_OPEN_AI_API_KEY }}
+        DEV_WHISPER_API_KEY: ${{ secrets.DEV_WHISPER_API_KEY }}
+        DEV_DEEPGRAM_API_KEY: ${{ secrets.DEV_DEEPGRAM_API_KEY }}
+        DEV_CARTESIA_API_KEY: ${{ secrets.DEV_CARTESIA_API_KEY }}
+        # Voice Provider Voice IDs
+        DEV_CARTESIA_VOICE_ID: ${{ vars.DEV_CARTESIA_VOICE_ID }}
+        DEV_ELEVEN_LABS_VOICE_ID: ${{ vars.DEV_ELEVEN_LABS_VOICE_ID }}
       run: |
         cd python-cdk-v2
         

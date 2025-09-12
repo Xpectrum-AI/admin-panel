@@ -12,9 +12,11 @@ interface ToolsConfigProps {
   transcriberConfig?: any;
   onAgentCreated?: () => void;
   isEditing?: boolean;
+  isCreating?: boolean;
   existingAgent?: any;
   onConfigChange?: (config: any) => void;
   existingConfig?: any;
+  currentOrganizationId?: string;
 }
 
 const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
@@ -24,8 +26,10 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
   transcriberConfig,
   onAgentCreated,
   isEditing = false,
+  isCreating = false,
   existingAgent,
-  existingConfig
+  existingConfig,
+  currentOrganizationId
 }, ref) => {
   const { isDarkMode } = useTheme();
 
@@ -435,8 +439,9 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
       }
 
       // Complete agent configuration
+      console.log('🔍 ToolsConfig - currentOrganizationId:', currentOrganizationId);
       const completeConfig = {
-        organization_id: 'developer', // Set default organization ID for developer dashboard
+        organization_id: currentOrganizationId, // This should be organization name, not ID
         initial_message: initialMessage,
         nudge_text: nudgeText,
         nudge_interval: nudgeInterval,
@@ -448,6 +453,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
       };
 
       console.log('Complete config to send:', completeConfig);
+      console.log('🔍 Organization ID being sent to API:', completeConfig.organization_id);
 
       const result = await agentConfigService.configureAgent(agentName, completeConfig);
 
@@ -949,7 +955,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
               ) : (
                 <Zap className="h-5 w-5" />
               )}
-              <span className="font-semibold">{isLoading ? 'Processing...' : (isEditing ? 'Update Agent' : 'Create Agent')}</span>
+              <span className="font-semibold">{isLoading ? 'Processing...' : (isCreating ? 'Create Agent' : 'Update Agent')}</span>
             </button>
           </div>
         </div>

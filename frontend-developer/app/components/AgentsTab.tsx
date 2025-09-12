@@ -1,17 +1,14 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Bot, Settings, Mic, Wrench, BarChart3, Globe, MessageSquare, Sparkles, Zap, Activity, Search, RefreshCw, Trash2, Phone as PhoneIcon, ChevronDown } from 'lucide-react';
+import { Bot, Settings, Mic, Wrench, BarChart3, MessageSquare, Sparkles, Zap, Activity, Search, RefreshCw, Trash2, ChevronDown } from 'lucide-react';
 import ModelConfig from './config/ModelConfig';
 import VoiceConfig from './config/VoiceConfig';
 import TranscriberConfig from './config/TranscriberConfig';
 import ToolsConfig from './config/ToolsConfig';
-import PhoneNumbersTab from './PhoneNumbersTab';
-import SMSTab from './SMSTab';
-import WhatsAppTab from './WhatsAppTab';
 
 import { agentConfigService } from '../../service/agentConfigService';
-
+import { useAuthInfo } from '@propelauth/react';
 import { useTheme } from '../contexts/ThemeContext';
 
 interface Agent {
@@ -76,6 +73,7 @@ interface AgentsTabProps {
 
 export default function AgentsTab({ }: AgentsTabProps) {
   const { isDarkMode } = useTheme();
+  const { user, userClass } = useAuthInfo();
 
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
@@ -89,12 +87,37 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const [agentPrefix, setAgentPrefix] = useState('');
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
   const [agentsError, setAgentsError] = useState('');
-  const [currentOrganizationId, setCurrentOrganizationId] = useState<string>('developer');
+  const [currentOrganizationId, setCurrentOrganizationId] = useState<string>('');
+  const [organizationName, setOrganizationName] = useState<string>('');
 
   // Configuration state for all components
   const [modelConfig, setModelConfig] = useState<any>(null);
   const [voiceConfig, setVoiceConfig] = useState<any>(null);
   const [transcriberConfig, setTranscriberConfig] = useState<any>(null);
+
+  // Initialize organization ID from user context
+  useEffect(() => {
+    console.log('🔍 Setting organization ID from user context:', { user, userClass });
+    
+    const orgId = (user as any)?.orgIdToOrgMemberInfo ? 
+      Object.keys((user as any).orgIdToOrgMemberInfo)[0] : 
+      null;
+    
+    if (orgId) {
+      console.log('✅ Setting organization ID from user.orgIdToOrgMemberInfo:', orgId);
+      setCurrentOrganizationId(orgId);
+    } else if (userClass) {
+      // Fallback: get organization ID from userClass
+      const orgs = userClass.getOrgs?.() || [];
+      console.log('🔍 Available organizations from userClass:', orgs);
+      if (orgs.length > 0) {
+        const org = orgs[0] as any;
+        const orgIdFromClass = org.orgId || org.id || '';
+        console.log('✅ Setting organization ID from userClass:', orgIdFromClass);
+        setCurrentOrganizationId(orgIdFromClass);
+      }
+    }
+  }, [user, userClass]);
 
 
   // Refs for scrolling to sections
@@ -106,12 +129,14 @@ export default function AgentsTab({ }: AgentsTabProps) {
 
   // Fetch agents from backend
   const fetchAgents = useCallback(async () => {
-    console.log('🔄 Starting fetchAgents...');
+    console.log('🔄 Starting fetchAgents...', { currentOrganizationId, organizationName });
     setIsLoadingAgents(true);
     setAgentsError('');
 
     try {
-      const result = await agentConfigService.getAllAgents();
+      const orgName = organizationName || 'Unknown Organization';
+      console.log('🔍 Using organization name for fetchAgents:', orgName);
+      const result = await agentConfigService.getAllAgents(orgName);
       console.log('📊 getAllAgents result:', result);
 
       if (result.success) {
@@ -192,7 +217,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
       setIsLoadingAgents(false);
       console.log('🏁 fetchAgents completed');
     }
-  }, [selectedAgent]);
+  }, [selectedAgent, currentOrganizationId, organizationName]);
 
   // Load configurations from localStorage
   const loadConfigurationsFromStorage = useCallback(() => {
@@ -233,6 +258,24 @@ export default function AgentsTab({ }: AgentsTabProps) {
     // Load configurations from localStorage
     loadConfigurationsFromStorage();
   }, [loadConfigurationsFromStorage]);
+
+  // Get organization name from user context
+  useEffect(() => {
+    if (userClass) {
+      const orgs = userClass.getOrgs?.() || [];
+      console.log('🔍 Available organizations from userClass:', orgs);
+      if (orgs.length > 0) {
+        const org = orgs[0] as any;
+        const orgName = org.orgName || org.name || '';
+        console.log('🔍 Setting organization name:', orgName);
+        setOrganizationName(orgName);
+      } else {
+        console.log('⚠️ No organizations found in userClass');
+      }
+    } else {
+      console.log('⚠️ userClass is not available');
+    }
+  }, [userClass]);
 
   // Refresh configuration when selectedAgent changes
   useEffect(() => {
@@ -291,6 +334,31 @@ export default function AgentsTab({ }: AgentsTabProps) {
     }
 
     // Create a temporary new agent for configuration
+    let orgName = organizationName || 'Unknown Organization';
+    console.log('🔍 Creating agent with organization name:', { 
+      currentOrganizationId, 
+      organizationName, 
+      finalOrgName: orgName,
+      userClass: !!userClass,
+      user: !!user
+    });
+    
+    // Always try to get the organization name from userClass to ensure we have the latest value
+    if (userClass) {
+      const orgs = userClass.getOrgs?.() || [];
+      console.log('🔍 Getting org from userClass at creation time:', orgs);
+      if (orgs.length > 0) {
+        const org = orgs[0] as any;
+        const currentOrgName = org.orgName || org.name || '';
+        console.log('🔍 Current organization name from userClass:', currentOrgName);
+        if (currentOrgName) {
+          orgName = currentOrgName;
+          // Also update the state for consistency
+          setOrganizationName(currentOrgName);
+        }
+      }
+    }
+    
     const newAgent: Agent = {
       id: agentPrefix.trim(),
       name: agentPrefix.trim(),
@@ -300,13 +368,14 @@ export default function AgentsTab({ }: AgentsTabProps) {
       model: 'GPT-4o',
       provider: 'OpenAI',
       cost: '~$0.15/min',
-      latency: '~1050ms'
+      latency: '~1050ms',
+      organization_id: orgName 
     };
 
     setSelectedAgent(newAgent);
     setActiveConfigTab('model'); // Start with model configuration
     setIsCreating(true);
-    setIsEditing(true); // New agents default to edit mode
+    setIsEditing(true); 
     setShowAgentPrefixModal(false);
     setAgentPrefix('');
 
@@ -515,7 +584,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const handleDeleteAgent = useCallback(async (agent: Agent) => {
     if (window.confirm(`Are you sure you want to delete agent "${agent.name}"? This action cannot be undone.`)) {
       try {
-        const result = await agentConfigService.deleteAgent(agent.name);
+        const result = await agentConfigService.deleteAgent(agent.name, currentOrganizationId);
         if (result.success) {
           // Remove agent from local state
           setAgents(prev => prev.filter(a => a.id !== agent.id));
@@ -596,7 +665,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
     console.log('🔄 Manually refreshing selected agent configuration:', selectedAgent.name);
 
     try {
-      const result = await agentConfigService.getAllAgents();
+      const result = await agentConfigService.getAllAgents(currentOrganizationId);
       if (result.success && result.data) {
         const updatedAgent = result.data.find((a: any) => a.name === selectedAgent.name);
         if (updatedAgent) {
@@ -664,9 +733,6 @@ export default function AgentsTab({ }: AgentsTabProps) {
     { id: 'voice', label: 'Voice', icon: Mic, color: 'from-green-500 to-teal-600' },
     { id: 'transcriber', label: 'Transcriber', icon: MessageSquare, color: 'from-orange-500 to-red-600' },
     { id: 'tools', label: 'Tools', icon: Wrench, color: 'from-gray-600 to-gray-800' },
-    { id: 'phone', label: 'Phone', icon: PhoneIcon, color: 'from-green-500 to-emerald-600' },
-    { id: 'sms', label: 'SMS', icon: MessageSquare, color: 'from-orange-500 to-red-600' },
-    { id: 'whatsapp', label: 'WhatsApp', icon: Globe, color: 'from-cyan-500 to-blue-600' },
   ], []);
 
   return (
@@ -695,6 +761,16 @@ export default function AgentsTab({ }: AgentsTabProps) {
                     Craft and configure intelligent agents for organization: <span className="font-semibold text-green-600">{currentOrganizationId}</span>
                   </p>
                 </div>
+                {organizationName && (
+                  <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                    <span className={`text-sm sm:text-base font-medium px-2 sm:px-3 py-1 sm:py-2 rounded-lg ${isDarkMode 
+                      ? 'bg-gray-700 text-gray-200 border border-gray-600' 
+                      : 'bg-gray-100 text-gray-700 border border-gray-300'
+                    }`}>
+                      {organizationName}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                   <button
                     onClick={fetchAgents}
@@ -982,25 +1058,16 @@ export default function AgentsTab({ }: AgentsTabProps) {
                           onConfigChange={handleToolsConfigChange}
                           existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).toolsConfig : null}
                           isEditing={isEditing}
+                          isCreating={isCreating}
                           onAgentCreated={handleAgentCreated}
                           // Pass saved configurations from localStorage
                           modelConfig={modelConfig}
                           voiceConfig={voiceConfig}
                           transcriberConfig={transcriberConfig}
+                          currentOrganizationId={organizationName || currentOrganizationId}
                         />
                       </div>
 
-                      <div style={{ display: activeConfigTab === 'phone' ? 'block' : 'none' }}>
-                        <PhoneNumbersTab />
-                      </div>
-
-                      <div style={{ display: activeConfigTab === 'sms' ? 'block' : 'none' }}>
-                        <SMSTab />
-                      </div>
-
-                      <div style={{ display: activeConfigTab === 'whatsapp' ? 'block' : 'none' }}>
-                        <WhatsAppTab />
-                      </div>
                     </div>
                   </div>
                 </div>

@@ -189,17 +189,22 @@ describe('authenticateApiKey', () => {
     process.env.NEXT_PUBLIC_LIVE_API_KEY = originalApiKey;
   });
 
-  it('should validate hardcoded API key', async () => {
+  it('should validate environment variable API key', async () => {
     // Mock NODE_ENV for this test
     const originalNodeEnv = process.env.NODE_ENV;
+    const originalApiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY;
+    
     Object.defineProperty(process.env, 'NODE_ENV', {
       value: 'production',
       writable: true,
     });
     
+    // Set the environment variable for the test
+    process.env.NEXT_PUBLIC_LIVE_API_KEY = 'test-api-key';
+    
     const request = new MockNextRequest('http://localhost:3000/api/test', {
       headers: {
-        'x-api-key': 'xpectrum-ai@123',
+        'x-api-key': 'test-api-key',
       },
     });
 
@@ -207,11 +212,12 @@ describe('authenticateApiKey', () => {
     
     expect(result).toEqual({ success: true });
     
-    // Restore original NODE_ENV
+    // Restore original NODE_ENV and API key
     Object.defineProperty(process.env, 'NODE_ENV', {
       value: originalNodeEnv,
       writable: true,
     });
+    process.env.NEXT_PUBLIC_LIVE_API_KEY = originalApiKey;
   });
 
   it('should handle PropelAuth API key', async () => {
