@@ -6,10 +6,14 @@ const createJestConfig = nextJest({
 })
 
 // Add any custom config to be passed to Jest
+// NOTE: Tests are currently disabled in CI/CD pipeline
 const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jsdom',
+  testTimeout: 5000, // 5 seconds timeout for tests (reduced since we're mocking async ops)
   testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/'],
+  maxWorkers: '50%', // Use half of available CPU cores for parallel test execution
+  verbose: false, // Reduce output verbosity for faster execution
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },

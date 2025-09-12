@@ -98,13 +98,18 @@ describe('Environment Variable Integration', () => {
       expect(result2).toEqual({ success: true });
     });
 
-    it('should handle hardcoded API key', async () => {
+    it('should handle environment variable API key', async () => {
       // Set up environment variables
       const originalNodeEnv = process.env.NODE_ENV;
+      const originalApiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY;
+      
       Object.defineProperty(process.env, 'NODE_ENV', {
         value: 'production',
         writable: true,
       });
+      
+      // Set the environment variable for the test
+      process.env.NEXT_PUBLIC_LIVE_API_KEY = 'test-api-key';
 
       // Re-import modules to get fresh environment variables
       jest.resetModules();
@@ -112,18 +117,19 @@ describe('Environment Variable Integration', () => {
 
       const request = new MockNextRequest('http://localhost:3000/api/test', {
         headers: {
-          'x-api-key': 'xpectrum-ai@123',
+          'x-api-key': 'test-api-key',
         },
       });
 
       const result = await authenticateApiKey(request as any);
       expect(result).toEqual({ success: true });
 
-      // Restore original NODE_ENV
+      // Restore original NODE_ENV and API key
       Object.defineProperty(process.env, 'NODE_ENV', {
         value: originalNodeEnv,
         writable: true,
       });
+      process.env.NEXT_PUBLIC_LIVE_API_KEY = originalApiKey;
     });
 
     it('should reject invalid API keys', async () => {

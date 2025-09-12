@@ -28,7 +28,7 @@ import {
 import { useAuthInfo, useLogoutFunction } from '@propelauth/react';
 import { SyncLoader } from 'react-spinners';
 import { useRouter } from 'next/navigation';
-import { AgentsTab, PhoneNumbersTab, SMSTab, WhatsAppTab } from './components';
+import { AgentsTab, PhoneNumbersTab, SMSTab, WhatsAppTab, OrgSetup } from './components';
 import ChatSidebar from './components/ChatSidebar';
 import { useTheme } from './contexts/ThemeContext';
 
@@ -62,6 +62,9 @@ const ChatIcon = ({ className }: { className?: string }) => (
 const navigationItems = [
   { name: 'Overview', icon: Building2, color: 'from-blue-500 to-purple-600' },
   { name: 'Agents', icon: Bot, color: 'from-green-500 to-emerald-600' },
+  { name: 'Phone Numbers', icon: Phone, color: 'from-blue-500 to-cyan-600' },
+  { name: 'SMS', icon: MessageSquare, color: 'from-green-500 to-teal-600' },
+  { name: 'WhatsApp', icon: Globe, color: 'from-green-600 to-emerald-700' },
 ];
 
 export default function DeveloperDashboard() {
@@ -76,9 +79,46 @@ export default function DeveloperDashboard() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { user, isLoggedIn } = useAuthInfo();
+  const { user, isLoggedIn, userClass, loading } = useAuthInfo();
   const logout = useLogoutFunction();
   const router = useRouter();
+
+  // Organization setup state
+  const [showOrgSetup, setShowOrgSetup] = useState(false);
+  const [orgs, setOrgs] = useState<any[]>([]);
+  const [orgSetupComplete, setOrgSetupComplete] = useState(false);
+
+  // Redirect to login if not authenticated (like main frontend)
+  useEffect(() => {
+    if (!loading && !isLoggedIn) {
+      window.location.href = "/login";
+    }
+  }, [loading, isLoggedIn]);
+
+  // Don't render anything if not authenticated
+  if (!loading && !isLoggedIn) {
+    return null;
+  }
+
+  // Organization setup logic - only for first-time users
+  useEffect(() => {
+    if (!loading && userClass) {
+      const orgs = userClass.getOrgs?.() || [];
+      setOrgs(orgs);
+      
+      // Only show organization setup if user has no organizations (first-time user)
+      if (orgs.length === 0) {
+        setShowOrgSetup(true);
+        setOrgSetupComplete(false);
+      } else {
+        // User already has organization(s), proceed to dashboard
+        setShowOrgSetup(false);
+        setOrgSetupComplete(true);
+      }
+    }
+  }, [loading, userClass]);
+
+  // No need for organization choice since each user has only one organization
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -367,6 +407,31 @@ export default function DeveloperDashboard() {
     );
   }
 
+  // Show loading while checking authentication
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', width: '100vw', background: isDarkMode ? '#111827' : 'white', zIndex: 9999, position: 'fixed', top: 0, left: 0 }}>
+        <div className="text-center">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-green-500/20 border-t-green-500 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-green-400 rounded-full animate-spin" style={{ animationDuration: '1.5s' }}></div>
+          </div>
+          <p className={`mt-6 font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show organization setup modal only for first-time users
+  if (showOrgSetup) {
+    return (
+      <OrgSetup onOrgCreated={() => {
+        setShowOrgSetup(false);
+        setOrgSetupComplete(true);
+      }} />
+    );
+  }
+
   return (
     <>
       <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-black' : 'bg-gray-50'}`}>
@@ -536,7 +601,28 @@ export default function DeveloperDashboard() {
 
         {/* Main Content Area */}
         <main className="p-3 sm:p-4 lg:p-6">
-          {renderContent()}
+          {orgSetupComplete ? renderContent() : (
+            <div className="flex items-center justify-center h-64">
+              <div className={`text-center rounded-xl shadow-sm border p-8 ${
+                isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+              }`}>
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+                  isDarkMode ? 'bg-blue-500/20' : 'bg-blue-100'
+                }`}>
+                  <Code className={`w-8 h-8 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                </div>
+                <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  Welcome to Developer Dashboard
+                </h3>
+                <p className={`mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  As a new user, please create your organization to get started
+                </p>
+                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  You'll need to create an organization before accessing the dashboard features.
+                </p>
+              </div>
+            </div>
+          )}
         </main>
         
         {/* Chat Sidebar */}

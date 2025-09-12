@@ -29,8 +29,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     
     // Check if user is authenticated
     if (!loading && !isLoggedIn) {
-      // Redirect to login page if not authenticated
-      router.push('/login');
+      // Redirect to login page if not authenticated (like main frontend)
+      window.location.href = "/login";
       return null;
     }
     
