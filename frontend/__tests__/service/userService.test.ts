@@ -73,7 +73,7 @@ describe('userService', () => {
 				method: 'POST',
 				headers: expect.objectContaining({
 					'Content-Type': 'application/json',
-					'x-api-key': 'xpectrum-ai@123',
+					'x-api-key': 'test-api-key',
 				}),
 				body: JSON.stringify({
 					email: 'test@example.com',
@@ -127,7 +127,7 @@ describe('userService', () => {
 				method: 'GET',
 				headers: expect.objectContaining({
 					'Content-Type': 'application/json',
-					'x-api-key': 'xpectrum-ai@123',
+					'x-api-key': 'test-api-key',
 				}),
 			});
 		});
@@ -174,7 +174,7 @@ describe('userService', () => {
 				method: 'POST',
 				headers: expect.objectContaining({
 					'Content-Type': 'application/json',
-					'x-api-key': 'xpectrum-ai@123',
+					'x-api-key': 'test-api-key',
 				}),
 				body: JSON.stringify({ firstName: 'John' }),
 			});
@@ -211,7 +211,7 @@ describe('userService', () => {
 				method: 'POST',
 				headers: expect.objectContaining({
 					'Content-Type': 'application/json',
-					'x-api-key': 'xpectrum-ai@123',
+					'x-api-key': 'test-api-key',
 				}),
 				body: JSON.stringify(complexQuery),
 			});
@@ -248,7 +248,7 @@ describe('userService', () => {
 
 			expect(global.fetch).toHaveBeenCalledWith('/api/user/create-user', expect.objectContaining({
 				headers: expect.objectContaining({
-					'x-api-key': 'xpectrum-ai@123',
+					'x-api-key': 'test-api-key',
 				}),
 			}));
 		});
@@ -271,13 +271,13 @@ describe('userService', () => {
 
 			expect(global.fetch).toHaveBeenNthCalledWith(1, '/api/user/user1');
 			expect(global.fetch).toHaveBeenNthCalledWith(2, '/api/user/create-user', expect.objectContaining({
-				headers: expect.objectContaining({ 'x-api-key': 'xpectrum-ai@123' }),
+				headers: expect.objectContaining({ 'x-api-key': 'test-api-key' }),
 			}));
 			expect(global.fetch).toHaveBeenNthCalledWith(3, expect.stringContaining('/api/user/fetch-user-mail'), expect.objectContaining({
-				headers: expect.objectContaining({ 'x-api-key': 'xpectrum-ai@123' }),
+				headers: expect.objectContaining({ 'x-api-key': 'test-api-key' }),
 			}));
 			expect(global.fetch).toHaveBeenNthCalledWith(4, '/api/user/fetch-users-query', expect.objectContaining({
-				headers: expect.objectContaining({ 'x-api-key': 'xpectrum-ai@123' }),
+				headers: expect.objectContaining({ 'x-api-key': 'test-api-key' }),
 			}));
 		});
 
