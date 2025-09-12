@@ -10,55 +10,12 @@ const originalWarn = console.warn
 const originalLog = console.log
 
 beforeEach(() => {
-  jest.spyOn(console, 'error').mockImplementation((...args) => {
-    // Suppress specific expected errors
-    if (
-      typeof args[0] === 'string' &&
-      (args[0].includes('NEXT_PUBLIC_PROPELAUTH_URL is not set') ||
-       args[0].includes('An update to') ||
-       args[0].includes('Warning:') ||
-       args[0].includes('act('))
-    ) {
-      return // Suppress expected test errors
-    }
-    originalError.call(console, ...args)
-  })
-
-  jest.spyOn(console, 'warn').mockImplementation((...args) => {
-    // Suppress specific expected warnings
-    if (
-      typeof args[0] === 'string' &&
-      (args[0].includes('Warning:') ||
-       args[0].includes('act(') ||
-       args[0].includes('An update to'))
-    ) {
-      return // Suppress expected test warnings
-    }
-    originalWarn.call(console, ...args)
-  })
-
-  // Suppress debug logs during tests
-  jest.spyOn(console, 'log').mockImplementation((...args) => {
-    // Only suppress specific debug logs
-    if (
-      typeof args[0] === 'string' &&
-      (args[0].includes('🔄') ||
-       args[0].includes('🔍') ||
-       args[0].includes('🚀') ||
-       args[0].includes('✅') ||
-       args[0].includes('⚠️') ||
-       args[0].includes('📊') ||
-       args[0].includes('🏁') ||
-       args[0].includes('=== ToolsConfig Debug Info ===') ||
-       args[0].includes('=== End Debug Info ===') ||
-       args[0].includes('Final voice config found') ||
-       args[0].includes('Final model config found') ||
-       args[0].includes('Final transcriber config found'))
-    ) {
-      return // Suppress debug logs
-    }
-    originalLog.call(console, ...args)
-  })
+  // Suppress all console output during tests for maximum performance
+  jest.spyOn(console, 'error').mockImplementation(() => {})
+  jest.spyOn(console, 'warn').mockImplementation(() => {})
+  jest.spyOn(console, 'log').mockImplementation(() => {})
+  jest.spyOn(console, 'info').mockImplementation(() => {})
+  jest.spyOn(console, 'debug').mockImplementation(() => {})
 })
 
 afterEach(() => {
@@ -144,7 +101,7 @@ const localStorageMock = {
 }
 global.localStorage = localStorageMock
 
-// Mock fetch globally with proper error handling
+// Mock fetch globally with proper error handling and fast responses
 global.fetch = jest.fn(() =>
   Promise.resolve({
     ok: true,
@@ -155,6 +112,20 @@ global.fetch = jest.fn(() =>
     statusText: 'OK',
   })
 )
+
+// Mock setTimeout and setInterval to run immediately for faster tests
+global.setTimeout = jest.fn((callback) => {
+  callback()
+  return 1
+})
+
+global.setInterval = jest.fn((callback) => {
+  callback()
+  return 1
+})
+
+global.clearTimeout = jest.fn()
+global.clearInterval = jest.fn()
 
 // Mock Headers
 global.Headers = jest.fn().mockImplementation(() => ({
