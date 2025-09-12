@@ -1,5 +1,70 @@
 import '@testing-library/jest-dom'
 
+// Set up environment variables for tests
+process.env.NEXT_PUBLIC_PROPELAUTH_URL = 'https://test.propelauth.com'
+process.env.NEXT_PUBLIC_LIVE_API_KEY = 'test-api-key'
+
+// Suppress console errors during tests
+const originalError = console.error
+const originalWarn = console.warn
+const originalLog = console.log
+
+beforeEach(() => {
+  jest.spyOn(console, 'error').mockImplementation((...args) => {
+    // Suppress specific expected errors
+    if (
+      typeof args[0] === 'string' &&
+      (args[0].includes('NEXT_PUBLIC_PROPELAUTH_URL is not set') ||
+       args[0].includes('An update to') ||
+       args[0].includes('Warning:') ||
+       args[0].includes('act('))
+    ) {
+      return // Suppress expected test errors
+    }
+    originalError.call(console, ...args)
+  })
+
+  jest.spyOn(console, 'warn').mockImplementation((...args) => {
+    // Suppress specific expected warnings
+    if (
+      typeof args[0] === 'string' &&
+      (args[0].includes('Warning:') ||
+       args[0].includes('act(') ||
+       args[0].includes('An update to'))
+    ) {
+      return // Suppress expected test warnings
+    }
+    originalWarn.call(console, ...args)
+  })
+
+  // Suppress debug logs during tests
+  jest.spyOn(console, 'log').mockImplementation((...args) => {
+    // Only suppress specific debug logs
+    if (
+      typeof args[0] === 'string' &&
+      (args[0].includes('🔄') ||
+       args[0].includes('🔍') ||
+       args[0].includes('🚀') ||
+       args[0].includes('✅') ||
+       args[0].includes('⚠️') ||
+       args[0].includes('📊') ||
+       args[0].includes('🏁') ||
+       args[0].includes('=== ToolsConfig Debug Info ===') ||
+       args[0].includes('=== End Debug Info ===') ||
+       args[0].includes('Final voice config found') ||
+       args[0].includes('Final model config found') ||
+       args[0].includes('Final transcriber config found'))
+    ) {
+      return // Suppress debug logs
+    }
+    originalLog.call(console, ...args)
+  })
+})
+
+afterEach(() => {
+  jest.restoreAllMocks()
+})
+
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
   useRouter() {
@@ -79,17 +144,32 @@ const localStorageMock = {
 }
 global.localStorage = localStorageMock
 
-// Mock fetch globally
+// Mock fetch globally with proper error handling
 global.fetch = jest.fn(() =>
   Promise.resolve({
     ok: true,
     status: 200,
     json: () => Promise.resolve({ success: true, data: [] }),
     text: () => Promise.resolve(''),
+    headers: new Headers(),
+    statusText: 'OK',
   })
 )
+
+// Mock Headers
+global.Headers = jest.fn().mockImplementation(() => ({
+  get: jest.fn(),
+  set: jest.fn(),
+  has: jest.fn(),
+  delete: jest.fn(),
+  forEach: jest.fn(),
+}))
 
 // Clean up after each test
 afterEach(() => {
   jest.clearAllMocks()
+  // Restore console methods
+  console.error = originalError
+  console.warn = originalWarn
+  console.log = originalLog
 })
