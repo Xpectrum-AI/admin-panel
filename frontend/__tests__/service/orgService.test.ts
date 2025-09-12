@@ -35,7 +35,7 @@ describe('orgService', () => {
 				method: 'POST',
 				headers: expect.objectContaining({
 					'Content-Type': 'application/json',
-					'x-api-key': 'xpectrum-ai@123',
+					'x-api-key': 'test-api-key',
 				}),
 				body: JSON.stringify({ orgName: 'Test Org' }),
 			});
@@ -78,7 +78,7 @@ describe('orgService', () => {
 				method: 'POST',
 				headers: expect.objectContaining({
 					'Content-Type': 'application/json',
-					'x-api-key': 'xpectrum-ai@123',
+					'x-api-key': 'test-api-key',
 				}),
 				body: JSON.stringify({ orgId: 'org1', userId: 'user1', role: 'member' }),
 			});
@@ -111,7 +111,7 @@ describe('orgService', () => {
 				method: 'POST',
 				headers: expect.objectContaining({
 					'Content-Type': 'application/json',
-					'x-api-key': 'xpectrum-ai@123',
+					'x-api-key': 'test-api-key',
 				}),
 				body: JSON.stringify({ orgId: 'org1', email: 'test@example.com', role: 'member' }),
 			});
@@ -147,7 +147,7 @@ describe('orgService', () => {
 				method: 'POST',
 				headers: expect.objectContaining({
 					'Content-Type': 'application/json',
-					'x-api-key': 'xpectrum-ai@123',
+					'x-api-key': 'test-api-key',
 				}),
 				body: JSON.stringify({ orgId: 'org1' }),
 			});
@@ -183,7 +183,7 @@ describe('orgService', () => {
 				method: 'POST',
 				headers: expect.objectContaining({
 					'Content-Type': 'application/json',
-					'x-api-key': 'xpectrum-ai@123',
+					'x-api-key': 'test-api-key',
 				}),
 				body: JSON.stringify({ orgId: 'org1' }),
 			});
@@ -216,7 +216,7 @@ describe('orgService', () => {
 				method: 'POST',
 				headers: expect.objectContaining({
 					'Content-Type': 'application/json',
-					'x-api-key': 'xpectrum-ai@123',
+					'x-api-key': 'test-api-key',
 				}),
 				body: JSON.stringify({ orgId: 'org1', userId: 'user1' }),
 			});
@@ -249,7 +249,7 @@ describe('orgService', () => {
 				method: 'POST',
 				headers: expect.objectContaining({
 					'Content-Type': 'application/json',
-					'x-api-key': 'xpectrum-ai@123',
+					'x-api-key': 'test-api-key',
 				}),
 				body: JSON.stringify({ orgId: 'org1', userId: 'user1', role: 'admin' }),
 			});
@@ -282,7 +282,7 @@ describe('orgService', () => {
 				method: 'POST',
 				headers: expect.objectContaining({
 					'Content-Type': 'application/json',
-					'x-api-key': 'xpectrum-ai@123',
+					'x-api-key': 'test-api-key',
 				}),
 				body: JSON.stringify({
 					orgId: 'org1',
@@ -349,7 +349,7 @@ describe('orgService', () => {
 				method: 'POST',
 				headers: expect.objectContaining({
 					'Content-Type': 'application/json',
-					'x-api-key': 'xpectrum-ai@123',
+					'x-api-key': 'test-api-key',
 				}),
 				body: JSON.stringify({ orgId: 'org1' }),
 			});
@@ -385,7 +385,7 @@ describe('orgService', () => {
 				method: 'POST',
 				headers: expect.objectContaining({
 					'Content-Type': 'application/json',
-					'x-api-key': 'xpectrum-ai@123',
+					'x-api-key': 'test-api-key',
 				}),
 				body: JSON.stringify({ name: 'Org' }),
 			});
@@ -496,7 +496,7 @@ describe('orgService', () => {
 
 			expect(global.fetch).toHaveBeenCalledWith('/api/org/create-org', expect.objectContaining({
 				headers: expect.objectContaining({
-					'x-api-key': 'xpectrum-ai@123',
+					'x-api-key': 'test-api-key',
 				}),
 			}));
 		});

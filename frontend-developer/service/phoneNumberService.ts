@@ -2,6 +2,9 @@
 
 export interface PhoneNumberRequest {
   phone_number: string;
+  agent_id?: string;
+  organization_id?: string;
+  status?: string;
 }
 
 export interface PhoneNumberResponse {
@@ -11,22 +14,64 @@ export interface PhoneNumberResponse {
 }
 
 export interface AgentPhoneNumber {
-  prefix: string;
   phone_number: string;
+  agent_id?: string;
   organization_id?: string;
+  status?: string;
+  created_at?: string;
+  updated_at?: string;
+  // Organization-specific fields
+  phone_id?: string;
+  voice_enabled?: boolean;
+  sms_enabled?: boolean;
+  whatsapp_enabled?: boolean;
+  inbound_enabled?: boolean;
+  outbound_enabled?: boolean;
+  agent_name?: string;
+}
+
+export interface SchedulerRequest {
+  organization_id: string;
+  agent_id: string;
+  call_type: string;
+  recipient_phone: string;
+  scheduled_time: string;
+  message_template?: string;
+  flexible_time_minutes: number;
+  max_retries: number;
+}
+
+export interface SchedulerResponse {
+  success: boolean;
+  message?: string;
+  data?: any;
+}
+
+export interface ScheduledEvent {
+  schedule_id: string;
+  organization_id: string;
+  agent_id: string;
+  call_type: string;
+  recipient_phone: string;
+  scheduled_time: string;
+  message_template?: string;
+  flexible_time_minutes: number;
+  max_retries: number;
+  status: string;
   created_at?: string;
   updated_at?: string;
 }
 
-// Get API base URL from environment
+export interface ScheduledEventFilters {
+  call_type?: string;
+  status?: string;
+  limit?: number;
+  offset?: number;
+}
+
+// Get API base URL - use live API
 const getApiBaseUrl = (): string => {
-  const baseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL || '';
-  if (!baseUrl) {
-    throw new Error('NEXT_PUBLIC_LIVE_API_URL environment variable is not set');
-  }
-  const cleanUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-  console.log('🔍 Final API base URL:', cleanUrl);
-  return cleanUrl;
+  return process.env.NEXT_PUBLIC_LIVE_API_URL || 'https://d25b4i9wbz6f8t.cloudfront.net';
 };
 
 // Generic API request function
@@ -43,7 +88,7 @@ const makeApiRequest = async (
   const defaultOptions: RequestInit = {
     headers: {
       'Content-Type': 'application/json',
-      'X-API-Key': apiKey,
+      'x-api-key': apiKey,
       ...options.headers,
     },
     ...options,
@@ -64,13 +109,65 @@ const makeApiRequest = async (
   }
 };
 
+// ============================================================================
+// PHONE NUMBER ENDPOINTS
+// ============================================================================
+
 /**
- * Get All Agents Phone Numbers
- * This function fetches all phone numbers for all agents
+ * Get All Phone Numbers
+ * GET /phone-numbers
  */
-export const getAllAgentsPhoneNumbers = async (): Promise<PhoneNumberResponse> => {
+export const getAllPhoneNumbers = async (): Promise<PhoneNumberResponse> => {
   try {
-    const data = await makeApiRequest('/agents/phonenumbers/all', {
+    const data = await makeApiRequest('/phone-numbers', {
+      method: 'GET',
+    });
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('Error fetching all phone numbers:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * Get Available Phone Numbers
+ * GET /phone-numbers/available
+ */
+export const getAvailablePhoneNumbers = async (): Promise<PhoneNumberResponse> => {
+  try {
+    const data = await makeApiRequest('/phone-numbers/available', {
+      method: 'GET',
+    });
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('Error fetching available phone numbers:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * Get Assigned Phone Numbers
+ * GET /phone-numbers/assigned
+ */
+export const getAssignedPhoneNumbers = async (): Promise<PhoneNumberResponse> => {
+  try {
+    const data = await makeApiRequest('/phone-numbers/assigned', {
+      method: 'GET',
+    });
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('Error fetching assigned phone numbers:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * Get Specific Phone Number
+ * GET /phone-numbers/{phone_number}
+ */
+export const getPhoneNumber = async (phoneNumber: string): Promise<PhoneNumberResponse> => {
+  try {
+    const data = await makeApiRequest(`/phone-numbers/${encodeURIComponent(phoneNumber)}`, {
       method: 'GET',
     });
     return { success: true, data };
@@ -80,36 +177,73 @@ export const getAllAgentsPhoneNumbers = async (): Promise<PhoneNumberResponse> =
 };
 
 /**
- * Get Available Phone Numbers by Organization
- * This function fetches unassigned phone numbers for a specific organization
+ * Create New Phone Number
+ * POST /phone-numbers
  */
-export const getAvailablePhoneNumbersByOrg = async (organizationId: string): Promise<PhoneNumberResponse> => {
-  try {
-    const data = await makeApiRequest(`/agents/phonenumbers/by-org/${organizationId}`, {
-      method: 'GET',
-    });
-    return { success: true, data };
-  } catch (error: any) {
-    return { success: false, message: error.message };
-  }
-};
-
-/**
- * Add/Update Agent Phone Number
- * This function assigns a phone number to an agent
- */
-export const addUpdateAgentPhoneNumber = async (
-  agentPrefix: string,
-  phoneNumber: string | PhoneNumberRequest
+export const createPhoneNumber = async (
+  phoneNumberData: PhoneNumberRequest
 ): Promise<PhoneNumberResponse> => {
   try {
-    const requestBody = typeof phoneNumber === 'string' 
-      ? { phone_number: phoneNumber }
-      : phoneNumber;
-    
-    const data = await makeApiRequest(`/agents/phonenumber/${agentPrefix}`, {
+    const data = await makeApiRequest('/phone-numbers', {
       method: 'POST',
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify(phoneNumberData),
+    });
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, message: `Failed to create phone number: ${error.message}` };
+  }
+};
+
+/**
+ * Update Phone Number
+ * PUT /phone-numbers/{phone_number}
+ */
+export const updatePhoneNumber = async (
+  phoneNumber: string,
+  updateData: Partial<PhoneNumberRequest>
+): Promise<PhoneNumberResponse> => {
+  try {
+    const data = await makeApiRequest(`/phone-numbers/${encodeURIComponent(phoneNumber)}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+    });
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, message: `Failed to update phone number: ${error.message}` };
+  }
+};
+
+/**
+ * Delete Phone Number
+ * DELETE /phone-numbers/{phone_number}
+ */
+export const deletePhoneNumber = async (phoneNumber: string): Promise<PhoneNumberResponse> => {
+  try {
+    const data = await makeApiRequest(`/phone-numbers/${encodeURIComponent(phoneNumber)}`, {
+      method: 'DELETE',
+    });
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, message: `Failed to delete phone number: ${error.message}` };
+  }
+};
+
+/**
+ * Assign Phone Number to Agent (Local API)
+ * POST /phone-numbers/{phone_number}/assign
+ */
+export const assignPhoneNumber = async (
+  phoneNumber: string,
+  agentId: string,
+  organizationId: string
+): Promise<PhoneNumberResponse> => {
+  try {
+    const data = await makeApiRequest(`/phone-numbers/${encodeURIComponent(phoneNumber)}/assign`, {
+      method: 'POST',
+      body: JSON.stringify({
+        agent_id: agentId,
+        organization_id: organizationId
+      }),
     });
     return { success: true, data };
   } catch (error: any) {
@@ -118,19 +252,358 @@ export const addUpdateAgentPhoneNumber = async (
 };
 
 /**
- * Unassign Phone Number from Agent
- * This function removes the association between a phone number and an agent
+ * Assign Phone Number to Agent (Real Backend API)
+ * POST /phone-numbers/{phone_id}/assign/{agent_id}
  */
-export const unassignPhoneNumber = async (
-  phoneNumber: string
+export const assignPhoneNumberToAgent = async (
+  phoneId: string,
+  agentId: string
 ): Promise<PhoneNumberResponse> => {
   try {
-    const data = await makeApiRequest(`/agents/phonenumber/unassign`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/phone-numbers/${encodeURIComponent(phoneId)}/assign/${encodeURIComponent(agentId)}`, {
       method: 'POST',
-      body: JSON.stringify({ phone_number: phoneNumber }),
+      headers: {
+        'x-api-key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, message: `Failed to assign phone number to agent: ${error.message}` };
+  }
+};
+
+/**
+ * Unassign Phone Number from Agent (Local API)
+ * DELETE /phone-numbers/{phone_number}/unassign
+ */
+export const unassignPhoneNumber = async (
+  phoneNumber: string,
+  agentId: string
+): Promise<PhoneNumberResponse> => {
+  try {
+    const data = await makeApiRequest(`/phone-numbers/${encodeURIComponent(phoneNumber)}/unassign`, {
+      method: 'DELETE',
+      body: JSON.stringify({
+        agent_id: agentId
+      }),
     });
     return { success: true, data };
   } catch (error: any) {
     return { success: false, message: `Failed to unassign phone number: ${error.message}` };
   }
+};
+
+/**
+ * Unassign Phone Number from Agent (Real Backend API)
+ * DELETE /phone-numbers/{phone_id}/unassign/{agent_id}
+ */
+export const unassignPhoneNumberFromAgent = async (
+  phoneId: string,
+  agentId: string
+): Promise<PhoneNumberResponse> => {
+  try {
+    // Try different endpoint patterns and methods
+    const endpoints = [
+      // Pattern 1: POST /phone-numbers/{phone_id}/unassign/{agent_id}
+      { url: `/phone-numbers/${encodeURIComponent(phoneId)}/unassign/${encodeURIComponent(agentId)}`, method: 'POST' },
+      // Pattern 2: DELETE /phone-numbers/{phone_id}/unassign/{agent_id}
+      { url: `/phone-numbers/${encodeURIComponent(phoneId)}/unassign/${encodeURIComponent(agentId)}`, method: 'DELETE' },
+      // Pattern 3: POST /phone-numbers/{phone_id}/unassign with body
+      { url: `/phone-numbers/${encodeURIComponent(phoneId)}/unassign`, method: 'POST', body: { agent_id: agentId } },
+      // Pattern 4: PUT /phone-numbers/{phone_id}/assign with null agent
+      { url: `/phone-numbers/${encodeURIComponent(phoneId)}/assign`, method: 'PUT', body: { agent_id: null } }
+    ];
+
+    for (const endpoint of endpoints) {
+      try {
+        console.log(`Trying unassign endpoint: ${endpoint.method} ${endpoint.url}`);
+        
+        const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}${endpoint.url}`, {
+          method: endpoint.method,
+          headers: {
+            'x-api-key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
+            'Content-Type': 'application/json'
+          },
+          body: endpoint.body ? JSON.stringify(endpoint.body) : undefined
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`✅ Unassign successful with ${endpoint.method} ${endpoint.url}`);
+          return { success: true, data };
+        } else {
+          console.log(`❌ ${endpoint.method} ${endpoint.url} failed with status: ${response.status}`);
+        }
+      } catch (endpointError) {
+        console.log(`❌ ${endpoint.method} ${endpoint.url} failed with error:`, endpointError);
+        continue;
+      }
+    }
+
+    // If all endpoints fail, throw an error
+    throw new Error('All unassign endpoint patterns failed');
+  } catch (error: any) {
+    return { success: false, message: `Failed to unassign phone number from agent: ${error.message}` };
+  }
+};
+
+/**
+ * Get Phone Numbers by Organization
+ * GET /phone-numbers/organization/{organizationId}
+ */
+export const getPhoneNumbersByOrganization = async (
+  organizationId: string
+): Promise<PhoneNumberResponse> => {
+  try {
+    const data = await makeApiRequest(`/phone-numbers/organization/${encodeURIComponent(organizationId)}`, {
+      method: 'GET',
+    });
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, message: `Failed to get phone numbers for organization: ${error.message}` };
+  }
+};
+
+/**
+ * Get Agents by Organization (from backend API)
+ * GET /agents/by-org/{organizationId}
+ */
+export const getAgentsByOrganization = async (
+  organizationId: string
+): Promise<PhoneNumberResponse> => {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/agents/by-org/${encodeURIComponent(organizationId)}`, {
+      method: 'GET',
+      headers: {
+        'x-api-key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, message: `Failed to get agents for organization: ${error.message}` };
+  }
+};
+
+/**
+ * Get Available Phone Numbers (from backend API)
+ * GET /phone-numbers/status/available
+ */
+export const getAvailablePhoneNumbersFromBackend = async (): Promise<PhoneNumberResponse> => {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/phone-numbers/status/available`, {
+      method: 'GET',
+      headers: {
+        'x-api-key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, message: `Failed to get available phone numbers: ${error.message}` };
+  }
+};
+
+// ============================================================================
+// SCHEDULED EVENTS ENDPOINTS
+// ============================================================================
+
+/**
+ * Create Scheduled Event
+ * POST /scheduled/create
+ */
+export const scheduleOutboundCall = async (
+  schedulerData: SchedulerRequest
+): Promise<SchedulerResponse> => {
+  try {
+    const data = await makeApiRequest('/scheduled/create', {
+      method: 'POST',
+      body: JSON.stringify(schedulerData),
+    });
+    return { success: true, data, message: 'Outbound call scheduled successfully!' };
+  } catch (error: any) {
+    return { success: false, message: `Failed to schedule outbound call: ${error.message}` };
+  }
+};
+
+/**
+ * Get Specific Scheduled Event
+ * GET /scheduled/{schedule_id}
+ */
+export const getScheduledEvent = async (scheduleId: string): Promise<SchedulerResponse> => {
+  try {
+    const data = await makeApiRequest(`/scheduled/${scheduleId}`, {
+      method: 'GET',
+    });
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * Update Scheduled Event
+ * PUT /scheduled/{schedule_id}
+ */
+export const updateScheduledEvent = async (
+  scheduleId: string,
+  updateData: Partial<SchedulerRequest & { status?: string }>
+): Promise<SchedulerResponse> => {
+  try {
+    const data = await makeApiRequest(`/scheduled/${scheduleId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+    });
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, message: `Failed to update scheduled event: ${error.message}` };
+  }
+};
+
+
+/**
+ * Get All Scheduled Events for an Agent
+ * GET /scheduled/agent/{agent_id}
+ */
+export const getScheduledEventsByAgent = async (
+  agentId: string,
+  filters?: ScheduledEventFilters
+): Promise<SchedulerResponse> => {
+  try {
+    let endpoint = `/scheduled/agent/${agentId}`;
+    
+    if (filters) {
+      const queryParams = new URLSearchParams();
+      if (filters.call_type) queryParams.append('call_type', filters.call_type);
+      if (filters.status) queryParams.append('status', filters.status);
+      if (filters.limit) queryParams.append('limit', filters.limit.toString());
+      if (filters.offset) queryParams.append('offset', filters.offset.toString());
+      
+      if (queryParams.toString()) {
+        endpoint += `?${queryParams.toString()}`;
+      }
+    }
+    
+    const data = await makeApiRequest(endpoint, {
+      method: 'GET',
+    });
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * Get All Scheduled Events for an Organization
+ * GET /scheduled/organization/{organization_id}/schedules
+ */
+export const getScheduledEventsByOrganization = async (
+  organizationId: string,
+  filters?: ScheduledEventFilters & { agent_id?: string }
+): Promise<SchedulerResponse> => {
+  try {
+    let endpoint = `/scheduled/organization/${organizationId}/schedules`;
+    
+    if (filters) {
+      const queryParams = new URLSearchParams();
+      if (filters.agent_id) queryParams.append('agent_id', filters.agent_id);
+      if (filters.call_type) queryParams.append('call_type', filters.call_type);
+      if (filters.status) queryParams.append('status', filters.status);
+      if (filters.limit) queryParams.append('limit', filters.limit.toString());
+      if (filters.offset) queryParams.append('offset', filters.offset.toString());
+      
+      if (queryParams.toString()) {
+        endpoint += `?${queryParams.toString()}`;
+      }
+    }
+    
+    const data = await makeApiRequest(endpoint, {
+      method: 'GET',
+    });
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * Delete Scheduled Event
+ * DELETE /scheduled/{schedule_id}
+ */
+export const deleteScheduledEvent = async (scheduleId: string): Promise<SchedulerResponse> => {
+  try {
+    const data = await makeApiRequest(`/scheduled/${scheduleId}`, {
+      method: 'DELETE',
+    });
+    return { success: true, data, message: 'Scheduled event deleted successfully' };
+  } catch (error: any) {
+    return { success: false, message: `Failed to delete scheduled event: ${error.message}` };
+  }
+};
+
+// ============================================================================
+// LEGACY COMPATIBILITY FUNCTIONS (for backward compatibility)
+// ============================================================================
+
+/**
+ * @deprecated Use getAllPhoneNumbers() instead
+ * Get All Agents Phone Numbers - Legacy function
+ */
+export const getAllAgentsPhoneNumbers = async (): Promise<PhoneNumberResponse> => {
+  console.warn('getAllAgentsPhoneNumbers is deprecated. Use getAllPhoneNumbers() instead.');
+  return getAllPhoneNumbers();
+};
+
+/**
+ * @deprecated Use getScheduledEventsByOrganization() instead
+ * Get Available Phone Numbers by Organization - Legacy function
+ */
+export const getAvailablePhoneNumbersByOrg = async (organizationId: string): Promise<PhoneNumberResponse> => {
+  console.warn('getAvailablePhoneNumbersByOrg is deprecated. Use getScheduledEventsByOrganization() instead.');
+  try {
+    // Try to get phone numbers for the organization
+    const result = await getScheduledEventsByOrganization(organizationId);
+    return { success: result.success, data: result.data || [], message: result.message };
+  } catch (error: any) {
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * @deprecated Use assignPhoneNumber() instead
+ * Add/Update Agent Phone Number - Legacy function
+ */
+export const addUpdateAgentPhoneNumber = async (
+  agentPrefix: string,
+  phoneNumber: string | PhoneNumberRequest
+): Promise<PhoneNumberResponse> => {
+  console.warn('addUpdateAgentPhoneNumber is deprecated. Use assignPhoneNumber() instead.');
+  
+  const phoneNumberStr = typeof phoneNumber === 'string' ? phoneNumber : phoneNumber.phone_number;
+  const organizationId = typeof phoneNumber === 'object' ? phoneNumber.organization_id : undefined;
+  
+  if (!organizationId) {
+    return { success: false, message: 'Organization ID is required for phone number assignment' };
+  }
+  
+  return assignPhoneNumber(phoneNumberStr, agentPrefix, organizationId);
 };

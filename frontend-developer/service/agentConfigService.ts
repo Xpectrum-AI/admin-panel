@@ -63,8 +63,11 @@ export interface AgentConfigResponse {
   data?: any;
 }
 
-// Default organization ID for developer dashboard
-const DEFAULT_ORGANIZATION_ID = 'developer';
+// Get current organization ID from user context
+const getCurrentOrganizationId = (): string | null => {
+  // This will be handled by the component using the user context
+  return null;
+};
 
 // Helper function to mask API keys
 export const maskApiKey = (apiKey: string): string => {
@@ -81,13 +84,8 @@ export const agentConfigService = {
     try {
       console.log('🚀 Creating new agent...');
       
-      if (!process.env.NEXT_PUBLIC_LIVE_API_URL || !process.env.NEXT_PUBLIC_LIVE_API_KEY) {
-        console.error('❌ Missing required environment variables:', {
-          API_BASE_URL: !!process.env.NEXT_PUBLIC_LIVE_API_URL,
-          API_KEY: !!process.env.NEXT_PUBLIC_LIVE_API_KEY
-        });
-        throw new Error('Missing required environment variables for agent creation');
-      }
+      // Using local API - no need to validate external environment variables
+      console.log('🔍 Using local API for agent creation');
 
       // Create a basic agent configuration with defaults
       const basicConfig: AgentConfigRequest = {
@@ -124,12 +122,12 @@ export const agentConfigService = {
         max_call_duration: 300
       };
 
-      // Use the update endpoint to create the agent (it will create if it doesn't exist)
-      const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/agents/update/${agentData.name}`, {
+      // Use local API to create the agent
+      const response = await fetch(`/api/agents/update/${agentData.name}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY,
+          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
         },
         body: JSON.stringify(basicConfig),
       });
@@ -161,18 +159,14 @@ export const agentConfigService = {
       console.log('🚀 Starting agent configuration...');
       // Environment variables are accessed directly
       
-      // Validate only the required ones for this API call
-      if (!process.env.NEXT_PUBLIC_LIVE_API_URL || !process.env.NEXT_PUBLIC_LIVE_API_KEY) {
-        console.error('❌ Missing required environment variables:', {
-          API_BASE_URL: !!process.env.NEXT_PUBLIC_LIVE_API_URL,
-          API_KEY: !!process.env.NEXT_PUBLIC_LIVE_API_KEY
-        });
-        throw new Error('Missing required environment variables for agent configuration');
-      }
+      // Use local API instead of external API - no need to validate external env vars
+      console.log('🔍 Using local API for agent configuration');
+      const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
+      console.log('🔑 API Key being used:', apiKey ? 'Present' : 'Missing');
 
       // Fill in missing fields with defaults
       const completeConfig: AgentConfigRequest = {
-        organization_id: config.organization_id || DEFAULT_ORGANIZATION_ID,
+        organization_id: config.organization_id,
         chatbot_api: config.chatbot_api || process.env.NEXT_PUBLIC_CHATBOT_API_URL || '',
         chatbot_key: config.chatbot_key || process.env.NEXT_PUBLIC_CHATBOT_API_KEY || '',
         tts_config: config.tts_config || {
@@ -206,12 +200,12 @@ export const agentConfigService = {
       };
 
 
-      // Use the live backend API URL directly
-      const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/agents/update/${agentName}`, {
+      // Use local API instead of external API
+      const response = await fetch(`/api/agents/update/${agentName}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY,
+          'X-API-Key': apiKey,
         },
         body: JSON.stringify(completeConfig),
       });
@@ -242,18 +236,16 @@ export const agentConfigService = {
     try {
       // Environment variables are accessed directly
       
-      if (!process.env.NEXT_PUBLIC_LIVE_API_URL || !process.env.NEXT_PUBLIC_LIVE_API_KEY ) {
-        throw new Error('Missing required environment variables for getting agent configuration');
-      }
+      // Using local API - no need to validate external environment variables
 
-      // Use the correct endpoint for getting agent info
+      // Use local API for getting agent info
       console.log('🚀 Fetching agent info for:', agentName);
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/agents/info/${agentName}`, {
+      const response = await fetch(`/api/agents/info/${agentName}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY,
+          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
         },
       });
 
@@ -278,23 +270,17 @@ export const agentConfigService = {
     }
   },
 
-  // Get all agents for the developer organization
-  async getAllAgents(): Promise<{ success: boolean; data?: any[]; message: string }> {
+  // Get all agents for the organization
+  async getAllAgents(organizationId: string): Promise<{ success: boolean; data?: any[]; message: string }> {
     try {
-      // Environment variables are accessed directly
+      // Use local API instead of external API
+      console.log('🚀 Fetching agents for organization:', organizationId);
       
-      if (!process.env.NEXT_PUBLIC_LIVE_API_URL || !process.env.NEXT_PUBLIC_LIVE_API_KEY) {
-        throw new Error('Missing required environment variables for getting agents');
-      }
-
-      // Use the organization-specific endpoint for getting agents
-      console.log('🚀 Fetching agents for organization:', DEFAULT_ORGANIZATION_ID);
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/agents/by-org/${DEFAULT_ORGANIZATION_ID}`, {
+      const response = await fetch(`/api/agents/by-org/${organizationId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY,
+          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
         },
       });
 
@@ -344,7 +330,7 @@ export const agentConfigService = {
         console.log('🔍 No valid agents array found, using empty array');
       }
 
-      console.log('✅ Successfully fetched agents for organization:', DEFAULT_ORGANIZATION_ID, agents.length);
+      console.log('✅ Successfully fetched agents for organization:', organizationId, agents.length);
       console.log('🔍 Agents data:', agents);
       return {
         success: true,
@@ -375,17 +361,13 @@ export const agentConfigService = {
     try {
       // Environment variables are accessed directly
       
-      if (!process.env.NEXT_PUBLIC_LIVE_API_URL || !process.env.NEXT_PUBLIC_LIVE_API_KEY) {
-        throw new Error('Missing required environment variables for getting agents by organization');
-      }
-
       console.log('🚀 Fetching agents for organization:', organizationId);
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/agents/by-org/${organizationId}`, {
+      const response = await fetch(`/api/agents/by-org/${organizationId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY,
+          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
         },
       });
 
@@ -427,21 +409,15 @@ export const agentConfigService = {
   },
 
   // Delete agent by organization
-  async deleteAgent(agentName: string): Promise<{ success: boolean; message: string }> {
+  async deleteAgent(agentName: string, organizationId: string): Promise<{ success: boolean; message: string }> {
     try {
-      // Environment variables are accessed directly
+      console.log('🚀 Deleting agent:', agentName, 'from organization:', organizationId);
       
-      if (!process.env.NEXT_PUBLIC_LIVE_API_URL || !process.env.NEXT_PUBLIC_LIVE_API_KEY) {
-        throw new Error('Missing required environment variables for deleting agent');
-      }
-
-      console.log('🚀 Deleting agent:', agentName, 'from organization:', DEFAULT_ORGANIZATION_ID);
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/agents/delete-by-org/${DEFAULT_ORGANIZATION_ID}`, {
+      const response = await fetch(`/api/agents/delete-by-org/${organizationId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY,
+          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
         },
         body: JSON.stringify({ agent_name: agentName }),
       });
@@ -451,7 +427,7 @@ export const agentConfigService = {
         throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
 
-      console.log('✅ Successfully deleted agent:', agentName, 'from organization:', DEFAULT_ORGANIZATION_ID);
+      console.log('✅ Successfully deleted agent:', agentName, 'from organization:', organizationId);
       return {
         success: true,
         message: 'Agent deleted successfully'
@@ -470,17 +446,13 @@ export const agentConfigService = {
     try {
       // Environment variables are accessed directly
       
-      if (!process.env.NEXT_PUBLIC_LIVE_API_URL || !process.env.NEXT_PUBLIC_LIVE_API_KEY) {
-        throw new Error('Missing required environment variables for deleting agent by organization');
-      }
-
       console.log('🚀 Deleting agent:', agentName, 'from organization:', organizationId);
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/agents/delete-by-org/${organizationId}`, {
+      const response = await fetch(`/api/agents/delete-by-org/${organizationId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY,
+          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
         },
         body: JSON.stringify({ agent_name: agentName }),
       });
@@ -538,7 +510,7 @@ export const agentConfigService = {
   },
 
   // Get current organization ID
-  getCurrentOrganizationId(): string {
-    return DEFAULT_ORGANIZATION_ID;
+  getCurrentOrganizationId(): string | null {
+    return getCurrentOrganizationId();
   }
 };

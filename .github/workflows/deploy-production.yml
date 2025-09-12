@@ -65,15 +65,29 @@ jobs:
 
     - name: Deploy CDK stack (production)
       env:
-        # Pass GitHub environment variables to CDK using simplified naming pattern
-        # Using PRODUCTION_ prefix for production environment
+        # Backend API
         PRODUCTION_LIVE_API_URL: ${{ vars.PRODUCTION_LIVE_API_URL }}
-        PRODUCTION_PROPELAUTH_URL: ${{ vars.PRODUCTION_PROPELAUTH_URL }}
-        PRODUCTION_DEVELOPER_PROPELAUTH_URL: ${{ vars.PRODUCTION_DEVELOPER_PROPELAUTH_URL }}
         PRODUCTION_LIVE_API_KEY: ${{ secrets.PRODUCTION_LIVE_API_KEY }}
+        # PropelAuth
+        PRODUCTION_PROPELAUTH_URL: ${{ vars.PRODUCTION_PROPELAUTH_URL }}
         PRODUCTION_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_PROPELAUTH_API_KEY }}
+        PRODUCTION_DEVELOPER_PROPELAUTH_URL: ${{ vars.PRODUCTION_DEVELOPER_PROPELAUTH_URL }}
         PRODUCTION_DEVELOPER_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_DEVELOPER_PROPELAUTH_API_KEY }}
-        PRODUCTION_SUPER_ADMIN_ORG_ID: ${{ secrets.PRODUCTION_SUPER_ADMIN_ORG_ID }}
+        # Model Configuration API
+        PRODUCTION_MODEL_API_BASE_URL: ${{ vars.PRODUCTION_MODEL_API_BASE_URL }}
+        PRODUCTION_MODEL_API_KEY: ${{ secrets.PRODUCTION_MODEL_API_KEY }}
+        # Chatbot API
+        PRODUCTION_CHATBOT_API_URL: ${{ vars.PRODUCTION_CHATBOT_API_URL }}
+        PRODUCTION_CHATBOT_API_KEY: ${{ secrets.PRODUCTION_CHATBOT_API_KEY }}
+        # Voice Provider API Keys
+        PRODUCTION_ELEVEN_LABS_API_KEY: ${{ secrets.PRODUCTION_ELEVEN_LABS_API_KEY }}
+        PRODUCTION_OPEN_AI_API_KEY: ${{ secrets.PRODUCTION_OPEN_AI_API_KEY }}
+        PRODUCTION_WHISPER_API_KEY: ${{ secrets.PRODUCTION_WHISPER_API_KEY }}
+        PRODUCTION_DEEPGRAM_API_KEY: ${{ secrets.PRODUCTION_DEEPGRAM_API_KEY }}
+        PRODUCTION_CARTESIA_API_KEY: ${{ secrets.PRODUCTION_CARTESIA_API_KEY }}
+        # Voice Provider Voice IDs
+        PRODUCTION_CARTESIA_VOICE_ID: ${{ vars.PRODUCTION_CARTESIA_VOICE_ID }}
+        PRODUCTION_ELEVEN_LABS_VOICE_ID: ${{ vars.PRODUCTION_ELEVEN_LABS_VOICE_ID }}
       run: |
         cd python-cdk-v2
         # Deploy to production environment

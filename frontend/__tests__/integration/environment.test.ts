@@ -112,7 +112,7 @@ describe('Environment Variable Integration', () => {
 
       const request = new MockNextRequest('http://localhost:3000/api/test', {
         headers: {
-          'x-api-key': 'xpectrum-ai@123',
+          'x-api-key': 'test-api-key',
         },
       });
 
