@@ -218,23 +218,23 @@ describe('userService', () => {
 		});
 	});
 
-	// describe('API Key Configuration', () => {
-	// 	test('uses environment API key when available', async () => {
-	// 		process.env.NEXT_PUBLIC_LIVE_API_KEY = 'test-api-key';
-	// 		const { createUser } = await loadUserService();
-	// 		(global as any).fetch = jest.fn().mockResolvedValue({
-	// 			ok: true,
-	// 			json: async () => ({ id: 'user1' }),
-	// 		});
+	describe('API Key Configuration', () => {
+		test('uses environment API key when available', async () => {
+			process.env.NEXT_PUBLIC_LIVE_API_KEY = 'test-api-key';
+			const { createUser } = await loadUserService();
+			(global as any).fetch = jest.fn().mockResolvedValue({
+				ok: true,
+				json: async () => ({ id: 'user1' }),
+			});
 
-	// 		await createUser('test@example.com', 'password123', 'John', 'Doe', 'johndoe');
+			await createUser('test@example.com', 'password123', 'John', 'Doe', 'johndoe');
 
-	// 		expect(global.fetch).toHaveBeenCalledWith('/api/user/create-user', expect.objectContaining({
-	// 			headers: expect.objectContaining({
-	// 				'x-api-key': 'test-api-key',
-	// 			}),
-	// 		}));
-	// 	});
+			expect(global.fetch).toHaveBeenCalledWith('/api/user/create-user', expect.objectContaining({
+				headers: expect.objectContaining({
+					'x-api-key': 'test-api-key',
+				}),
+			}));
+		});
 
 	// 	test('uses empty API key when environment variable is not set', async () => {
 	// 		delete process.env.NEXT_PUBLIC_LIVE_API_KEY;
@@ -252,9 +252,7 @@ describe('userService', () => {
 	// 			}),
 	// 		}));
 	// 	});
-	// });
 
-	// describe('Integration-like scenarios', () => {
 	// 	test('consistent API key usage across all methods', async () => {
 	// 		const { getUser, createUser, fetchUserByEmail, fetchUsersByQuery } = await loadUserService();
 	// 		(global as any).fetch = jest
@@ -295,5 +293,5 @@ describe('userService', () => {
 	// 		await expect(fetchUserByEmail('test@example.com')).rejects.toThrow('Failed to fetch user by email');
 	// 		await expect(fetchUsersByQuery({})).rejects.toThrow('Failed to fetch users by query');
 	// 	});
-	// });
+	});
 });
