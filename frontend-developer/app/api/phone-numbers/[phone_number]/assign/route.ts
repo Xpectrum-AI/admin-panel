@@ -21,7 +21,7 @@ export async function POST(
       return NextResponse.json({ error: 'Agent ID is required' }, { status: 400 });
     }
 
-    console.log('🔍 Assigning phone number:', { phoneNumber, agent_id, organization_id });
+ 
 
     // Get the current organization from the request
     const currentOrg = getOrganizationFromRequest(request, body);
