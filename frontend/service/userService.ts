@@ -1,11 +1,9 @@
 // Example: User service API calls
 
-const API_KEY = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
-
-const headers = {
+const getHeaders = () => ({
   'Content-Type': 'application/json',
-  'x-api-key': API_KEY,
-};
+  'x-api-key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
+});
 
 export async function getUser(userId: string) {
   const response = await fetch(`/api/user/${userId}`);
@@ -19,7 +17,7 @@ export async function createUser(email: string, password: string, firstName: str
   const API_BASE = '/api'; // Changed from external backend to local Next.js API
   const response = await fetch(`${API_BASE}/user/create-user`, {
     method: 'POST',
-    headers,
+    headers: getHeaders(),
     body: JSON.stringify({ email, password, firstName, lastName, username }),
   });
   if (!response.ok) {
@@ -34,7 +32,7 @@ export async function fetchUserByEmail(email: string) {
   const params = new URLSearchParams({ email });
   const res = await fetch(`/api/user/fetch-user-mail?${params.toString()}`, {
     method: 'GET',
-    headers,
+    headers: getHeaders(),
   });
   if (!res.ok) {
     throw new Error('Failed to fetch user by email');
@@ -46,7 +44,7 @@ export async function fetchUsersByQuery(query: any) {
   const API_BASE = '/api'; // Changed from external backend to local Next.js API
   const response = await fetch(`${API_BASE}/user/fetch-users-query`, {
     method: 'POST',
-    headers,
+    headers: getHeaders(),
     body: JSON.stringify(query),
   });
   if (!response.ok) {
