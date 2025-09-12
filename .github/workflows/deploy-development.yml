@@ -93,6 +93,17 @@ jobs:
         NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.DEV_DEVELOPER_PROPELAUTH_URL }}
         NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.DEV_LIVE_API_KEY }}
         NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.DEV_DEVELOPER_PROPELAUTH_API_KEY }}
+        NEXT_PUBLIC_MODEL_API_BASE_URL: ${{ vars.DEV_MODEL_API_BASE_URL }}
+        NEXT_PUBLIC_MODEL_API_KEY: ${{ secrets.DEV_MODEL_API_KEY }}
+        NEXT_PUBLIC_CHATBOT_API_URL: ${{ vars.DEV_CHATBOT_API_URL }}
+        NEXT_PUBLIC_CHATBOT_API_KEY: ${{ secrets.DEV_CHATBOT_API_KEY }}
+        NEXT_PUBLIC_ELEVEN_LABS_API_KEY: ${{ secrets.DEV_ELEVEN_LABS_API_KEY }}
+        NEXT_PUBLIC_OPEN_AI_API_KEY: ${{ secrets.DEV_OPEN_AI_API_KEY }}
+        NEXT_PUBLIC_WHISPER_API_KEY: ${{ secrets.DEV_WHISPER_API_KEY }}
+        NEXT_PUBLIC_DEEPGRAM_API_KEY: ${{ secrets.DEV_DEEPGRAM_API_KEY }}
+        NEXT_PUBLIC_CARTESIA_API_KEY: ${{ secrets.DEV_CARTESIA_API_KEY }}
+        NEXT_PUBLIC_CARTESIA_VOICE_ID: ${{ vars.DEV_CARTESIA_VOICE_ID }}
+        NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID: ${{ vars.DEV_ELEVEN_LABS_VOICE_ID }}
       run: |
         # Set ECR repository URI
         REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
@@ -105,6 +116,17 @@ jobs:
           --build-arg NEXT_PUBLIC_PROPELAUTH_URL="${NEXT_PUBLIC_PROPELAUTH_URL}" \
           --build-arg NEXT_PUBLIC_LIVE_API_KEY="${NEXT_PUBLIC_LIVE_API_KEY}" \
           --build-arg NEXT_PUBLIC_PROPELAUTH_API_KEY="${NEXT_PUBLIC_PROPELAUTH_API_KEY}" \
+          --build-arg NEXT_PUBLIC_MODEL_API_BASE_URL="${NEXT_PUBLIC_MODEL_API_BASE_URL}" \
+          --build-arg NEXT_PUBLIC_MODEL_API_KEY="${NEXT_PUBLIC_MODEL_API_KEY}" \
+          --build-arg NEXT_PUBLIC_CHATBOT_API_URL="${NEXT_PUBLIC_CHATBOT_API_URL}" \
+          --build-arg NEXT_PUBLIC_CHATBOT_API_KEY="${NEXT_PUBLIC_CHATBOT_API_KEY}" \
+          --build-arg NEXT_PUBLIC_ELEVEN_LABS_API_KEY="${NEXT_PUBLIC_ELEVEN_LABS_API_KEY}" \
+          --build-arg NEXT_PUBLIC_OPEN_AI_API_KEY="${NEXT_PUBLIC_OPEN_AI_API_KEY}" \
+          --build-arg NEXT_PUBLIC_WHISPER_API_KEY="${NEXT_PUBLIC_WHISPER_API_KEY}" \
+          --build-arg NEXT_PUBLIC_DEEPGRAM_API_KEY="${NEXT_PUBLIC_DEEPGRAM_API_KEY}" \
+          --build-arg NEXT_PUBLIC_CARTESIA_API_KEY="${NEXT_PUBLIC_CARTESIA_API_KEY}" \
+          --build-arg NEXT_PUBLIC_CARTESIA_VOICE_ID="${NEXT_PUBLIC_CARTESIA_VOICE_ID}" \
+          --build-arg NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID="${NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID}" \
           -t admin-panel:frontend-developer-development .
         docker tag admin-panel:frontend-developer-development $REPO:frontend-developer-development
         docker push $REPO:frontend-developer-development
