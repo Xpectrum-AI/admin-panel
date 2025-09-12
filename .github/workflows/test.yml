@@ -1,10 +1,14 @@
-name: Unit Tests
+name: Frontend Unit Tests
 
 on:
   pull_request:
-    branches: [ main]
+    branches: [ main ]
+    paths:
+      - 'frontend/**'
   push:
     branches: [ main ]
+    paths:
+      - 'frontend/**'
 
 jobs:
   test:
@@ -12,7 +16,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
- 
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -47,39 +51,3 @@ jobs:
           flags: frontend
           name: frontend-coverage
           fail_ci_if_error: false
-
-      # Frontend-developer tests disabled temporarily
-      # - name: Setup Node.js for developer frontend
-      #   uses: actions/setup-node@v4
-      #   with:
-      #     node-version: '18'
-      #     cache: 'npm'
-      #     cache-dependency-path: frontend-developer/package-lock.json
-
-      # - name: Install developer frontend dependencies
-      #   run: |
-      #     cd frontend-developer
-      #     npm ci
-
-      # - name: Lint developer frontend
-      #   run: |
-      #     cd frontend-developer
-      #     npm run lint || echo "Lint completed with warnings"
-
-      # - name: Type check developer frontend
-      #   run: |
-      #     cd frontend-developer
-      #     npx tsc --noEmit || echo "Type check completed with warnings"
-
-      # - name: Run developer frontend tests
-      #   run: |
-      #     cd frontend-developer
-      #     npm test -- --coverage --watchAll=false
-
-      # - name: Upload developer frontend coverage reports
-      #   uses: codecov/codecov-action@v3
-      #   with:
-      #     file: ./frontend-developer/coverage/lcov.info
-      #     flags: frontend-developer
-      #     name: frontend-developer-coverage
-      #     fail_ci_if_error: false
