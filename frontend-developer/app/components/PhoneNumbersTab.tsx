@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Phone, PhoneCall } from 'lucide-react';
+import { Phone, PhoneCall, RefreshCw } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
-import InboundPhoneNumbers from './InboundPhoneNumbers';
+import InboundPhoneNumbersTable from './InboundPhoneNumbersTable';
 import OutboundScheduler from './OutboundScheduler';
+import { syncPhoneNumbersFromTwilio } from '../../service/phoneNumberService';
 
 interface PhoneNumbersTabProps {
   // No props needed for this component
@@ -22,6 +23,40 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
   
   // Tab state
   const [activeTab, setActiveTab] = useState<'inbound' | 'outbound'>('inbound');
+  
+  // Sync state
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
+  // Refresh function to trigger data reload in child components
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Handle Twilio sync
+  const handleTwilioSync = async () => {
+    setIsSyncing(true);
+    setSyncMessage(null);
+    
+    try {
+      const result = await syncPhoneNumbersFromTwilio();
+      
+      if (result.success) {
+        setSyncMessage('Phone numbers synced successfully from Twilio!');
+        // Trigger refresh of phone numbers data
+        setRefreshTrigger(prev => prev + 1);
+        // Clear message after 3 seconds
+        setTimeout(() => setSyncMessage(null), 3000);
+      } else {
+        setSyncMessage(result.message || 'Failed to sync phone numbers');
+        // Clear error message after 5 seconds
+        setTimeout(() => setSyncMessage(null), 5000);
+      }
+    } catch (error) {
+      setSyncMessage('An unexpected error occurred during sync');
+      setTimeout(() => setSyncMessage(null), 5000);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   return (
     <div className="w-full h-full max-w-full mx-auto p-2 sm:p-4 lg:p-6 min-h-0 overflow-hidden">
@@ -32,18 +67,55 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
           <div className="flex flex-col gap-3 sm:gap-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
               <div className="space-y-1 sm:space-y-2 min-w-0 flex-1">
-              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <div className="p-1.5 sm:p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg sm:rounded-xl flex-shrink-0">
-                  <Phone className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
-                </div>
+                    <Phone className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
+                  </div>
                   <h2 className={`text-xl sm:text-2xl lg:text-3xl font-bold bg-clip-text text-transparent truncate ${isDarkMode ? 'bg-gradient-to-r from-white to-gray-300' : 'bg-gradient-to-r from-gray-900 to-gray-700'}`}>
-                  Phone Numbers Management
-                </h2>
-              </div>
+                    Phone Numbers Management
+                  </h2>
+                </div>
                 <p className={`text-sm sm:text-base lg:text-lg truncate ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                {activeTab === 'inbound' ? 'View and manage phone number assignments to agents' : 'Schedule outbound calls with agents'}
-              </p>
-            </div>
+                  {activeTab === 'inbound' ? 'View and manage phone number assignments to agents' : 'Schedule outbound calls with agents'}
+                </p>
+              </div>
+              
+              {/* Twilio Sync Button */}
+              <div className="flex flex-col items-end gap-2">
+                <button
+                  onClick={handleTwilioSync}
+                  disabled={isSyncing}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                    isSyncing
+                      ? isDarkMode
+                        ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                      : isDarkMode
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl'
+                        : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-lg hover:shadow-xl'
+                  }`}
+                >
+                  <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                  <span className="text-sm sm:text-base">
+                    {isSyncing ? 'Syncing...' : 'Sync from Twilio'}
+                  </span>
+                </button>
+                
+                {/* Sync Message */}
+                {syncMessage && (
+                  <div className={`text-xs px-2 py-1 rounded ${
+                    syncMessage.includes('successfully') 
+                      ? isDarkMode 
+                        ? 'bg-green-900/50 text-green-300 border border-green-700/50' 
+                        : 'bg-green-50 text-green-700 border border-green-200'
+                      : isDarkMode 
+                        ? 'bg-red-900/50 text-red-300 border border-red-700/50' 
+                        : 'bg-red-50 text-red-700 border border-red-200'
+                  }`}>
+                    {syncMessage}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -91,11 +163,11 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
         {/* Tab Content */}
         <div className={`flex-1 min-h-0 overflow-hidden ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
           {activeTab === 'inbound' ? (
-            <InboundPhoneNumbers />
+            <InboundPhoneNumbersTable refreshTrigger={refreshTrigger} />
           ) : (
             <OutboundScheduler />
-                                  )}
-                                </div>
+          )}
+        </div>
                             </div>
                             </div>
   );

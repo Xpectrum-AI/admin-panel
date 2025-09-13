@@ -306,24 +306,42 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
     <div className="flex h-full">
       {/* Header with Create Schedule Button */}
       <div className="absolute top-4 right-4 z-10">
-        <button
+        {/* <button
           onClick={() => setShowCreateSchedulerModal(true)}
           className="group relative px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg sm:rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 sm:gap-3"
         >
           <PhoneCall className="h-4 w-4" />
           <span className="text-sm sm:text-base font-semibold">Create Schedule</span>
-        </button>
+        </button> */}
       </div>
 
       {/* Left Sidebar - Scheduled Events List */}
       <div className="w-80 border-r border-gray-200/50 flex flex-col">
         <div className="p-4 border-b border-gray-200/50">
-          <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            Scheduled Events
-          </h3>
-          <p className={`text-sm mb-3 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            {searchTerm ? `${filteredScheduledEvents.length} of ${scheduledEvents.length} events` : `${scheduledEvents.length} scheduled events`}
-          </p>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                Scheduled Events
+              </h3>
+              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                {searchTerm ? `${filteredScheduledEvents.length} of ${scheduledEvents.length} events` : `${scheduledEvents.length} scheduled events`}
+              </p>
+            </div>
+            
+            {/* Create Schedule Button */}
+            <button
+              onClick={() => setShowCreateSchedulerModal(true)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all duration-300 ${
+                isDarkMode
+                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl'
+                  : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl'
+              }`}
+            >
+              <Calendar className="h-4 w-4" />
+              <span className="text-sm font-semibold">Create Schedule</span>
+            </button>
+          </div>
+          
           <div className="relative group">
             <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 transition-colors ${isDarkMode ? 'text-gray-500 group-focus-within:text-green-400' : 'text-gray-400 group-focus-within:text-green-500'}`} />
             <input
