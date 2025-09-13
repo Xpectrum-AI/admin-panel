@@ -89,6 +89,10 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const [agentsError, setAgentsError] = useState('');
   const [currentOrganizationId, setCurrentOrganizationId] = useState<string>('');
   const [organizationName, setOrganizationName] = useState<string>('');
+  const [agentsLoaded, setAgentsLoaded] = useState(false);
+  const loadedOrganizationRef = useRef<string>('');
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isFetchingRef = useRef<boolean>(false);
 
   // Configuration state for all components
   const [modelConfig, setModelConfig] = useState<any>(null);
@@ -103,21 +107,23 @@ export default function AgentsTab({ }: AgentsTabProps) {
       Object.keys((user as any).orgIdToOrgMemberInfo)[0] : 
       null;
     
-    if (orgId) {
+    if (orgId && orgId !== currentOrganizationId) {
       console.log('✅ Setting organization ID from user.orgIdToOrgMemberInfo:', orgId);
       setCurrentOrganizationId(orgId);
-    } else if (userClass) {
+    } else if (userClass && !orgId) {
       // Fallback: get organization ID from userClass
       const orgs = userClass.getOrgs?.() || [];
       console.log('🔍 Available organizations from userClass:', orgs);
       if (orgs.length > 0) {
         const org = orgs[0] as any;
         const orgIdFromClass = org.orgId || org.id || '';
-        console.log('✅ Setting organization ID from userClass:', orgIdFromClass);
-        setCurrentOrganizationId(orgIdFromClass);
+        if (orgIdFromClass && orgIdFromClass !== currentOrganizationId) {
+          console.log('✅ Setting organization ID from userClass:', orgIdFromClass);
+          setCurrentOrganizationId(orgIdFromClass);
+        }
       }
     }
-  }, [user, userClass]);
+  }, [user, userClass, currentOrganizationId]);
 
 
   // Refs for scrolling to sections
@@ -127,97 +133,115 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const toolsSectionRef = useRef<HTMLDivElement>(null);
   // Removed analysis, advanced, widget section refs
 
-  // Fetch agents from backend
+  // Fetch agents from backend with debouncing and duplicate call prevention
   const fetchAgents = useCallback(async () => {
-    console.log('🔄 Starting fetchAgents...', { currentOrganizationId, organizationName });
-    setIsLoadingAgents(true);
-    setAgentsError('');
+    // Prevent multiple simultaneous calls
+    if (isFetchingRef.current) {
+      console.log('🔄 fetchAgents already in progress, skipping...');
+      return;
+    }
 
-    try {
-      const orgName = organizationName || 'Unknown Organization';
-      console.log('🔍 Using organization name for fetchAgents:', orgName);
-      const result = await agentConfigService.getAllAgents(orgName);
-      console.log('📊 getAllAgents result:', result);
+    // Clear any existing timeout
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
 
-      if (result.success) {
-        if (result.data && result.data.length > 0) {
-          console.log('📋 Processing agents data:', result.data);
-          console.log('📋 First agent sample:', result.data[0]);
-          // Transform backend data to match our Agent interface
-          const transformedAgents: Agent[] = result.data.map((agent: any, index: number) => {
-            console.log(`📋 Transforming agent ${index}:`, agent);
-            return {
-              id: agent.name || agent.id || `agent-${Date.now()}`,
-              name: agent.name || 'Unnamed Agent',
-              status: agent.status || 'draft',
-              model: agent.model || 'GPT-4o',
-              provider: agent.provider || 'OpenAI',
-              cost: agent.cost || '~$0.10/min',
-              latency: agent.latency || '~1000ms',
-              avatar: '🤖',
-              description: agent.description || 'AI Agent',
-              organization_id: agent.organization_id,
-              chatbot_api: agent.chatbot_api,
-              chatbot_key: agent.chatbot_key,
-              tts_config: agent.tts_config,
-              stt_config: agent.stt_config,
-              initial_message: agent.initial_message,
-              nudge_text: agent.nudge_text,
-              nudge_interval: agent.nudge_interval,
-              max_nudges: agent.max_nudges,
-              typing_volume: agent.typing_volume,
-              max_call_duration: agent.max_call_duration,
-              created_at: agent.created_at,
-              updated_at: agent.updated_at
-            };
-          });
+    // Debounce the fetch call
+    fetchTimeoutRef.current = setTimeout(async () => {
+      console.log('🔄 Starting fetchAgents...', { currentOrganizationId, organizationName });
+      isFetchingRef.current = true;
+      setIsLoadingAgents(true);
+      setAgentsError('');
 
-          console.log('✅ Transformed agents:', transformedAgents);
-          setAgents(transformedAgents);
+      try {
+        const orgName = organizationName || currentOrganizationId || 'Unknown Organization';
+        console.log('🔍 Using organization name for fetchAgents:', orgName);
+        const result = await agentConfigService.getAllAgents(orgName);
+        console.log('📊 getAllAgents result:', result);
 
-          // Select the first agent if none is selected
-          if (transformedAgents.length > 0 && !selectedAgent) {
-            setSelectedAgent(transformedAgents[0]);
+        if (result.success) {
+          if (result.data && result.data.length > 0) {
+            console.log('📋 Processing agents data:', result.data);
+            console.log('📋 First agent sample:', result.data[0]);
+            // Transform backend data to match our Agent interface
+            const transformedAgents: Agent[] = result.data.map((agent: any, index: number) => {
+              console.log(`📋 Transforming agent ${index}:`, agent);
+              return {
+                id: agent.name || agent.id || `agent-${Date.now()}`,
+                name: agent.name || 'Unnamed Agent',
+                status: agent.status || 'draft',
+                model: agent.model || 'GPT-4o',
+                provider: agent.provider || 'OpenAI',
+                cost: agent.cost || '~$0.10/min',
+                latency: agent.latency || '~1000ms',
+                avatar: '🤖',
+                description: agent.description || 'AI Agent',
+                organization_id: agent.organization_id,
+                chatbot_api: agent.chatbot_api,
+                chatbot_key: agent.chatbot_key,
+                tts_config: agent.tts_config,
+                stt_config: agent.stt_config,
+                initial_message: agent.initial_message,
+                nudge_text: agent.nudge_text,
+                nudge_interval: agent.nudge_interval,
+                max_nudges: agent.max_nudges,
+                typing_volume: agent.typing_volume,
+                max_call_duration: agent.max_call_duration,
+                created_at: agent.created_at,
+                updated_at: agent.updated_at
+              };
+            });
+
+            console.log('✅ Transformed agents:', transformedAgents);
+            setAgents(transformedAgents);
+
+            // Select the first agent if none is selected
+            if (transformedAgents.length > 0 && !selectedAgent) {
+              setSelectedAgent(transformedAgents[0]);
+            }
+          } else {
+            // No agents found - this is normal for a new setup
+            console.log('No agents found in backend. This is normal for a new setup.');
+            setAgents([]);
+            setSelectedAgent(null);
           }
         } else {
-          // No agents found - this is normal for a new setup
-          console.log('No agents found in backend. This is normal for a new setup.');
-          setAgents([]);
-          setSelectedAgent(null);
+          // Don't show error for 405 Method Not Allowed - it's expected
+          if (result.message.includes('405') || result.message.includes('Method Not Allowed')) {
+            console.log('Backend does not support listing all agents. This is normal.');
+            setAgents([]);
+            setSelectedAgent(null);
+          } else {
+            setAgentsError(result.message);
+            setAgents(fallbackAgents);
+            if (fallbackAgents.length > 0 && !selectedAgent) {
+              setSelectedAgent(fallbackAgents[0]);
+            }
+          }
         }
-      } else {
-        // Don't show error for 405 Method Not Allowed - it's expected
-        if (result.message.includes('405') || result.message.includes('Method Not Allowed')) {
+      } catch (error) {
+        // Don't show 405 errors as they are expected
+        if (error instanceof Error && error.message.includes('405')) {
           console.log('Backend does not support listing all agents. This is normal.');
           setAgents([]);
           setSelectedAgent(null);
         } else {
-          setAgentsError(result.message);
+          console.error('Error fetching agents:', error);
+          setAgentsError('Failed to load agents from server');
           setAgents(fallbackAgents);
           if (fallbackAgents.length > 0 && !selectedAgent) {
             setSelectedAgent(fallbackAgents[0]);
           }
         }
+      } finally {
+        setIsLoadingAgents(false);
+        setAgentsLoaded(true);
+        loadedOrganizationRef.current = currentOrganizationId || organizationName || '';
+        isFetchingRef.current = false;
+        console.log('🏁 fetchAgents completed');
       }
-    } catch (error) {
-      // Don't show 405 errors as they are expected
-      if (error instanceof Error && error.message.includes('405')) {
-        console.log('Backend does not support listing all agents. This is normal.');
-        setAgents([]);
-        setSelectedAgent(null);
-      } else {
-        console.error('Error fetching agents:', error);
-        setAgentsError('Failed to load agents from server');
-        setAgents(fallbackAgents);
-        if (fallbackAgents.length > 0 && !selectedAgent) {
-          setSelectedAgent(fallbackAgents[0]);
-        }
-      }
-    } finally {
-      setIsLoadingAgents(false);
-      console.log('🏁 fetchAgents completed');
-    }
-  }, [selectedAgent, currentOrganizationId, organizationName]);
+    }, 300); // 300ms debounce
+  }, [currentOrganizationId, organizationName, selectedAgent]);
 
   // Load configurations from localStorage
   const loadConfigurationsFromStorage = useCallback(() => {
@@ -250,14 +274,31 @@ export default function AgentsTab({ }: AgentsTabProps) {
     }
   }, []);
 
-  // Load agents on component mount
+  // Load configurations from localStorage on mount
   useEffect(() => {
-    fetchAgents();
-    // Get current organization ID
-    setCurrentOrganizationId(agentConfigService.getCurrentOrganizationId());
-    // Load configurations from localStorage
     loadConfigurationsFromStorage();
   }, [loadConfigurationsFromStorage]);
+
+  // Initial fetch when component mounts and organization is available
+  useEffect(() => {
+    const currentOrg = currentOrganizationId || organizationName;
+    if (currentOrg && !agentsLoaded && !isLoadingAgents) {
+      console.log('🔄 Initial fetch for organization:', currentOrg);
+      fetchAgents();
+    }
+  }, [currentOrganizationId, organizationName, agentsLoaded, isLoadingAgents, fetchAgents]);
+
+  // Fetch agents when organization ID or name changes (only if not already loaded)
+  useEffect(() => {
+    const currentOrg = currentOrganizationId || organizationName;
+    const loadedOrg = loadedOrganizationRef.current;
+    
+    if (currentOrg && !isLoadingAgents && currentOrg !== loadedOrg && agentsLoaded) {
+      console.log('🔄 Organization changed, fetching agents:', { currentOrg, loadedOrg });
+      setAgentsLoaded(false);
+      fetchAgents();
+    }
+  }, [currentOrganizationId, organizationName, isLoadingAgents, agentsLoaded, fetchAgents]);
 
   // Get organization name from user context
   useEffect(() => {
@@ -267,15 +308,17 @@ export default function AgentsTab({ }: AgentsTabProps) {
       if (orgs.length > 0) {
         const org = orgs[0] as any;
         const orgName = org.orgName || org.name || '';
-        console.log('🔍 Setting organization name:', orgName);
-        setOrganizationName(orgName);
+        if (orgName && orgName !== organizationName) {
+          console.log('🔍 Setting organization name:', orgName);
+          setOrganizationName(orgName);
+        }
       } else {
         console.log('⚠️ No organizations found in userClass');
       }
     } else {
       console.log('⚠️ userClass is not available');
     }
-  }, [userClass]);
+  }, [userClass, organizationName]);
 
   // Refresh configuration when selectedAgent changes
   useEffect(() => {
@@ -658,6 +701,29 @@ export default function AgentsTab({ }: AgentsTabProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isDropdownOpen]);
 
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Fallback timeout to prevent infinite loading
+  useEffect(() => {
+    if (isLoadingAgents) {
+      const fallbackTimeout = setTimeout(() => {
+        console.log('⚠️ Loading timeout reached, stopping loading state');
+        setIsLoadingAgents(false);
+        setAgentsLoaded(true);
+        isFetchingRef.current = false;
+      }, 10000); // 10 second timeout
+
+      return () => clearTimeout(fallbackTimeout);
+    }
+  }, [isLoadingAgents]);
+
   // Manual refresh function for agent configuration
   const refreshSelectedAgentConfig = useCallback(async () => {
     if (!selectedAgent) return;
@@ -773,7 +839,17 @@ export default function AgentsTab({ }: AgentsTabProps) {
                 )}
                 <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                   <button
-                    onClick={fetchAgents}
+                    onClick={() => {
+                      // Clear any pending timeouts
+                      if (fetchTimeoutRef.current) {
+                        clearTimeout(fetchTimeoutRef.current);
+                      }
+                      // Reset fetching state
+                      isFetchingRef.current = false;
+                      setAgentsLoaded(false);
+                      loadedOrganizationRef.current = '';
+                      fetchAgents();
+                    }}
                     disabled={isLoadingAgents}
                     className={`group relative px-2 sm:px-3 lg:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-1 sm:gap-2 text-xs sm:text-sm lg:text-base ${isDarkMode
                       ? 'bg-gradient-to-r from-gray-700 to-gray-800 text-gray-300 hover:from-gray-600 hover:to-gray-700'
