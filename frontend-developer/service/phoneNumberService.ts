@@ -423,6 +423,31 @@ export const getAvailablePhoneNumbersFromBackend = async (): Promise<PhoneNumber
   }
 };
 
+/**
+ * Manual Sync from Twilio
+ * POST /phone-numbers/manual-sync-from-twilio
+ */
+export const syncPhoneNumbersFromTwilio = async (): Promise<PhoneNumberResponse> => {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/phone-numbers/manual-sync-from-twilio`, {
+      method: 'POST',
+      headers: {
+        'x-api-key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, message: `Failed to sync phone numbers from Twilio: ${error.message}` };
+  }
+};
+
 // ============================================================================
 // SCHEDULED EVENTS ENDPOINTS
 // ============================================================================
