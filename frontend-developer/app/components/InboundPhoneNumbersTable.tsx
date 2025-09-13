@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Phone, Search, User, AlertCircle, CheckCircle, XCircle, Loader2, Plus, MessageSquare, PhoneCall } from 'lucide-react';
+import { Phone, Search, User, AlertCircle, CheckCircle, XCircle, Loader2, Plus, MessageSquare, PhoneCall, Edit } from 'lucide-react';
 import { useAuthInfo } from '@propelauth/react';
 import { useTheme } from '../contexts/ThemeContext';
 import { 
@@ -58,6 +58,12 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
   const [assigningAgent, setAssigningAgent] = useState('');
   const [assigningPhoneNumber, setAssigningPhoneNumber] = useState('');
   const [assigning, setAssigning] = useState(false);
+  
+  // Unassign modal state
+  const [showUnassignModal, setShowUnassignModal] = useState(false);
+  const [selectedPhoneForUnassign, setSelectedPhoneForUnassign] = useState<PhoneNumber | null>(null);
+  const [unassigningAgent, setUnassigningAgent] = useState('');
+  const [unassigning, setUnassigning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   
@@ -254,23 +260,40 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
     loadAvailablePhoneNumbers();
   }, [loadAgents, loadAvailablePhoneNumbers]);
 
-  // Show ONLY organization phone numbers in the main list (assigned numbers in the organization)
-  const allPhoneNumbers: PhoneNumber[] = organizationPhoneNumbers.map(orgPhone => ({
-    phone_number: orgPhone.number || orgPhone.phone_number || orgPhone.phone || '',
-    agent_id: orgPhone.agent_id || orgPhone.agent_name || '',
-    organization_id: orgPhone.organization_id || '',
-    status: orgPhone.status || 'assigned',
-    created_at: orgPhone.created_at || new Date().toISOString(),
-    updated_at: orgPhone.updated_at || new Date().toISOString(),
-    // Add organization-specific fields
-    phone_id: orgPhone.phone_id || '',
-    voice_enabled: orgPhone.voice_enabled || false,
-    sms_enabled: orgPhone.sms_enabled || false,
-    whatsapp_enabled: orgPhone.whatsapp_enabled || false,
-    inbound_enabled: orgPhone.inbound_enabled || false,
-    outbound_enabled: orgPhone.outbound_enabled || false,
-    agent_name: orgPhone.agent_name || ''
-  }));
+  // Show organization phone numbers if available, otherwise show available phone numbers
+  const allPhoneNumbers: PhoneNumber[] = organizationPhoneNumbers.length > 0 
+    ? organizationPhoneNumbers.map(orgPhone => ({
+        phone_number: orgPhone.number || orgPhone.phone_number || orgPhone.phone || '',
+        agent_id: orgPhone.agent_id || orgPhone.agent_name || '',
+        organization_id: orgPhone.organization_id || '',
+        status: orgPhone.status || 'assigned',
+        created_at: orgPhone.created_at || new Date().toISOString(),
+        updated_at: orgPhone.updated_at || new Date().toISOString(),
+        // Add organization-specific fields
+        phone_id: orgPhone.phone_id || '',
+        voice_enabled: orgPhone.voice_enabled || false,
+        sms_enabled: orgPhone.sms_enabled || false,
+        whatsapp_enabled: orgPhone.whatsapp_enabled || false,
+        inbound_enabled: orgPhone.inbound_enabled || false,
+        outbound_enabled: orgPhone.outbound_enabled || false,
+        agent_name: orgPhone.agent_name || ''
+      }))
+    : availablePhoneNumbers.map(availablePhone => ({
+        phone_number: availablePhone.phone_number || '',
+        agent_id: null, // No agent assigned for available numbers
+        organization_id: availablePhone.organization_id || '',
+        status: availablePhone.status || 'available',
+        created_at: availablePhone.created_at || new Date().toISOString(),
+        updated_at: availablePhone.updated_at || new Date().toISOString(),
+        // Add organization-specific fields
+        phone_id: availablePhone.phone_id || '',
+        voice_enabled: availablePhone.voice_enabled || false,
+        sms_enabled: availablePhone.sms_enabled || false,
+        whatsapp_enabled: availablePhone.whatsapp_enabled || false,
+        inbound_enabled: availablePhone.inbound_enabled || false,
+        outbound_enabled: availablePhone.outbound_enabled || false,
+        agent_name: null // No agent name for available numbers
+      }));
 
   const filteredPhoneNumbers = allPhoneNumbers.filter(phone => {
     // Text search filter
@@ -325,6 +348,81 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  const handleUnassignPhoneNumber = async () => {
+    if (!selectedPhoneForUnassign) {
+      setError('No phone number selected.');
+      return;
+    }
+
+    setUnassigning(true);
+    setError(null);
+    setSuccess(null);
+    
+    try {
+      let response;
+      
+      if (!unassigningAgent.trim() || unassigningAgent.trim() === 'None') {
+        // Unassign the phone number
+        if (!selectedPhoneForUnassign.phone_id || !selectedPhoneForUnassign.agent_id) {
+          setError('Phone ID or current agent not found. Please refresh and try again.');
+          return;
+        }
+        
+        response = await unassignPhoneNumberFromAgent(selectedPhoneForUnassign.phone_id as string, selectedPhoneForUnassign.agent_id as string);
+        
+        if (response.success) {
+          setSuccess(`Phone number ${selectedPhoneForUnassign.phone_number} unassigned successfully!`);
+        } else {
+          setError(response.message || 'Failed to unassign phone number.');
+          return;
+        }
+      } else {
+        // Assign the phone number to a new agent
+        if (!selectedPhoneForUnassign.phone_id) {
+          setError('Phone ID not found. Please refresh and try again.');
+          return;
+        }
+        
+        response = await assignPhoneNumberToAgent(selectedPhoneForUnassign.phone_id as string, unassigningAgent);
+        
+        if (response.success) {
+          // Success handled below
+        } else {
+          setError(response.message || 'Failed to assign phone number.');
+          return;
+        }
+      }
+      
+      // Close modal and refresh data on success
+      setShowUnassignModal(false);
+      setSelectedPhoneForUnassign(null);
+      setUnassigningAgent('');
+      
+      // Refresh all phone number lists to reflect the status change
+      const action = !unassigningAgent.trim() || unassigningAgent.trim() === 'None' ? 'unassigned' : 'assigned';
+      setSuccess(`Phone number ${selectedPhoneForUnassign.phone_number} ${action} successfully! Refreshing lists...`);
+      
+      // Small delay to ensure backend has updated the status
+      await new Promise(resolve => setTimeout(resolve, TIMEOUTS.REFRESH_DELAY));
+      
+      await Promise.all([
+        loadAvailablePhoneNumbers(),
+        loadOrganizationPhoneNumbers()
+      ]);
+      
+      // Update success message after refresh
+      setSuccess(`Phone number ${selectedPhoneForUnassign.phone_number} ${action} successfully! Lists updated.`);
+      
+    } catch (err: unknown) {
+      const action = !unassigningAgent.trim() || unassigningAgent.trim() === 'None' ? 'unassign' : 'assign';
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError(`Error ${action}ing phone number: ` + errorMessage);
+      console.error(`Error ${action}ing phone number:`, err);
+    } finally {
+      setUnassigning(false);
+    }
+  };
 
   const handleAssignPhoneNumber = async () => {
     if (!assigningPhoneNumber.trim()) {
@@ -587,7 +685,7 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
               No phone numbers found
             </p>
             <p className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-              {searchTerm ? 'Try adjusting your search' : 'No phone numbers assigned to this organization'}
+              {searchTerm ? 'Try adjusting your search' : 'No phone numbers found for this organization'}
             </p>
           </div>
         ) : (
@@ -607,6 +705,11 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
                   <th className="text-left py-4 px-6 font-semibold text-sm">
                     Agent
                   </th>
+                  {organizationPhoneNumbers.length > 0 && (
+                    <th className="text-left py-4 px-6 font-semibold text-sm">
+                      Unassign
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -705,7 +808,7 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
                       <div className="flex items-center gap-2">
                         <User className={`h-4 w-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                         <span className="text-sm">
-                          {phoneNumber.agent_id && phoneNumber.agent_id !== 'unassigned' 
+                          {phoneNumber.agent_id && phoneNumber.agent_id !== 'unassigned' && phoneNumber.agent_id !== null
                             ? (phoneNumber.agent_name || phoneNumber.agent_id)
                             : 'Unassigned'
                           }
@@ -717,6 +820,27 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
                         )}
                       </div>
                     </td>
+
+                    {/* Unassign Column - Only show when organization phone numbers exist */}
+                    {organizationPhoneNumbers.length > 0 && (
+                      <td className="py-4 px-6">
+                        <button
+                          onClick={() => {
+                            setSelectedPhoneForUnassign(phoneNumber);
+                            setUnassigningAgent(phoneNumber.agent_id || '');
+                            setShowUnassignModal(true);
+                          }}
+                          className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
+                            isDarkMode 
+                              ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
+                              : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
+                          }`}
+                          title={phoneNumber.agent_id && phoneNumber.agent_id !== 'unassigned' && phoneNumber.agent_id !== null ? 'Unassign agent' : 'Assign agent'}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -827,6 +951,101 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
               >
                 {assigning ? <Loader2 className="h-4 w-4 animate-spin mx-auto mr-2" /> : null}
                 Assign Agent
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Unassign/Assign Modal */}
+      {showUnassignModal && selectedPhoneForUnassign && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowUnassignModal(false)}>
+          <div className={`rounded-xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-md' : 'bg-white/95 backdrop-blur-md'}`} onClick={(e) => e.stopPropagation()}>
+            <h3 className={`text-xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+              {selectedPhoneForUnassign.agent_id && selectedPhoneForUnassign.agent_id !== 'unassigned' && selectedPhoneForUnassign.agent_id !== null ? 'Unassign Agent' : 'Assign Agent'}
+            </h3>
+            
+            <p className={`text-sm mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              {selectedPhoneForUnassign.agent_id && selectedPhoneForUnassign.agent_id !== 'unassigned' && selectedPhoneForUnassign.agent_id !== null
+                ? `Current agent: ${selectedPhoneForUnassign.agent_name || selectedPhoneForUnassign.agent_id}. Select a new agent or choose "None" to unassign.`
+                : 'This phone number is currently unassigned. Select an agent to assign it to.'
+              }
+            </p>
+            
+            {error && (
+              <div className="p-3 mb-4 rounded-lg bg-red-500/20 text-red-200 flex items-center gap-2 text-sm">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <p>{error}</p>
+              </div>
+            )}
+
+            {success && (
+              <div className="p-3 mb-4 rounded-lg bg-green-500/20 text-green-200 flex items-center gap-2 text-sm">
+                <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                <p>{success}</p>
+              </div>
+            )}
+
+            <div className="space-y-6">
+              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-blue-900/20 border border-blue-700/30' : 'bg-blue-50 border border-blue-200'}`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Phone className={`h-4 w-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                  <label className={`block text-sm font-semibold ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                    Phone Number
+                  </label>
+                </div>
+                <div className={`px-4 py-3 rounded-lg ${isDarkMode ? 'bg-gray-700 text-gray-200' : 'bg-white text-gray-900 border border-gray-200'}`}>
+                  {formatPhoneNumber(selectedPhoneForUnassign.phone_number)}
+                </div>
+              </div>
+
+              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-green-900/20 border border-green-700/30' : 'bg-green-50 border border-green-200'}`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <User className={`h-4 w-4 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+                  <label className={`block text-sm font-semibold ${isDarkMode ? 'text-green-300' : 'text-green-700'}`}>
+                    Agent
+                  </label>
+                </div>
+                <select
+                  value={unassigningAgent}
+                  onChange={(e) => setUnassigningAgent(e.target.value)}
+                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-green-600 bg-gray-700 text-gray-200' : 'border-green-200 bg-white text-gray-900'}`}
+                  disabled={loadingAgents}
+                >
+                  <option value="None">None (Unassign)</option>
+                  {agents.map((agent, index) => (
+                    <option key={agent.id || agent.name || agent.agent_prefix || `agent-${index}`} value={agent.name || agent.agent_prefix}>
+                      {agent.name || agent.agent_prefix}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-8">
+              <button
+                onClick={() => {
+                  setShowUnassignModal(false);
+                  setSelectedPhoneForUnassign(null);
+                  setUnassigningAgent('');
+                  setError(null);
+                  setSuccess(null);
+                }}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                disabled={unassigning}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUnassignPhoneNumber}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                disabled={unassigning}
+              >
+                {unassigning ? <Loader2 className="h-4 w-4 animate-spin mx-auto mr-2" /> : null}
+                {selectedPhoneForUnassign.agent_id && selectedPhoneForUnassign.agent_id !== 'unassigned' && selectedPhoneForUnassign.agent_id !== null
+                  ? (unassigningAgent === 'None' ? 'Unassign' : 'Update Assignment')
+                  : 'Assign Agent'
+                }
               </button>
             </div>
           </div>
