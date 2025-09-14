@@ -1,15 +1,15 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Building2, 
-  Bot, 
-  Phone, 
-  BarChart3, 
-  FileText, 
-  MessageSquare, 
-  Clock, 
-  LogOut, 
+import {
+  Building2,
+  Bot,
+  Phone,
+  BarChart3,
+  FileText,
+  MessageSquare,
+  Clock,
+  LogOut,
   User,
   Settings,
   Shield,
@@ -23,31 +23,32 @@ import {
   Code,
   Database,
   Sun,
-  Moon
+  Moon,
+  Mail
 } from 'lucide-react';
 import { useAuthInfo, useLogoutFunction } from '@propelauth/react';
 import { SyncLoader } from 'react-spinners';
 import { useRouter } from 'next/navigation';
-import { AgentsTab, PhoneNumbersTab, SMSTab, WhatsAppTab, OrgSetup } from './components';
+import { AgentsTab, PhoneNumbersTab, SMSTab, WhatsAppTab, GmailTab, OrgSetup } from './components';
 import ChatSidebar from './components/ChatSidebar';
 import { useTheme } from './contexts/ThemeContext';
 
 // Custom WhatsApp icon component
 const WhatsAppIcon = ({ className }: { className?: string }) => (
-  <svg 
-    className={className} 
-    viewBox="0 0 24 24" 
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
     fill="currentColor"
   >
-    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488" />
   </svg>
 );
 
 // Simple Chat icon component
 const ChatIcon = ({ className }: { className?: string }) => (
-  <svg 
-    className={className} 
-    viewBox="0 0 24 24" 
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
     strokeWidth="2"
@@ -65,16 +66,17 @@ const navigationItems = [
   { name: 'Phone Numbers', icon: Phone, color: 'from-blue-500 to-cyan-600' },
   { name: 'SMS', icon: MessageSquare, color: 'from-green-500 to-teal-600' },
   { name: 'WhatsApp', icon: Globe, color: 'from-green-600 to-emerald-700' },
+  { name: 'Gmail', icon: Mail, color: 'from-red-500 to-pink-600' },
 ];
 
 export default function DeveloperDashboard() {
   const [activeNavItem, setActiveNavItem] = useState('Overview');
-  
+
   // Chat state
   const [chatOpen, setChatOpen] = useState(false);
   const [hasNewMessages, setHasNewMessages] = useState(false);
   const { isDarkMode, toggleTheme } = useTheme();
-  
+
   // Profile dropdown state
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -105,7 +107,7 @@ export default function DeveloperDashboard() {
     if (!loading && userClass) {
       const orgs = userClass.getOrgs?.() || [];
       setOrgs(orgs);
-      
+
       // Only show organization setup if user has no organizations (first-time user)
       if (orgs.length === 0) {
         setShowOrgSetup(true);
@@ -225,7 +227,7 @@ export default function DeveloperDashboard() {
                   </div>
                 </div>
                 <p className={`text-sm sm:text-base lg:text-lg max-w-2xl ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  Your central hub for managing AI assistants, communication channels, and monitoring system performance. 
+                  Your central hub for managing AI assistants, communication channels, and monitoring system performance.
                   Build, deploy, and observe your intelligent solutions.
                 </p>
               </div>
@@ -363,19 +365,22 @@ export default function DeveloperDashboard() {
             </div>
           </div>
         );
-      
+
       case 'Agents':
         return <AgentsTab />;
-      
+
       case 'Phone Numbers':
         return <PhoneNumbersTab />;
-      
+
       case 'SMS':
         return <SMSTab />;
-      
+
       case 'WhatsApp':
         return <WhatsAppTab />;
-      
+
+      case 'Gmail':
+        return <GmailTab />;
+
       default:
         return (
           <div className="max-w-7xl mx-auto">
@@ -449,7 +454,7 @@ export default function DeveloperDashboard() {
                   <div className="text-gray-400 text-xs sm:text-sm">Control Center</div>
                 </div>
               </div>
-              
+
               {/* Navigation Tabs - Hidden on mobile, shown on tablet+ */}
               <nav className="hidden md:flex space-x-1">
                 {navigationItems.map((item) => {
@@ -458,11 +463,10 @@ export default function DeveloperDashboard() {
                     <button
                       key={item.name}
                       onClick={() => handleNavItemClick(item.name)}
-                      className={`px-3 lg:px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                        isActive
+                      className={`px-3 lg:px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${isActive
                           ? 'bg-green-500 text-white'
                           : 'text-white hover:bg-gray-800'
-                      }`}
+                        }`}
                     >
                       {item.name}
                     </button>
@@ -501,7 +505,7 @@ export default function DeveloperDashboard() {
               >
                 <div className={`absolute inset-0 rounded-xl bg-gradient-to-r from-green-500/10 to-blue-500/10 opacity-100 transition-opacity duration-300 ${isDarkMode ? 'from-green-500/20 to-blue-500/20' : 'from-green-100 to-blue-100'}`} />
                 <ChatIcon className="h-4 w-4 sm:h-5 sm:w-5 relative z-10 text-current" />
-                
+
                 {/* Message count indicator */}
                 {(() => {
                   try {
@@ -524,7 +528,7 @@ export default function DeveloperDashboard() {
                   return null;
                 })()}
               </button>
-              
+
               {/* Theme Toggle */}
               <button
                 onClick={toggleTheme}
@@ -532,12 +536,12 @@ export default function DeveloperDashboard() {
               >
                 {isDarkMode ? <Sun className="h-4 w-4 sm:h-5 sm:w-5" /> : <Moon className="h-4 w-4 sm:h-5 sm:w-5" />}
               </button>
-              
+
               {/* Developer Access Badge - Hidden on mobile */}
               <div className={`hidden sm:block px-3 sm:px-4 py-2 rounded-xl border ${isDarkMode ? 'bg-gradient-to-r from-green-500/20 to-emerald-600/20 backdrop-blur-sm border-green-500/30' : 'bg-green-50 border-green-200'}`}>
                 <span className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-700'}`}>Developer Access</span>
               </div>
-              
+
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -552,7 +556,7 @@ export default function DeveloperDashboard() {
                 {dropdownOpen && (
                   <>
                     {/* Backdrop overlay */}
-                    <div 
+                    <div
                       className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
                       onClick={() => setDropdownOpen(false)}
                     />
@@ -603,12 +607,10 @@ export default function DeveloperDashboard() {
         <main className="p-3 sm:p-4 lg:p-6">
           {orgSetupComplete ? renderContent() : (
             <div className="flex items-center justify-center h-64">
-              <div className={`text-center rounded-xl shadow-sm border p-8 ${
-                isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-              }`}>
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
-                  isDarkMode ? 'bg-blue-500/20' : 'bg-blue-100'
+              <div className={`text-center rounded-xl shadow-sm border p-8 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
                 }`}>
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDarkMode ? 'bg-blue-500/20' : 'bg-blue-100'
+                  }`}>
                   <Code className={`w-8 h-8 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
                 </div>
                 <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -624,12 +626,12 @@ export default function DeveloperDashboard() {
             </div>
           )}
         </main>
-        
+
         {/* Chat Sidebar */}
         {chatOpen && (
           <>
             {/* Backdrop overlay */}
-            <div 
+            <div
               className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
               onClick={() => setChatOpen(false)}
             />
