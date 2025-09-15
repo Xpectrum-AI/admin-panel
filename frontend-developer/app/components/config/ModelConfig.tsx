@@ -16,7 +16,8 @@ const ModelConfig = forwardRef<HTMLDivElement, ModelConfigProps>(({ agentName = 
   const { isDarkMode } = useTheme();
   const [selectedModelProvider, setSelectedModelProvider] = useState('OpenAI');
   const [selectedModel, setSelectedModel] = useState('GPT-4o');
-  const [firstMessage, setFirstMessage] = useState('Thank you for calling Wellness Partners. This is Riley, your scheduling agent. How may I help you today?');
+  const [modelLiveUrl, setModelLiveUrl] = useState(process.env.NEXT_PUBLIC_DIFY_BASE_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1');
+  const [modelApiKey, setModelApiKey] = useState(process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '');
   const [systemPrompt, setSystemPrompt] = useState(`# Appointment Scheduling Agent Prompt
 
 ## Identity & Purpose
@@ -48,15 +49,28 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
   const [isPromptConfigured, setIsPromptConfigured] = useState(false);
   const [currentModelConfig, setCurrentModelConfig] = useState<any>(null);
   const [currentPromptConfig, setCurrentPromptConfig] = useState<any>(null);
+  const [isUsingModelApiKey, setIsUsingModelApiKey] = useState(false);
 
-  // Load existing configuration when provided
+  // Load existing configuration when provided (only once)
   React.useEffect(() => {
     if (existingConfig) {
-      console.log('🔄 ModelConfig: Loading existing config:', existingConfig);
-      setSelectedModelProvider(existingConfig.selectedModelProvider || 'OpenAI');
-      setSelectedModel(existingConfig.selectedModel || 'GPT-4o');
-      setFirstMessage(existingConfig.firstMessage || 'Thank you for calling Wellness Partners. This is Riley, your scheduling agent. How may I help you today?');
-      setSystemPrompt(existingConfig.systemPrompt || `# Appointment Scheduling Agent Prompt
+      console.log('🔄 Loading existing model config:', existingConfig);
+      
+      // Only set values if they're not already set (prevent overriding user input)
+      if (!selectedModelProvider || selectedModelProvider === 'OpenAI') {
+        setSelectedModelProvider(existingConfig.selectedModelProvider || 'OpenAI');
+      }
+      if (!selectedModel || selectedModel === 'GPT-4o') {
+        setSelectedModel(existingConfig.selectedModel || 'GPT-4o');
+      }
+      if (!modelLiveUrl || modelLiveUrl === process.env.NEXT_PUBLIC_DIFY_BASE_URL) {
+        setModelLiveUrl(existingConfig.modelLiveUrl || process.env.NEXT_PUBLIC_DIFY_BASE_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1');
+      }
+      if (!modelApiKey || modelApiKey === process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY) {
+        setModelApiKey(existingConfig.modelApiKey || process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '');
+      }
+      if (!systemPrompt || systemPrompt.includes('Appointment Scheduling Agent Prompt')) {
+        setSystemPrompt(existingConfig.systemPrompt || `# Appointment Scheduling Agent Prompt
 
 ## Identity & Purpose
 You are Riley, an appointment scheduling voice agent for Wellness Partners, a multi-specialty health clinic. Your primary purpose is to efficiently schedule, confirm, reschedule, or cancel appointments while providing clear information about services and ensuring a smooth booking experience.
@@ -73,8 +87,21 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
 - Use simple, direct language that's easy to understand
 - Avoid medical jargon unless the caller uses it first
 - Be concise but thorough in your responses`);
+      }
+
+      // Check if this agent is using a model API key
+      const modelKey = existingConfig.modelApiKey || existingConfig.model_api_key;
+      const hasModelApiKey = modelKey && 
+        modelKey !== process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY &&
+        (modelKey.startsWith('sk-') || modelKey.startsWith('gsk_') || modelKey.startsWith('sk-ant-')); // Model API keys
+      setIsUsingModelApiKey(hasModelApiKey);
+      
+      // If we have a model key, use it
+      if (hasModelApiKey && modelKey) {
+        setModelApiKey(modelKey);
+      }
     }
-  }, [existingConfig]);
+  }, [existingConfig?.selectedModelProvider, existingConfig?.selectedModel, existingConfig?.modelApiKey, existingConfig?.model_api_key]); // Only depend on specific fields
 
   // Check current configuration status (local state only)
   const checkConfigurationStatus = () => {
@@ -109,7 +136,6 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
     // Also reset the form fields to defaults
     setSelectedModelProvider('OpenAI');
     setSelectedModel('GPT-4o');
-    setFirstMessage('Thank you for calling Wellness Partners. This is Riley, your scheduling agent. How may I help you today?');
     setSystemPrompt(`# Appointment Scheduling Agent Prompt
 
 ## Identity & Purpose
@@ -162,24 +188,37 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
     // Load configuration status from localStorage
     const loadPersistentStatus = () => {
       try {
-        const savedModelConfig = localStorage.getItem(`modelConfig_${agentName}`);
-        const savedPromptConfig = localStorage.getItem(`promptConfig_${agentName}`);
+        // Only load configuration if we have existing config data (not for new agents)
+        // Check if this is a real existing agent (has chatbot_key) or just a new agent with default values
+        const hasRealConfig = existingConfig && existingConfig.chatbot_key && 
+          (existingConfig.provider || existingConfig.model || existingConfig.systemPrompt);
+        
+        if (hasRealConfig) {
+          const savedModelConfig = localStorage.getItem(`modelConfig_${agentName}`);
+          const savedPromptConfig = localStorage.getItem(`promptConfig_${agentName}`);
 
-        if (savedModelConfig) {
-          const modelData = JSON.parse(savedModelConfig);
-          setIsModelConfigured(true);
-          setCurrentModelConfig(modelData);
-          setSelectedModelProvider(Object.keys(modelProviders).find(key =>
-            modelProviders[key as keyof typeof modelProviders].apiProvider === modelData.provider
-          ) || 'OpenAI');
-          setSelectedModel(modelData.model);
-        }
+          if (savedModelConfig) {
+            const modelData = JSON.parse(savedModelConfig);
+            setIsModelConfigured(true);
+            setCurrentModelConfig(modelData);
+            setSelectedModelProvider(Object.keys(modelProviders).find(key =>
+              modelProviders[key as keyof typeof modelProviders].apiProvider === modelData.provider
+            ) || 'OpenAI');
+            setSelectedModel(modelData.model);
+          }
 
-        if (savedPromptConfig) {
-          const promptData = JSON.parse(savedPromptConfig);
-          setIsPromptConfigured(true);
-          setCurrentPromptConfig(promptData);
-          setSystemPrompt(promptData.prompt);
+          if (savedPromptConfig) {
+            const promptData = JSON.parse(savedPromptConfig);
+            setIsPromptConfigured(true);
+            setCurrentPromptConfig(promptData);
+            setSystemPrompt(promptData.prompt);
+          }
+        } else {
+          // For new agents, ensure clean state
+          setIsModelConfigured(false);
+          setIsPromptConfigured(false);
+          setCurrentModelConfig(null);
+          setCurrentPromptConfig(null);
         }
       } catch (error) {
         // Fallback to unconfigured state
@@ -189,7 +228,7 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
     };
 
     loadPersistentStatus();
-  }, [agentName]);
+  }, [agentName, existingConfig]);
 
   // Model mapping for API calls
   const modelApiMapping: { [key: string]: string } = {
@@ -238,9 +277,30 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
       const provider = modelProviders[selectedModelProvider as keyof typeof modelProviders];
       const apiModel = modelApiMapping[selectedModel] || selectedModel.toLowerCase().replace(/\s+/g, '-');
 
+      // Get the correct model provider API key based on the selected provider
+      let providerApiKey = '';
+      switch (selectedModelProvider) {
+        case 'OpenAI':
+          providerApiKey = process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '';
+          break;
+        case 'Groq':
+          providerApiKey = process.env.NEXT_PUBLIC_MODEL_GROQ_API_KEY || '';
+          break;
+        case 'Anthropic':
+          providerApiKey = process.env.NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY || '';
+          break;
+        default:
+          providerApiKey = modelApiKey; // Fallback to user input
+      }
+
+      // Get the chatbot API key from existing config or environment
+      const chatbotApiKey = existingConfig?.chatbot_key || process.env.NEXT_PUBLIC_CHATBOT_API_KEY;
+      
       const result = await modelConfigService.configureModel({
         provider: provider.apiProvider,
-        model: apiModel
+        model: apiModel,
+        api_key: providerApiKey,
+        chatbot_api_key: chatbotApiKey
       });
 
       if (result.success) {
@@ -249,7 +309,8 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
         setIsModelConfigured(true);
         const modelConfig = {
           provider: provider.apiProvider,
-          model: apiModel
+          model: apiModel,
+          api_key: providerApiKey
         };
         setCurrentModelConfig(modelConfig);
 
@@ -279,8 +340,12 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
     setErrorMessage('');
 
     try {
+      // Get the chatbot API key from existing config or environment
+      const chatbotApiKey = existingConfig?.chatbot_key || process.env.NEXT_PUBLIC_CHATBOT_API_KEY;
+      
       const result = await modelConfigService.configurePrompt({
-        prompt: systemPrompt
+        prompt: systemPrompt,
+        chatbot_api_key: chatbotApiKey
       });
 
       if (result.success) {
@@ -323,14 +388,18 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
     }
   };
 
-  // Notify parent component of configuration changes (for first message only)
+  // Notify parent component of configuration changes
   React.useEffect(() => {
     if (onConfigChange) {
       onConfigChange({
-        firstMessage
+        modelLiveUrl,
+        modelApiKey,
+        selectedModelProvider,
+        selectedModel,
+        systemPrompt
       });
     }
-  }, [firstMessage, onConfigChange]);
+  }, [modelLiveUrl, modelApiKey, selectedModelProvider, selectedModel, systemPrompt, onConfigChange]);
 
   return (
     <div ref={ref} className="space-y-6 p-6">
@@ -345,36 +414,7 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
         </p>
 
 
-        {/* Status Management Buttons */}
-        <div className="mt-4 flex justify-center gap-3">
-          <button
-            onClick={checkConfigurationStatus}
-            disabled={isCheckingStatus || !isEditing}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${isCheckingStatus || !isEditing
-              ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-              : 'bg-purple-600 text-white hover:bg-purple-700 transform hover:scale-105'
-              }`}
-          >
-            {isCheckingStatus ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <CheckCircle className="h-4 w-4" />
-            )}
-            {isCheckingStatus ? 'Checking Status...' : 'Check Status'}
-          </button>
-
-          <button
-            onClick={resetConfigurationStatus}
-            disabled={!isEditing}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${!isEditing
-              ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-              : 'bg-red-600 text-white hover:bg-red-700 transform hover:scale-105'
-              }`}
-          >
-            <AlertCircle className="h-4 w-4" />
-            Reset Status
-          </button>
-        </div>
+      
 
         {/* Configuration Status Summary */}
         <div className="mt-4 flex justify-center gap-4">
@@ -399,19 +439,93 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
           </div>
         </div>
 
-        {/* Help Text */}
-        <div className="text-center">
-          <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            💡 Configuration status is now persistent and will be remembered even after navigation. Use "Reset Status" if you need to clear the configuration state.
-          </p>
+        
+      </div>
+
+      {/* Model Configuration Fields */}
+      <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-purple-900/50' : 'bg-purple-100'}`}>
+            <Sparkles className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+          </div>
+          <div>
+            <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Model Configuration</h4>
+            <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Configure your model API endpoint and credentials</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              Model Live URL
+            </label>
+            <input
+              type="url"
+              value={modelLiveUrl}
+              onChange={(e) => setModelLiveUrl(e.target.value)}
+              disabled={!isEditing}
+              placeholder="https://d22yt2oewbcglh.cloudfront.net/v1"
+              className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
+                ? isDarkMode
+                  ? 'bg-gray-800/30 border-gray-700 text-gray-400 placeholder-gray-500 cursor-not-allowed'
+                  : 'bg-gray-100 border-gray-300 text-gray-500 placeholder-gray-400 cursor-not-allowed'
+                : isDarkMode
+                  ? 'bg-gray-700/50 border-gray-600 text-gray-200 placeholder-gray-400'
+                  : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                }`}
+            />
+          </div>
+
+          <div>
+            <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              Model API Key
+              {isUsingModelApiKey && (
+                <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  🔄 Configured
+                </span>
+              )}
+            </label>
+            <div className="relative">
+              <input
+                type="password"
+                value={modelApiKey}
+                onChange={(e) => setModelApiKey(e.target.value)}
+                disabled={!isEditing || isUsingModelApiKey}
+                placeholder={isUsingModelApiKey ? "Using configured model API key" : "Enter your model API key"}
+                className={`w-full p-3 pr-10 rounded-xl border focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all duration-300 text-sm sm:text-base ${!isEditing || isUsingModelApiKey
+                  ? isDarkMode
+                    ? 'bg-gray-800/30 border-gray-700 text-gray-400 placeholder-gray-500 cursor-not-allowed'
+                    : 'bg-gray-100 border-gray-300 text-gray-500 placeholder-gray-400 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'bg-gray-700/50 border-gray-600 text-gray-200 placeholder-gray-400'
+                    : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                  }`}
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {isUsingModelApiKey ? '🔄' : '🔒'}
+                </div>
+              </div>
+            </div>
+            {isUsingModelApiKey && (
+              <p className={`text-xs mt-1 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                ✓ This agent uses a configured model API key for model access
+              </p>
+            )}
+            <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              ℹ️ Model provider API keys are automatically selected based on your provider choice
+            </p>
+            <p className={`text-xs mt-1 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+              🔑 Using: {selectedModelProvider} API key for model access
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Configuration Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Model Selection */}
+      {/* Model Selection Container */}
         <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
-          <div className="flex items-center gap-3 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
             <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-blue-900/50' : 'bg-blue-100'}`}>
               <Sparkles className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
             </div>
@@ -421,7 +535,29 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
             </div>
           </div>
 
-          <div className="space-y-4">
+          <button
+            onClick={handleModelConfiguration}
+            disabled={isLoadingModel || !isEditing}
+            className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base ${isLoadingModel || !isEditing
+              ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+              : isModelConfigured
+                ? 'bg-green-600 text-white hover:bg-green-700 transform hover:scale-105'
+                : 'bg-blue-600 text-white hover:bg-blue-700 transform hover:scale-105'
+              }`}
+          >
+            {isLoadingModel ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : isModelConfigured ? (
+              <CheckCircle className="h-4 w-4" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            <span className="hidden sm:inline">{isLoadingModel ? 'Configuring...' : isModelConfigured ? 'Model Configured ✓' : 'Configure Model'}</span>
+            <span className="sm:hidden">{isLoadingModel ? 'Configuring...' : isModelConfigured ? 'Configured ✓' : 'Configure'}</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 Model Provider
@@ -467,32 +603,13 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
                 ))}
               </select>
             </div>
-
-            <button
-              onClick={handleModelConfiguration}
-              disabled={isLoadingModel || !isEditing}
-              className={`w-full p-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base ${isLoadingModel || !isEditing
-                ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                : isModelConfigured
-                  ? 'bg-green-600 text-white hover:bg-green-700 transform hover:scale-105'
-                  : 'bg-blue-600 text-white hover:bg-blue-700 transform hover:scale-105'
-                }`}
-            >
-              {isLoadingModel ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : isModelConfigured ? (
-                <CheckCircle className="h-4 w-4" />
-              ) : (
-                <Sparkles className="h-4 w-4" />
-              )}
-              {isLoadingModel ? 'Configuring...' : isModelConfigured ? 'Model Configured ✓' : 'Configure Model'}
-            </button>
           </div>
         </div>
 
-        {/* System Prompt */}
+      {/* System Prompt Container */}
         <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
-          <div className="flex items-center gap-3 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
             <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-green-900/50' : 'bg-green-100'}`}>
               <Sparkles className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
             </div>
@@ -501,47 +618,30 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
               <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Define your agent's behavior and personality</p>
             </div>
           </div>
+          
+          <button
+            onClick={handlePromptConfiguration}
+            disabled={isLoadingPrompt || !isEditing}
+            className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base ${isLoadingPrompt || !isEditing
+              ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+              : isPromptConfigured
+                ? 'bg-green-600 text-white hover:bg-green-700 transform hover:scale-105'
+                : 'bg-green-600 text-white hover:bg-green-700 transform hover:scale-105'
+              }`}
+          >
+            {isLoadingPrompt ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : isPromptConfigured ? (
+              <CheckCircle className="h-4 w-4" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            <span className="hidden sm:inline">{isLoadingPrompt ? 'Saving...' : isPromptConfigured ? 'Prompt Saved ✓' : 'Save Prompt'}</span>
+            <span className="sm:hidden">{isLoadingPrompt ? 'Saving...' : isPromptConfigured ? 'Saved ✓' : 'Save'}</span>
+          </button>
+          </div>
 
           <div className="space-y-4">
-            <div>
-              <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                First Message
-              </label>
-              <div className="relative">
-                <textarea
-                  value={firstMessage}
-                  onChange={(e) => setFirstMessage(e.target.value)}
-                  disabled={!isEditing}
-                  placeholder="Enter the first message your agent will say..."
-                  rows={3}
-                  className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base resize-none ${!isEditing
-                    ? isDarkMode
-                      ? 'bg-gray-800/30 border-gray-700 text-gray-400 placeholder-gray-500 cursor-not-allowed'
-                      : 'bg-gray-100 border-gray-300 text-gray-500 placeholder-gray-400 cursor-not-allowed'
-                    : isDarkMode
-                      ? 'bg-gray-700/50 border-gray-600 text-gray-200 placeholder-gray-400'
-                      : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-                    }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    // Generate a default first message
-                    setFirstMessage('Thank you for calling Wellness Partners. This is Riley, your scheduling agent. How may I help you today?');
-                  }}
-                  disabled={!isEditing}
-                  className={`absolute top-2 right-2 px-3 py-1 text-xs font-medium rounded-lg transition-all duration-300 ${!isEditing
-                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                    : isDarkMode
-                      ? 'bg-blue-600 text-white hover:bg-blue-700'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
-                >
-                  Generate
-                </button>
-              </div>
-            </div>
-
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 System Prompt
@@ -562,137 +662,8 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
                   }`}
               />
             </div>
-
-            <button
-              onClick={handlePromptConfiguration}
-              disabled={isLoadingPrompt || !isEditing}
-              className={`w-full p-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base ${isLoadingPrompt || !isEditing
-                ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                : isPromptConfigured
-                  ? 'bg-green-600 text-white hover:bg-green-700 transform hover:scale-105'
-                  : 'bg-green-600 text-white hover:bg-green-700 transform hover:scale-105'
-                }`}
-            >
-              {isLoadingPrompt ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : isPromptConfigured ? (
-                <CheckCircle className="h-4 w-4" />
-              ) : (
-                <Sparkles className="h-4 w-4" />
-              )}
-              {isLoadingPrompt ? 'Saving...' : isPromptConfigured ? 'Prompt Saved ✓' : 'Save Prompt'}
-            </button>
           </div>
         </div>
-      </div>
-
-      {/* Current Configuration Display */}
-      <div className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/30 border-gray-700/50' : 'bg-white/30 border-gray-200/50'}`}>
-        <h4 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-          Current Configuration Status
-        </h4>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Model Configuration Status */}
-          <div className={`p-4 rounded-xl border ${isModelConfigured
-            ? isDarkMode ? 'bg-green-900/20 border-green-700/30' : 'bg-green-50 border-green-200'
-            : isDarkMode ? 'bg-red-900/20 border-red-700/30' : 'bg-red-50 border-red-200'
-            }`}>
-            <div className="flex items-center gap-2 mb-3">
-              <CheckCircle className={`h-5 w-5 ${isModelConfigured ? 'text-green-500' : 'text-red-500'}`} />
-              <h5 className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                Model Configuration
-              </h5>
-            </div>
-
-            {isModelConfigured && currentModelConfig ? (
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Provider:</span>
-                  <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {Object.keys(modelProviders).find(key =>
-                      modelProviders[key as keyof typeof modelProviders].apiProvider === currentModelConfig.provider
-                    ) || currentModelConfig.provider}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Model:</span>
-                  <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {currentModelConfig.model}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                No model configuration found
-              </p>
-            )}
-          </div>
-
-          {/* Prompt Configuration Status */}
-          <div className={`p-4 rounded-xl border ${isPromptConfigured
-            ? isDarkMode ? 'bg-green-900/20 border-green-700/30' : 'bg-green-50 border-green-200'
-            : isDarkMode ? 'bg-red-900/20 border-red-700/30' : 'bg-red-50 border-red-200'
-            }`}>
-            <div className="flex items-center gap-2 mb-3">
-              <CheckCircle className={`h-5 w-5 ${isPromptConfigured ? 'text-green-500' : 'text-red-500'}`} />
-              <h5 className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                System Prompt
-              </h5>
-            </div>
-
-            {isPromptConfigured && currentPromptConfig ? (
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Status:</span>
-                  <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                    Configured
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Length:</span>
-                  <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {currentPromptConfig.prompt?.length || 0} characters
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                No system prompt configured
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Status Messages */}
-      {(modelConfigStatus === 'success' || modelConfigStatus === 'error' || promptConfigStatus === 'success' || promptConfigStatus === 'error') && (
-        <div className={`p-4 rounded-xl border ${(modelConfigStatus === 'success' || promptConfigStatus === 'success')
-          ? isDarkMode
-            ? 'bg-green-900/20 border-green-700/50'
-            : 'bg-green-50 border-green-200'
-          : isDarkMode
-            ? 'bg-red-900/20 border-red-700/50'
-            : 'bg-red-50 border-red-200'
-          }`}>
-          <div className="flex items-center gap-3">
-            {(modelConfigStatus === 'success' || promptConfigStatus === 'success') ? (
-              <CheckCircle className={`h-5 w-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
-            ) : (
-              <AlertCircle className={`h-5 w-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`} />
-            )}
-            <span className={`text-sm sm:text-base ${(modelConfigStatus === 'success' || promptConfigStatus === 'success')
-              ? isDarkMode ? 'text-green-300' : 'text-green-800'
-              : isDarkMode ? 'text-red-300' : 'text-red-800'
-              }`}>
-              {modelConfigStatus === 'success' && 'Model configured successfully!'}
-              {promptConfigStatus === 'success' && 'System prompt saved successfully!'}
-              {modelConfigStatus === 'error' && (errorMessage || 'Failed to configure model')}
-              {promptConfigStatus === 'error' && (errorMessage || 'Failed to save system prompt')}
-            </span>
-          </div>
-        </div>
-      )}
     </div>
   );
 });

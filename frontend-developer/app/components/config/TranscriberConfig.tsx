@@ -196,11 +196,28 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
 
   // Notify parent component of configuration changes and save to localStorage
   React.useEffect(() => {
+    // Get the actual API key from environment variables if the state is empty
+    const defaultApiKeys = agentConfigService.getFullApiKeys();
+    
+    let actualApiKey = apiKey;
+    
+    // Use environment variable API key if the state is empty
+    if (!actualApiKey) {
+      switch (selectedTranscriberProvider) {
+        case 'Deepgram':
+          actualApiKey = defaultApiKeys.deepgram || '';
+          break;
+        case 'Whisper':
+          actualApiKey = defaultApiKeys.whisper || '';
+          break;
+      }
+    }
+
     // Convert UI format to backend format
     const backendConfig = {
       provider: selectedTranscriberProvider === 'Deepgram' ? 'deepgram' : 'whisper',
       deepgram: selectedTranscriberProvider === 'Deepgram' ? {
-        api_key: apiKey,
+        api_key: actualApiKey,
         model: selectedModel,
         language: selectedLanguage,
         punctuate: punctuateEnabled,
@@ -208,7 +225,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
         interim_results: interimResultEnabled
       } : null,
       whisper: selectedTranscriberProvider === 'Whisper' ? {
-        api_key: apiKey,
+        api_key: actualApiKey,
         model: selectedModel,
         language: selectedLanguage === 'multi' ? null : selectedLanguage
       } : null
