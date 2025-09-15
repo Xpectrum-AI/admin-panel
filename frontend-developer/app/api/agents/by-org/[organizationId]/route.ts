@@ -15,12 +15,17 @@ export async function GET(
     const organizationId = params.organizationId;
 
     console.log('🔍 Fetching agents for organization:', organizationId);
+    console.log('🔗 NEXT_PUBLIC_LIVE_API_URL:', process.env.NEXT_PUBLIC_LIVE_API_URL);
 
     // Fetch real agents data from backend
-    const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/agents/by-org/${organizationId}`, {
+    const baseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL ;
+    const backendUrl = `${baseUrl}/agents/by-org/${organizationId}`;
+    console.log('🌐 Making backend request to:', backendUrl);
+    
+    const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
-        'x-api-key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
+        'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
         'Content-Type': 'application/json'
       }
     });

@@ -3,10 +3,13 @@
 export interface ModelConfigRequest {
   provider: string;
   model: string;
+  api_key?: string;
+  chatbot_api_key?: string;
 }
 
 export interface PromptConfigRequest {
   prompt: string;
+  chatbot_api_key?: string;
 }
 
 export interface ModelConfigResponse {
@@ -18,8 +21,8 @@ export interface ModelConfigResponse {
 // Get environment variables
 const getEnvironmentVariables = () => {
   return {
-    MODEL_API_BASE_URL: process.env.NEXT_PUBLIC_MODEL_API_BASE_URL || '',
-    MODEL_API_KEY: process.env.NEXT_PUBLIC_MODEL_API_KEY || ''
+    DIFY_BASE_URL: process.env.NEXT_PUBLIC_DIFY_BASE_URL || '',
+    CHATBOT_API_KEY: process.env.NEXT_PUBLIC_CHATBOT_API_KEY || ''
   };
 };
 
@@ -30,18 +33,17 @@ export const modelConfigService = {
       const env = getEnvironmentVariables();
       
       // Validate only when making the API call
-      if (!env.MODEL_API_BASE_URL || !env.MODEL_API_KEY) {
+      if (!env.DIFY_BASE_URL || !env.CHATBOT_API_KEY) {
         throw new Error('Missing required environment variables for model configuration');
       }
 
-      console.log('�� Making API call to live backend for model configuration');
+      console.log('⚙️ Making API call to model configuration endpoint');
 
-      // Use Next.js API proxy to avoid CORS issues
-      const response = await fetch('/api/model/apps/current/model-config', {
+      // Use our new model-config API endpoint
+      const response = await fetch('/api/model-config', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${env.MODEL_API_KEY}`,
         },
         body: JSON.stringify(config),
       });
@@ -73,18 +75,17 @@ export const modelConfigService = {
       const env = getEnvironmentVariables();
       
       // Validate only when making the API call
-      if (!env.MODEL_API_BASE_URL || !env.MODEL_API_KEY) {
+      if (!env.DIFY_BASE_URL || !env.CHATBOT_API_KEY) {
         throw new Error('Missing required environment variables for prompt configuration');
       }
 
-      console.log('�� Making API call to live backend for prompt configuration');
+      console.log('⚙️ Making API call to prompt configuration endpoint');
 
-      // Use Next.js API proxy to avoid CORS issues
-      const response = await fetch('/api/model/apps/current/prompt', {
+      // Use our new prompt-config API endpoint
+      const response = await fetch('/api/prompt-config', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${env.MODEL_API_KEY}`,
         },
         body: JSON.stringify(config),
       });

@@ -3,6 +3,7 @@
 import React, { forwardRef, useState, useEffect } from 'react';
 import { Wrench, CheckCircle, AlertCircle, Loader2, Clock, Volume2, MessageSquare, Timer, Zap, Bot, Settings, RefreshCw } from 'lucide-react';
 import { agentConfigService } from '../../../service/agentConfigService';
+import { difyAgentService } from '../../../service/difyAgentService';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface ToolsConfigProps {
@@ -17,6 +18,7 @@ interface ToolsConfigProps {
   onConfigChange?: (config: any) => void;
   existingConfig?: any;
   currentOrganizationId?: string;
+  selectedAgent?: any;
 }
 
 const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
@@ -29,7 +31,8 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
   isCreating = false,
   existingAgent,
   existingConfig,
-  currentOrganizationId
+  currentOrganizationId,
+  selectedAgent
 }, ref) => {
   const { isDarkMode } = useTheme();
 
@@ -46,6 +49,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
   const [configStatus, setConfigStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [isTestingDify, setIsTestingDify] = useState(false);
 
   // Configuration status from localStorage
   const [localVoiceConfig, setLocalVoiceConfig] = useState<any>(null);
@@ -314,6 +318,53 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
       console.log('Initial voiceConfig:', voiceConfig);
       console.log('Initial transcriberConfig:', transcriberConfig);
 
+      // Step 1: Use pre-generated Dify API key (if available)
+      let difyApiKey = '';
+      
+      // Check if this agent already has a Dify API key from the main creation flow
+      const agentWithKey = selectedAgent || existingAgent;
+      if (agentWithKey?.chatbot_key && agentWithKey.chatbot_key.startsWith('app-')) {
+        difyApiKey = agentWithKey.chatbot_key;
+        console.log('✅ Using pre-generated Dify API key:', difyApiKey.substring(0, 10) + '...');
+        setSuccessMessage('Using pre-generated Dify API key...');
+      } else {
+        // Fallback: Try to create Dify agent if no key exists (for existing agents)
+        const isNewAgentCreation = isCreating && !isEditing;
+        console.log('🔍 Agent creation check:', { isCreating, isEditing, isNewAgentCreation, agentName, hasExistingKey: !!agentWithKey?.chatbot_key });
+        
+        if (isNewAgentCreation) {
+          console.log('🚀 Creating Dify agent for new agent (fallback):', agentName);
+          setSuccessMessage('Creating Dify agent and generating API key...');
+          
+          try {
+            const difyResult = await difyAgentService.createDifyAgent({
+              agentName: agentName,
+              organizationId: currentOrganizationId,
+              modelProvider: 'langgenius/openai/openai',
+              modelName: 'gpt-4o'
+            });
+
+            console.log('📋 Dify result:', difyResult);
+
+            if (!difyResult.success || !difyResult.data?.appKey) {
+              console.error('❌ Dify agent creation failed:', difyResult);
+              console.warn('⚠️ Continuing with fallback API key configuration');
+              setSuccessMessage('Dify agent creation failed, using fallback configuration...');
+            } else {
+              difyApiKey = difyResult.data.appKey;
+              console.log('✅ Dify agent created successfully with API key:', difyApiKey.substring(0, 10) + '...');
+              setSuccessMessage('Dify agent created! Configuring local agent...');
+            }
+          } catch (difyError) {
+            console.error('❌ Dify agent creation error:', difyError);
+            console.warn('⚠️ Continuing with fallback API key configuration');
+            setSuccessMessage('Dify agent creation failed, using fallback configuration...');
+          }
+        } else {
+          console.log('ℹ️ Skipping Dify creation - not a new agent creation and no existing key');
+        }
+      }
+
       // Validate configurations - check both props and localStorage
       const effectiveVoiceConfig = voiceConfig || localVoiceConfig;
       const effectiveModelConfig = modelConfig || localModelConfig;
@@ -449,7 +500,10 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
         typing_volume: typingVolume,
         max_call_duration: maxCallDuration,
         tts_config: ttsConfig,
-        stt_config: sttConfig
+        stt_config: sttConfig,
+        // Use dynamically generated Dify API key if available
+        chatbot_api: difyApiKey ? 'https://d22yt2oewbcglh.cloudfront.net/v1/chat-messages' : undefined,
+        chatbot_key: difyApiKey || undefined
       };
 
       console.log('Complete config to send:', completeConfig);
@@ -459,12 +513,17 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
 
       if (result.success) {
         setConfigStatus('success');
-        setSuccessMessage(isEditing ? `Agent "${agentName}" updated successfully!` : `Agent "${agentName}" created successfully!`);
+        const successMsg = isEditing 
+          ? `Agent "${agentName}" updated successfully!`
+          : difyApiKey 
+            ? `Agent "${agentName}" created successfully with Dify integration! API key generated.`
+            : `Agent "${agentName}" created successfully!`;
+        setSuccessMessage(successMsg);
         setErrorMessage('');
         setTimeout(() => {
           setConfigStatus('idle');
           setSuccessMessage('');
-        }, 3000);
+        }, 5000); // Longer timeout to show the success message
 
         // Call the callback to reset edit mode and refresh agents list
         if (onAgentCreated) {
@@ -494,6 +553,45 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  // Test Dify integration manually
+  const testDifyIntegration = async () => {
+    setIsTestingDify(true);
+    setSuccessMessage('Testing Dify integration...');
+    setErrorMessage('');
+
+    try {
+      console.log('🧪 Testing Dify integration for agent:', agentName);
+      
+      const difyResult = await difyAgentService.createDifyAgent({
+        agentName: `${agentName}_test_${Date.now()}`,
+        organizationId: currentOrganizationId,
+        modelProvider: 'langgenius/openai/openai',
+        modelName: 'gpt-4o'
+      });
+
+      console.log('📋 Dify test result:', difyResult);
+
+      if (difyResult.success && difyResult.data?.appKey) {
+        setSuccessMessage(`✅ Dify integration test successful! Generated API key: ${difyResult.data.appKey.substring(0, 10)}...`);
+        setConfigStatus('success');
+      } else {
+        setErrorMessage(`❌ Dify integration test failed: ${difyResult.error || difyResult.details || 'Unknown error'}`);
+        setConfigStatus('error');
+      }
+    } catch (error) {
+      console.error('❌ Dify test error:', error);
+      setErrorMessage(`❌ Dify integration test error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setConfigStatus('error');
+    } finally {
+      setIsTestingDify(false);
+      setTimeout(() => {
+        setConfigStatus('idle');
+        setSuccessMessage('');
+        setErrorMessage('');
+      }, 5000);
+    }
   };
 
   const parseDuration = (duration: string): number => {
@@ -944,6 +1042,21 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
             </button>
 
             {/* Create/Update Agent Button */}
+            {/* Test Dify Integration Button */}
+            <button
+              onClick={testDifyIntegration}
+              disabled={isTestingDify}
+              className={`group relative px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+              {isTestingDify ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Bot className="h-4 w-4" />
+              )}
+              <span className="font-semibold text-sm">{isTestingDify ? 'Testing...' : 'Test Dify'}</span>
+            </button>
+
             <button
               onClick={handleCreateAgent}
               disabled={isLoading || !isEditing || !(voiceConfig || localVoiceConfig) || !(transcriberConfig || localTranscriberConfig)}
