@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Bot, Settings, Mic, Wrench, BarChart3, MessageSquare, Sparkles, Zap, Activity, Search, RefreshCw, Trash2, ChevronDown } from 'lucide-react';
+import { Bot, Settings, Mic, Wrench, BarChart3, MessageSquare, Sparkles, Zap, Activity, Search, RefreshCw, Trash2, ChevronDown, Loader2 } from 'lucide-react';
 import ModelConfig from './config/ModelConfig';
 import VoiceConfig from './config/VoiceConfig';
 import TranscriberConfig from './config/TranscriberConfig';
 import ToolsConfig from './config/ToolsConfig';
 
 import { agentConfigService } from '../../service/agentConfigService';
+import { difyAgentService } from '../../service/difyAgentService';
 import { useAuthInfo } from '@propelauth/react';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -25,6 +26,7 @@ interface Agent {
   organization_id?: string;
   chatbot_api?: string;
   chatbot_key?: string;
+  modelApiKey?: string;
   tts_config?: any;
   stt_config?: any;
   initial_message?: string;
@@ -85,6 +87,10 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [showAgentPrefixModal, setShowAgentPrefixModal] = useState(false);
   const [agentPrefix, setAgentPrefix] = useState('');
+  const [isCreatingAgent, setIsCreatingAgent] = useState(false);
+  const [deletingAgentId, setDeletingAgentId] = useState<string | null>(null);
+  const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
   const [agentsError, setAgentsError] = useState('');
   const [currentOrganizationId, setCurrentOrganizationId] = useState<string>('');
@@ -93,6 +99,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const loadedOrganizationRef = useRef<string>('');
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isFetchingRef = useRef<boolean>(false);
+  const [generatedDifyApiKey, setGeneratedDifyApiKey] = useState<string>('');
 
   // Configuration state for all components
   const [modelConfig, setModelConfig] = useState<any>(null);
@@ -349,10 +356,11 @@ export default function AgentsTab({ }: AgentsTabProps) {
     // Show agent prefix modal first
     setShowAgentPrefixModal(true);
     setAgentPrefix('');
+    setIsCreatingAgent(false); // Reset loading state when opening modal
   }, []);
 
   // Handle agent prefix submission
-  const handleAgentPrefixSubmit = useCallback(() => {
+  const handleAgentPrefixSubmit = useCallback(async () => {
     if (!agentPrefix.trim()) {
       alert('Please enter an agent prefix');
       return;
@@ -374,6 +382,37 @@ export default function AgentsTab({ }: AgentsTabProps) {
     if (agentPrefix.trim().length > 50) {
       alert('Agent prefix must be less than 50 characters long');
       return;
+    }
+
+    // Start loading state
+    setIsCreatingAgent(true);
+
+    // Create Dify agent and get API key immediately
+    console.log('🚀 Creating Dify agent for new agent:', agentPrefix.trim());
+    let difyApiKey = '';
+    
+    try {
+      const difyResult = await difyAgentService.createDifyAgent({
+        agentName: agentPrefix.trim(),
+        organizationId: currentOrganizationId || organizationName,
+        modelProvider: 'langgenius/openai/openai',
+        modelName: 'gpt-4o'
+      });
+
+      console.log('📋 Dify creation result:', difyResult);
+
+      if (difyResult.success && difyResult.data?.appKey) {
+        difyApiKey = difyResult.data.appKey;
+        setGeneratedDifyApiKey(difyApiKey);
+        console.log('✅ Dify agent created successfully with API key:', difyApiKey.substring(0, 10) + '...');
+        alert(`✅ Dify agent created successfully! API key generated: ${difyApiKey.substring(0, 10)}...`);
+      } else {
+        console.warn('⚠️ Dify agent creation failed, continuing with fallback:', difyResult.error);
+        alert(`⚠️ Dify agent creation failed: ${difyResult.error || 'Unknown error'}. Continuing with fallback configuration.`);
+      }
+    } catch (difyError) {
+      console.error('❌ Dify agent creation error:', difyError);
+      alert(`❌ Dify agent creation error: ${difyError instanceof Error ? difyError.message : 'Unknown error'}. Continuing with fallback configuration.`);
     }
 
     // Create a temporary new agent for configuration
@@ -412,7 +451,11 @@ export default function AgentsTab({ }: AgentsTabProps) {
       provider: 'OpenAI',
       cost: '~$0.15/min',
       latency: '~1050ms',
-      organization_id: orgName 
+      organization_id: orgName,
+      // Include the generated Dify API key if available
+      chatbot_api: difyApiKey ? 'https://d22yt2oewbcglh.cloudfront.net/v1/chat-messages' : undefined,
+      chatbot_key: difyApiKey || undefined,
+      modelApiKey: difyApiKey || undefined  
     };
 
     setSelectedAgent(newAgent);
@@ -426,6 +469,9 @@ export default function AgentsTab({ }: AgentsTabProps) {
     setAgents(prev => [...prev, newAgent]);
 
     console.log('Created new agent with prefix:', agentPrefix.trim());
+    
+    // Reset loading state
+    setIsCreatingAgent(false);
   }, [agentPrefix]);
 
   // Handle selecting an agent (view mode)
@@ -554,13 +600,26 @@ export default function AgentsTab({ }: AgentsTabProps) {
 
   // Function to get agent configuration data for components
   const getAgentConfigData = useCallback((agent: Agent) => {
+    // For new agents (no chatbot_key), return null to indicate no existing configuration
+    if (!agent.chatbot_key) {
+      return {
+        modelConfig: null,
+        voiceConfig: null,
+        transcriberConfig: null,
+        toolsConfig: null
+      };
+    }
+    
     return {
       // Model config data
       modelConfig: {
         firstMessage: agent.initial_message || '',
         systemPrompt: agent.initial_message || '',
         selectedModelProvider: agent.provider || 'OpenAI',
-        selectedModel: agent.model || 'GPT-4o'
+        selectedModel: agent.model || 'GPT-4o',
+        modelApiKey: agent.modelApiKey || agent.chatbot_key || '',
+        modelLiveUrl: agent.chatbot_api || process.env.NEXT_PUBLIC_MODEL_API_BASE_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1',
+        chatbot_key: agent.chatbot_key // Include chatbot_key for proper identification
       },
       // Voice config data - pass the raw backend config directly
       voiceConfig: agent.tts_config || null,
@@ -623,28 +682,68 @@ export default function AgentsTab({ }: AgentsTabProps) {
     console.log('Tools config changed:', config);
   }, []);
 
-  // Handle deleting an agent
-  const handleDeleteAgent = useCallback(async (agent: Agent) => {
-    if (window.confirm(`Are you sure you want to delete agent "${agent.name}"? This action cannot be undone.`)) {
-      try {
-        const result = await agentConfigService.deleteAgent(agent.name, currentOrganizationId);
-        if (result.success) {
-          // Remove agent from local state
-          setAgents(prev => prev.filter(a => a.id !== agent.id));
-          if (selectedAgent?.id === agent.id) {
-            setSelectedAgent(null);
+  // Handle showing delete confirmation
+  const handleDeleteAgent = useCallback((agent: Agent) => {
+    setAgentToDelete(agent);
+    setShowDeleteConfirmation(true);
+  }, []);
+
+  // Handle confirming agent deletion
+  const handleConfirmDelete = useCallback(async () => {
+    if (!agentToDelete) return;
+
+    setDeletingAgentId(agentToDelete.id);
+    setShowDeleteConfirmation(false);
+
+    try {
+      // First, try to delete the Dify agent if it has a chatbot_key
+      if (agentToDelete.chatbot_key) {
+        console.log('🗑️ Deleting Dify agent for:', agentToDelete.name);
+        try {
+          const difyResult = await difyAgentService.deleteDifyAgent({
+            agentName: agentToDelete.name,
+            organizationId: currentOrganizationId,
+            // Note: We don't have the appId stored, but the script can still attempt cleanup
+          });
+          
+          if (difyResult.success) {
+            console.log('✅ Dify agent deleted successfully');
+          } else {
+            console.warn('⚠️ Dify agent deletion failed, continuing with backend deletion:', difyResult.error);
           }
-          console.log(`Agent "${agent.name}" deleted successfully`);
-        } else {
-          console.error('Failed to delete agent:', result.message);
-          alert(`Failed to delete agent: ${result.message}`);
+        } catch (difyError) {
+          console.warn('⚠️ Dify agent deletion error, continuing with backend deletion:', difyError);
         }
-      } catch (error) {
-        console.error('Error deleting agent:', error);
-        alert('Error deleting agent. Please try again.');
       }
+
+      // Delete the agent from the backend
+      const result = await agentConfigService.deleteAgent(agentToDelete.name, currentOrganizationId);
+      if (result.success) {
+        // Remove agent from local state
+        setAgents(prev => prev.filter(a => a.id !== agentToDelete.id));
+        if (selectedAgent?.id === agentToDelete.id) {
+          setSelectedAgent(null);
+        }
+        console.log(`Agent "${agentToDelete.name}" deleted successfully`);
+        alert(`Agent "${agentToDelete.name}" deleted successfully`);
+      } else {
+        console.error('Failed to delete agent:', result.message);
+        alert(`Failed to delete agent: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error deleting agent:', error);
+      alert('Error deleting agent. Please try again.');
+    } finally {
+      setDeletingAgentId(null);
+      setAgentToDelete(null);
     }
-  }, [selectedAgent]);
+  }, [agentToDelete, selectedAgent, currentOrganizationId]);
+
+  // Handle canceling delete
+  const handleCancelDelete = useCallback(() => {
+    setShowDeleteConfirmation(false);
+    setAgentToDelete(null);
+  }, []);
 
   // Function to handle tab clicks and scroll to section
   const handleTabClick = useCallback((tabId: string) => {
@@ -798,7 +897,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
     { id: 'model', label: 'Model', icon: Bot, color: 'from-blue-500 to-purple-600' },
     { id: 'voice', label: 'Voice', icon: Mic, color: 'from-green-500 to-teal-600' },
     { id: 'transcriber', label: 'Transcriber', icon: MessageSquare, color: 'from-orange-500 to-red-600' },
-    { id: 'tools', label: 'Tools', icon: Wrench, color: 'from-gray-600 to-gray-800' },
+    { id: 'tools', label: 'Configurations', icon: Wrench, color: 'from-gray-600 to-gray-800' },
   ], []);
 
   return (
@@ -973,13 +1072,22 @@ export default function AgentsTab({ }: AgentsTabProps) {
                                 e.stopPropagation();
                                 handleDeleteAgent(agent);
                               }}
-                              className={`p-1 sm:p-1.5 lg:p-2 rounded-lg transition-colors ${isDarkMode
-                                ? 'text-red-400 hover:text-red-300 hover:bg-gray-800'
-                                : 'text-red-500 hover:text-red-600 hover:bg-gray-100'
+                              disabled={deletingAgentId === agent.id}
+                              className={`p-1 sm:p-1.5 lg:p-2 rounded-lg transition-colors ${deletingAgentId === agent.id
+                                ? isDarkMode
+                                  ? 'text-gray-600 cursor-not-allowed'
+                                  : 'text-gray-400 cursor-not-allowed'
+                                : isDarkMode
+                                  ? 'text-red-400 hover:text-red-300 hover:bg-gray-800'
+                                  : 'text-red-500 hover:text-red-600 hover:bg-gray-100'
                                 }`}
-                              title="Delete Agent"
+                              title={deletingAgentId === agent.id ? "Deleting agent..." : "Delete Agent"}
                             >
-                              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                              {deletingAgentId === agent.id ? (
+                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                              )}
                             </button>
                           </div>
                         </div>
@@ -1141,6 +1249,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
                           voiceConfig={voiceConfig}
                           transcriberConfig={transcriberConfig}
                           currentOrganizationId={organizationName || currentOrganizationId}
+                          selectedAgent={selectedAgent}
                         />
                       </div>
 
@@ -1201,43 +1310,131 @@ export default function AgentsTab({ }: AgentsTabProps) {
                     value={agentPrefix}
                     onChange={(e) => setAgentPrefix(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && agentPrefix.trim()) {
+                      if (e.key === 'Enter' && agentPrefix.trim() && !isCreatingAgent) {
                         handleAgentPrefixSubmit();
                       }
                     }}
+                    disabled={isCreatingAgent}
                     placeholder="e.g., customer_support, sales_agent, helpdesk"
-                    className={`w-full p-2.5 sm:p-3 rounded-lg sm:rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-xs sm:text-sm ${isDarkMode
-                      ? 'bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-400'
-                      : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                    className={`w-full p-2.5 sm:p-3 rounded-lg sm:rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-xs sm:text-sm ${isCreatingAgent
+                      ? isDarkMode
+                        ? 'bg-gray-800/30 border-gray-700 text-gray-400 placeholder-gray-500 cursor-not-allowed'
+                        : 'bg-gray-100 border-gray-300 text-gray-500 placeholder-gray-400 cursor-not-allowed'
+                      : isDarkMode
+                        ? 'bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-400'
+                        : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
                       }`}
                     autoFocus
                   />
                   <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     Use lowercase letters, numbers, and underscores only
                   </p>
+                  
+                  {/* Loading status message */}
+                  {isCreatingAgent && (
+                    <div className={`mt-3 p-3 rounded-lg border ${isDarkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200'}`}>
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                        <div>
+                          <p className={`text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                            Creating Dify Agent...
+                          </p>
+                          <p className={`text-xs ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+                            Generating API key and setting up your agent. This may take a few moments.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-2 sm:gap-3">
                   <button
-                    onClick={() => setShowAgentPrefixModal(false)}
-                    className={`flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border transition-all duration-300 text-xs sm:text-sm font-medium ${isDarkMode
-                      ? 'border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600'
-                      : 'border-gray-200 bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    onClick={() => {
+                      setShowAgentPrefixModal(false);
+                      setIsCreatingAgent(false); // Reset loading state when closing modal
+                    }}
+                    disabled={isCreatingAgent}
+                    className={`flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border transition-all duration-300 text-xs sm:text-sm font-medium ${isCreatingAgent
+                      ? isDarkMode
+                        ? 'border-gray-700 bg-gray-800 text-gray-500 cursor-not-allowed'
+                        : 'border-gray-300 bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : isDarkMode
+                        ? 'border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        : 'border-gray-200 bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleAgentPrefixSubmit}
-                    disabled={!agentPrefix.trim()}
-                    className={`flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl transition-all duration-300 text-xs sm:text-sm font-medium ${agentPrefix.trim()
-                      ? 'bg-green-600 text-white hover:bg-green-700'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    disabled={!agentPrefix.trim() || isCreatingAgent}
+                    className={`flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl transition-all duration-300 text-xs sm:text-sm font-medium flex items-center justify-center gap-2 ${!agentPrefix.trim() || isCreatingAgent
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-green-600 text-white hover:bg-green-700'
                       }`}
                   >
-                    Create Agent
+                    {isCreatingAgent ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Creating Agent...</span>
+                      </>
+                    ) : (
+                      'Create Agent'
+                    )}
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirmation && agentToDelete && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm p-4">
+            <div className={`p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-2xl max-w-md w-full ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
+              <div className="text-center mb-4 sm:mb-6">
+                <div className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl inline-block mb-3 sm:mb-4 ${isDarkMode ? 'bg-red-900/50' : 'bg-red-100'}`}>
+                  <Trash2 className={`h-6 w-6 sm:h-8 sm:w-8 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`} />
+                </div>
+                <h3 className={`text-lg sm:text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Delete Agent</h3>
+                <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  Are you sure you want to delete agent <span className="font-semibold">"{agentToDelete.name}"</span>? This action cannot be undone.
+                </p>
+              </div>
+
+              <div className="flex gap-2 sm:gap-3">
+                <button
+                  onClick={handleCancelDelete}
+                  disabled={deletingAgentId === agentToDelete?.id}
+                  className={`flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border transition-all duration-300 text-xs sm:text-sm font-medium ${deletingAgentId === agentToDelete?.id
+                    ? isDarkMode
+                      ? 'border-gray-700 bg-gray-800 text-gray-500 cursor-not-allowed'
+                      : 'border-gray-300 bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : isDarkMode
+                      ? 'border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      : 'border-gray-200 bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  disabled={deletingAgentId === agentToDelete?.id}
+                  className={`flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl transition-all duration-300 text-xs sm:text-sm font-medium flex items-center justify-center gap-2 ${deletingAgentId === agentToDelete?.id
+                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                    : 'bg-red-600 text-white hover:bg-red-700'
+                    }`}
+                >
+                  {deletingAgentId === agentToDelete?.id ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    'Delete Agent'
+                  )}
+                </button>
               </div>
             </div>
           </div>
