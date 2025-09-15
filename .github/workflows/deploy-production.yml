@@ -88,6 +88,11 @@ jobs:
         # Voice Provider Voice IDs
         PRODUCTION_CARTESIA_VOICE_ID: ${{ vars.PRODUCTION_CARTESIA_VOICE_ID }}
         PRODUCTION_ELEVEN_LABS_VOICE_ID: ${{ vars.PRODUCTION_ELEVEN_LABS_VOICE_ID }}
+        # Dify Configuration
+        PRODUCTION_DIFY_CONSOLE_ORIGIN: ${{ vars.PRODUCTION_DIFY_CONSOLE_ORIGIN }}
+        PRODUCTION_DIFY_ADMIN_EMAIL: ${{ vars.PRODUCTION_DIFY_ADMIN_EMAIL }}
+        PRODUCTION_DIFY_ADMIN_PASSWORD: ${{ secrets.PRODUCTION_DIFY_ADMIN_PASSWORD }}
+        PRODUCTION_DIFY_WORKSPACE_ID: ${{ vars.PRODUCTION_DIFY_WORKSPACE_ID }}
       run: |
         cd python-cdk-v2
         # Deploy to production environment
