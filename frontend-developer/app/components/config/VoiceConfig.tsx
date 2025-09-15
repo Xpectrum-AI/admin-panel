@@ -308,13 +308,37 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
 
   // Notify parent component of configuration changes and save to localStorage
   React.useEffect(() => {
+    // Get the actual API key from environment variables if the state is empty
+    const defaultApiKeys = agentConfigService.getFullApiKeys();
+    const defaultVoiceIds = agentConfigService.getDefaultVoiceIds();
+    
+    let actualApiKey = apiKey;
+    let actualVoiceId = voiceId;
+    
+    // Use environment variable API key if the state is empty
+    if (!actualApiKey) {
+      switch (selectedVoiceProvider) {
+        case 'OpenAI':
+          actualApiKey = defaultApiKeys.openai || '';
+          break;
+        case '11Labs':
+          actualApiKey = defaultApiKeys.elevenlabs || '';
+          actualVoiceId = defaultVoiceIds.elevenlabs || '';
+          break;
+        case 'Cartesia':
+          actualApiKey = defaultApiKeys.cartesia || '';
+          actualVoiceId = defaultVoiceIds.cartesia || '';
+          break;
+      }
+    }
+
     console.log('🔄 VoiceConfig: Configuration changed, updating parent:', {
       provider: selectedVoiceProvider,
       voice: selectedVoice,
       language: selectedLanguage,
       speed: speedValue,
-      apiKey: maskApiKey(apiKey),
-      voiceId: maskApiKey(voiceId),
+      apiKey: maskApiKey(actualApiKey),
+      voiceId: maskApiKey(actualVoiceId),
       stability,
       similarityBoost
     });
@@ -324,8 +348,8 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
       provider: selectedVoiceProvider === 'Cartesia' ? 'cartesian' :
         selectedVoiceProvider === '11Labs' ? 'elevenlabs' : 'openai',
       cartesian: selectedVoiceProvider === 'Cartesia' ? {
-        voice_id: voiceId,
-        tts_api_key: apiKey,
+        voice_id: actualVoiceId,
+        tts_api_key: actualApiKey,
         model: selectedVoice,
         speed: speedValue,
         language: reverseLanguageMapping[selectedLanguage as keyof typeof reverseLanguageMapping] || 'en'
@@ -333,11 +357,11 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
       openai: selectedVoiceProvider === 'OpenAI' ? {
         voice: selectedVoice,
         speed: speedValue,
-        api_key: apiKey
+        api_key: actualApiKey
       } : null,
       elevenlabs: selectedVoiceProvider === '11Labs' ? {
-        voice_id: voiceId,
-        api_key: apiKey,
+        voice_id: actualVoiceId,
+        api_key: actualApiKey,
         speed: speedValue,
         stability,
         similarity_boost: similarityBoost
