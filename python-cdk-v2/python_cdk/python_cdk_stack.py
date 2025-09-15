@@ -154,6 +154,11 @@ class AdminPanelDeploymentStack(Stack):
                 # Voice Provider Voice IDs
                 "NEXT_PUBLIC_CARTESIA_VOICE_ID": os.environ.get('PRODUCTION_CARTESIA_VOICE_ID' if environment == 'production' else 'DEV_CARTESIA_VOICE_ID', ''),
                 "NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID": os.environ.get('PRODUCTION_ELEVEN_LABS_VOICE_ID' if environment == 'production' else 'DEV_ELEVEN_LABS_VOICE_ID', ''),
+                # Dify Configuration
+                "NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN": os.environ.get('PRODUCTION_DIFY_CONSOLE_ORIGIN' if environment == 'production' else 'DEV_DIFY_CONSOLE_ORIGIN', ''),
+                "NEXT_PUBLIC_DIFY_ADMIN_EMAIL": os.environ.get('PRODUCTION_DIFY_ADMIN_EMAIL' if environment == 'production' else 'DEV_DIFY_ADMIN_EMAIL', ''),
+                "NEXT_PUBLIC_DIFY_ADMIN_PASSWORD": os.environ.get('PRODUCTION_DIFY_ADMIN_PASSWORD' if environment == 'production' else 'DEV_DIFY_ADMIN_PASSWORD', ''),
+                "NEXT_PUBLIC_DIFY_WORKSPACE_ID": os.environ.get('PRODUCTION_DIFY_WORKSPACE_ID' if environment == 'production' else 'DEV_DIFY_WORKSPACE_ID', ''),
             },
             port_mappings=[ecs.PortMapping(container_port=int(config['frontend_port']))]
         )
@@ -172,6 +177,11 @@ class AdminPanelDeploymentStack(Stack):
                 "HOST": "0.0.0.0",
                 "NEXT_PUBLIC_PROPELAUTH_URL": os.environ.get('PRODUCTION_DEVELOPER_PROPELAUTH_URL' if environment == 'production' else 'DEV_DEVELOPER_PROPELAUTH_URL', ''),
                 "NEXT_PUBLIC_PROPELAUTH_API_KEY": os.environ.get('PRODUCTION_DEVELOPER_PROPELAUTH_API_KEY' if environment == 'production' else 'DEV_DEVELOPER_PROPELAUTH_API_KEY', ''),
+                # Dify Configuration
+                "NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN": os.environ.get('PRODUCTION_DIFY_CONSOLE_ORIGIN' if environment == 'production' else 'DEV_DIFY_CONSOLE_ORIGIN', ''),
+                "NEXT_PUBLIC_DIFY_ADMIN_EMAIL": os.environ.get('PRODUCTION_DIFY_ADMIN_EMAIL' if environment == 'production' else 'DEV_DIFY_ADMIN_EMAIL', ''),
+                "NEXT_PUBLIC_DIFY_ADMIN_PASSWORD": os.environ.get('PRODUCTION_DIFY_ADMIN_PASSWORD' if environment == 'production' else 'DEV_DIFY_ADMIN_PASSWORD', ''),
+                "NEXT_PUBLIC_DIFY_WORKSPACE_ID": os.environ.get('PRODUCTION_DIFY_WORKSPACE_ID' if environment == 'production' else 'DEV_DIFY_WORKSPACE_ID', ''),
             },
             port_mappings=[ecs.PortMapping(container_port=int(config['frontend_developer_port']))]
         )
