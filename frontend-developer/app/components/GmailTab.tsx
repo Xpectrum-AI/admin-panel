@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Mail,
   Settings,
@@ -28,28 +28,46 @@ import {
   Users,
   Calendar,
   Tag,
-  MessageCircle
+  MessageCircle,
+  Edit,
+  Loader2
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { GmailService, GmailAccount, GmailMessage, GmailAssignment, AgentMappingsResponse, AgentMapping, ConversationMappingsResponse, ConversationMapping, WebhookTestRequest, WebhookTestResponse } from '../../service/gmailService';
+import { getAgentsByOrganization } from '../../service/phoneNumberService';
+import { useOrganizationId, isAssigned } from './utils/phoneNumberUtils';
+import { Agent, ApiResponse } from './types/phoneNumbers';
 
 interface GmailTabProps { }
 
 export default function GmailTab({ }: GmailTabProps) {
   const { isDarkMode } = useTheme();
-  const [activeTab, setActiveTab] = useState<'configuration' | 'analytics' | 'conversations' | 'webhook'>('conversations');
+  const getOrganizationId = useOrganizationId();
+
+  const [activeTab, setActiveTab] = useState<'configuration' | 'analytics' | 'webhook'>('configuration');
   const [selectedAccount, setSelectedAccount] = useState<AgentMapping | null>(null);
   const [agentMappings, setAgentMappings] = useState<AgentMappingsResponse | null>(null);
-  const [conversationMappings, setConversationMappings] = useState<ConversationMappingsResponse | null>(null);
-  const [availableAgents, setAvailableAgents] = useState<Array<{ id: string, name: string, status: string }>>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingAgents, setLoadingAgents] = useState(false);
   const [showCreateMappingModal, setShowCreateMappingModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Form state for creating new agent mapping
   const [newMapping, setNewMapping] = useState({
     emailAddress: '',
     description: ''
   });
+
+  // Agent assignment state
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [assigningAgent, setAssigningAgent] = useState('');
+  const [assigningEmail, setAssigningEmail] = useState('');
+  const [editingMapping, setEditingMapping] = useState<AgentMapping | null>(null);
+  const [assigning, setAssigning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   // Webhook conversations state
   const [webhookConversations, setWebhookConversations] = useState<WebhookTestResponse | null>(null);
@@ -68,19 +86,14 @@ export default function GmailTab({ }: GmailTabProps) {
   // Load data on component mount
   useEffect(() => {
     loadData();
+    loadAgents();
   }, []);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [mappingsData, conversationMappingsData, agentsData] = await Promise.all([
-        GmailService.getGmailAccounts(),
-        GmailService.getConversationMappings(),
-        GmailService.getAvailableAgents()
-      ]);
+      const mappingsData = await GmailService.getGmailAccounts();
       setAgentMappings(mappingsData);
-      setConversationMappings(conversationMappingsData);
-      setAvailableAgents(agentsData);
 
       if (mappingsData.mappings.length > 0) {
         setSelectedAccount(mappingsData.mappings[0]);
@@ -92,9 +105,158 @@ export default function GmailTab({ }: GmailTabProps) {
     }
   };
 
+  const loadAgents = useCallback(async () => {
+    setLoadingAgents(true);
+    try {
+      const orgId = getOrganizationId();
+
+      if (!orgId) {
+        setAgents([]);
+        return;
+      }
+
+      const response: ApiResponse<{ agents: Record<string, unknown> }> = await getAgentsByOrganization(orgId);
+
+      if (response.success && response.data) {
+        const agentsData = response.data;
+
+        // Extract agent_prefix from the agents object
+        if (agentsData.agents && typeof agentsData.agents === 'object') {
+          const agentList: Agent[] = Object.keys(agentsData.agents).map(agentPrefix => ({
+            agent_prefix: agentPrefix,
+            name: agentPrefix,
+            organization_id: orgId,
+            ...(agentsData.agents[agentPrefix] as Record<string, unknown>)
+          }));
+
+          setAgents(agentList);
+        } else {
+          setAgents([]);
+        }
+      } else {
+        setAgents([]);
+      }
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      console.error('Error loading agents:', errorMessage);
+      setAgents([]);
+    } finally {
+      setLoadingAgents(false);
+    }
+  }, [getOrganizationId]);
+
   const handleAccountSelect = async (mapping: AgentMapping) => {
     setSelectedAccount(mapping);
   };
+
+  const handleAssignAgent = async () => {
+    if (!assigningEmail.trim()) {
+      setError('Please enter an email address.');
+      return;
+    }
+
+    if (!assigningAgent.trim()) {
+      setError('Please select an agent.');
+      return;
+    }
+
+    setAssigning(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      // Get agent URL and API key from environment variables
+      const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL || '';
+      const apiKey = process.env.NEXT_PUBLIC_AGENT_API_KEY || '';
+
+      await GmailService.createAgentMapping(
+        assigningEmail,
+        agentUrl,
+        apiKey,
+        assigningAgent
+      );
+
+      setSuccess(`Email ${assigningEmail} assigned to agent ${assigningAgent} successfully!`);
+      setShowAssignModal(false);
+      setAssigningEmail('');
+      setAssigningAgent('');
+
+      // Refresh data
+      await loadData();
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError(`Error assigning agent: ${errorMessage}`);
+      console.error('Error assigning agent:', err);
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const handleEditMapping = (mapping: AgentMapping) => {
+    setEditingMapping(mapping);
+    setAssigningAgent(mapping.description);
+    setAssigningEmail(mapping.email_address);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateMapping = async () => {
+    if (!editingMapping) return;
+
+    if (!assigningEmail.trim()) {
+      setError('Please enter an email address.');
+      return;
+    }
+
+    if (!assigningAgent.trim()) {
+      setError('Please select an agent.');
+      return;
+    }
+
+    setAssigning(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      // Get agent URL and API key from environment variables
+      const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL || '';
+      const apiKey = process.env.NEXT_PUBLIC_AGENT_API_KEY || '';
+
+      // For now, we'll create a new mapping (in a real app, you'd have an update endpoint)
+      await GmailService.createAgentMapping(
+        assigningEmail,
+        agentUrl,
+        apiKey,
+        assigningAgent
+      );
+
+      setSuccess(`Email mapping updated successfully!`);
+      setShowEditModal(false);
+      setEditingMapping(null);
+      setAssigningEmail('');
+      setAssigningAgent('');
+
+      // Refresh data
+      await loadData();
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError(`Error updating mapping: ${errorMessage}`);
+      console.error('Error updating mapping:', err);
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const clearMessages = () => {
+    setError(null);
+    setSuccess(null);
+  };
+
+  useEffect(() => {
+    if (error || success) {
+      const timer = setTimeout(clearMessages, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, success]);
 
 
   const handleCreateMapping = async () => {
@@ -189,17 +351,31 @@ export default function GmailTab({ }: GmailTabProps) {
           <nav className="flex flex-wrap sm:flex-nowrap space-x-1 px-3 sm:px-6 lg:px-8 py-2 overflow-x-auto">
 
             <button
-              onClick={() => setActiveTab('conversations')}
-              className={`group relative px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg font-medium text-xs sm:text-sm transition-all duration-300 flex items-center gap-1 sm:gap-2 whitespace-nowrap ${activeTab === 'conversations'
+              onClick={() => setActiveTab('configuration')}
+              className={`group relative px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg font-medium text-xs sm:text-sm transition-all duration-300 flex items-center gap-1 sm:gap-2 whitespace-nowrap ${activeTab === 'configuration'
+                ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
+                : isDarkMode
+                  ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+            >
+              <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Configuration</span>
+              <span className="sm:hidden">Config</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`group relative px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg font-medium text-xs sm:text-sm transition-all duration-300 flex items-center gap-1 sm:gap-2 whitespace-nowrap ${activeTab === 'analytics'
                 ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg'
                 : isDarkMode
                   ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
             >
-              <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Conversations</span>
-              <span className="sm:hidden">Chats</span>
+              <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Analytics</span>
+              <span className="sm:hidden">Stats</span>
             </button>
 
             <button
@@ -224,58 +400,109 @@ export default function GmailTab({ }: GmailTabProps) {
           {/* Sidebar - Gmail Accounts */}
           <div className={`w-full lg:w-80 border-r ${isDarkMode ? 'border-gray-700/50 bg-gray-800' : 'border-gray-200 bg-gray-50'}`}>
             <div className="p-3 sm:p-4">
-              <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <h3 className={`text-sm sm:text-base font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Agent Mappings
-                </h3>
+              {/* Header with Search and Assign Button */}
+              <div className="space-y-4 mb-4">
+                <div className="flex items-center justify-between">
+                  <h3 className={`text-sm sm:text-base font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    Agent Mappings
+                  </h3>
+                  <button
+                    onClick={() => setShowCreateMappingModal(true)}
+                    className={`p-1.5 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'}`}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {/* Search Bar */}
+                <div className="relative group">
+                  <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 transition-colors ${isDarkMode ? 'text-gray-500 group-focus-within:text-blue-400' : 'text-gray-400 group-focus-within:text-blue-500'}`} />
+                  <input
+                    type="text"
+                    placeholder="Search email addresses..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    aria-label="Search email addresses"
+                    className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 text-sm ${isDarkMode ? 'border-gray-600 bg-gray-700/80 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'}`}
+                  />
+                </div>
+
+                {/* Assign Agent Button */}
                 <button
-                  onClick={() => setShowCreateMappingModal(true)}
-                  className={`p-1.5 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'}`}
+                  onClick={() => {
+                    setAssigningAgent('');
+                    setAssigningEmail('');
+                    setShowAssignModal(true);
+                  }}
+                  className="group relative w-full px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                 >
                   <Plus className="h-4 w-4" />
+                  <span className="text-sm font-semibold">Assign Agent</span>
                 </button>
               </div>
 
+              {/* Error/Success Messages */}
+              {error && (
+                <div className="p-3 mb-4 rounded-lg bg-red-500/20 text-red-200 flex items-center gap-2 text-sm">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  <p>{error}</p>
+                </div>
+              )}
+
+              {success && (
+                <div className="p-3 mb-4 rounded-lg bg-green-500/20 text-green-200 flex items-center gap-2 text-sm">
+                  <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                  <p>{success}</p>
+                </div>
+              )}
+
+              {/* Agent Mappings List */}
               <div className="space-y-2">
-                {agentMappings?.mappings.map((mapping, index) => (
-                  <div
-                    key={mapping.email_address}
-                    onClick={() => handleAccountSelect(mapping)}
-                    className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${selectedAccount?.email_address === mapping.email_address
-                      ? isDarkMode
-                        ? 'bg-red-500/20 border border-red-500/30'
-                        : 'bg-red-50 border border-red-200'
-                      : isDarkMode
-                        ? 'hover:bg-gray-700/50'
-                        : 'hover:bg-gray-100'
-                      }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                        <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                          {mapping.description.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </span>
+                {agentMappings?.mappings
+                  .filter(mapping =>
+                    !searchTerm ||
+                    mapping.email_address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    mapping.description.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map((mapping, index) => (
+                    <div
+                      key={mapping.email_address}
+                      onClick={() => handleAccountSelect(mapping)}
+                      className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${selectedAccount?.email_address === mapping.email_address
+                        ? isDarkMode
+                          ? 'bg-red-500/20 border border-red-500/30'
+                          : 'bg-red-50 border border-red-200'
+                        : isDarkMode
+                          ? 'hover:bg-gray-700/50'
+                          : 'hover:bg-gray-100'
+                        }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                          <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                            {mapping.description.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className={`text-xs text-green-500`}>
+                            active
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <span className={`text-xs text-green-500`}>
-                          active
+                      <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
+                        {mapping.email_address}
+                      </p>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className={isDarkMode ? 'text-gray-500' : 'text-gray-500'}>
+                          Agent URL: {mapping.agent_url.split('/').pop()}
+                        </span>
+                        <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {new Date(mapping.updated_at).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
-                    <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
-                      {mapping.email_address}
-                    </p>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className={isDarkMode ? 'text-gray-500' : 'text-gray-500'}>
-                        Agent URL: {mapping.agent_url.split('/').pop()}
-                      </span>
-                      <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                        {new Date(mapping.updated_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
           </div>
@@ -286,17 +513,153 @@ export default function GmailTab({ }: GmailTabProps) {
 
 
 
-            {activeTab === 'conversations' && (
+            {activeTab === 'configuration' && (
+              <div className="flex-1 p-3 sm:p-4">
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      Gmail Agent Assignments
+                    </h3>
+                    <div className="flex items-center gap-3">
+                      <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {agentMappings?.mappings.length || 0} mappings
+                      </div>
+                    </div>
+                  </div>
+
+                  {loading ? (
+                    <div className="flex items-center justify-center h-32">
+                      <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+                      <span className={`ml-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        Loading Gmail mappings...
+                      </span>
+                    </div>
+                  ) : agentMappings?.mappings.length === 0 ? (
+                    <div className={`text-center py-12 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg font-medium mb-2">No Gmail mappings found</p>
+                      <p className="text-sm">Gmail mappings will appear here when they are created.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className={`w-full ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                        <thead className={`sticky top-0 z-10 ${isDarkMode ? 'bg-gray-800 border-b border-gray-700' : 'bg-gray-50 border-b border-gray-200'}`}>
+                          <tr>
+                            <th className="text-left py-4 px-6 font-semibold text-sm">
+                              Email Address
+                            </th>
+                            <th className="text-left py-4 px-6 font-semibold text-sm">
+                              Agent
+                            </th>
+                            <th className="text-left py-4 px-6 font-semibold text-sm">
+                              Status
+                            </th>
+                            <th className="text-left py-4 px-6 font-semibold text-sm">
+                              Last Updated
+                            </th>
+                            <th className="text-left py-4 px-6 font-semibold text-sm">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {agentMappings?.mappings.map((mapping, index) => (
+                            <tr
+                              key={mapping.email_address}
+                              className={`border-b transition-colors duration-200 ${isDarkMode
+                                ? 'border-gray-700 hover:bg-gray-800/50'
+                                : 'border-gray-200 hover:bg-gray-50'
+                                } ${index % 2 === 0 ? (isDarkMode ? 'bg-gray-900/30' : 'bg-white') : (isDarkMode ? 'bg-gray-800/30' : 'bg-gray-50/50')}`}
+                            >
+                              {/* Email Address Column */}
+                              <td className="py-4 px-6">
+                                <div className="flex items-center gap-2">
+                                  <Mail className={`h-4 w-4 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`} />
+                                  <div>
+                                    <div className="font-medium text-sm">
+                                      {mapping.email_address}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Agent Column */}
+                              <td className="py-4 px-6">
+                                <div className="flex items-center gap-2">
+                                  <User className={`h-4 w-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                                  <span className="text-sm">
+                                    {mapping.description.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                  </span>
+                                  <CheckCircle className={`h-4 w-4 ${isDarkMode ? 'text-green-400' : 'text-green-500'}`} />
+                                </div>
+                              </td>
+
+                              {/* Status Column */}
+                              <td className="py-4 px-6">
+                                <span className={`text-xs px-2 py-1 rounded-full ${isDarkMode
+                                  ? 'bg-green-900/30 text-green-400'
+                                  : 'bg-green-100 text-green-700'
+                                  }`}>
+                                  Active
+                                </span>
+                              </td>
+
+                              {/* Last Updated Column */}
+                              <td className="py-4 px-6">
+                                <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                  {new Date(mapping.updated_at).toLocaleDateString()}
+                                </span>
+                              </td>
+
+                              {/* Actions Column */}
+                              <td className="py-4 px-6">
+                                <button
+                                  onClick={() => handleEditMapping(mapping)}
+                                  className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${isDarkMode
+                                    ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
+                                    : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
+                                    }`}
+                                  title="Edit mapping"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'analytics' && (
+              <div className="flex-1 p-3 sm:p-4">
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      Gmail Analytics
+                    </h3>
+                  </div>
+
+                  <div className={`text-center py-12 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">Analytics Coming Soon</p>
+                    <p className="text-sm">Gmail analytics and metrics will be available here.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'webhook' && (
               <div className="flex-1 p-3 sm:p-4">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                      Conversation Mappings
+                      Webhook Test
                     </h3>
                     <div className="flex items-center gap-3">
-                      <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {conversationMappings?.count || 0} conversations
-                      </div>
                       <button
                         onClick={() => setShowWebhookMessageModal(true)}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'}`}
@@ -314,62 +677,6 @@ export default function GmailTab({ }: GmailTabProps) {
                       </button>
                     </div>
                   </div>
-
-                  {loading ? (
-                    <div className="flex items-center justify-center h-32">
-                      <RefreshCw className="h-6 w-6 animate-spin text-gray-500" />
-                    </div>
-                  ) : conversationMappings?.mappings.length === 0 ? (
-                    <div className={`text-center py-12 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p className="text-lg font-medium mb-2">No conversation mappings found</p>
-                      <p className="text-sm">Conversation mappings will appear here when they are created.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {conversationMappings?.mappings.map((mapping, index) => (
-                        <div
-                          key={mapping.id || index}
-                          className={`p-4 rounded-lg border ${isDarkMode
-                            ? 'bg-gray-700/50 border-gray-600'
-                            : 'bg-white border-gray-200'
-                            }`}
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-purple-500/10 rounded-lg">
-                                <MessageCircle className="h-5 w-5 text-purple-500" />
-                              </div>
-                              <div>
-                                <h4 className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                  Conversation {mapping.conversation_id || `#${index + 1}`}
-                                </h4>
-                                <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                  {mapping.email_address || 'No email address'}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className={`text-xs px-2 py-1 rounded-full ${isDarkMode
-                                ? 'bg-green-900/30 text-green-400'
-                                : 'bg-green-100 text-green-700'
-                                }`}>
-                                Active
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className={isDarkMode ? 'text-gray-500' : 'text-gray-500'}>
-                              Created: {mapping.created_at ? new Date(mapping.created_at).toLocaleDateString() : 'Unknown'}
-                            </span>
-                            <span className={isDarkMode ? 'text-gray-500' : 'text-gray-500'}>
-                              Updated: {mapping.updated_at ? new Date(mapping.updated_at).toLocaleDateString() : 'Unknown'}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
 
                   {/* Webhook Conversations Section */}
                   {webhookConversations && (
@@ -668,6 +975,193 @@ export default function GmailTab({ }: GmailTabProps) {
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Agent Assignment Modal */}
+      {showAssignModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowAssignModal(false)}>
+          <div className={`rounded-xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-md' : 'bg-white/95 backdrop-blur-md'}`} onClick={(e) => e.stopPropagation()}>
+            <h3 className={`text-xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+              Assign Agent
+            </h3>
+
+            <p className={`text-sm mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              Select an agent and email address to create a new assignment.
+            </p>
+
+            {error && (
+              <div className="p-3 mb-4 rounded-lg bg-red-500/20 text-red-200 flex items-center gap-2 text-sm">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <p>{error}</p>
+              </div>
+            )}
+
+            {success && (
+              <div className="p-3 mb-4 rounded-lg bg-green-500/20 text-green-200 flex items-center gap-2 text-sm">
+                <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                <p>{success}</p>
+              </div>
+            )}
+
+            <div className="space-y-6">
+              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-blue-900/20 border border-blue-700/30' : 'bg-blue-50 border border-blue-200'}`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <User className={`h-4 w-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                  <label className={`block text-sm font-semibold ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                    Agent
+                  </label>
+                </div>
+                <select
+                  value={assigningAgent}
+                  onChange={(e) => setAssigningAgent(e.target.value)}
+                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-blue-600 bg-gray-700 text-gray-200' : 'border-blue-200 bg-white text-gray-900'}`}
+                  disabled={loadingAgents}
+                >
+                  <option value="">Select an agent</option>
+                  {agents.map((agent, index) => (
+                    <option key={agent.id || agent.name || agent.agent_prefix || `agent-${index}`} value={agent.name || agent.agent_prefix}>
+                      {agent.name || agent.agent_prefix}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-green-900/20 border border-green-700/30' : 'bg-green-50 border border-green-200'}`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Mail className={`h-4 w-4 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+                  <label className={`block text-sm font-semibold ${isDarkMode ? 'text-green-300' : 'text-green-700'}`}>
+                    Email Address
+                  </label>
+                </div>
+                <input
+                  type="email"
+                  value={assigningEmail}
+                  onChange={(e) => setAssigningEmail(e.target.value)}
+                  placeholder="karthik@inbound.xpectrum-ai.com"
+                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-green-600 bg-gray-700 text-gray-200' : 'border-green-200 bg-white text-gray-900'}`}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-8">
+              <button
+                onClick={() => {
+                  setShowAssignModal(false);
+                  setAssigningAgent('');
+                  setAssigningEmail('');
+                  setError(null);
+                  setSuccess(null);
+                }}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                disabled={assigning}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAssignAgent}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                disabled={assigning || !assigningAgent.trim() || !assigningEmail.trim()}
+              >
+                {assigning ? <Loader2 className="h-4 w-4 animate-spin mx-auto mr-2" /> : null}
+                Assign Agent
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Mapping Modal */}
+      {showEditModal && editingMapping && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowEditModal(false)}>
+          <div className={`rounded-xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-md' : 'bg-white/95 backdrop-blur-md'}`} onClick={(e) => e.stopPropagation()}>
+            <h3 className={`text-xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+              Edit Agent Assignment
+            </h3>
+
+            <p className={`text-sm mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              Update the agent assignment for this email address.
+            </p>
+
+            {error && (
+              <div className="p-3 mb-4 rounded-lg bg-red-500/20 text-red-200 flex items-center gap-2 text-sm">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <p>{error}</p>
+              </div>
+            )}
+
+            {success && (
+              <div className="p-3 mb-4 rounded-lg bg-green-500/20 text-green-200 flex items-center gap-2 text-sm">
+                <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                <p>{success}</p>
+              </div>
+            )}
+
+            <div className="space-y-6">
+              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-blue-900/20 border border-blue-700/30' : 'bg-blue-50 border border-blue-200'}`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <User className={`h-4 w-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                  <label className={`block text-sm font-semibold ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                    Agent
+                  </label>
+                </div>
+                <select
+                  value={assigningAgent}
+                  onChange={(e) => setAssigningAgent(e.target.value)}
+                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-blue-600 bg-gray-700 text-gray-200' : 'border-blue-200 bg-white text-gray-900'}`}
+                  disabled={loadingAgents}
+                >
+                  <option value="">Select an agent</option>
+                  {agents.map((agent, index) => (
+                    <option key={agent.id || agent.name || agent.agent_prefix || `agent-${index}`} value={agent.name || agent.agent_prefix}>
+                      {agent.name || agent.agent_prefix}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-green-900/20 border border-green-700/30' : 'bg-green-50 border border-green-200'}`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Mail className={`h-4 w-4 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+                  <label className={`block text-sm font-semibold ${isDarkMode ? 'text-green-300' : 'text-green-700'}`}>
+                    Email Address
+                  </label>
+                </div>
+                <input
+                  type="email"
+                  value={assigningEmail}
+                  onChange={(e) => setAssigningEmail(e.target.value)}
+                  placeholder="karthik@inbound.xpectrum-ai.com"
+                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-green-600 bg-gray-700 text-gray-200' : 'border-green-200 bg-white text-gray-900'}`}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-8">
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingMapping(null);
+                  setAssigningAgent('');
+                  setAssigningEmail('');
+                  setError(null);
+                  setSuccess(null);
+                }}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                disabled={assigning}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateMapping}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                disabled={assigning || !assigningAgent.trim() || !assigningEmail.trim()}
+              >
+                {assigning ? <Loader2 className="h-4 w-4 animate-spin mx-auto mr-2" /> : null}
+                Update Assignment
+              </button>
             </div>
           </div>
         </div>
