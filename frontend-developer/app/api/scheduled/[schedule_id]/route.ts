@@ -5,7 +5,7 @@ import { getCurrentOrganization } from '@/lib/utils/getCurrentOrganization';
 // GET /api/scheduled/[schedule_id] - Get specific scheduled event
 export async function GET(
   request: NextRequest,
-  { params }: { params: { schedule_id: string } }
+  { params }: { params: Promise<{ schedule_id: string }> }
 ) {
   try {
     const authResult = await authenticateApiKey(request);
@@ -13,7 +13,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const scheduleId = params.schedule_id;
+    const { schedule_id } = await params;
+    const scheduleId = schedule_id;
 
     // Get the current organization from the request
     const currentOrg = getCurrentOrganization(request);

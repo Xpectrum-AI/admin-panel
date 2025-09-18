@@ -4,7 +4,7 @@ import { authenticateApiKey } from '@/lib/middleware/auth';
 // GET /api/phone-numbers/organization/[organizationId] - Get phone numbers by organization
 export async function GET(
   request: NextRequest,
-  { params }: { params: { organizationId: string } }
+  { params }: { params: Promise<{ organizationId: string }> }
 ) {
   try {
     const authResult = await authenticateApiKey(request);
@@ -12,7 +12,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { organizationId } = params;
+    const { organizationId } = await params;
 
     if (!organizationId) {
       return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 });

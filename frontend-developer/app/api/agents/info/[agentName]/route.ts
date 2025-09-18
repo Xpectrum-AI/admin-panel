@@ -5,7 +5,7 @@ import { getCurrentOrganization } from '@/lib/utils/getCurrentOrganization';
 // GET /api/agents/info/[agentName] - Get agent information
 export async function GET(
   request: NextRequest,
-  { params }: { params: { agentName: string } }
+  { params }: { params: Promise<{ agentName: string }> }
 ) {
   try {
     const authResult = await authenticateApiKey(request);
@@ -13,7 +13,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const agentName = params.agentName;
+    const { agentName } = await params;
 
     // Get the current organization from the request
     const currentOrg = getCurrentOrganization(request);

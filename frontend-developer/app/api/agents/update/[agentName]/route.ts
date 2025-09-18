@@ -4,7 +4,7 @@ import { authenticateApiKey } from '@/lib/middleware/auth';
 // POST /api/agents/update/[agentName] - Create or update agent
 export async function POST(
   request: NextRequest,
-  { params }: { params: { agentName: string } }
+  { params }: { params: Promise<{ agentName: string }> }
 ) {
   try {
     const authResult = await authenticateApiKey(request);
@@ -12,7 +12,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const agentName = params.agentName;
+    const { agentName } = await params;
     const body = await request.json();
     const { 
       organization_id,
