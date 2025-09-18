@@ -97,7 +97,7 @@ export default function PhoneNumbersTab({}: PhoneNumbersTabProps) {
                 >
                   <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
                   <span className="text-sm sm:text-base">
-                    {isSyncing ? 'Syncing...' : 'Sync from Twilio'}
+                    {isSyncing ? 'Syncing...' : 'Sync Phone Numbers'}
                   </span>
                 </button>
                 

@@ -64,6 +64,8 @@ export interface GmailMessage {
   threadId: string;
 }
 
+
+
 export interface GmailAssignment {
   id: string;
   emailId: string;
@@ -264,7 +266,7 @@ export class GmailService {
     return data;
   }
 
-  // Create agent mapping
+  // Create agent mapping (original function)
   static async createAgentMapping(
     emailAddress: string,
     agentUrl: string,
@@ -284,43 +286,82 @@ export class GmailService {
     return data;
   }
 
+  // Create agent mapping using curl-style request (query parameters)
+  static async createAgentMappingCurl(
+    emailAddress: string,
+    apiKey: string,
+    description: string
+  ): Promise<{status: string, message: string, timestamp: string}> {
+    const baseUrl = getApiBaseUrl();
+    const liveApiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
+    const chatbotApiKey = apiKey;
+    const agentUrl = process.env.NEXT_PUBLIC_DIFY_BASE_URL;
+    
+    // Create query parameters
+    const params = new URLSearchParams({
+      email_address: emailAddress,
+      agent_url: agentUrl || '',
+      api_key: chatbotApiKey,
+      description: description
+    });
+    
+    const url = `${baseUrl}/mail/agent-mapping?${params.toString()}`;
+    
+    console.log('🚀 Creating Gmail agent mapping (curl-style):', {
+      emailAddress,
+      agentUrl,
+      description,
+      usingChatbotApiKey: chatbotApiKey.substring(0, 10) + '...',
+      fullUrl: url
+    });
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'x-api-key': liveApiKey,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🚨 Gmail agent mapping error response:', response.status, errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}: ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Gmail agent mapping created successfully:', {
+        status: data.status,
+        message: data.message,
+        timestamp: data.timestamp,
+        fullResponse: data
+      });
+      return data;
+    } catch (error) {
+      console.error('❌ Failed to create Gmail agent mapping:', error);
+      throw error;
+    }
+  }
+
   // Get conversation mappings
   static async getConversationMappings(): Promise<ConversationMappingsResponse> {
     const data = await makeApiRequest('/mail/conversation-mappings');
     return data;
   }
 
+  // Get conversations via webhook
   static async getConversationsViaWebhook(): Promise<WebhookTestResponse> {
-    // Use webhook endpoint to fetch conversation data
-    const formData = new FormData();
-    formData.append('from', 'system@inbound.xpectrum-ai.com');
-    formData.append('to', 'admin@inbound.xpectrum-ai.com');
-    formData.append('subject', 'Fetch Conversations');
-    formData.append('email', 'Request to fetch all conversations');
-
-    const data = await makeApiRequest('/mail/webhook', {
-      method: 'POST',
-      body: formData,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+    const data = await makeApiRequest('/mail/webhook/conversations', {
+      method: 'GET'
     });
     return data;
   }
 
-  static async sendMessageViaWebhook(webhookData: WebhookTestRequest): Promise<WebhookTestResponse> {
-    const formData = new FormData();
-    formData.append('from', webhookData.from);
-    formData.append('to', webhookData.to);
-    formData.append('subject', webhookData.subject);
-    formData.append('email', webhookData.email);
-
-    const data = await makeApiRequest('/mail/webhook', {
+  // Send message via webhook
+  static async sendMessageViaWebhook(message: WebhookTestRequest): Promise<WebhookTestResponse> {
+    const data = await makeApiRequest('/mail/webhook/send', {
       method: 'POST',
-      body: formData,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      body: JSON.stringify(message)
     });
     return data;
   }

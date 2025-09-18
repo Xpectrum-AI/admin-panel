@@ -20,52 +20,21 @@ describe('WhatsAppTab', () => {
     it('renders the WhatsApp tab with default props', () => {
       render(<WhatsAppTab />);
 
-      expect(screen.getByText('WhatsApp Business Platform')).toBeInTheDocument();
-      expect(screen.getByText('Conversational AI messaging with Dify integration')).toBeInTheDocument();
+      expect(screen.getByText('WhatsApp Configuration')).toBeInTheDocument();
+      expect(screen.getByText('Manage your WhatsApp messaging services')).toBeInTheDocument();
     });
 
     it('renders with dark mode styling', () => {
       render(<WhatsAppTab />);
 
       // Check that the component renders without errors
-      expect(screen.getByText('WhatsApp Business Platform')).toBeInTheDocument();
+      expect(screen.getByText('WhatsApp Configuration')).toBeInTheDocument();
     });
 
-    it('shows the new conversation button', () => {
+    it('shows the assign agent button', () => {
       render(<WhatsAppTab />);
 
-      expect(screen.getByText('New Conversation')).toBeInTheDocument();
-    });
-  });
-
-  describe('Tab Navigation', () => {
-    it('renders conversations, configuration, analytics, and health tabs', () => {
-      render(<WhatsAppTab />);
-
-      expect(screen.getByText('Conversations')).toBeInTheDocument();
-      expect(screen.getByText('Configuration')).toBeInTheDocument();
-      expect(screen.getByText('Analytics')).toBeInTheDocument();
-      expect(screen.getByText('System Health')).toBeInTheDocument();
-    });
-
-    it('shows conversations tab as active by default', () => {
-      render(<WhatsAppTab />);
-
-      const conversationsTab = screen.getByText('Conversations');
-      expect(conversationsTab).toBeInTheDocument();
-    });
-
-    it('allows switching between tabs', async () => {
-      render(<WhatsAppTab />);
-
-      const configurationTab = screen.getByText('Configuration');
-      await user.click(configurationTab);
-
-      // All tabs should still be visible
-      expect(screen.getByText('Conversations')).toBeInTheDocument();
-      expect(screen.getByText('Configuration')).toBeInTheDocument();
-      expect(screen.getByText('Analytics')).toBeInTheDocument();
-      expect(screen.getByText('System Health')).toBeInTheDocument();
+      expect(screen.getByText('+ Assign Agent')).toBeInTheDocument();
     });
   });
 
@@ -74,7 +43,7 @@ describe('WhatsAppTab', () => {
       render(<WhatsAppTab />);
 
       // The search input should be present
-      const searchInput = screen.getAllByRole('textbox')[0];
+      const searchInput = screen.getByPlaceholderText('Search phone numbers...');
       expect(searchInput).toBeInTheDocument();
     });
   });
@@ -83,7 +52,7 @@ describe('WhatsAppTab', () => {
     it('renders the component without errors', () => {
       render(<WhatsAppTab />);
 
-      expect(screen.getByText('WhatsApp Business Platform')).toBeInTheDocument();
+      expect(screen.getByText('WhatsApp Configuration')).toBeInTheDocument();
     });
   });
 
@@ -91,7 +60,7 @@ describe('WhatsAppTab', () => {
     it('renders the component without errors', () => {
       render(<WhatsAppTab />);
 
-      expect(screen.getByText('WhatsApp Business Platform')).toBeInTheDocument();
+      expect(screen.getByText('WhatsApp Configuration')).toBeInTheDocument();
     });
   });
 
@@ -99,7 +68,7 @@ describe('WhatsAppTab', () => {
     it('renders the component without errors', () => {
       render(<WhatsAppTab />);
 
-      expect(screen.getByText('WhatsApp Business Platform')).toBeInTheDocument();
+      expect(screen.getByText('WhatsApp Configuration')).toBeInTheDocument();
     });
   });
 });
