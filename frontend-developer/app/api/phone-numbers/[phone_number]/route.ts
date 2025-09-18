@@ -5,7 +5,7 @@ import { getOrganizationFromRequest } from '@/lib/utils/getCurrentOrganization';
 // GET /api/phone-numbers/[phone_number] - Get specific phone number
 export async function GET(
   request: NextRequest,
-  { params }: { params: { phone_number: string } }
+  { params }: { params: Promise<{ phone_number: string }> }
 ) {
   try {
     const authResult = await authenticateApiKey(request);
@@ -13,7 +13,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const phoneNumber = decodeURIComponent(params.phone_number);
+    const { phone_number } = await params;
+    const phoneNumber = decodeURIComponent(phone_number);
 
     console.log('🔍 Fetching phone number from backend:', phoneNumber);
 
