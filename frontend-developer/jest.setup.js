@@ -1,29 +1,29 @@
-import '@testing-library/jest-dom'
+import "@testing-library/jest-dom";
 
 // Set up environment variables for tests
-process.env.NEXT_PUBLIC_PROPELAUTH_URL = 'https://test.propelauth.com'
-process.env.NEXT_PUBLIC_LIVE_API_KEY = 'test-api-key'
+process.env.NEXT_PUBLIC_PROPELAUTH_URL = "https://test.propelauth.com";
+process.env.NEXT_PUBLIC_LIVE_API_KEY = "test-api-key";
 
 // Suppress console errors during tests
-const originalError = console.error
-const originalWarn = console.warn
-const originalLog = console.log
+const originalError = console.error;
+const originalWarn = console.warn;
+const originalLog = console.log;
 
 beforeEach(() => {
   // Suppress all console output during tests for maximum performance
-  jest.spyOn(console, 'error').mockImplementation(() => {})
-  jest.spyOn(console, 'warn').mockImplementation(() => {})
-  jest.spyOn(console, 'log').mockImplementation(() => {})
-  jest.spyOn(console, 'info').mockImplementation(() => {})
-  jest.spyOn(console, 'debug').mockImplementation(() => {})
-})
+  jest.spyOn(console, "error").mockImplementation(() => {});
+  jest.spyOn(console, "warn").mockImplementation(() => {});
+  jest.spyOn(console, "log").mockImplementation(() => {});
+  jest.spyOn(console, "info").mockImplementation(() => {});
+  jest.spyOn(console, "debug").mockImplementation(() => {});
+});
 
 afterEach(() => {
-  jest.restoreAllMocks()
-})
+  jest.restoreAllMocks();
+});
 
 // Mock Next.js router
-jest.mock('next/navigation', () => ({
+jest.mock("next/navigation", () => ({
   useRouter() {
     return {
       push: jest.fn(),
@@ -32,33 +32,33 @@ jest.mock('next/navigation', () => ({
       back: jest.fn(),
       forward: jest.fn(),
       refresh: jest.fn(),
-    }
+    };
   },
   useSearchParams() {
-    return new URLSearchParams()
+    return new URLSearchParams();
   },
   usePathname() {
-    return '/'
+    return "/";
   },
-}))
+}));
 
 // Mock Next.js image component
-jest.mock('next/image', () => ({
+jest.mock("next/image", () => ({
   __esModule: true,
   default: (props) => {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img {...props} />
+    return <img {...props} />;
   },
-}))
+}));
 
 // Mock PropelAuth
-jest.mock('@propelauth/react', () => ({
+jest.mock("@propelauth/react", () => ({
   useAuthInfo: () => ({
     user: {
-      userId: 'test-user-id',
-      email: 'test@example.com',
-      firstName: 'Test',
-      lastName: 'User',
+      userId: "test-user-id",
+      email: "test@example.com",
+      firstName: "Test",
+      lastName: "User",
     },
     isLoggedIn: true,
     loading: false,
@@ -68,19 +68,19 @@ jest.mock('@propelauth/react', () => ({
     redirectToLoginPage: jest.fn(),
     redirectToSignupPage: jest.fn(),
   }),
-}))
+}));
 
 // Global test utilities
 global.ResizeObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),
   disconnect: jest.fn(),
-}))
+}));
 
 // Mock window.matchMedia
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(window, "matchMedia", {
   writable: true,
-  value: jest.fn().mockImplementation(query => ({
+  value: jest.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -90,7 +90,7 @@ Object.defineProperty(window, 'matchMedia', {
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
   })),
-})
+});
 
 // Mock localStorage
 const localStorageMock = {
@@ -98,8 +98,8 @@ const localStorageMock = {
   setItem: jest.fn(),
   removeItem: jest.fn(),
   clear: jest.fn(),
-}
-global.localStorage = localStorageMock
+};
+global.localStorage = localStorageMock;
 
 // Mock fetch globally with proper error handling and fast responses
 global.fetch = jest.fn(() =>
@@ -107,25 +107,24 @@ global.fetch = jest.fn(() =>
     ok: true,
     status: 200,
     json: () => Promise.resolve({ success: true, data: [] }),
-    text: () => Promise.resolve(''),
+    text: () => Promise.resolve(""),
     headers: new Headers(),
-    statusText: 'OK',
+    statusText: "OK",
   })
-)
+);
 
 // Mock setTimeout and setInterval to run immediately for faster tests
-global.setTimeout = jest.fn((callback) => {
-  callback()
-  return 1
-})
+// But only for specific test cases, not globally
+const originalSetTimeout = global.setTimeout;
+const originalSetInterval = global.setInterval;
+const originalClearTimeout = global.clearTimeout;
+const originalClearInterval = global.clearInterval;
 
-global.setInterval = jest.fn((callback) => {
-  callback()
-  return 1
-})
-
-global.clearTimeout = jest.fn()
-global.clearInterval = jest.fn()
+// Store original implementations
+global.originalSetTimeout = originalSetTimeout;
+global.originalSetInterval = originalSetInterval;
+global.originalClearTimeout = originalClearTimeout;
+global.originalClearInterval = originalClearInterval;
 
 // Mock Headers
 global.Headers = jest.fn().mockImplementation(() => ({
@@ -134,13 +133,13 @@ global.Headers = jest.fn().mockImplementation(() => ({
   has: jest.fn(),
   delete: jest.fn(),
   forEach: jest.fn(),
-}))
+}));
 
 // Clean up after each test
 afterEach(() => {
-  jest.clearAllMocks()
+  jest.clearAllMocks();
   // Restore console methods
-  console.error = originalError
-  console.warn = originalWarn
-  console.log = originalLog
-})
+  console.error = originalError;
+  console.warn = originalWarn;
+  console.log = originalLog;
+});
