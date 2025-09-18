@@ -32,6 +32,7 @@ import { useRouter } from 'next/navigation';
 import { AgentsTab, PhoneNumbersTab, SMSTab, WhatsAppTab, GmailTab, OrgSetup } from './components';
 import ChatSidebar from './components/ChatSidebar';
 import { useTheme } from './contexts/ThemeContext';
+import { DashboardService, DashboardStats, OrganizationInfo } from '../service/dashboardService';
 
 // Custom WhatsApp icon component
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -90,6 +91,15 @@ export default function DeveloperDashboard() {
   const [orgs, setOrgs] = useState<any[]>([]);
   const [orgSetupComplete, setOrgSetupComplete] = useState(false);
 
+  // Dashboard statistics state
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
+    totalAgents: 0,
+    totalPhoneNumbers: 0,
+    totalWhatsAppNumbers: 0,
+    totalEmails: 0
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
+
   // Redirect to login if not authenticated (like main frontend)
   useEffect(() => {
     if (!loading && !isLoggedIn) {
@@ -119,6 +129,42 @@ export default function DeveloperDashboard() {
       }
     }
   }, [loading, userClass]);
+
+  // Fetch dashboard statistics when organization is available
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      if (!loading && userClass && orgSetupComplete) {
+        const orgs = userClass.getOrgs?.() || [];
+        if (orgs.length > 0) {
+          const currentOrg = orgs[0]; // Get the first organization
+          console.log('🔍 Current organization:', currentOrg);
+          
+          const organizationInfo: OrganizationInfo = {
+            orgId: currentOrg.orgId,
+            orgName: (currentOrg as any).orgName || (currentOrg as any).name
+          };
+          
+          setStatsLoading(true);
+          try {
+            // First run debug to see what's happening
+            await DashboardService.debugDashboardStats(organizationInfo);
+            
+            // Then get the actual stats
+            const result = await DashboardService.getDashboardStats(organizationInfo);
+            if (result.success && result.data) {
+              setDashboardStats(result.data);
+            }
+          } catch (error) {
+            console.error('Error fetching dashboard stats:', error);
+          } finally {
+            setStatsLoading(false);
+          }
+        }
+      }
+    };
+
+    fetchDashboardStats();
+  }, [loading, userClass, orgSetupComplete]);
 
   // No need for organization choice since each user has only one organization
 
@@ -249,8 +295,10 @@ export default function DeveloperDashboard() {
                   <TrendingUp className={`h-4 w-4 sm:h-5 sm:w-5 transition-colors ${isDarkMode ? 'text-blue-400 group-hover:text-blue-300' : 'text-blue-600 group-hover:text-blue-700'}`} />
                 </div>
                 <div>
-                  <p className={`text-xl sm:text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>12</p>
-                  <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>Active Assistants</p>
+                  <p className={`text-xl sm:text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {statsLoading ? '...' : dashboardStats.totalAgents}
+                  </p>
+                  <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>Total Agents</p>
                 </div>
                 <div className={`mt-4 w-full rounded-full h-2 ${isDarkMode ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
                   <div className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full" style={{ width: '75%' }}></div>
@@ -265,7 +313,9 @@ export default function DeveloperDashboard() {
                   <Activity className={`h-4 w-4 sm:h-5 sm:w-5 transition-colors ${isDarkMode ? 'text-green-400 group-hover:text-green-300' : 'text-green-600 group-hover:text-green-700'}`} />
                 </div>
                 <div>
-                  <p className={`text-xl sm:text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>8</p>
+                  <p className={`text-xl sm:text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {statsLoading ? '...' : dashboardStats.totalPhoneNumbers}
+                  </p>
                   <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-green-300' : 'text-green-600'}`}>Phone Numbers</p>
                 </div>
                 <div className={`mt-4 w-full rounded-full h-2 ${isDarkMode ? 'bg-green-500/20' : 'bg-green-100'}`}>
@@ -276,13 +326,15 @@ export default function DeveloperDashboard() {
               <div className={`group rounded-xl sm:rounded-2xl p-4 sm:p-6 border transition-all duration-300 hover:scale-105 ${isDarkMode ? 'bg-gradient-to-br from-purple-500/10 to-pink-600/10 backdrop-blur-sm border-purple-500/20 hover:border-purple-400/40' : 'bg-white border-purple-200 hover:border-purple-300 shadow-lg hover:shadow-xl'}`}>
                 <div className="flex items-center justify-between mb-3 sm:mb-4">
                   <div className="p-2 sm:p-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg sm:rounded-xl">
-                    <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                    <Globe className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                   </div>
                   <Zap className={`h-4 w-4 sm:h-5 sm:w-5 transition-colors ${isDarkMode ? 'text-purple-400 group-hover:text-purple-300' : 'text-purple-600 group-hover:text-purple-700'}`} />
                 </div>
                 <div>
-                  <p className={`text-xl sm:text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>3</p>
-                  <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-purple-300' : 'text-purple-600'}`}>Active Calls</p>
+                  <p className={`text-xl sm:text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {statsLoading ? '...' : dashboardStats.totalWhatsAppNumbers}
+                  </p>
+                  <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-purple-300' : 'text-purple-600'}`}>WhatsApp Numbers</p>
                 </div>
                 <div className={`mt-4 w-full rounded-full h-2 ${isDarkMode ? 'bg-purple-500/20' : 'bg-purple-100'}`}>
                   <div className="bg-gradient-to-r from-purple-500 to-pink-600 h-2 rounded-full" style={{ width: '45%' }}></div>
@@ -292,13 +344,15 @@ export default function DeveloperDashboard() {
               <div className={`group rounded-xl sm:rounded-2xl p-4 sm:p-6 border transition-all duration-300 hover:scale-105 ${isDarkMode ? 'bg-gradient-to-br from-orange-500/10 to-red-600/10 backdrop-blur-sm border-orange-500/20 hover:border-orange-400/40' : 'bg-white border-orange-200 hover:border-orange-300 shadow-lg hover:shadow-xl'}`}>
                 <div className="flex items-center justify-between mb-3 sm:mb-4">
                   <div className="p-2 sm:p-3 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg sm:rounded-xl">
-                    <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                    <Mail className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                   </div>
                   <Sparkles className={`h-4 w-4 sm:h-5 sm:w-5 transition-colors ${isDarkMode ? 'text-orange-400 group-hover:text-orange-300' : 'text-orange-600 group-hover:text-orange-700'}`} />
                 </div>
                 <div>
-                  <p className={`text-xl sm:text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>1,247</p>
-                  <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-orange-300' : 'text-orange-600'}`}>Total Sessions</p>
+                  <p className={`text-xl sm:text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {statsLoading ? '...' : dashboardStats.totalEmails}
+                  </p>
+                  <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-orange-300' : 'text-orange-600'}`}>Total Emails</p>
                 </div>
                 <div className={`mt-4 w-full rounded-full h-2 ${isDarkMode ? 'bg-orange-500/20' : 'bg-orange-100'}`}>
                   <div className="bg-gradient-to-r from-orange-500 to-red-600 h-2 rounded-full" style={{ width: '85%' }}></div>
@@ -314,21 +368,33 @@ export default function DeveloperDashboard() {
                   Quick Actions
                 </h3>
                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                  <button className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-green-500/20 to-emerald-600/20 border-green-500/30 hover:border-green-400/50' : 'bg-green-50 border-green-200 hover:border-green-300 hover:bg-green-100'}`}>
+                  <button 
+                    onClick={() => handleNavItemClick('Agents')}
+                    className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-green-500/20 to-emerald-600/20 border-green-500/30 hover:border-green-400/50' : 'bg-green-50 border-green-200 hover:border-green-300 hover:bg-green-100'}`}
+                  >
                     <Bot className={`h-5 w-5 sm:h-6 sm:w-6 mb-2 ${isDarkMode ? 'text-green-400 group-hover:text-green-300' : 'text-green-600 group-hover:text-green-700'}`} />
                     <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-green-300' : 'text-green-700'}`}>Create Agent</p>
                   </button>
-                  <button className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-blue-500/20 to-indigo-600/20 border-blue-500/30 hover:border-blue-400/50' : 'bg-blue-50 border-blue-200 hover:border-blue-300 hover:bg-blue-100'}`}>
+                  <button 
+                    onClick={() => handleNavItemClick('Phone Numbers')}
+                    className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-blue-500/20 to-indigo-600/20 border-blue-500/30 hover:border-blue-400/50' : 'bg-blue-50 border-blue-200 hover:border-blue-300 hover:bg-blue-100'}`}
+                  >
                     <Phone className={`h-5 w-5 sm:h-6 sm:w-6 mb-2 ${isDarkMode ? 'text-blue-400 group-hover:text-blue-300' : 'text-blue-600 group-hover:text-blue-700'}`} />
                     <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>Add Phone</p>
                   </button>
-                  <button className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-purple-500/20 to-pink-600/20 border-purple-500/30 hover:border-purple-400/50' : 'bg-purple-50 border-purple-200 hover:border-purple-300 hover:bg-purple-100'}`}>
-                    <BarChart3 className={`h-5 w-5 sm:h-6 sm:w-6 mb-2 ${isDarkMode ? 'text-purple-400 group-hover:text-purple-300' : 'text-purple-600 group-hover:text-purple-700'}`} />
-                    <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-purple-300' : 'text-purple-700'}`}>View Metrics</p>
+                  <button 
+                    onClick={() => handleNavItemClick('WhatsApp')}
+                    className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-purple-500/20 to-pink-600/20 border-purple-500/30 hover:border-purple-400/50' : 'bg-purple-50 border-purple-200 hover:border-purple-300 hover:bg-purple-100'}`}
+                  >
+                    <Globe className={`h-5 w-5 sm:h-6 sm:w-6 mb-2 ${isDarkMode ? 'text-purple-400 group-hover:text-purple-300' : 'text-purple-600 group-hover:text-purple-700'}`} />
+                    <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-purple-300' : 'text-purple-700'}`}>WhatsApp</p>
                   </button>
-                  <button className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-orange-500/20 to-red-600/20 border-orange-500/30 hover:border-orange-400/50' : 'bg-orange-50 border-orange-200 hover:border-orange-300 hover:bg-orange-100'}`}>
-                    <Database className={`h-5 w-5 sm:h-6 sm:w-6 mb-2 ${isDarkMode ? 'text-orange-400 group-hover:text-orange-300' : 'text-orange-600 group-hover:text-orange-700'}`} />
-                    <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-orange-300' : 'text-orange-700'}`}>System Logs</p>
+                  <button 
+                    onClick={() => handleNavItemClick('Gmail')}
+                    className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-orange-500/20 to-red-600/20 border-orange-500/30 hover:border-orange-400/50' : 'bg-orange-50 border-orange-200 hover:border-orange-300 hover:bg-orange-100'}`}
+                  >
+                    <Mail className={`h-5 w-5 sm:h-6 sm:w-6 mb-2 ${isDarkMode ? 'text-orange-400 group-hover:text-orange-300' : 'text-orange-600 group-hover:text-orange-700'}`} />
+                    <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-orange-300' : 'text-orange-700'}`}>Gmail</p>
                   </button>
                 </div>
               </div>
