@@ -33,208 +33,26 @@ export async function POST(request: NextRequest) {
 
     console.log('🚀 Creating Dify agent:', { agentName, organizationId, modelProvider, modelName });
 
-    // Create the script content dynamically based on platform
+    // Determine the correct script path based on the operating system
     const isWindows = process.platform === 'win32';
-    const scriptContent = isWindows ? 
-      // PowerShell version for Windows
-      `# PowerShell script for Dify agent creation
-$ErrorActionPreference = "Stop"
+    const scriptPath = isWindows 
+      ? path.join(process.cwd(), 'scripts', 'create_dify_agent.ps1')
+      : path.join(process.cwd(), 'scripts', 'create_dify_agent.sh');
 
-$CONSOLE_ORIGIN = "https://test.xpectrum-ai.com"
-$ADMIN_EMAIL = "ghosh.ishw@gmail.com"
-$ADMIN_PASSWORD = "Ghosh1@*123"
-$WS_ID = "cd0309e7-6517-4932-8fc8-21c3bc4eb41b"
-$APP_NAME = "${agentName}"
-$MODEL_PROVIDER_FQN = "${modelProvider}"
-$MODEL_NAME = "${modelName}"
-
-function Write-Log {
-    param([string]$Message)
-    $timestamp = Get-Date -Format "HH:mm:ss"
-    Write-Host "[$timestamp] $Message"
-}
-
-Write-Log "login"
-$loginBody = @{
-    email = $ADMIN_EMAIL
-    password = $ADMIN_PASSWORD
-} | ConvertTo-Json
-
-try {
-    # For older PowerShell versions, use -UseBasicParsing instead of -SkipCertificateCheck
-    $loginResponse = Invoke-RestMethod -Uri "$CONSOLE_ORIGIN/console/api/login" -Method POST -Body $loginBody -ContentType "application/json" -UseBasicParsing
-    $TOKEN = $loginResponse.data.access_token
-    if (-not $TOKEN) {
-        throw "Login failed - no token received"
+    // Check if script file exists
+    if (!fs.existsSync(scriptPath)) {
+      throw new Error(`Script file not found: ${scriptPath}`);
     }
-    Write-Log "logged in, workspace=$WS_ID"
-} catch {
-    Write-Error "Login error: $_"
-    exit 1
-}
-
-# Create YAML content
-$yamlContent = @"
-version: "0.3.0"
-kind: "app"
-app:
-  mode: "chat"
-  name: "$APP_NAME"
-  description: "Created via CLI on Dify 1.4"
-model_config:
-  model:
-    provider: "$MODEL_PROVIDER_FQN"
-    name: "$MODEL_NAME"
-  pre_prompt: "You are a helpful assistant."
-  parameters:
-    temperature: 0.3
-"@
-
-$importBody = @{
-    mode = "yaml-content"
-    yaml_content = $yamlContent
-} | ConvertTo-Json
-
-Write-Log "import app"
-try {
-    $headers = @{
-        "Authorization" = "Bearer $TOKEN"
-        "X-Workspace-Id" = $WS_ID
-        "Content-Type" = "application/json"
-    }
-    $importResponse = Invoke-RestMethod -Uri "$CONSOLE_ORIGIN/console/api/apps/imports" -Method POST -Body $importBody -Headers $headers -UseBasicParsing
-    $STATUS = $importResponse.status
-    $APP_ID = $importResponse.app_id
-    
-    if ($STATUS -ne "completed" -or -not $APP_ID) {
-        throw "Import failed - Status: $STATUS, App ID: $APP_ID"
-    }
-    Write-Log "app_id=$APP_ID"
-} catch {
-    Write-Error "Import error: $_"
-    exit 1
-}
-
-Write-Log "create app key"
-$keyBody = @{
-    name = "cli-$(Get-Date -Format 'yyyyMMddHHmmss')"
-} | ConvertTo-Json
-
-try {
-    $keyResponse = Invoke-RestMethod -Uri "$CONSOLE_ORIGIN/console/api/apps/$APP_ID/api-keys" -Method POST -Body $keyBody -Headers $headers -UseBasicParsing
-    $APP_KEY = $keyResponse.token
-    
-    if (-not $APP_KEY) {
-        throw "Failed to create API key"
-    }
-    Write-Log "app_key=$APP_KEY"
-} catch {
-    Write-Error "API key creation error: $_"
-    exit 1
-}
-
-# Output the results in JSON format
-$result = @{
-    success = $true
-    app_id = $APP_ID
-    app_key = $APP_KEY
-    app_name = $APP_NAME
-} | ConvertTo-Json -Compress
-
-Write-Output $result
-` :
-      // Bash version for Linux/Mac
-      `#!/usr/bin/env bash
-set -euo pipefail
-
-CONSOLE_ORIGIN="https://test.xpectrum-ai.com"
-ADMIN_EMAIL="ghosh.ishw@gmail.com"
-ADMIN_PASSWORD="Ghosh1@*123"
-WS_ID="cd0309e7-6517-4932-8fc8-21c3bc4eb41b"
-APP_NAME="${agentName}"
-
-# === defaults (safe for \`set -u\`) ===
-: "\${MODEL_PROVIDER_FQN:=${modelProvider}}"
-: "\${MODEL_NAME:=${modelName}}"
-
-SERVICE_ORIGIN="\${SERVICE_ORIGIN:-}"
-
-command -v curl >/dev/null || { echo "need curl"; exit 1; }
-command -v jq   >/dev/null || { echo "need jq";   exit 1; }
-
-say(){ printf "[%s] %s\\n" "\$(date +%H:%M:%S)" "\$*"; }
-hdr_code(){ awk 'NR==1{print \$2}'; }
-hdr_ct(){ awk 'BEGIN{IGNORECASE=1}/^content-type:/{print \$2}' | tr -d '\\r'; }
-
-say "login"
-RESP=\$(curl -sS -X POST "\$CONSOLE_ORIGIN/console/api/login" \\
-  -H "Content-Type: application/json" \\
-  -d "{\\"email\\":\\"\$ADMIN_EMAIL\\",\\"password\\":\\"\$ADMIN_PASSWORD\\"}")
-TOKEN=\$(echo "\$RESP" | jq -r '.data.access_token // .access_token // .data.token // empty')
-[ -n "\$TOKEN" ] || { echo "login error"; exit 1; }
-AUTH=(-H "Authorization: Bearer \$TOKEN")
-WS_HDR=(-H "X-Workspace-Id: \$WS_ID")
-say "logged in, workspace=\$WS_ID"
-
-# --- DSL: provider 放进 model 且使用 FQN ---
-DSL_A="\$(cat <<YAML
-version: "0.3.0"
-kind: "app"
-app:
-  mode: "chat"
-  name: "\$APP_NAME"
-  description: "Created via CLI on Dify 1.4"
-model_config:
-  model:
-    provider: "\$MODEL_PROVIDER_FQN"
-    name: "\$MODEL_NAME"
-  pre_prompt: "You are a helpful assistant."
-  parameters:
-    temperature: 0.3
-YAML
-)"
-BODY=\$(jq -n --arg mode "yaml-content" --arg yaml "\$DSL_A" '{mode:\$mode,yaml_content:\$yaml}')
-say "import app"
-RESP=\$(curl -sS -X POST "\$CONSOLE_ORIGIN/console/api/apps/imports" \\
-  "\${AUTH[@]}" "\${WS_HDR[@]}" -H "Content-Type: application/json" -d "\$BODY")
-echo "\$RESP" | jq '.'
-STATUS=\$(echo "\$RESP" | jq -r '.status // .data.status // empty')
-APP_ID=\$(echo "\$RESP" | jq -r '.app_id // .data.app_id // empty')
-[ "\$STATUS" = "completed" ] && [ -n "\$APP_ID" ] || { echo "import failed"; exit 1; }
-say "app_id=\$APP_ID"
-
-say "create app key"
-KEY_RESP=\$(curl -sS -X POST "\$CONSOLE_ORIGIN/console/api/apps/\$APP_ID/api-keys" \\
-  "\${AUTH[@]}" "\${WS_HDR[@]}" -H "Content-Type: application/json" \\
-  -d "{\\"name\\":\\"cli-\$(date +%s)\\"}")
-echo "\$KEY_RESP" | jq '.'
-APP_KEY=\$(echo "\$KEY_RESP" | jq -r '.data.api_key // .data.key // .key // .token // empty')
-[ -n "\$APP_KEY" ] || { echo "failed to create api key"; exit 1; }
-say "app_key=\$APP_KEY"
-
-# Output the results in JSON format for easy parsing
-echo "{\\"success\\": true, \\"app_id\\": \\"\$APP_ID\\", \\"app_key\\": \\"\$APP_KEY\\", \\"app_name\\": \\"\$APP_NAME\\"}"
-`;
-
-    // Create a temporary script file
-    const tempDir = path.join(process.cwd(), 'temp');
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
-
-    const scriptExtension = isWindows ? '.ps1' : '.sh';
-    const scriptPath = path.join(tempDir, `create_dify_agent_${Date.now()}${scriptExtension}`);
-    fs.writeFileSync(scriptPath, scriptContent, { mode: 0o755 });
 
     try {
       // Execute the script
       console.log('🔧 Executing Dify agent creation script...');
       console.log('📁 Script path:', scriptPath);
-      console.log('📝 Script content preview:', scriptContent.substring(0, 200) + '...');
       
       // Determine the correct command based on the operating system
-      const isWindows = process.platform === 'win32';
-      const command = isWindows ? `powershell -ExecutionPolicy Bypass -File "${scriptPath}"` : `bash "${scriptPath}"`;
+      const command = isWindows 
+        ? `powershell -ExecutionPolicy Bypass -File "${scriptPath}" -AgentName "${agentName}" -ModelProvider "${modelProvider}" -ModelName "${modelName}"`
+        : `bash "${scriptPath}" "${agentName}" "${modelProvider}" "${modelName}"`;
       
       console.log('🔧 Executing command:', command);
       console.log('🔧 Platform:', process.platform);
@@ -274,11 +92,9 @@ echo "{\\"success\\": true, \\"app_id\\": \\"\$APP_ID\\", \\"app_key\\": \\"\$AP
       console.log('✅ Dify agent created successfully:', {
         appId: result.app_id,
         appName: result.app_name,
-        hasApiKey: !!result.app_key
+        hasApiKey: !!result.app_key,
+        serviceOrigin: result.service_origin
       });
-
-      // Clean up the temporary script file
-      fs.unlinkSync(scriptPath);
 
       return NextResponse.json({
         success: true,
@@ -286,6 +102,7 @@ echo "{\\"success\\": true, \\"app_id\\": \\"\$APP_ID\\", \\"app_key\\": \\"\$AP
           appId: result.app_id,
           appKey: result.app_key,
           appName: result.app_name,
+          serviceOrigin: result.service_origin,
           organizationId,
           modelProvider,
           modelName
@@ -301,11 +118,6 @@ echo "{\\"success\\": true, \\"app_id\\": \\"\$APP_ID\\", \\"app_key\\": \\"\$AP
         signal: (execError as any)?.signal,
         cmd: (execError as any)?.cmd
       });
-      
-      // Clean up the temporary script file
-      if (fs.existsSync(scriptPath)) {
-        fs.unlinkSync(scriptPath);
-      }
 
       return NextResponse.json({
         success: false,
