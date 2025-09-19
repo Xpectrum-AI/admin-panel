@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Bot, Settings, Mic, Wrench, BarChart3, MessageSquare, Sparkles, Zap, Activity, Search, RefreshCw, Trash2, ChevronDown, Loader2, CheckCircle } from 'lucide-react';
+import { Bot, Settings, Mic, Wrench, BarChart3, MessageSquare, Sparkles, Zap, Activity, Search, RefreshCw, Trash2, ChevronDown, Loader2, Code, CheckCircle } from 'lucide-react';
+
 import ModelConfig from './config/ModelConfig';
 import VoiceConfig from './config/VoiceConfig';
 import TranscriberConfig from './config/TranscriberConfig';
 import ToolsConfig from './config/ToolsConfig';
+import WidgetConfig from './config/WidgetConfig';
 
 import { agentConfigService } from '../../service/agentConfigService';
 import { difyAgentService } from '../../service/difyAgentService';
@@ -110,6 +112,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const [modelConfig, setModelConfig] = useState<any>(null);
   const [voiceConfig, setVoiceConfig] = useState<any>(null);
   const [transcriberConfig, setTranscriberConfig] = useState<any>(null);
+  const [widgetConfig, setWidgetConfig] = useState<any>(null);
 
   // Initialize organization ID from user context
   useEffect(() => {
@@ -142,8 +145,9 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const modelSectionRef = useRef<HTMLDivElement>(null);
   const voiceSectionRef = useRef<HTMLDivElement>(null);
   const transcriberSectionRef = useRef<HTMLDivElement>(null);
+  const widgetSectionRef = useRef<HTMLDivElement>(null);
   const toolsSectionRef = useRef<HTMLDivElement>(null);
-  // Removed analysis, advanced, widget section refs
+  // Removed analysis, advanced section refs
 
   // Fetch agents from backend with debouncing and duplicate call prevention
   const fetchAgents = useCallback(async (signal?: AbortSignal) => {
@@ -282,6 +286,14 @@ export default function AgentsTab({ }: AgentsTabProps) {
         const parsedModelConfig = JSON.parse(savedModelConfig);
         setModelConfig(parsedModelConfig);
         console.log('Loaded model config from localStorage:', parsedModelConfig);
+      }
+
+      // Load widget config
+      const savedWidgetConfig = localStorage.getItem('widgetConfigState');
+      if (savedWidgetConfig) {
+        const parsedWidgetConfig = JSON.parse(savedWidgetConfig);
+        setWidgetConfig(parsedWidgetConfig);
+        console.log('Loaded widget config from localStorage:', parsedWidgetConfig);
       }
     } catch (error) {
       console.warn('Failed to load configurations from localStorage:', error);
@@ -850,6 +862,7 @@ Remember: You are the first point of contact for many patients. Your professiona
         modelConfig: null,
         voiceConfig: null,
         transcriberConfig: null,
+        widgetConfig: null,
         toolsConfig: null
       };
     }
@@ -869,6 +882,11 @@ Remember: You are the first point of contact for many patients. Your professiona
       voiceConfig: agent.tts_config || null,
       // Transcriber config data - pass the raw backend config directly
       transcriberConfig: agent.stt_config || null,
+      // Widget config data
+      widgetConfig: {
+        difyApiUrl: agent.chatbot_api ? agent.chatbot_api.replace('/chat-messages', '') : process.env.NEXT_PUBLIC_DIFY_BASE_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1',
+        difyApiKey: agent.chatbot_key || ''
+      },
       // Tools config data
       toolsConfig: {
         initialMessage: agent.initial_message || '',
@@ -919,6 +937,19 @@ Remember: You are the first point of contact for many patients. Your professiona
     }
     // Don't update selectedAgent here to avoid infinite loops
     console.log('Transcriber config changed:', config);
+  }, []);
+
+  const handleWidgetConfigChange = useCallback((config: any) => {
+    setWidgetConfig(config);
+    // Save to localStorage
+    try {
+      localStorage.setItem('widgetConfigState', JSON.stringify(config));
+      console.log('Widget config saved to localStorage:', config);
+    } catch (error) {
+      console.warn('Failed to save widget config to localStorage:', error);
+    }
+    // Don't update selectedAgent here to avoid infinite loops
+    console.log('Widget config changed:', config);
   }, []);
 
   const handleToolsConfigChange = useCallback((config: any) => {
@@ -1020,6 +1051,9 @@ Remember: You are the first point of contact for many patients. Your professiona
           break;
         case 'transcriber':
           transcriberSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          break;
+        case 'widget':
+          widgetSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           break;
         case 'tools':
           toolsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1141,6 +1175,7 @@ Remember: You are the first point of contact for many patients. Your professiona
     { id: 'model', label: 'Model', icon: Bot, color: 'from-blue-500 to-purple-600' },
     { id: 'voice', label: 'Voice', icon: Mic, color: 'from-green-500 to-teal-600' },
     { id: 'transcriber', label: 'Transcriber', icon: MessageSquare, color: 'from-orange-500 to-red-600' },
+    { id: 'widget', label: 'Widget', icon: Code, color: 'from-purple-500 to-pink-600' },
     { id: 'tools', label: 'Configurations', icon: Wrench, color: 'from-gray-600 to-gray-800' },
   ], []);
 
@@ -1462,6 +1497,16 @@ Remember: You are the first point of contact for many patients. Your professiona
                           agentName={selectedAgent?.name || 'default'}
                           onConfigChange={handleTranscriberConfigChange}
                           existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).transcriberConfig : null}
+                          isEditing={isEditing}
+                        />
+                      </div>
+
+                      <div style={{ display: activeConfigTab === 'widget' ? 'block' : 'none' }}>
+                        <WidgetConfig
+                          ref={widgetSectionRef}
+                          agentName={selectedAgent?.name || 'default'}
+                          onConfigChange={handleWidgetConfigChange}
+                          existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).widgetConfig : null}
                           isEditing={isEditing}
                         />
                       </div>
