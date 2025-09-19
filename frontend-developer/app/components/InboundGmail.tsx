@@ -9,10 +9,12 @@ import { getAgentsByOrganization } from '../../service/phoneNumberService';
 import { useOrganizationId } from './utils/phoneNumberUtils';
 
 interface Agent {
-    id: string;
+    id?: string;
     name: string;
     chatbot_key?: string;
     agent_prefix: string;
+    organization_id?: string;
+    api_key?: string;
 }
 
 interface GmailAccountAssignment {
@@ -54,25 +56,27 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
     const loadGmailAccounts = useCallback(async () => {
         setLoadingGmailAccounts(true);
         try {
-            console.log('🚀 Loading Gmail accounts...');
-            const response = await GmailService.getGmailAccounts();
-            console.log('🚀 Gmail accounts API response:', response);
+            console.log('🚀 Loading Gmail accounts from getAgentMappings...');
 
-            if (response.mappings && Array.isArray(response.mappings)) {
+            // Get Gmail accounts from getAgentMappings API
+            const response = await GmailService.getAgentMappings();
+            console.log('🚀 Gmail agent mappings API response:', response);
+
+            if (response && response.mappings && Array.isArray(response.mappings) && response.mappings.length > 0) {
                 const accountsData = response.mappings.map((mapping: AgentMapping) => ({
                     id: mapping.email_address,
                     email: mapping.email_address,
                     name: mapping.description || mapping.email_address,
                     status: 'active' as const,
                     assignedAgent: mapping.agent_url,
-                    lastSync: new Date().toISOString(),
+                    lastSync: mapping.updated_at || mapping.created_at || new Date().toISOString(),
                     messageCount: 0,
                     unreadCount: 0
                 }));
-                console.log('✅ Gmail accounts data:', accountsData);
+                console.log('✅ Gmail accounts data loaded from API:', accountsData);
                 setGmailAccounts(accountsData);
             } else {
-                console.log('❌ Gmail accounts API response failed:', response);
+                console.log('❌ No Gmail accounts found in API response');
                 setGmailAccounts([]);
             }
         } catch (err: unknown) {
@@ -99,23 +103,27 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
             console.log('🚀 Agents API response:', response);
 
             if (response.success && response.data) {
-                // Ensure the data is an array
-                let agentsData = response.data;
-                
-                // Handle different response formats
-                if (!Array.isArray(agentsData)) {
-                    if (agentsData.agents && Array.isArray(agentsData.agents)) {
-                        agentsData = agentsData.agents;
-                    } else if (agentsData.data && Array.isArray(agentsData.data)) {
-                        agentsData = agentsData.data;
-                    } else {
-                        console.log('❌ Agents data is not in expected array format:', agentsData);
-                        agentsData = [];
-                    }
+                const agentsData = response.data;
+
+                // Extract agent_prefix from the agents object
+                if (agentsData.agents && typeof agentsData.agents === 'object') {
+                    const agentList: Agent[] = Object.keys(agentsData.agents).map(agentPrefix => {
+                        const agentData = agentsData.agents[agentPrefix] as Record<string, unknown>;
+                        return {
+                            agent_prefix: agentPrefix,
+                            name: agentPrefix,
+                            organization_id: orgId,
+                            api_key: (agentData.chatbot_key || agentData.api_key || process.env.NEXT_PUBLIC_CHATBOT_API_KEY || '') as string,
+                            ...agentData
+                        };
+                    });
+
+                    console.log('✅ Agents loaded:', agentList);
+                    setAgents(agentList);
+                } else {
+                    console.log('❌ No agents found in response');
+                    setAgents([]);
                 }
-                
-                console.log('✅ Agents loaded:', agentsData);
-                setAgents(agentsData);
             } else {
                 console.log('❌ Agents API response failed:', response);
                 setAgents([]);
@@ -135,6 +143,12 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
         loadGmailAccounts();
         loadAgents();
     }, [loadGmailAccounts, loadAgents]);
+
+    // Debug logging for agents and gmail accounts
+    useEffect(() => {
+        console.log('🔍 Current agents state:', agents);
+        console.log('🔍 Current gmail accounts state:', gmailAccounts);
+    }, [agents, gmailAccounts]);
 
     // Reload data when refreshTrigger changes
     useEffect(() => {
@@ -177,34 +191,43 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
 
     // Assignment functions
     const handleAssignAgent = async () => {
-        if (!selectedAgent || !selectedGmailAccount) return;
+        console.log('🔍 Assign button clicked:', { selectedAgent, selectedGmailAccount, agents });
 
-        const agent = agents.find(a => a.id === selectedAgent);
-        if (!agent) return;
+        if (!selectedAgent || !selectedGmailAccount) {
+            console.log('❌ Missing required fields:', { selectedAgent, selectedGmailAccount });
+            return;
+        }
+
+        const agent = agents.find(a => a.agent_prefix === selectedAgent || a.id === selectedAgent);
+        console.log('🔍 Found agent:', agent);
+
+        if (!agent) {
+            console.log('❌ Agent not found for selectedAgent:', selectedAgent);
+            return;
+        }
 
         setIsAssigning(true);
         try {
-            console.log('🚀 Assigning agent:', { agent, gmailAccount: selectedGmailAccount });
+            console.log('🚀 Assigning agent:', {
+                agent,
+                gmailAccount: selectedGmailAccount,
+                apiKey: agent.api_key ? `${agent.api_key.substring(0, 10)}...` : 'No API key'
+            });
 
-            // TODO: Implement Gmail agent assignment API call
-            const result = { success: true, message: 'Agent assigned successfully' };
+            // Call the actual Gmail service to assign the agent
+            const result = await GmailService.createAgentMappingCurl(
+                selectedGmailAccount,
+                agent.api_key || '',
+                `${agent.name || agent.agent_prefix} Agent`
+            );
 
-            if (result.success) {
-                // Update local state
-                const updatedAssignments = assignments.map(assignment => {
-                    if (assignment.email_address === selectedGmailAccount) {
-                        return {
-                            ...assignment,
-                            agent_name: agent.name,
-                            agent_prefix: agent.agent_prefix,
-                            assigned_at: new Date().toISOString(),
-                            status: 'assigned' as const
-                        };
-                    }
-                    return assignment;
-                });
+            console.log('🔍 API result:', result);
 
-                setAssignments(updatedAssignments);
+            if (result.status === 'success') {
+                // Refresh data after successful assignment
+                await loadGmailAccounts();
+                await loadAgents();
+
                 setShowAssignModal(false);
                 setSelectedAgent('');
                 setSelectedGmailAccount('');
@@ -230,24 +253,13 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
         try {
             console.log('🚀 Unassigning agent for Gmail account:', assignment.email_address);
 
-            // TODO: Implement Gmail agent unassignment API call
-            const result = { success: true, message: 'Agent unassigned successfully' };
+            // Call the actual Gmail service to unassign the agent
+            const result = await GmailService.unassignEmailAgent(assignment.email_address);
 
             if (result.success) {
-                // Update local state
-                const updatedAssignments = assignments.map(assignment => {
-                    if (assignment.id === assignmentId) {
-                        return {
-                            ...assignment,
-                            agent_name: '',
-                            agent_prefix: '',
-                            assigned_at: '',
-                            status: 'unassigned' as const
-                        };
-                    }
-                    return assignment;
-                });
-                setAssignments(updatedAssignments);
+                // Refresh data after successful unassignment
+                await loadGmailAccounts();
+                await loadAgents();
 
                 console.log('✅ Agent unassigned successfully:', result);
             } else {
@@ -267,6 +279,12 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
         setAgentSearchTerm('');
     };
 
+    // Email validation function
+    const isValidEmail = (email: string) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    };
+
     // Filter assignments based on search terms
     const filteredAssignments = assignments.filter(assignment => {
         const matchesSearch = assignment.email_address.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -277,10 +295,10 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
     });
 
     // Check if any agents are assigned in the filtered assignments
-    const hasAssignedAgents = filteredAssignments.some(assignment => 
-        assignment.status === 'assigned' && 
-        assignment.agent_id && 
-        assignment.agent_id !== 'unassigned' && 
+    const hasAssignedAgents = filteredAssignments.some(assignment =>
+        assignment.status === 'assigned' &&
+        assignment.agent_id &&
+        assignment.agent_id !== 'unassigned' &&
         assignment.agent_id !== null
     );
 
@@ -361,7 +379,7 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
                             No Gmail accounts found
                         </p>
                         <p className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                            {searchTerm ? 'Try adjusting your search' : 'No Gmail accounts found for this organization'}
+                            {searchTerm ? 'Try adjusting your search' : 'No Gmail accounts found. Add Gmail accounts to get started.'}
                         </p>
                     </div>
                 ) : (
@@ -392,7 +410,7 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
                                         className={`border-b transition-colors duration-200 ${isDarkMode
                                             ? 'border-gray-700 hover:bg-gray-800/50'
                                             : 'border-gray-200 hover:bg-gray-50'
-                                        } ${index % 2 === 0 ? (isDarkMode ? 'bg-gray-900/30' : 'bg-white') : (isDarkMode ? 'bg-gray-800/30' : 'bg-gray-50/50')}`}
+                                            } ${index % 2 === 0 ? (isDarkMode ? 'bg-gray-900/30' : 'bg-white') : (isDarkMode ? 'bg-gray-800/30' : 'bg-gray-50/50')}`}
                                     >
                                         {/* Email Address Column */}
                                         <td className="py-4 px-6">
@@ -456,8 +474,8 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
                                                     className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${isDarkMode
                                                         ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
                                                         : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
-                                                    }`}
-                                                    title={assignment.status === 'assigned' ? 'Delete agent' : 'Add agent'}
+                                                        }`}
+                                                    title={assignment.status === 'assigned' ? 'Unassign agent' : 'Assign agent'}
                                                 >
                                                     {isUnassigning === assignment.id ? (
                                                         <RefreshCw className="h-4 w-4 animate-spin" />
@@ -504,36 +522,43 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
                                         className={`w-full px-3 py-2 rounded-lg border ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                                     >
                                         <option value="">Select an agent</option>
-                                        {Array.isArray(agents) && agents.map((agent) => (
-                                            <option key={agent.id} value={agent.id}>
-                                                {agent.name} ({agent.agent_prefix})
+                                        {Array.isArray(agents) && agents.length > 0 ? agents.map((agent) => (
+                                            <option key={agent.agent_prefix || agent.id} value={agent.agent_prefix || agent.id}>
+                                                {agent.name || agent.agent_prefix} ({agent.agent_prefix})
                                             </option>
-                                        ))}
+                                        )) : (
+                                            <option value="" disabled>No agents available</option>
+                                        )}
                                     </select>
                                 </div>
 
-                                {/* Gmail Account Selection */}
+                                {/* Gmail Account Manual Entry */}
                                 <div className={`p-4 rounded-lg border ${isDarkMode ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200'}`}>
                                     <div className="flex items-center gap-2 mb-2">
                                         <Mail className={`h-4 w-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
                                         <label className={`text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
-                                            Gmail Account
+                                            Gmail Account Email
                                         </label>
                                     </div>
-                                    <select
+                                    <input
+                                        type="email"
                                         value={selectedGmailAccount}
                                         onChange={(e) => setSelectedGmailAccount(e.target.value)}
-                                        className={`w-full px-3 py-2 rounded-lg border ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                                    >
-                                        <option value="">Select a Gmail account</option>
-                                        {gmailAccounts
-                                            .filter(account => !account.assignedAgent || account.assignedAgent === 'unassigned' || account.assignedAgent === '' || account.assignedAgent === null)
-                                            .map((account, index) => (
-                                                <option key={account.id || `account_${index}`} value={account.email}>
-                                                    {account.email}
-                                                </option>
-                                            ))}
-                                    </select>
+                                        placeholder="Enter Gmail account email address"
+                                        className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${selectedGmailAccount && !isValidEmail(selectedGmailAccount)
+                                            ? isDarkMode
+                                                ? 'bg-gray-700 border-red-500 text-white placeholder-gray-400'
+                                                : 'bg-white border-red-500 text-gray-900 placeholder-gray-500'
+                                            : isDarkMode
+                                                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                                                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                                            }`}
+                                    />
+                                    {selectedGmailAccount && !isValidEmail(selectedGmailAccount) && (
+                                        <p className={`text-xs mt-1 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>
+                                            Please enter a valid email address
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
@@ -549,8 +574,11 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
                                     Cancel
                                 </button>
                                 <button
-                                    onClick={handleAssignAgent}
-                                    disabled={!selectedAgent || !selectedGmailAccount || isAssigning}
+                                    onClick={() => {
+                                        console.log('🔍 Assign button clicked - button handler');
+                                        handleAssignAgent();
+                                    }}
+                                    disabled={!selectedAgent || !selectedGmailAccount || !isValidEmail(selectedGmailAccount) || isAssigning}
                                     className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                                 >
                                     {isAssigning ? (
