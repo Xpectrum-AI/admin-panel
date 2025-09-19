@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Bot, Settings, Mic, Wrench, BarChart3, MessageSquare, Sparkles, Zap, Activity, Search, RefreshCw, Trash2, ChevronDown, Loader2 } from 'lucide-react';
+import { Bot, Settings, Mic, Wrench, BarChart3, MessageSquare, Sparkles, Zap, Activity, Search, RefreshCw, Trash2, ChevronDown, Loader2, CheckCircle } from 'lucide-react';
 import ModelConfig from './config/ModelConfig';
 import VoiceConfig from './config/VoiceConfig';
 import TranscriberConfig from './config/TranscriberConfig';
@@ -27,6 +27,7 @@ interface Agent {
   chatbot_api?: string;
   chatbot_key?: string;
   modelApiKey?: string;
+  systemPrompt?: string;
   tts_config?: any;
   stt_config?: any;
   initial_message?: string;
@@ -86,6 +87,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [showAgentPrefixModal, setShowAgentPrefixModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [agentPrefix, setAgentPrefix] = useState('');
   const [isCreatingAgent, setIsCreatingAgent] = useState(false);
   const [deletingAgentId, setDeletingAgentId] = useState<string | null>(null);
@@ -440,74 +442,279 @@ export default function AgentsTab({ }: AgentsTabProps) {
         difyApiKey = difyResult.data.appKey;
         setGeneratedDifyApiKey(difyApiKey);
         console.log('✅ Dify agent created successfully with API key:', difyApiKey.substring(0, 10) + '...');
-        alert(`✅ Dify agent created successfully! API key generated: ${difyApiKey.substring(0, 10)}...`);
       } else {
         console.warn('⚠️ Dify agent creation failed, continuing with fallback:', difyResult.error);
-        alert(`⚠️ Dify agent creation failed: ${difyResult.error || 'Unknown error'}. Continuing with fallback configuration.`);
       }
     } catch (difyError) {
       console.error('❌ Dify agent creation error:', difyError);
-      alert(`❌ Dify agent creation error: ${difyError instanceof Error ? difyError.message : 'Unknown error'}. Continuing with fallback configuration.`);
     }
 
-    // Create a temporary new agent for configuration
+    // Get organization name
     let orgName = organizationName || 'Unknown Organization';
-    console.log('🔍 Creating agent with organization name:', {
-      currentOrganizationId,
-      organizationName,
-      finalOrgName: orgName,
-      userClass: !!userClass,
-      user: !!user
-    });
-
-    // Always try to get the organization name from userClass to ensure we have the latest value
     if (userClass) {
       const orgs = userClass.getOrgs?.() || [];
-      console.log('🔍 Getting org from userClass at creation time:', orgs);
       if (orgs.length > 0) {
         const org = orgs[0] as any;
         const currentOrgName = org.orgName || org.name || '';
-        console.log('🔍 Current organization name from userClass:', currentOrgName);
         if (currentOrgName) {
           orgName = currentOrgName;
-          // Also update the state for consistency
           setOrganizationName(currentOrgName);
         }
       }
     }
 
-    const newAgent: Agent = {
-      id: agentPrefix.trim(),
-      name: agentPrefix.trim(),
-      status: 'draft',
-      avatar: '🤖',
-      description: 'AI Agent - Ready for configuration',
-      model: 'GPT-4o',
-      provider: 'OpenAI',
-      cost: '~$0.15/min',
-      latency: '~1050ms',
-      organization_id: orgName,
-      // Include the generated Dify API key if available
-      chatbot_api: difyApiKey ? 'https://d22yt2oewbcglh.cloudfront.net/v1/chat-messages' : undefined,
-      chatbot_key: difyApiKey || undefined,
-      modelApiKey: difyApiKey || undefined
+    // Create agent with default configurations
+    const defaultSystemPrompt = `# Appointment Scheduling Agent Prompt
+
+## Identity & Purpose
+You are Riley, an appointment scheduling voice agent for Wellness Partners, a multi-specialty health clinic. Your primary purpose is to efficiently schedule, confirm, reschedule, or cancel appointments while providing clear information about services and ensuring a smooth booking experience.
+
+## Voice & Persona
+### Personality
+- Sound friendly, organized, and efficient
+- Project a helpful and patient demeanor, especially with elderly or confused callers
+- Maintain a warm but professional tone throughout the conversation
+- Convey confidence and competence in managing the scheduling system
+
+### Speech Characteristics
+- Speak clearly and at a moderate pace
+- Use simple, direct language that's easy to understand
+- Avoid medical jargon unless the caller uses it first
+- Be concise but thorough in your responses
+
+## Core Responsibilities
+1. **Appointment Scheduling**: Help callers book new appointments
+2. **Appointment Management**: Confirm, reschedule, or cancel existing appointments
+3. **Service Information**: Provide details about available services and providers
+4. **Calendar Navigation**: Check availability and suggest optimal time slots
+5. **Patient Support**: Address questions about appointments, policies, and procedures
+
+## Key Guidelines
+- Always verify caller identity before accessing appointment information
+- Confirm all appointment details (date, time, provider, service) before finalizing
+- Be proactive in suggesting alternative times if preferred slots are unavailable
+- Maintain patient confidentiality and follow HIPAA guidelines
+- Escalate complex medical questions to appropriate staff members
+- End calls with clear confirmation of next steps
+
+## Service Areas
+- Primary Care
+- Cardiology
+- Dermatology
+- Orthopedics
+- Pediatrics
+- Women's Health
+- Mental Health Services
+
+## Operating Hours
+- Monday-Friday: 8:00 AM - 6:00 PM
+- Saturday: 9:00 AM - 2:00 PM
+- Sunday: Closed
+
+Remember: You are the first point of contact for many patients. Your professionalism and helpfulness directly impact their experience with Wellness Partners.`;
+
+    const defaultConfig = {
+      // Model Configuration
+      modelConfig: {
+        selectedModelProvider: 'OpenAI',
+        selectedModel: 'GPT-4o',
+        modelLiveUrl: process.env.NEXT_PUBLIC_DIFY_BASE_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1',
+        modelApiKey: difyApiKey || process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '',
+        systemPrompt: defaultSystemPrompt
+      },
+      // Voice Configuration
+      voiceConfig: {
+        provider: 'openai' as const,
+        openai: {
+          api_key: process.env.NEXT_PUBLIC_VOICE_OPEN_AI_API_KEY || '',
+          voice: 'alloy',
+          response_format: 'mp3',
+          quality: 'standard',
+          speed: 1.0
+        }
+      },
+      // Transcriber Configuration
+      transcriberConfig: {
+        provider: 'deepgram' as const,
+        deepgram: {
+          api_key: process.env.NEXT_PUBLIC_TRANSCRIBER_DEEPGRAM_API_KEY || '',
+          model: 'nova-2',
+          language: 'en-US',
+          punctuate: true,
+          smart_format: true,
+          interim_results: false
+        }
+      },
+      // Tools Configuration
+      toolsConfig: {
+        initialMessage: 'Hello! How can I help you today?',
+        nudgeText: 'Hello, Are you still there?',
+        nudgeInterval: 15,
+        maxNudges: 3,
+        typingVolume: 0.8,
+        maxCallDuration: 300
+      }
     };
 
-    setSelectedAgent(newAgent);
-    setActiveConfigTab('model'); // Start with model configuration
-    setIsCreating(true);
-    setIsEditing(true);
-    setShowAgentPrefixModal(false);
-    setAgentPrefix('');
+    // Create the complete agent configuration
+    const completeAgentConfig = {
+      organization_id: orgName,
+      initial_message: defaultConfig.toolsConfig.initialMessage,
+      nudge_text: defaultConfig.toolsConfig.nudgeText,
+      nudge_interval: defaultConfig.toolsConfig.nudgeInterval,
+      max_nudges: defaultConfig.toolsConfig.maxNudges,
+      typing_volume: defaultConfig.toolsConfig.typingVolume,
+      max_call_duration: defaultConfig.toolsConfig.maxCallDuration,
+      tts_config: defaultConfig.voiceConfig,
+      stt_config: defaultConfig.transcriberConfig,
+      chatbot_api: difyApiKey ? 'https://d22yt2oewbcglh.cloudfront.net/v1/chat-messages' : undefined,
+      chatbot_key: difyApiKey || undefined,
+      // Add system prompt and model configuration
+      system_prompt: defaultConfig.modelConfig.systemPrompt,
+      model_provider: defaultConfig.modelConfig.selectedModelProvider,
+      model_name: defaultConfig.modelConfig.selectedModel,
+      model_api_key: defaultConfig.modelConfig.modelApiKey,
+      model_live_url: defaultConfig.modelConfig.modelLiveUrl
+    };
 
-    // Add the new agent to the agents list
-    setAgents(prev => [...prev, newAgent]);
+    console.log('🔧 Creating agent with complete configuration:', completeAgentConfig);
 
-    console.log('Created new agent with prefix:', agentPrefix.trim());
+    try {
+      // Create the agent with all default configurations
+      const result = await agentConfigService.configureAgent(agentPrefix.trim(), completeAgentConfig);
+      
+      if (result.success) {
+        console.log('✅ Agent created successfully with default configurations');
+        
+        // Now POST model and prompt configurations to Dify
+        if (difyApiKey) {
+          try {
+            console.log('🔧 Posting model configuration to Dify...');
+            const modelConfigResponse = await fetch('/api/model-config', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                provider: 'langgenius/openai/openai',
+                model: 'gpt-4o',
+                api_key: process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '',
+                chatbot_api_key: difyApiKey
+              })
+            });
+
+            if (modelConfigResponse.ok) {
+              console.log('✅ Model configuration posted to Dify successfully');
+            } else {
+              console.warn('⚠️ Failed to post model configuration to Dify');
+            }
+
+            console.log('🔧 Posting prompt configuration to Dify...');
+            const promptConfigResponse = await fetch('/api/prompt-config', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                prompt: defaultSystemPrompt,
+                chatbot_api_key: difyApiKey
+              })
+            });
+
+            if (promptConfigResponse.ok) {
+              console.log('✅ Prompt configuration posted to Dify successfully');
+              
+              // Save the prompt to localStorage so it can be retrieved later
+              try {
+                const promptData = {
+                  prompt: defaultSystemPrompt,
+                  timestamp: new Date().toISOString()
+                };
+                localStorage.setItem(`difyPrompt_${agentPrefix.trim()}`, JSON.stringify(promptData));
+                console.log('✅ Prompt saved to localStorage for agent:', agentPrefix.trim());
+              } catch (error) {
+                console.warn('⚠️ Failed to save prompt to localStorage:', error);
+              }
+            } else {
+              console.warn('⚠️ Failed to post prompt configuration to Dify');
+            }
+          } catch (configError) {
+            console.error('❌ Error posting configurations to Dify:', configError);
+          }
+        }
+        
+        // Create the agent object for UI
+        const newAgent: Agent = {
+          id: agentPrefix.trim(),
+          name: agentPrefix.trim(),
+          status: 'active',
+          avatar: '🤖',
+          description: 'AI Agent - Ready to use',
+          model: 'GPT-4o',
+          provider: 'OpenAI',
+          cost: '~$0.15/min',
+          latency: '~1050ms',
+          organization_id: orgName,
+          chatbot_api: difyApiKey ? 'https://d22yt2oewbcglh.cloudfront.net/v1/chat-messages' : undefined,
+          chatbot_key: difyApiKey || undefined,
+          modelApiKey: difyApiKey || undefined,
+          systemPrompt: defaultSystemPrompt, // Set initial prompt
+          initial_message: defaultConfig.toolsConfig.initialMessage,
+          nudge_text: defaultConfig.toolsConfig.nudgeText,
+          nudge_interval: defaultConfig.toolsConfig.nudgeInterval,
+          max_nudges: defaultConfig.toolsConfig.maxNudges,
+          typing_volume: defaultConfig.toolsConfig.typingVolume,
+          max_call_duration: defaultConfig.toolsConfig.maxCallDuration,
+          tts_config: defaultConfig.voiceConfig,
+          stt_config: defaultConfig.transcriberConfig
+        };
+
+        // Get the actual prompt from localStorage (saved when posted to Dify)
+        try {
+          const savedPromptData = localStorage.getItem(`difyPrompt_${agentPrefix.trim()}`);
+          if (savedPromptData) {
+            const promptData = JSON.parse(savedPromptData);
+            if (promptData.prompt) {
+              console.log('✅ Actual prompt retrieved from localStorage:', promptData.prompt);
+              // Update the agent's systemPrompt with the actual prompt
+              newAgent.systemPrompt = promptData.prompt;
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Failed to retrieve prompt from localStorage:', error);
+        }
+
+        // Add the new agent to the agents list
+        setAgents(prev => [...prev, newAgent]);
+        setSelectedAgent(newAgent);
+        
+        // Set the configurations for the UI
+        setModelConfig(defaultConfig.modelConfig);
+        setVoiceConfig(defaultConfig.voiceConfig);
+        setTranscriberConfig(defaultConfig.transcriberConfig);
+        
+        // Show success message
+        setShowSuccessModal(true);
+        
+        // Close modal and reset states
+        setShowAgentPrefixModal(false);
+        setAgentPrefix('');
+        setIsCreating(false);
+        setIsEditing(false);
+        setActiveConfigTab('model');
+        
+      } else {
+        console.error('❌ Failed to create agent:', result.message);
+        alert(`❌ Failed to create agent: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('❌ Error creating agent:', error);
+      alert(`❌ Error creating agent: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 
     // Reset loading state
     setIsCreatingAgent(false);
-  }, [agentPrefix]);
+  }, [agentPrefix, currentOrganizationId, organizationName, userClass]);
 
   // Handle selecting an agent (view mode)
   const handleSelectAgent = useCallback((agent: Agent) => {
@@ -957,9 +1164,6 @@ export default function AgentsTab({ }: AgentsTabProps) {
                       AI Agents
                     </h2>
                   </div>
-                  <p className={`text-sm sm:text-base lg:text-lg truncate ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                    Craft and configure intelligent agents for organization: <span className="font-semibold text-green-600">{currentOrganizationId}</span>
-                  </p>
                 </div>
                 {organizationName && (
                   <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
@@ -1459,6 +1663,35 @@ export default function AgentsTab({ }: AgentsTabProps) {
                   ) : (
                     'Delete Agent'
                   )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success Modal */}
+        {showSuccessModal && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm p-4">
+            <div className={`p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-2xl max-w-md w-full ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
+              <div className="text-center mb-4 sm:mb-6">
+                <div className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl inline-block mb-3 sm:mb-4 ${isDarkMode ? 'bg-green-900/50' : 'bg-green-100'}`}>
+                  <CheckCircle className={`h-6 w-6 sm:h-8 sm:w-8 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+                </div>
+                <h3 className={`text-lg sm:text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Success!</h3>
+                <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  Agent was created successfully
+                </p>
+              </div>
+
+              <div className="flex justify-center">
+                <button
+                  onClick={() => setShowSuccessModal(false)}
+                  className={`px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl transition-all duration-300 text-xs sm:text-sm font-medium ${isDarkMode
+                    ? 'bg-green-600 text-white hover:bg-green-700'
+                    : 'bg-green-600 text-white hover:bg-green-700'
+                    }`}
+                >
+                  OK
                 </button>
               </div>
             </div>
