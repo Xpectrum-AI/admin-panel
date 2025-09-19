@@ -1,11 +1,11 @@
 import React from 'react';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, waitFor } from '@testing-library/react';
 import { ErrorProvider, useError } from '@/app/contexts/ErrorContext';
 
 // Test component to use the error context
 const TestComponent = () => {
   const { showError, clearAllErrors } = useError();
-  
+
   return (
     <div>
       <button onClick={() => showError('Test error')} data-testid="show-error">
@@ -33,7 +33,7 @@ describe('ErrorContext', () => {
           <TestComponent />
         </ErrorProvider>
       );
-      
+
       expect(screen.getByTestId('show-error')).toBeInTheDocument();
       expect(screen.getByTestId('show-success')).toBeInTheDocument();
       expect(screen.getByTestId('clear-all-errors')).toBeInTheDocument();
@@ -45,7 +45,7 @@ describe('ErrorContext', () => {
           <TestComponent />
         </ErrorProvider>
       );
-      
+
       expect(screen.getByTestId('show-error')).toBeInTheDocument();
       expect(screen.getByTestId('show-success')).toBeInTheDocument();
       expect(screen.getByTestId('clear-all-errors')).toBeInTheDocument();
@@ -59,14 +59,16 @@ describe('ErrorContext', () => {
           <TestComponent />
         </ErrorProvider>
       );
-      
+
       const showErrorButton = screen.getByTestId('show-error');
-      
+
       await act(async () => {
         showErrorButton.click();
       });
-      
-      expect(screen.getByText('Test error')).toBeInTheDocument();
+
+      await waitFor(() => {
+        expect(screen.getByText('Test error')).toBeInTheDocument();
+      });
     });
 
     it('shows success popup when showError is called with success type', async () => {
@@ -75,14 +77,16 @@ describe('ErrorContext', () => {
           <TestComponent />
         </ErrorProvider>
       );
-      
+
       const showSuccessButton = screen.getByTestId('show-success');
-      
+
       await act(async () => {
         showSuccessButton.click();
       });
-      
-      expect(screen.getByText('Test success')).toBeInTheDocument();
+
+      await waitFor(() => {
+        expect(screen.getByText('Test success')).toBeInTheDocument();
+      });
     });
 
     it('clears all errors when clearAllErrors is called', async () => {
@@ -91,22 +95,24 @@ describe('ErrorContext', () => {
           <TestComponent />
         </ErrorProvider>
       );
-      
+
       const showErrorButton = screen.getByTestId('show-error');
       const clearAllErrorsButton = screen.getByTestId('clear-all-errors');
-      
+
       // First show an error
       await act(async () => {
         showErrorButton.click();
       });
-      
-      expect(screen.getByText('Test error')).toBeInTheDocument();
-      
+
+      await waitFor(() => {
+        expect(screen.getByText('Test error')).toBeInTheDocument();
+      });
+
       // Then clear all errors
       await act(async () => {
         clearAllErrorsButton.click();
       });
-      
+
       expect(screen.queryByText('Test error')).not.toBeInTheDocument();
     });
   });
@@ -118,43 +124,45 @@ describe('ErrorContext', () => {
           <TestComponent />
         </ErrorProvider>
       );
-      
+
       const showErrorButton = screen.getByTestId('show-error');
       const showSuccessButton = screen.getByTestId('show-success');
-      
+
       await act(async () => {
         showErrorButton.click();
         showSuccessButton.click();
       });
-      
-      expect(screen.getByText('Test error')).toBeInTheDocument();
-      expect(screen.getByText('Test success')).toBeInTheDocument();
+
+      await waitFor(() => {
+        expect(screen.getByText('Test error')).toBeInTheDocument();
+        expect(screen.getByText('Test success')).toBeInTheDocument();
+      });
     });
 
     it('auto-removes error popups after duration', async () => {
       jest.useFakeTimers();
-      
+
       render(
         <ErrorProvider>
           <TestComponent />
         </ErrorProvider>
       );
-      
+
       const showErrorButton = screen.getByTestId('show-error');
-      
+
       await act(async () => {
         showErrorButton.click();
       });
-      
+
       expect(screen.getByText('Test error')).toBeInTheDocument();
-      
+
       // Fast-forward time
       await act(async () => {
         jest.advanceTimersByTime(5000);
       });
-      
+
       expect(screen.queryByText('Test error')).not.toBeInTheDocument();
-      
+
       jest.useRealTimers();
     });
   });
@@ -183,20 +191,22 @@ describe('ErrorContext', () => {
           <TestComponentWithTypes />
         </ErrorProvider>
       );
-      
+
       const errorButton = screen.getByTestId('error-type');
       const warningButton = screen.getByTestId('warning-type');
       const infoButton = screen.getByTestId('info-type');
-      
+
       await act(async () => {
         errorButton.click();
         warningButton.click();
         infoButton.click();
       });
-      
-      expect(screen.getByText('Error message')).toBeInTheDocument();
-      expect(screen.getByText('Warning message')).toBeInTheDocument();
-      expect(screen.getByText('Info message')).toBeInTheDocument();
+
+      await waitFor(() => {
+        expect(screen.getByText('Error message')).toBeInTheDocument();
+        expect(screen.getByText('Warning message')).toBeInTheDocument();
+        expect(screen.getByText('Info message')).toBeInTheDocument();
+      });
     });
   });
 
@@ -234,17 +244,19 @@ describe('ErrorContext', () => {
           </ErrorProvider>
         </div>
       );
-      
+
       const showError1Button = screen.getByTestId('show-error-1');
       const showError2Button = screen.getByTestId('show-error-2');
-      
+
       await act(async () => {
         showError1Button.click();
         showError2Button.click();
       });
-      
-      expect(screen.getByText('Error 1')).toBeInTheDocument();
-      expect(screen.getByText('Error 2')).toBeInTheDocument();
+
+      await waitFor(() => {
+        expect(screen.getByText('Error 1')).toBeInTheDocument();
+        expect(screen.getByText('Error 2')).toBeInTheDocument();
+      });
     });
   });
 });

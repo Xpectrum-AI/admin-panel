@@ -101,6 +101,9 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isFetchingRef = useRef<boolean>(false);
   const [generatedDifyApiKey, setGeneratedDifyApiKey] = useState<string>('');
+  const [isRefreshingAgents, setIsRefreshingAgents] = useState(false);
+  const selectedAgentIdRef = useRef<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Configuration state for all components
   const [modelConfig, setModelConfig] = useState<any>(null);
@@ -111,11 +114,11 @@ export default function AgentsTab({ }: AgentsTabProps) {
   // Initialize organization ID from user context
   useEffect(() => {
     console.log('🔍 Setting organization ID from user context:', { user, userClass });
-    
-    const orgId = (user as any)?.orgIdToOrgMemberInfo ? 
-      Object.keys((user as any).orgIdToOrgMemberInfo)[0] : 
+
+    const orgId = (user as any)?.orgIdToOrgMemberInfo ?
+      Object.keys((user as any).orgIdToOrgMemberInfo)[0] :
       null;
-    
+
     if (orgId && orgId !== currentOrganizationId) {
       console.log('✅ Setting organization ID from user.orgIdToOrgMemberInfo:', orgId);
       setCurrentOrganizationId(orgId);
@@ -144,114 +147,116 @@ export default function AgentsTab({ }: AgentsTabProps) {
   // Removed analysis, advanced section refs
 
   // Fetch agents from backend with debouncing and duplicate call prevention
-  const fetchAgents = useCallback(async () => {
+  const fetchAgents = useCallback(async (signal?: AbortSignal) => {
     // Prevent multiple simultaneous calls
     if (isFetchingRef.current) {
       console.log('🔄 fetchAgents already in progress, skipping...');
       return;
     }
 
-    // Clear any existing timeout
-    if (fetchTimeoutRef.current) {
-      clearTimeout(fetchTimeoutRef.current);
+    console.log('🔄 Starting fetchAgents...', { currentOrganizationId, organizationName });
+    isFetchingRef.current = true;
+    setAgentsError('');
+    const shouldShowFullLoader = !(agents && agents.length > 0 && agentsLoaded);
+    if (shouldShowFullLoader) {
+      setIsLoadingAgents(true);
+    } else {
+      setIsRefreshingAgents(true);
     }
 
-    // Debounce the fetch call
-    fetchTimeoutRef.current = setTimeout(async () => {
-      console.log('🔄 Starting fetchAgents...', { currentOrganizationId, organizationName });
-      isFetchingRef.current = true;
-      setIsLoadingAgents(true);
-      setAgentsError('');
+    try {
+      const orgName = organizationName || currentOrganizationId || 'Unknown Organization';
+      console.log('🔍 Using organization name for fetchAgents:', orgName);
+      const result = await agentConfigService.getAllAgents(orgName, signal);
+      console.log('📊 getAllAgents result:', result);
 
-      try {
-        const orgName = organizationName || currentOrganizationId || 'Unknown Organization';
-        console.log('🔍 Using organization name for fetchAgents:', orgName);
-        const result = await agentConfigService.getAllAgents(orgName);
-        console.log('📊 getAllAgents result:', result);
+      if (result.success) {
+        if (result.data && result.data.length > 0) {
+          // Transform backend data to match our Agent interface
+          const transformedAgents: Agent[] = result.data.map((agent: any) => ({
+            id: agent.name || agent.id || `agent-${Date.now()}`,
+            name: agent.name || 'Unnamed Agent',
+            status: agent.status || 'draft',
+            model: agent.model || 'GPT-4o',
+            provider: agent.provider || 'OpenAI',
+            cost: agent.cost || '~$0.10/min',
+            latency: agent.latency || '~1000ms',
+            avatar: '🤖',
+            description: agent.description || 'AI Agent',
+            organization_id: agent.organization_id,
+            chatbot_api: agent.chatbot_api,
+            chatbot_key: agent.chatbot_key,
+            tts_config: agent.tts_config,
+            stt_config: agent.stt_config,
+            initial_message: agent.initial_message,
+            nudge_text: agent.nudge_text,
+            nudge_interval: agent.nudge_interval,
+            max_nudges: agent.max_nudges,
+            typing_volume: agent.typing_volume,
+            max_call_duration: agent.max_call_duration,
+            created_at: agent.created_at,
+            updated_at: agent.updated_at
+          }));
 
-        if (result.success) {
-          if (result.data && result.data.length > 0) {
-            console.log('📋 Processing agents data:', result.data);
-            console.log('📋 First agent sample:', result.data[0]);
-            // Transform backend data to match our Agent interface
-            const transformedAgents: Agent[] = result.data.map((agent: any, index: number) => {
-              console.log(`📋 Transforming agent ${index}:`, agent);
-              return {
-                id: agent.name || agent.id || `agent-${Date.now()}`,
-                name: agent.name || 'Unnamed Agent',
-                status: agent.status || 'draft',
-                model: agent.model || 'GPT-4o',
-                provider: agent.provider || 'OpenAI',
-                cost: agent.cost || '~$0.10/min',
-                latency: agent.latency || '~1000ms',
-                avatar: '🤖',
-                description: agent.description || 'AI Agent',
-                organization_id: agent.organization_id,
-                chatbot_api: agent.chatbot_api,
-                chatbot_key: agent.chatbot_key,
-                tts_config: agent.tts_config,
-                stt_config: agent.stt_config,
-                initial_message: agent.initial_message,
-                nudge_text: agent.nudge_text,
-                nudge_interval: agent.nudge_interval,
-                max_nudges: agent.max_nudges,
-                typing_volume: agent.typing_volume,
-                max_call_duration: agent.max_call_duration,
-                created_at: agent.created_at,
-                updated_at: agent.updated_at
-              };
-            });
+          setAgents(transformedAgents);
 
-            console.log('✅ Transformed agents:', transformedAgents);
-            setAgents(transformedAgents);
-
-            // Select the first agent if none is selected
-            if (transformedAgents.length > 0 && !selectedAgent) {
+          // Preserve previously selected agent if still present
+          const previouslySelectedId = selectedAgentIdRef.current;
+          if (transformedAgents.length > 0) {
+            const match = transformedAgents.find(a => a.id === previouslySelectedId);
+            if (match) {
+              setSelectedAgent(match);
+            } else if (!previouslySelectedId) {
               setSelectedAgent(transformedAgents[0]);
             }
-          } else {
-            // No agents found - this is normal for a new setup
-            console.log('No agents found in backend. This is normal for a new setup.');
-            setAgents([]);
-            setSelectedAgent(null);
           }
         } else {
-          // Don't show error for 405 Method Not Allowed - it's expected
-          if (result.message.includes('405') || result.message.includes('Method Not Allowed')) {
-            console.log('Backend does not support listing all agents. This is normal.');
-            setAgents([]);
-            setSelectedAgent(null);
-          } else {
-            setAgentsError(result.message);
-            setAgents(fallbackAgents);
-            if (fallbackAgents.length > 0 && !selectedAgent) {
-              setSelectedAgent(fallbackAgents[0]);
-            }
-          }
+          // No agents found - normal for new setup
+          setAgents([]);
+          setSelectedAgent(null);
         }
-      } catch (error) {
-        // Don't show 405 errors as they are expected
-        if (error instanceof Error && error.message.includes('405')) {
+      } else {
+        // Don't show error for 405 Method Not Allowed - it's expected
+        if (result.message.includes('405') || result.message.includes('Method Not Allowed')) {
           console.log('Backend does not support listing all agents. This is normal.');
           setAgents([]);
           setSelectedAgent(null);
         } else {
-          console.error('Error fetching agents:', error);
-          setAgentsError('Failed to load agents from server');
+          setAgentsError(result.message);
           setAgents(fallbackAgents);
-          if (fallbackAgents.length > 0 && !selectedAgent) {
+          if (fallbackAgents.length > 0 && !selectedAgentIdRef.current) {
             setSelectedAgent(fallbackAgents[0]);
           }
         }
-      } finally {
-        setIsLoadingAgents(false);
-        setAgentsLoaded(true);
-        loadedOrganizationRef.current = currentOrganizationId || organizationName || '';
-        isFetchingRef.current = false;
-        console.log('🏁 fetchAgents completed');
       }
-    }, 300); // 300ms debounce
-  }, [currentOrganizationId, organizationName, selectedAgent]);
+    } catch (error) {
+      // Handle abort errors gracefully
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        console.log('Fetch aborted for fetchAgents');
+        return;
+      }
+      // Don't show 405 errors as they are expected
+      if (error instanceof Error && error.message.includes('405')) {
+        console.log('Backend does not support listing all agents. This is normal.');
+        setAgents([]);
+        setSelectedAgent(null);
+      } else {
+        console.error('Error fetching agents:', error);
+        setAgentsError('Failed to load agents from server');
+        setAgents(fallbackAgents);
+        if (fallbackAgents.length > 0 && !selectedAgentIdRef.current) {
+          setSelectedAgent(fallbackAgents[0]);
+        }
+      }
+    } finally {
+      setIsLoadingAgents(false);
+      setIsRefreshingAgents(false);
+      setAgentsLoaded(true);
+      loadedOrganizationRef.current = currentOrganizationId || organizationName || '';
+      isFetchingRef.current = false;
+      console.log('🏁 fetchAgents completed');
+    }
+  }, [currentOrganizationId, organizationName, agents, agentsLoaded]);
 
   // Load configurations from localStorage
   const loadConfigurationsFromStorage = useCallback(() => {
@@ -310,7 +315,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
   useEffect(() => {
     const currentOrg = currentOrganizationId || organizationName;
     const loadedOrg = loadedOrganizationRef.current;
-    
+
     if (currentOrg && !isLoadingAgents && currentOrg !== loadedOrg && agentsLoaded) {
       console.log('🔄 Organization changed, fetching agents:', { currentOrg, loadedOrg });
       setAgentsLoaded(false);
@@ -362,6 +367,36 @@ export default function AgentsTab({ }: AgentsTabProps) {
     }
   }, [selectedAgent?.id]); // Only depend on the agent ID, not the entire object
 
+  // Keep a ref of selected agent id to avoid fetch refetch ties
+  useEffect(() => {
+    selectedAgentIdRef.current = selectedAgent ? selectedAgent.id : null;
+  }, [selectedAgent?.id]);
+
+  // Cleanup abort controller on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  // Handle refresh button click with abort signal
+  const handleRefreshAgents = useCallback(() => {
+    // Cancel any existing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller
+    abortControllerRef.current = new AbortController();
+
+    // Reset states and fetch
+    setAgentsLoaded(false);
+    loadedOrganizationRef.current = '';
+    fetchAgents(abortControllerRef.current.signal);
+  }, [fetchAgents]);
+
   // Handle creating a new agent
   const handleCreateNewAgent = useCallback(() => {
     // Show agent prefix modal first
@@ -401,7 +436,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
     // Create Dify agent and get API key immediately
     console.log('🚀 Creating Dify agent for new agent:', agentPrefix.trim());
     let difyApiKey = '';
-    
+
     try {
       const difyResult = await difyAgentService.createDifyAgent({
         agentName: agentPrefix.trim(),
@@ -428,14 +463,14 @@ export default function AgentsTab({ }: AgentsTabProps) {
 
     // Create a temporary new agent for configuration
     let orgName = organizationName || 'Unknown Organization';
-    console.log('🔍 Creating agent with organization name:', { 
-      currentOrganizationId, 
-      organizationName, 
+    console.log('🔍 Creating agent with organization name:', {
+      currentOrganizationId,
+      organizationName,
       finalOrgName: orgName,
       userClass: !!userClass,
       user: !!user
     });
-    
+
     // Always try to get the organization name from userClass to ensure we have the latest value
     if (userClass) {
       const orgs = userClass.getOrgs?.() || [];
@@ -451,7 +486,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
         }
       }
     }
-    
+
     const newAgent: Agent = {
       id: agentPrefix.trim(),
       name: agentPrefix.trim(),
@@ -466,13 +501,13 @@ export default function AgentsTab({ }: AgentsTabProps) {
       // Include the generated Dify API key if available
       chatbot_api: difyApiKey ? 'https://d22yt2oewbcglh.cloudfront.net/v1/chat-messages' : undefined,
       chatbot_key: difyApiKey || undefined,
-      modelApiKey: difyApiKey || undefined  
+      modelApiKey: difyApiKey || undefined
     };
 
     setSelectedAgent(newAgent);
     setActiveConfigTab('model'); // Start with model configuration
     setIsCreating(true);
-    setIsEditing(true); 
+    setIsEditing(true);
     setShowAgentPrefixModal(false);
     setAgentPrefix('');
 
@@ -480,7 +515,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
     setAgents(prev => [...prev, newAgent]);
 
     console.log('Created new agent with prefix:', agentPrefix.trim());
-    
+
     // Reset loading state
     setIsCreatingAgent(false);
   }, [agentPrefix]);
@@ -621,7 +656,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
         toolsConfig: null
       };
     }
-    
+
     return {
       // Model config data
       modelConfig: {
@@ -735,7 +770,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
             organizationId: currentOrganizationId,
             // Note: We don't have the appId stored, but the script can still attempt cleanup
           });
-          
+
           if (difyResult.success) {
             console.log('✅ Dify agent deleted successfully');
           } else {
@@ -850,7 +885,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
         setIsLoadingAgents(false);
         setAgentsLoaded(true);
         isFetchingRef.current = false;
-      }, 10000); // 10 second timeout
+      }, 200); // 10 second timeout
 
       return () => clearTimeout(fallbackTimeout);
     }
@@ -962,34 +997,24 @@ export default function AgentsTab({ }: AgentsTabProps) {
                 </div>
                 {organizationName && (
                   <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                    <span className={`text-sm sm:text-base font-medium px-2 sm:px-3 py-1 sm:py-2 rounded-lg ${isDarkMode 
-                      ? 'bg-gray-700 text-gray-200 border border-gray-600' 
+                    <span className={`text-sm sm:text-base font-medium px-2 sm:px-3 py-1 sm:py-2 rounded-lg ${isDarkMode
+                      ? 'bg-gray-700 text-gray-200 border border-gray-600'
                       : 'bg-gray-100 text-gray-700 border border-gray-300'
-                    }`}>
+                      }`}>
                       {organizationName}
                     </span>
                   </div>
                 )}
                 <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                   <button
-                    onClick={() => {
-                      // Clear any pending timeouts
-                      if (fetchTimeoutRef.current) {
-                        clearTimeout(fetchTimeoutRef.current);
-                      }
-                      // Reset fetching state
-                      isFetchingRef.current = false;
-                      setAgentsLoaded(false);
-                      loadedOrganizationRef.current = '';
-                      fetchAgents();
-                    }}
-                    disabled={isLoadingAgents}
+                    onClick={handleRefreshAgents}
+                    disabled={isLoadingAgents || isRefreshingAgents}
                     className={`group relative px-2 sm:px-3 lg:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-1 sm:gap-2 text-xs sm:text-sm lg:text-base ${isDarkMode
                       ? 'bg-gradient-to-r from-gray-700 to-gray-800 text-gray-300 hover:from-gray-600 hover:to-gray-700'
                       : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300'
                       }`}
                   >
-                    <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 ${isLoadingAgents ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 ${(isLoadingAgents || isRefreshingAgents) ? 'animate-spin' : ''}`} />
                     <span className="font-semibold hidden sm:inline">Refresh</span>
                   </button>
                   <button
@@ -1021,7 +1046,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
                 </div>
 
                 <div className="space-y-2 sm:space-y-3 flex-1 min-h-0 overflow-y-auto">
-                  {isLoadingAgents ? (
+                  {isLoadingAgents && agents.length === 0 ? (
                     <div className="flex justify-center items-center py-6 sm:py-8">
                       <RefreshCw className="h-5 w-5 sm:h-6 sm:w-6 text-green-500 animate-spin" />
                       <span className="ml-2 text-gray-500 text-xs sm:text-sm lg:text-base">Loading agents...</span>
@@ -1029,7 +1054,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
                   ) : agentsError ? (
                     <div className="text-center py-6 sm:py-8 text-red-500">
                       <p className="text-xs sm:text-sm lg:text-base">{agentsError}</p>
-                      <button onClick={fetchAgents} className="mt-3 sm:mt-4 px-3 sm:px-4 py-1.5 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm">
+                      <button onClick={handleRefreshAgents} className="mt-3 sm:mt-4 px-3 sm:px-4 py-1.5 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm">
                         Retry
                       </button>
                     </div>
@@ -1373,7 +1398,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
                   <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     Use lowercase letters, numbers, and underscores only
                   </p>
-                  
+
                   {/* Loading status message */}
                   {isCreatingAgent && (
                     <div className={`mt-3 p-3 rounded-lg border ${isDarkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200'}`}>

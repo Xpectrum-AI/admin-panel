@@ -271,7 +271,7 @@ export const agentConfigService = {
   },
 
   // Get all agents for the organization
-  async getAllAgents(organizationId: string): Promise<{ success: boolean; data?: any[]; message: string }> {
+  async getAllAgents(organizationId: string, signal?: AbortSignal): Promise<{ success: boolean; data?: any[]; message: string }> {
     try {
       // Use local API instead of external API
       console.log('🚀 Fetching agents for organization:', organizationId);
@@ -282,6 +282,7 @@ export const agentConfigService = {
           'Content-Type': 'application/json',
           'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
         },
+        signal,
       });
 
       if (!response.ok) {
@@ -338,6 +339,11 @@ export const agentConfigService = {
         message: 'Agents retrieved successfully'
       };
     } catch (error) {
+      // Abort is expected during rapid refresh/changes
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        console.log('Fetch aborted for getAllAgents');
+        return { success: true, data: [], message: 'Aborted' };
+      }
       // Don't log 405 errors as they are expected
       if (error instanceof Error && error.message.includes('405')) {
         console.log('Backend does not support listing agents by organization. This is normal.');
@@ -357,7 +363,7 @@ export const agentConfigService = {
   },
 
   // Get agents by specific organization
-  async getAgentsByOrg(organizationId: string): Promise<{ success: boolean; data?: any[]; message: string }> {
+  async getAgentsByOrg(organizationId: string, signal?: AbortSignal): Promise<{ success: boolean; data?: any[]; message: string }> {
     try {
       // Environment variables are accessed directly
       
@@ -369,6 +375,7 @@ export const agentConfigService = {
           'Content-Type': 'application/json',
           'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
         },
+        signal,
       });
 
       if (!response.ok) {
@@ -400,6 +407,10 @@ export const agentConfigService = {
         message: 'Agents retrieved successfully'
       };
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        console.log('Fetch aborted for getAgentsByOrg');
+        return { success: true, data: [], message: 'Aborted' };
+      }
       console.error('Get agents by organization error:', error);
       return {
         success: false,

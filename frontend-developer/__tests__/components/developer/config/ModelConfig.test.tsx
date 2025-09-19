@@ -41,7 +41,7 @@ describe('ModelConfig', () => {
 
       expect(screen.getAllByText('Model Configuration')).toHaveLength(2);
       expect(screen.getByText('Model Selection')).toBeInTheDocument();
-      expect(screen.getAllByText('System Prompt')).toHaveLength(3);
+      expect(screen.getAllByText('System Prompt')).toHaveLength(2);
     });
 
   });
@@ -102,8 +102,8 @@ describe('ModelConfig', () => {
         render(<ModelConfig isEditing={true} />);
       });
 
-      const firstMessageInput = screen.getByDisplayValue('Thank you for calling Wellness Partners. This is Riley, your scheduling agent. How may I help you today?');
-      expect(firstMessageInput).not.toBeDisabled();
+      const systemPromptTextarea = screen.getByPlaceholderText("Enter the system prompt that defines your agent's behavior...");
+      expect(systemPromptTextarea).not.toBeDisabled();
     });
 
     it('shows edit buttons in edit mode', async () => {
@@ -122,8 +122,8 @@ describe('ModelConfig', () => {
         render(<ModelConfig isEditing={false} />);
       });
 
-      const firstMessageInput = screen.getByDisplayValue('Thank you for calling Wellness Partners. This is Riley, your scheduling agent. How may I help you today?');
-      expect(firstMessageInput).toBeDisabled();
+      const systemPromptTextarea = screen.getByPlaceholderText("Enter the system prompt that defines your agent's behavior...");
+      expect(systemPromptTextarea).toBeDisabled();
     });
 
     it('shows view buttons in view mode', async () => {
@@ -131,8 +131,8 @@ describe('ModelConfig', () => {
         render(<ModelConfig isEditing={false} />);
       });
 
-      expect(screen.getByRole('button', { name: /Check Status/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Reset Status/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Configure Model/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Save Prompt/i })).toBeInTheDocument();
     });
   });
 
