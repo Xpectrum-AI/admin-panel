@@ -361,6 +361,23 @@ export class WhatsAppService {
       throw error;
     }
   }
+
+  // Get WhatsApp receiving number agent mappings
+  static async getReceivingNumberAgentMappings(): Promise<PhoneNumberResponse> {
+    try {
+      console.log('🚀 Fetching WhatsApp receiving number agent mappings...');
+      
+      const data = await makeApiRequest('/whatsapp/list-receiving-number-agents', {
+        method: 'GET',
+      });
+      
+      console.log('✅ WhatsApp receiving number agent mappings fetched successfully:', data);
+      return { success: true, data };
+    } catch (error: any) {
+      console.error('❌ Error fetching WhatsApp receiving number agent mappings:', error);
+      return { success: false, message: error.message };
+    }
+  }
 }
 
 export default WhatsAppService;

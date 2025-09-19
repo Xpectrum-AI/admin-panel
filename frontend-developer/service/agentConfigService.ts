@@ -93,13 +93,12 @@ export const agentConfigService = {
         chatbot_api: process.env.NEXT_PUBLIC_CHATBOT_API_URL || '',
         chatbot_key: process.env.NEXT_PUBLIC_CHATBOT_API_KEY || '',
         tts_config: {
-          provider: 'elevenlabs',
-          elevenlabs: {
-            api_key: process.env.NEXT_PUBLIC_ELEVEN_LABS_API_KEY || '',
-            voice_id: process.env.NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID || '',
-            model_id: 'eleven_monolingual_v1',
-            stability: 0.5,
-            similarity_boost: 0.5,
+          provider: 'openai',
+          openai: {
+            api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
+            voice: 'alloy',
+            response_format: 'mp3',
+            quality: 'standard',
             speed: 1.0
           }
         },
@@ -170,13 +169,12 @@ export const agentConfigService = {
         chatbot_api: config.chatbot_api || process.env.NEXT_PUBLIC_CHATBOT_API_URL || '',
         chatbot_key: config.chatbot_key || process.env.NEXT_PUBLIC_CHATBOT_API_KEY || '',
         tts_config: config.tts_config || {
-          provider: 'elevenlabs',
-          elevenlabs: {
-            api_key: process.env.NEXT_PUBLIC_ELEVEN_LABS_API_KEY || '',
-            voice_id: process.env.NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID || '',
-            model_id: 'eleven_monolingual_v1',
-            stability: 0.5,
-            similarity_boost: 0.5,
+          provider: 'openai',
+          openai: {
+            api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
+            voice: 'alloy',
+            response_format: 'mp3',
+            quality: 'standard',
             speed: 1.0
           }
         },

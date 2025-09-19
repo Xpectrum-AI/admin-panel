@@ -4,7 +4,7 @@ import { authenticateApiKey } from '@/lib/middleware/auth';
 // DELETE /api/agents/delete-by-org/[organizationId] - Delete agent from organization
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { organizationId: string } }
+  { params }: { params: Promise<{ organizationId: string }> }
 ) {
   try {
     const authResult = await authenticateApiKey(request);
@@ -12,7 +12,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const organizationId = params.organizationId;
+    const { organizationId } = await params;
     const body = await request.json();
     const { agentName } = body;
 

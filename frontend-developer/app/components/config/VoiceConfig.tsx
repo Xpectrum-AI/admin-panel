@@ -585,34 +585,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
 
   return (
     <div ref={ref} className="space-y-6">
-      {/* Header */}
-      <div className="text-center mb-6">
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <div className={`p-3 rounded-2xl ${isDarkMode ? 'bg-blue-900/50' : 'bg-blue-100'}`}>
-            <Mic className={`h-6 w-6 sm:h-8 sm:w-8 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-          </div>
-          <div className="flex items-center gap-2">
-            <h3 className={`text-xl sm:text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Voice Configuration</h3>
-            <button
-              onClick={handleRefreshConfig}
-              disabled={!isEditing}
-              className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${!isEditing
-                ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                : isDarkMode
-                  ? 'bg-blue-800/50 hover:bg-blue-700/50 text-blue-400'
-                  : 'bg-blue-100 hover:bg-blue-200 text-blue-600'
-                }`}
-              title={isEditing ? "Refresh configuration from agent" : "Enable edit mode to refresh configuration"}
-            >
-              <RefreshCw className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-        <p className={`max-w-2xl mx-auto text-sm sm:text-base ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-          {isEditing ? 'Select a voice from the list, or sync your voice library if it\'s missing. If errors persist, enable custom voice and add a voice ID.' : 'View your voice configuration settings'}
-        </p>
-
-      </div>
 
       {/* Configuration Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -624,7 +596,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
             </div>
             <div>
               <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Voice Selection</h4>
-              <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Choose your voice provider and voice</p>
             </div>
           </div>
 
@@ -690,7 +661,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
             </div>
             <div>
               <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Voice Settings</h4>
-              <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Configure language and speed</p>
             </div>
           </div>
 
@@ -783,9 +753,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
             <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
               {selectedVoiceProvider} Configuration
             </h4>
-            <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              Configure {selectedVoiceProvider} specific settings
-            </p>
           </div>
         </div>
 
@@ -799,9 +766,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
             <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
               Save Configuration
             </h4>
-            <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              Save your voice configuration to localStorage for persistence
-            </p>
           </div>
         </div>
 
