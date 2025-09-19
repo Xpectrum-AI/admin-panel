@@ -28,6 +28,7 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
   const [currentMessage, setCurrentMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [conversationId, setConversationId] = useState('');
 
   // Generate widget script based on current values
   useEffect(() => {
@@ -45,7 +46,9 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
   useEffect(() => {
     if (existingConfig) {
       if (existingConfig.difyApiUrl) {
-        setDifyApiUrl(existingConfig.difyApiUrl);
+        // Remove /chat-messages endpoint if present to get base URL
+        const baseUrl = existingConfig.difyApiUrl.replace('/chat-messages', '');
+        setDifyApiUrl(baseUrl);
       }
       if (existingConfig.difyApiKey) {
         setDifyApiKey(existingConfig.difyApiKey);
@@ -118,7 +121,8 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
         body: JSON.stringify({
           difyApiUrl,
           difyApiKey,
-          message: currentMessage
+          message: currentMessage,
+          conversationId: conversationId
         })
       });
 
@@ -128,6 +132,11 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
       }
 
       const data = await response.json();
+      
+      // Update conversation ID if provided
+      if (data.conversationId) {
+        setConversationId(data.conversationId);
+      }
       
       const botMessage = {
         id: (Date.now() + 1).toString(),
@@ -160,6 +169,7 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
 
   const clearChat = () => {
     setChatMessages([]);
+    setConversationId(''); // Reset conversation ID when clearing chat
   };
 
   return (
