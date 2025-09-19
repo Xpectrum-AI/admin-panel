@@ -10,11 +10,17 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$CONSOLE_ORIGIN = "https://test.xpectrum-ai.com"
-$ADMIN_EMAIL = "ghosh.ishw@gmail.com"
-$ADMIN_PASSWORD = "Ghosh1@*123"
-$WS_ID = "cd0309e7-6517-4932-8fc8-21c3bc4eb41b"
+$CONSOLE_ORIGIN = $env:NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN
+$ADMIN_EMAIL = $env:NEXT_PUBLIC_DIFY_ADMIN_EMAIL
+$ADMIN_PASSWORD = $env:NEXT_PUBLIC_DIFY_ADMIN_PASSWORD
+$WS_ID = $env:NEXT_PUBLIC_DIFY_WORKSPACE_ID
 $APP_NAME = $AgentName
+
+# Validate required environment variables
+if (-not $CONSOLE_ORIGIN) { Write-Error "Error: NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN is not set"; exit 1 }
+if (-not $ADMIN_EMAIL) { Write-Error "Error: NEXT_PUBLIC_DIFY_ADMIN_EMAIL is not set"; exit 1 }
+if (-not $ADMIN_PASSWORD) { Write-Error "Error: NEXT_PUBLIC_DIFY_ADMIN_PASSWORD is not set"; exit 1 }
+if (-not $WS_ID) { Write-Error "Error: NEXT_PUBLIC_DIFY_WORKSPACE_ID is not set"; exit 1 }
 $MODEL_PROVIDER_FQN = $ModelProvider
 $MODEL_NAME = $ModelName
 
