@@ -13,6 +13,7 @@ export interface DifyAgentResponse {
     appId: string;
     appKey: string;
     appName: string;
+    serviceOrigin?: string;
     organizationId: string;
     modelProvider: string;
     modelName: string;

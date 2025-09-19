@@ -429,7 +429,7 @@ export const getAvailablePhoneNumbersFromBackend = async (): Promise<PhoneNumber
  */
 export const syncPhoneNumbersFromTwilio = async (): Promise<PhoneNumberResponse> => {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/phone-numbers/manual-sync-from-twilio`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/phone-numbers/sync-all-providers`, {
       method: 'POST',
       headers: {
         'x-api-key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',

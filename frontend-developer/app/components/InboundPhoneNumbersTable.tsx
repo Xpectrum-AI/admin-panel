@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Phone, Search, User, AlertCircle, CheckCircle, XCircle, Loader2, Plus, MessageSquare, PhoneCall, Edit } from 'lucide-react';
 import { useAuthInfo } from '@propelauth/react';
 import { useTheme } from '../contexts/ThemeContext';
-import { 
+import {
   assignPhoneNumberToAgent,
   unassignPhoneNumberFromAgent,
   getPhoneNumbersByOrganization,
@@ -12,23 +12,23 @@ import {
   getAvailablePhoneNumbersFromBackend,
   AgentPhoneNumber
 } from '../../service/phoneNumberService';
-import { 
-  Agent, 
-  PhoneNumber, 
-  ApiResponse, 
-  OrganizationData, 
-  TIMEOUTS 
+import {
+  Agent,
+  PhoneNumber,
+  ApiResponse,
+  OrganizationData,
+  TIMEOUTS
 } from './types/phoneNumbers';
 import { useOrganizationId, isAssigned } from './utils/phoneNumberUtils';
 
 // Custom WhatsApp icon component
 const WhatsAppIcon = ({ className }: { className?: string }) => (
-  <svg 
-    className={className} 
+  <svg
+    className={className}
     viewBox="0 0 24 24"
     fill="currentColor"
   >
-    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488" />
   </svg>
 );
 
@@ -45,11 +45,11 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
   } catch {
     isDarkMode = false;
   }
-  
+
   // Get user info from PropelAuth
   const { user, userClass } = useAuthInfo();
   const getOrganizationId = useOrganizationId();
-  
+
   // Phone numbers state
   const [phoneNumbers, setPhoneNumbers] = useState<AgentPhoneNumber[]>([]);
   const [loading, setLoading] = useState(false);
@@ -58,7 +58,7 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
   const [assigningAgent, setAssigningAgent] = useState('');
   const [assigningPhoneNumber, setAssigningPhoneNumber] = useState('');
   const [assigning, setAssigning] = useState(false);
-  
+
   // Unassign modal state
   const [showUnassignModal, setShowUnassignModal] = useState(false);
   const [selectedPhoneForUnassign, setSelectedPhoneForUnassign] = useState<PhoneNumber | null>(null);
@@ -66,22 +66,22 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
   const [unassigning, setUnassigning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  
+
   // Filter states
   const [voiceFilter, setVoiceFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
   const [smsFilter, setSmsFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
   const [whatsappFilter, setWhatsappFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
   const [agentFilter, setAgentFilter] = useState<string>('');
-  
+
   // Organization name state
   const [organizationName, setOrganizationName] = useState<string>('');
-  
+
   // State for organization-based assignment
   const [agents, setAgents] = useState<Agent[]>([]);
   const [availablePhoneNumbers, setAvailablePhoneNumbers] = useState<PhoneNumber[]>([]);
   const [loadingAgents, setLoadingAgents] = useState(false);
   const [loadingPhoneNumbers, setLoadingPhoneNumbers] = useState(false);
-  
+
   // State for organization phone numbers
   const [organizationPhoneNumbers, setOrganizationPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [loadingOrgPhoneNumbers, setLoadingOrgPhoneNumbers] = useState(false);
@@ -114,24 +114,24 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
     setLoadingOrgPhoneNumbers(true);
     try {
       const orgId = getOrganizationId();
-      
+
       if (!orgId) {
         setOrganizationPhoneNumbers([]);
         return;
       }
 
       const response: ApiResponse<OrganizationData> = await getPhoneNumbersByOrganization(orgId);
-      
+
       if (response.success && response.data) {
         const orgData = response.data;
-        
+
         // Check if we have phone_numbers in the response
         if (orgData.phone_numbers && Array.isArray(orgData.phone_numbers) && orgData.phone_numbers.length > 0) {
           setOrganizationPhoneNumbers(orgData.phone_numbers);
         } else {
           // Try alternative data extraction methods
           let phoneNumbersData: PhoneNumber[] | null = null;
-          
+
           // Method 1: Direct access
           if (orgData.phone_numbers) {
             phoneNumbersData = orgData.phone_numbers;
@@ -144,7 +144,7 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
           else if (Array.isArray(orgData)) {
             phoneNumbersData = orgData as PhoneNumber[];
           }
-          
+
           if (phoneNumbersData && phoneNumbersData.length > 0) {
             setOrganizationPhoneNumbers(phoneNumbersData);
           } else {
@@ -174,17 +174,17 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
     setLoadingAgents(true);
     try {
       const orgId = getOrganizationId();
-      
+
       if (!orgId) {
         setAgents([]);
         return;
       }
-      
+
       const response: ApiResponse<{ agents: Record<string, unknown> }> = await getAgentsByOrganization(orgId);
-      
+
       if (response.success && response.data) {
         const agentsData = response.data;
-        
+
         // Extract agent_prefix from the agents object
         if (agentsData.agents && typeof agentsData.agents === 'object') {
           const agentList: Agent[] = Object.keys(agentsData.agents).map(agentPrefix => ({
@@ -193,7 +193,7 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
             organization_id: orgId,
             ...(agentsData.agents[agentPrefix] as Record<string, unknown>)
           }));
-          
+
           setAgents(agentList);
         } else {
           setAgents([]);
@@ -214,10 +214,10 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
     setLoadingPhoneNumbers(true);
     try {
       const response: ApiResponse<{ phone_numbers: PhoneNumber[] }> = await getAvailablePhoneNumbersFromBackend();
-      
+
       if (response.success && response.data) {
         let phoneNumbersArray: PhoneNumber[] = [];
-        
+
         if (response.data.phone_numbers && Array.isArray(response.data.phone_numbers)) {
           phoneNumbersArray = response.data.phone_numbers.map((phone: unknown) => {
             const phoneData = phone as Record<string, unknown>;
@@ -235,12 +235,12 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
             };
           });
         }
-        
+
         // Filter out already assigned phone numbers
-        const unassignedNumbers = phoneNumbersArray.filter(phone => 
+        const unassignedNumbers = phoneNumbersArray.filter(phone =>
           !phoneNumbers.some(existing => existing.phone_number === phone.phone_number)
         );
-        
+
         setAvailablePhoneNumbers(unassignedNumbers);
       } else {
         setAvailablePhoneNumbers([]);
@@ -261,67 +261,67 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
   }, [loadAgents, loadAvailablePhoneNumbers]);
 
   // Show organization phone numbers if available, otherwise show available phone numbers
-  const allPhoneNumbers: PhoneNumber[] = organizationPhoneNumbers.length > 0 
+  const allPhoneNumbers: PhoneNumber[] = organizationPhoneNumbers.length > 0
     ? organizationPhoneNumbers.map(orgPhone => ({
-        phone_number: orgPhone.number || orgPhone.phone_number || orgPhone.phone || '',
-        agent_id: orgPhone.agent_id || orgPhone.agent_name || '',
-        organization_id: orgPhone.organization_id || '',
-        status: orgPhone.status || 'assigned',
-        created_at: orgPhone.created_at || new Date().toISOString(),
-        updated_at: orgPhone.updated_at || new Date().toISOString(),
-        // Add organization-specific fields
-        phone_id: orgPhone.phone_id || '',
-        voice_enabled: orgPhone.voice_enabled || false,
-        sms_enabled: orgPhone.sms_enabled || false,
-        whatsapp_enabled: orgPhone.whatsapp_enabled || false,
-        inbound_enabled: orgPhone.inbound_enabled || false,
-        outbound_enabled: orgPhone.outbound_enabled || false,
-        agent_name: orgPhone.agent_name || ''
-      }))
+      phone_number: orgPhone.number || orgPhone.phone_number || orgPhone.phone || '',
+      agent_id: orgPhone.agent_id || orgPhone.agent_name || '',
+      organization_id: orgPhone.organization_id || '',
+      status: orgPhone.status || 'assigned',
+      created_at: orgPhone.created_at || new Date().toISOString(),
+      updated_at: orgPhone.updated_at || new Date().toISOString(),
+      // Add organization-specific fields
+      phone_id: orgPhone.phone_id || '',
+      voice_enabled: orgPhone.voice_enabled || false,
+      sms_enabled: orgPhone.sms_enabled || false,
+      whatsapp_enabled: orgPhone.whatsapp_enabled || false,
+      inbound_enabled: orgPhone.inbound_enabled || false,
+      outbound_enabled: orgPhone.outbound_enabled || false,
+      agent_name: orgPhone.agent_name || ''
+    }))
     : availablePhoneNumbers.map(availablePhone => ({
-        phone_number: availablePhone.phone_number || '',
-        agent_id: null, // No agent assigned for available numbers
-        organization_id: availablePhone.organization_id || '',
-        status: availablePhone.status || 'available',
-        created_at: availablePhone.created_at || new Date().toISOString(),
-        updated_at: availablePhone.updated_at || new Date().toISOString(),
-        // Add organization-specific fields
-        phone_id: availablePhone.phone_id || '',
-        voice_enabled: availablePhone.voice_enabled || false,
-        sms_enabled: availablePhone.sms_enabled || false,
-        whatsapp_enabled: availablePhone.whatsapp_enabled || false,
-        inbound_enabled: availablePhone.inbound_enabled || false,
-        outbound_enabled: availablePhone.outbound_enabled || false,
-        agent_name: null // No agent name for available numbers
-      }));
+      phone_number: availablePhone.phone_number || '',
+      agent_id: null, // No agent assigned for available numbers
+      organization_id: availablePhone.organization_id || '',
+      status: availablePhone.status || 'available',
+      created_at: availablePhone.created_at || new Date().toISOString(),
+      updated_at: availablePhone.updated_at || new Date().toISOString(),
+      // Add organization-specific fields
+      phone_id: availablePhone.phone_id || '',
+      voice_enabled: availablePhone.voice_enabled || false,
+      sms_enabled: availablePhone.sms_enabled || false,
+      whatsapp_enabled: availablePhone.whatsapp_enabled || false,
+      inbound_enabled: availablePhone.inbound_enabled || false,
+      outbound_enabled: availablePhone.outbound_enabled || false,
+      agent_name: null // No agent name for available numbers
+    }));
 
   const filteredPhoneNumbers = allPhoneNumbers.filter(phone => {
     // Text search filter
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       (phone.agent_id && phone.agent_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
       phone.phone_number.includes(searchTerm) ||
       (phone.agent_name && phone.agent_name.toLowerCase().includes(searchTerm.toLowerCase()));
-    
+
     // Voice capability filter
-    const matchesVoice = voiceFilter === 'all' || 
+    const matchesVoice = voiceFilter === 'all' ||
       (voiceFilter === 'enabled' && phone.voice_enabled) ||
       (voiceFilter === 'disabled' && !phone.voice_enabled);
-    
+
     // SMS capability filter
-    const matchesSms = smsFilter === 'all' || 
+    const matchesSms = smsFilter === 'all' ||
       (smsFilter === 'enabled' && phone.sms_enabled) ||
       (smsFilter === 'disabled' && !phone.sms_enabled);
-    
+
     // WhatsApp capability filter
-    const matchesWhatsapp = whatsappFilter === 'all' || 
+    const matchesWhatsapp = whatsappFilter === 'all' ||
       (whatsappFilter === 'enabled' && phone.whatsapp_enabled) ||
       (whatsappFilter === 'disabled' && !phone.whatsapp_enabled);
-    
+
     // Agent filter
-    const matchesAgent = !agentFilter || 
+    const matchesAgent = !agentFilter ||
       (phone.agent_id && phone.agent_id.toLowerCase().includes(agentFilter.toLowerCase())) ||
       (phone.agent_name && phone.agent_name.toLowerCase().includes(agentFilter.toLowerCase()));
-    
+
     return matchesSearch && matchesVoice && matchesSms && matchesWhatsapp && matchesAgent;
   });
 
@@ -358,19 +358,19 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
     setUnassigning(true);
     setError(null);
     setSuccess(null);
-    
+
     try {
       let response;
-      
+
       if (!unassigningAgent.trim() || unassigningAgent.trim() === 'None') {
         // Unassign the phone number
         if (!selectedPhoneForUnassign.phone_id || !selectedPhoneForUnassign.agent_id) {
           setError('Phone ID or current agent not found. Please refresh and try again.');
           return;
         }
-        
+
         response = await unassignPhoneNumberFromAgent(selectedPhoneForUnassign.phone_id as string, selectedPhoneForUnassign.agent_id as string);
-        
+
         if (response.success) {
           setSuccess(`Phone number ${selectedPhoneForUnassign.phone_number} unassigned successfully!`);
         } else {
@@ -383,9 +383,9 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
           setError('Phone ID not found. Please refresh and try again.');
           return;
         }
-        
+
         response = await assignPhoneNumberToAgent(selectedPhoneForUnassign.phone_id as string, unassigningAgent);
-        
+
         if (response.success) {
           // Success handled below
         } else {
@@ -393,27 +393,27 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
           return;
         }
       }
-      
+
       // Close modal and refresh data on success
       setShowUnassignModal(false);
       setSelectedPhoneForUnassign(null);
       setUnassigningAgent('');
-      
+
       // Refresh all phone number lists to reflect the status change
       const action = !unassigningAgent.trim() || unassigningAgent.trim() === 'None' ? 'unassigned' : 'assigned';
       setSuccess(`Phone number ${selectedPhoneForUnassign.phone_number} ${action} successfully! Refreshing lists...`);
-      
+
       // Small delay to ensure backend has updated the status
       await new Promise(resolve => setTimeout(resolve, TIMEOUTS.REFRESH_DELAY));
-      
+
       await Promise.all([
         loadAvailablePhoneNumbers(),
         loadOrganizationPhoneNumbers()
       ]);
-      
+
       // Update success message after refresh
       setSuccess(`Phone number ${selectedPhoneForUnassign.phone_number} ${action} successfully! Lists updated.`);
-      
+
     } catch (err: unknown) {
       const action = !unassigningAgent.trim() || unassigningAgent.trim() === 'None' ? 'unassign' : 'assign';
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
@@ -433,23 +433,23 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
     setAssigning(true);
     setError(null);
     setSuccess(null);
-    
+
     try {
       let response;
-      
+
       if (!assigningAgent.trim() || assigningAgent.trim() === 'None') {
         // Unassign the phone number using real backend API
-        const selectedPhone = allPhoneNumbers.find((phone: PhoneNumber) => 
+        const selectedPhone = allPhoneNumbers.find((phone: PhoneNumber) =>
           phone.phone_number === assigningPhoneNumber
         );
-        
+
         if (!selectedPhone || !selectedPhone.phone_id || !selectedPhone.agent_id) {
           setError('Phone ID or current agent not found. Please refresh and try again.');
           return;
         }
-        
+
         response = await unassignPhoneNumberFromAgent(selectedPhone.phone_id as string, selectedPhone.agent_id as string);
-        
+
         if (response.success) {
           setSuccess(`Phone number ${assigningPhoneNumber} unassigned successfully!`);
         } else {
@@ -458,17 +458,17 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
         }
       } else {
         // Assign the phone number to an agent using real backend API
-        const selectedPhone = availablePhoneNumbers.find((phone: PhoneNumber) => 
+        const selectedPhone = availablePhoneNumbers.find((phone: PhoneNumber) =>
           phone.phone_number === assigningPhoneNumber
         );
-        
+
         if (!selectedPhone || !selectedPhone.phone_id) {
           setError('Phone ID not found. Please refresh and try again.');
           return;
         }
-        
+
         response = await assignPhoneNumberToAgent(selectedPhone.phone_id as string, assigningAgent);
-        
+
         if (response.success) {
           // Success handled below
         } else {
@@ -476,26 +476,26 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
           return;
         }
       }
-      
+
       // Close modal and refresh data on success
       setShowAssignModal(false);
       setAssigningAgent('');
       setAssigningPhoneNumber('');
-      
+
       // Refresh all phone number lists to reflect the status change
       setSuccess(`Phone number ${assigningPhoneNumber} assigned to ${assigningAgent} successfully! Refreshing lists...`);
-      
+
       // Small delay to ensure backend has updated the status
       await new Promise(resolve => setTimeout(resolve, TIMEOUTS.REFRESH_DELAY));
-      
+
       await Promise.all([
         loadAvailablePhoneNumbers(), // Refresh available numbers (status: available)
         loadOrganizationPhoneNumbers() // Refresh organization numbers (status: assigned)
       ]);
-      
+
       // Update success message after refresh
       setSuccess(`Phone number ${assigningPhoneNumber} assigned to ${assigningAgent} successfully! Lists updated.`);
-      
+
     } catch (err: unknown) {
       const action = !assigningAgent.trim() || assigningAgent.trim() === 'None' ? 'unassign' : 'assign';
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
@@ -510,14 +510,14 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
   const formatPhoneNumber = (phoneNumber: string) => {
     // Remove any non-digit characters
     const cleaned = phoneNumber.replace(/\D/g, '');
-    
+
     // Format as +1 XXX XXX XXXX
     if (cleaned.length === 11 && cleaned.startsWith('1')) {
       return `+1 ${cleaned.slice(1, 4)} ${cleaned.slice(4, 7)} ${cleaned.slice(7)}`;
     } else if (cleaned.length === 10) {
       return `+1 ${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6)}`;
     }
-    
+
     return phoneNumber;
   };
 
@@ -555,20 +555,20 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
               />
             </div>
           </div>
-          
+
           <div className="flex items-center gap-4">
             {/* Organization Name */}
             {organizationName && (
               <div className="flex items-center gap-2">
-                <span className={`text-sm font-medium px-3 py-2 rounded-lg ${isDarkMode 
-                  ? 'bg-gray-700 text-gray-200 border border-gray-600' 
+                <span className={`text-sm font-medium px-3 py-2 rounded-lg ${isDarkMode
+                  ? 'bg-gray-700 text-gray-200 border border-gray-600'
                   : 'bg-gray-100 text-gray-700 border border-gray-300'
-                }`}>
+                  }`}>
                   {organizationName}
                 </span>
               </div>
             )}
-            
+
             {/* Assign Agent Button */}
             <button
               onClick={() => {
@@ -591,7 +591,7 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
             {/* <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
               Filter by Capabilities:
             </span> */}
-            
+
             {/* Voice Filter */}
             <div className="flex items-center gap-3">
               <PhoneCall className={`h-4 w-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
@@ -640,7 +640,7 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
             {/* <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
               Filter by Agent:
             </span> */}
-            
+
             {/* Agent Filter */}
             <div className="flex items-center gap-3">
               <User className={`h-4 w-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
@@ -716,11 +716,10 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
                 {filteredPhoneNumbers.map((phoneNumber, index) => (
                   <tr
                     key={phoneNumber.phone_number}
-                    className={`border-b transition-colors duration-200 ${
-                      isDarkMode 
-                        ? 'border-gray-700 hover:bg-gray-800/50' 
+                    className={`border-b transition-colors duration-200 ${isDarkMode
+                        ? 'border-gray-700 hover:bg-gray-800/50'
                         : 'border-gray-200 hover:bg-gray-50'
-                    } ${index % 2 === 0 ? (isDarkMode ? 'bg-gray-900/30' : 'bg-white') : (isDarkMode ? 'bg-gray-800/30' : 'bg-gray-50/50')}`}
+                      } ${index % 2 === 0 ? (isDarkMode ? 'bg-gray-900/30' : 'bg-white') : (isDarkMode ? 'bg-gray-800/30' : 'bg-gray-50/50')}`}
                   >
                     {/* Number Column */}
                     <td className="py-4 px-6">
@@ -749,54 +748,48 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
                       <div className="flex items-center gap-4">
                         {/* Voice */}
                         <div className="flex items-center gap-1">
-                          <PhoneCall 
-                            className={`h-4 w-4 ${
-                              phoneNumber.voice_enabled 
-                                ? (isDarkMode ? 'text-green-400' : 'text-green-600') 
+                          <PhoneCall
+                            className={`h-4 w-4 ${phoneNumber.voice_enabled
+                                ? (isDarkMode ? 'text-green-400' : 'text-green-600')
                                 : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                            }`} 
+                              }`}
                           />
-                          <span className={`text-xs font-medium ${
-                            phoneNumber.voice_enabled 
-                              ? (isDarkMode ? 'text-green-400' : 'text-green-600') 
+                          <span className={`text-xs font-medium ${phoneNumber.voice_enabled
+                              ? (isDarkMode ? 'text-green-400' : 'text-green-600')
                               : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                          }`}>
+                            }`}>
                             Voice
                           </span>
                         </div>
 
                         {/* SMS */}
                         <div className="flex items-center gap-1">
-                          <MessageSquare 
-                            className={`h-4 w-4 ${
-                              phoneNumber.sms_enabled 
-                                ? (isDarkMode ? 'text-blue-400' : 'text-blue-600') 
+                          <MessageSquare
+                            className={`h-4 w-4 ${phoneNumber.sms_enabled
+                                ? (isDarkMode ? 'text-blue-400' : 'text-blue-600')
                                 : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                            }`} 
+                              }`}
                           />
-                          <span className={`text-xs font-medium ${
-                            phoneNumber.sms_enabled 
-                              ? (isDarkMode ? 'text-blue-400' : 'text-blue-600') 
+                          <span className={`text-xs font-medium ${phoneNumber.sms_enabled
+                              ? (isDarkMode ? 'text-blue-400' : 'text-blue-600')
                               : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                          }`}>
+                            }`}>
                             SMS
                           </span>
                         </div>
 
                         {/* WhatsApp */}
                         <div className="flex items-center gap-1">
-                          <WhatsAppIcon 
-                            className={`h-4 w-4 ${
-                              phoneNumber.whatsapp_enabled 
-                                ? (isDarkMode ? 'text-green-400' : 'text-green-600') 
+                          <WhatsAppIcon
+                            className={`h-4 w-4 ${phoneNumber.whatsapp_enabled
+                                ? (isDarkMode ? 'text-green-400' : 'text-green-600')
                                 : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                            }`} 
+                              }`}
                           />
-                          <span className={`text-xs font-medium ${
-                            phoneNumber.whatsapp_enabled 
-                              ? (isDarkMode ? 'text-green-400' : 'text-green-600') 
+                          <span className={`text-xs font-medium ${phoneNumber.whatsapp_enabled
+                              ? (isDarkMode ? 'text-green-400' : 'text-green-600')
                               : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                          }`}>
+                            }`}>
                             WhatsApp
                           </span>
                         </div>
@@ -830,11 +823,10 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
                             setUnassigningAgent(phoneNumber.agent_id || '');
                             setShowUnassignModal(true);
                           }}
-                          className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
-                            isDarkMode 
-                              ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
+                          className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${isDarkMode
+                              ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
                               : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
-                          }`}
+                            }`}
                           title={phoneNumber.agent_id && phoneNumber.agent_id !== 'unassigned' && phoneNumber.agent_id !== null ? 'Unassign agent' : 'Assign agent'}
                         >
                           <Edit className="h-4 w-4" />
@@ -856,11 +848,11 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
             <h3 className={`text-xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
               Assign Agent
             </h3>
-            
+
             <p className={`text-sm mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               Select an agent prefix and phone number to create a new assignment.
             </p>
-            
+
             {error && (
               <div className="p-3 mb-4 rounded-lg bg-red-500/20 text-red-200 flex items-center gap-2 text-sm">
                 <AlertCircle className="h-4 w-4 flex-shrink-0" />
@@ -964,14 +956,14 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
             <h3 className={`text-xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
               {selectedPhoneForUnassign.agent_id && selectedPhoneForUnassign.agent_id !== 'unassigned' && selectedPhoneForUnassign.agent_id !== null ? 'Unassign Agent' : 'Assign Agent'}
             </h3>
-            
+
             <p className={`text-sm mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               {selectedPhoneForUnassign.agent_id && selectedPhoneForUnassign.agent_id !== 'unassigned' && selectedPhoneForUnassign.agent_id !== null
                 ? `Current agent: ${selectedPhoneForUnassign.agent_name || selectedPhoneForUnassign.agent_id}. Select a new agent or choose "None" to unassign.`
                 : 'This phone number is currently unassigned. Select an agent to assign it to.'
               }
             </p>
-            
+
             {error && (
               <div className="p-3 mb-4 rounded-lg bg-red-500/20 text-red-200 flex items-center gap-2 text-sm">
                 <AlertCircle className="h-4 w-4 flex-shrink-0" />

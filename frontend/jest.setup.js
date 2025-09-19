@@ -1,7 +1,7 @@
-import '@testing-library/jest-dom'
+import "@testing-library/jest-dom";
 
 // Mock Next.js router
-jest.mock('next/navigation', () => ({
+jest.mock("next/navigation", () => ({
   useRouter() {
     return {
       push: jest.fn(),
@@ -10,36 +10,36 @@ jest.mock('next/navigation', () => ({
       back: jest.fn(),
       forward: jest.fn(),
       refresh: jest.fn(),
-    }
+    };
   },
   useSearchParams() {
-    return new URLSearchParams()
+    return new URLSearchParams();
   },
   usePathname() {
-    return '/'
+    return "/";
   },
-}))
+}));
 
 // Mock Next.js image component
-jest.mock('next/image', () => ({
+jest.mock("next/image", () => ({
   __esModule: true,
   default: (props) => {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img {...props} />
+    return <img {...props} />;
   },
-}))
+}));
 
 // Global test utilities
 global.ResizeObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),
   disconnect: jest.fn(),
-}))
+}));
 
 // Mock window.matchMedia
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(window, "matchMedia", {
   writable: true,
-  value: jest.fn().mockImplementation(query => ({
+  value: jest.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -49,23 +49,25 @@ Object.defineProperty(window, 'matchMedia', {
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
   })),
-})
+});
 
 // Suppress console.error during tests
-const originalError = console.error
+const originalError = console.error;
 beforeEach(() => {
-  jest.spyOn(console, 'error').mockImplementation((...args) => {
+  jest.spyOn(console, "error").mockImplementation((...args) => {
     if (
-      typeof args[0] === 'string' &&
-      (args[0].includes('Error in Database:') ||
-       args[0].includes('Error in Validation:'))
+      typeof args[0] === "string" &&
+      (args[0].includes("Error in Database:") ||
+        args[0].includes("Error in Validation:") ||
+        args[0].includes("EventService: Error response:") ||
+        args[0].includes("Error fetching Google Calendar events:"))
     ) {
-      return // Suppress expected test errors
+      return; // Suppress expected test errors
     }
-    originalError.call(console, ...args)
-  })
-})
+    originalError.call(console, ...args);
+  });
+});
 
 afterEach(() => {
-  jest.restoreAllMocks()
-})
+  jest.restoreAllMocks();
+});
