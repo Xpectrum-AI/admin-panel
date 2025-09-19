@@ -518,7 +518,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       modelConfig: {
         selectedModelProvider: 'OpenAI',
         selectedModel: 'GPT-4o',
-        modelLiveUrl: process.env.NEXT_PUBLIC_DIFY_BASE_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1',
+        modelLiveUrl: process.env.NEXT_PUBLIC_DIFY_BASE_URL || '',
         modelApiKey: difyApiKey || process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '',
         systemPrompt: defaultSystemPrompt
       },
@@ -526,7 +526,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       voiceConfig: {
         provider: 'openai' as const,
         openai: {
-          api_key: process.env.NEXT_PUBLIC_VOICE_OPEN_AI_API_KEY || '',
+          api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
           voice: 'alloy',
           response_format: 'mp3',
           quality: 'standard',
@@ -537,7 +537,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       transcriberConfig: {
         provider: 'deepgram' as const,
         deepgram: {
-          api_key: process.env.NEXT_PUBLIC_TRANSCRIBER_DEEPGRAM_API_KEY || '',
+          api_key: process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY || '',
           model: 'nova-2',
           language: 'en-US',
           punctuate: true,
@@ -567,7 +567,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       max_call_duration: defaultConfig.toolsConfig.maxCallDuration,
       tts_config: defaultConfig.voiceConfig,
       stt_config: defaultConfig.transcriberConfig,
-      chatbot_api: difyApiKey ? 'https://d22yt2oewbcglh.cloudfront.net/v1/chat-messages' : undefined,
+      chatbot_api: difyApiKey ? process.env.NEXT_PUBLIC_CHATBOT_API_URL : undefined,
       chatbot_key: difyApiKey || undefined,
       // Add system prompt and model configuration
       system_prompt: defaultConfig.modelConfig.systemPrompt,
@@ -655,7 +655,7 @@ Remember: You are the first point of contact for many patients. Your professiona
           cost: '~$0.15/min',
           latency: '~1050ms',
           organization_id: orgName,
-          chatbot_api: difyApiKey ? 'https://d22yt2oewbcglh.cloudfront.net/v1/chat-messages' : undefined,
+          chatbot_api: difyApiKey ? process.env.NEXT_PUBLIC_CHATBOT_API_URL : undefined,
           chatbot_key: difyApiKey || undefined,
           modelApiKey: difyApiKey || undefined,
           systemPrompt: defaultSystemPrompt, // Set initial prompt
@@ -860,7 +860,7 @@ Remember: You are the first point of contact for many patients. Your professiona
         selectedModelProvider: agent.provider || 'OpenAI',
         selectedModel: agent.model || 'GPT-4o',
         modelApiKey: agent.modelApiKey || agent.chatbot_key || '',
-        modelLiveUrl: agent.chatbot_api || process.env.NEXT_PUBLIC_MODEL_API_BASE_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1',
+        modelLiveUrl: agent.chatbot_api || process.env.NEXT_PUBLIC_MODEL_API_BASE_URL || '',
         chatbot_key: agent.chatbot_key // Include chatbot_key for proper identification
       },
       // Voice config data - pass the raw backend config directly

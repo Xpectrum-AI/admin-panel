@@ -6,11 +6,17 @@ AGENT_NAME="$1"
 MODEL_PROVIDER="${2:-langgenius/openai/openai}"
 MODEL_NAME="${3:-gpt-4o}"
 
-CONSOLE_ORIGIN="https://test.xpectrum-ai.com"
-ADMIN_EMAIL="ghosh.ishw@gmail.com"
-ADMIN_PASSWORD="Ghosh1@*123"
-WS_ID="cd0309e7-6517-4932-8fc8-21c3bc4eb41b"
+CONSOLE_ORIGIN="${NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN}"
+ADMIN_EMAIL="${NEXT_PUBLIC_DIFY_ADMIN_EMAIL}"
+ADMIN_PASSWORD="${NEXT_PUBLIC_DIFY_ADMIN_PASSWORD}"
+WS_ID="${NEXT_PUBLIC_DIFY_WORKSPACE_ID}"
 APP_NAME="$AGENT_NAME"
+
+# Validate required environment variables
+[ -n "$CONSOLE_ORIGIN" ] || { echo "Error: NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN is not set"; exit 1; }
+[ -n "$ADMIN_EMAIL" ] || { echo "Error: NEXT_PUBLIC_DIFY_ADMIN_EMAIL is not set"; exit 1; }
+[ -n "$ADMIN_PASSWORD" ] || { echo "Error: NEXT_PUBLIC_DIFY_ADMIN_PASSWORD is not set"; exit 1; }
+[ -n "$WS_ID" ] || { echo "Error: NEXT_PUBLIC_DIFY_WORKSPACE_ID is not set"; exit 1; }
 
 : "${MODEL_PROVIDER_FQN:=$MODEL_PROVIDER}"
 : "${MODEL_NAME:=$MODEL_NAME}"

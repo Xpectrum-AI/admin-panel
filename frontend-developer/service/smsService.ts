@@ -299,7 +299,7 @@ export class SMSService {
     receivingNumber: string,
     agentApiKey: string
   ): Promise<SMSMappingResponse> {
-    const agentUrl = process.env.NEXT_PUBLIC_CHATBOT_API_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1';
+    const agentUrl = process.env.NEXT_PUBLIC_CHATBOT_API_URL || '';
     
     console.log('🚀 Updating SMS mapping:', {
       mappingId,
