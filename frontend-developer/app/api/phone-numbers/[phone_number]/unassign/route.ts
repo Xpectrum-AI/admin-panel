@@ -5,7 +5,7 @@ import { getOrganizationFromRequest } from '@/lib/utils/getCurrentOrganization';
 // DELETE /api/phone-numbers/[phone_number]/unassign - Unassign phone number from agent
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { phone_number: string } }
+  { params }: { params: Promise<{ phone_number: string }> }
 ) {
   try {
     const authResult = await authenticateApiKey(request);
@@ -13,7 +13,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const phoneNumber = decodeURIComponent(params.phone_number);
+    const { phone_number } = await params;
+    const phoneNumber = decodeURIComponent(phone_number);
     const body = await request.json();
     const { agent_id } = body;
 

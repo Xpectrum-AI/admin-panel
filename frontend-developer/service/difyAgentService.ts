@@ -62,7 +62,7 @@ export const difyAgentService = {
     try {
       console.log('🧪 Testing Dify chatbot API key...');
       
-      const baseUrl = serviceOrigin || process.env.NEXT_PUBLIC_DIFY_BASE_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1';
+      const baseUrl = serviceOrigin || process.env.NEXT_PUBLIC_DIFY_BASE_URL || '';
       const testUrl = `${baseUrl}/chat-messages`;
       
       const testBody = {

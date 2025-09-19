@@ -299,7 +299,7 @@ export class SMSService {
     receivingNumber: string,
     agentApiKey: string
   ): Promise<SMSMappingResponse> {
-    const agentUrl = process.env.NEXT_PUBLIC_CHATBOT_API_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1';
+    const agentUrl = process.env.NEXT_PUBLIC_CHATBOT_API_URL || '';
     
     console.log('🚀 Updating SMS mapping:', {
       mappingId,
@@ -350,6 +350,23 @@ export class SMSService {
     } catch (error) {
       console.error('❌ Failed to unassign receiving number:', error);
       throw error;
+    }
+  }
+
+  // Get SMS receiving number agent mappings
+  static async getReceivingNumberAgentMappings(): Promise<PhoneNumberResponse> {
+    try {
+      console.log('🚀 Fetching SMS receiving number agent mappings...');
+      
+      const data = await makeApiRequest('/sms/list-receiving-number-agents', {
+        method: 'GET',
+      });
+      
+      console.log('✅ SMS receiving number agent mappings fetched successfully:', data);
+      return { success: true, data };
+    } catch (error: any) {
+      console.error('❌ Error fetching SMS receiving number agent mappings:', error);
+      return { success: false, message: error.message };
     }
   }
 }
