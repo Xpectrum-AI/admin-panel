@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const DIFY_BASE_URL = process.env.NEXT_PUBLIC_DIFY_BASE_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1';
+const DIFY_BASE_URL = process.env.NEXT_PUBLIC_DIFY_BASE_URL || '';
 
 // GET endpoint removed - using localStorage solution instead
 

@@ -23,13 +23,13 @@ export async function GET(
       _id: `agent_${Date.now()}`,
       agent_prefix: agentName,
       organization_id: currentOrg, // Use current organization
-      chatbot_api: "https://d22yt2oewbcglh.cloudfront.net/v1/chat-messages",
-      chatbot_key: "app-y6KZcETrVIOgJTMIHb06UUFG",
+      chatbot_api: process.env.NEXT_PUBLIC_CHATBOT_API_URL || '',
+      chatbot_key: process.env.NEXT_PUBLIC_CHATBOT_API_KEY || '',
       tts_config: {
         provider: "cartesian",
         cartesian: {
           voice_id: "e8e5fffb-252c-436d-b842-8879b84445b6",
-          tts_api_key: "sk_car_Q6fQT5PmAUDkyNgmmcK3KW",
+          tts_api_key: process.env.NEXT_PUBLIC_CARTESIA_API_KEY || '',
           model: "sonic-2",
           speed: 1,
           language: "english"
@@ -38,7 +38,7 @@ export async function GET(
       stt_config: {
         provider: "whisper",
         whisper: {
-          api_key: "sk-svcacct-SrS_5Ba2X2VluIQzXVnvHoMj44ZdvT4xEC13sK8gMR81j3v0bKdjZ1iV1e1",
+          api_key: process.env.NEXT_PUBLIC_WHISPER_API_KEY || '',
           model: "whisper-1",
           language: "en-US"
         }
