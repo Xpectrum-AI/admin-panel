@@ -512,6 +512,100 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
       const result = await agentConfigService.configureAgent(agentName, completeConfig);
 
       if (result.success) {
+        // Now POST model and prompt configurations to Dify if we have an API key
+        if (difyApiKey) {
+          try {
+            console.log('🔧 Posting model configuration to Dify...');
+            const modelConfigResponse = await fetch('/api/model-config', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                provider: 'langgenius/openai/openai',
+                model: 'gpt-4o',
+                api_key: process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '',
+                chatbot_api_key: difyApiKey
+              })
+            });
+
+            if (modelConfigResponse.ok) {
+              console.log('✅ Model configuration posted to Dify successfully');
+            } else {
+              console.warn('⚠️ Failed to post model configuration to Dify');
+            }
+
+            console.log('🔧 Posting prompt configuration to Dify...');
+            const defaultPrompt = `# Appointment Scheduling Agent Prompt
+
+## Identity & Purpose
+You are Riley, an appointment scheduling voice agent for Wellness Partners, a multi-specialty health clinic. Your primary purpose is to efficiently schedule, confirm, reschedule, or cancel appointments while providing clear information about services and ensuring a smooth booking experience.
+
+## Voice & Persona
+### Personality
+- Sound friendly, organized, and efficient
+- Project a helpful and patient demeanor, especially with elderly or confused callers
+- Maintain a warm but professional tone throughout the conversation
+- Convey confidence and competence in managing the scheduling system
+
+### Speech Characteristics
+- Speak clearly and at a moderate pace
+- Use simple, direct language that's easy to understand
+- Avoid medical jargon unless the caller uses it first
+- Be concise but thorough in your responses
+
+## Core Responsibilities
+1. **Appointment Scheduling**: Help callers book new appointments
+2. **Appointment Management**: Confirm, reschedule, or cancel existing appointments
+3. **Service Information**: Provide details about available services and providers
+4. **Calendar Navigation**: Check availability and suggest optimal time slots
+5. **Patient Support**: Address questions about appointments, policies, and procedures
+
+## Key Guidelines
+- Always verify caller identity before accessing appointment information
+- Confirm all appointment details (date, time, provider, service) before finalizing
+- Be proactive in suggesting alternative times if preferred slots are unavailable
+- Maintain patient confidentiality and follow HIPAA guidelines
+- Escalate complex medical questions to appropriate staff members
+- End calls with clear confirmation of next steps
+
+## Service Areas
+- Primary Care
+- Cardiology
+- Dermatology
+- Orthopedics
+- Pediatrics
+- Women's Health
+- Mental Health Services
+
+## Operating Hours
+- Monday-Friday: 8:00 AM - 6:00 PM
+- Saturday: 9:00 AM - 2:00 PM
+- Sunday: Closed
+
+Remember: You are the first point of contact for many patients. Your professionalism and helpfulness directly impact their experience with Wellness Partners.`;
+
+            const promptConfigResponse = await fetch('/api/prompt-config', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                prompt: defaultPrompt,
+                chatbot_api_key: difyApiKey
+              })
+            });
+
+            if (promptConfigResponse.ok) {
+              console.log('✅ Prompt configuration posted to Dify successfully');
+            } else {
+              console.warn('⚠️ Failed to post prompt configuration to Dify');
+            }
+          } catch (configError) {
+            console.error('❌ Error posting configurations to Dify:', configError);
+          }
+        }
+
         setConfigStatus('success');
         const successMsg = isEditing 
           ? `Agent "${agentName}" updated successfully!`
@@ -622,142 +716,12 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
           </div>
         )}
 
-        {/* Header */}
-        <div className="text-center mb-6">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className={`p-3 rounded-2xl ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-              <Wrench className={`h-6 w-6 sm:h-8 sm:w-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-            </div>
-            <h3 className={`text-xl sm:text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Tools Configuration</h3>
-          </div>
-          <p className={`max-w-2xl mx-auto text-sm sm:text-base ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            {isEditing ? 'Configure agent behavior, call settings, and advanced options' : 'View your agent tools configuration settings'}
-          </p>
-
-        </div>
-
-        {/* Configuration Status */}
-        <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white/50 border-gray-200'}`}>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h4 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Configuration Status</h4>
-              <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                Check the status of your voice and transcriber configurations
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                <Bot className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
-              </div>
-              <button
-                onClick={() => {
-                  // Debug: Log all localStorage contents
-                  console.log('=== localStorage Debug ===');
-                  for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key) {
-                      const value = localStorage.getItem(key);
-                      console.log(`Key: "${key}"`, 'Value:', value);
-                    }
-                  }
-                  console.log('=== End localStorage Debug ===');
-                  refreshConfigurations();
-                }}
-                disabled={!isEditing}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${!isEditing
-                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                  : isDarkMode
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                title={isEditing ? "Debug localStorage and refresh configurations" : "Enable edit mode to refresh configurations"}
-              >
-                <RefreshCw className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Voice Configuration Status */}
-            <div className={`p-3 rounded-lg border ${(voiceConfig || localVoiceConfig) ? (isDarkMode ? 'bg-green-900/20 border-green-700 text-green-300' : 'bg-green-50 border-green-200 text-green-700') : (isDarkMode ? 'bg-red-900/20 border-red-700 text-red-300' : 'bg-red-50 border-red-200 text-red-700')}`}>
-              <div className="flex items-center gap-2">
-                {(voiceConfig || localVoiceConfig) ? (
-                  <CheckCircle className="h-4 w-4" />
-                ) : (
-                  <AlertCircle className="h-4 w-4" />
-                )}
-                <span className="text-sm font-medium">
-                  {(voiceConfig || localVoiceConfig) ? 'Voice Config Ready' : 'Voice Config Missing'}
-                </span>
-              </div>
-              {(voiceConfig || localVoiceConfig) && (
-                <p className="text-xs mt-1 opacity-80">
-                  Provider: {(voiceConfig || localVoiceConfig)?.provider || (voiceConfig || localVoiceConfig)?.voiceProvider || 'Unknown'}
-                </p>
-              )}
-            </div>
-
-            {/* Model Configuration Status */}
-            <div className={`p-3 rounded-lg border ${(modelConfig || localModelConfig) ? (isDarkMode ? 'bg-green-900/20 border-green-700 text-green-300' : 'bg-green-50 border-green-200 text-green-700') : (isDarkMode ? 'bg-red-900/20 border-red-700 text-red-300' : 'bg-red-50 border-red-200 text-red-700')}`}>
-              <div className="flex items-center gap-2">
-                {(modelConfig || localModelConfig) ? (
-                  <CheckCircle className="h-4 w-4" />
-                ) : (
-                  <AlertCircle className="h-4 w-4" />
-                )}
-                <span className="text-sm font-medium">
-                  {(modelConfig || localModelConfig) ? 'Model Config Ready' : 'Model Config Missing'}
-                </span>
-              </div>
-              {(modelConfig || localModelConfig) && (
-                <div className="text-xs mt-1 opacity-80">
-                  <p>Provider: {(modelConfig || localModelConfig)?.selectedModelProvider || (modelConfig || localModelConfig)?.provider || 'Unknown'}</p>
-                  {(modelConfig || localModelConfig)?.model && (
-                    <p>Model: {(modelConfig || localModelConfig)?.model}</p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Transcriber Configuration Status */}
-            <div className={`p-3 rounded-lg border ${(transcriberConfig || localTranscriberConfig) ? (isDarkMode ? 'bg-green-900/20 border-green-700 text-green-300' : 'bg-green-50 border-green-200 text-green-700') : (isDarkMode ? 'bg-red-900/20 border-red-700 text-red-300' : 'bg-red-50 border-red-200 text-red-700')}`}>
-              <div className="flex items-center gap-2">
-                {(transcriberConfig || localTranscriberConfig) ? (
-                  <CheckCircle className="h-4 w-4" />
-                ) : (
-                  <AlertCircle className="h-4 w-4" />
-                )}
-                <span className="text-sm font-medium">
-                  {(transcriberConfig || localTranscriberConfig) ? 'Transcriber Config Ready' : 'Transcriber Config Missing'}
-                </span>
-              </div>
-              {(transcriberConfig || localTranscriberConfig) && (
-                <p className="text-xs mt-1 opacity-80">
-                  Provider: {(transcriberConfig || localTranscriberConfig)?.provider || (transcriberConfig || localTranscriberConfig)?.transcriberProvider || (transcriberConfig || localTranscriberConfig)?.selectedTranscriberProvider || 'Unknown'}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {(!(voiceConfig || localVoiceConfig) || !(transcriberConfig || localTranscriberConfig)) && (
-            <div className={`mt-4 p-3 rounded-lg ${isDarkMode ? 'bg-yellow-900/20 border border-yellow-700 text-yellow-300' : 'bg-yellow-50 border border-yellow-200 text-yellow-700'}`}>
-              <p className="text-sm">
-                <strong>Note:</strong> Please configure both Voice and Transcriber settings before creating the agent.
-                {!(voiceConfig || localVoiceConfig) && ' Visit the Voice tab to configure TTS settings.'}
-                {!(transcriberConfig || localTranscriberConfig) && ' Visit the Transcriber tab to configure STT settings.'}
-              </p>
-            </div>
-          )}
-        </div>
 
         {/* Initial Message Configuration */}
         <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white/50 border-gray-200'}`}>
           <div className="flex items-center justify-between mb-4">
             <div>
               <h4 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Initial Message</h4>
-              <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                Configure the first message your agent will say when a call starts.
-              </p>
             </div>
             <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
               <MessageSquare className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
@@ -784,9 +748,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                 }`}
               placeholder="Enter the agent's first message..."
             />
-            <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              This message will be automatically populated from the Model tab, but you can customize it here.
-            </p>
           </div>
         </div>
 
@@ -795,9 +756,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
           <div className="flex items-center justify-between mb-4">
             <div>
               <h4 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Call Behavior</h4>
-              <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                Configure how your agent behaves during calls, including nudges and timeouts.
-              </p>
             </div>
             <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
               <Zap className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
@@ -826,9 +784,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                   }`}
                 placeholder="Message to send when user is silent..."
               />
-              <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                This message will be sent to keep the conversation active when the user is silent.
-              </p>
             </div>
 
             {/* Nudge Interval and Max Nudges */}
@@ -854,9 +809,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                       : 'border-gray-200 bg-white/80 text-gray-900'
                     }`}
                 />
-                <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Time to wait before sending a nudge message.
-                </p>
               </div>
 
               <div>
@@ -880,9 +832,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                       : 'border-gray-200 bg-white/80 text-gray-900'
                     }`}
                 />
-                <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Maximum number of nudges per call.
-                </p>
               </div>
             </div>
           </div>
@@ -893,9 +842,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
           <div className="flex items-center justify-between mb-4">
             <div>
               <h4 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Audio & Duration</h4>
-              <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                Configure audio settings and call duration limits.
-              </p>
             </div>
             <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
               <Volume2 className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
@@ -947,9 +893,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                   <span>1 (Full Volume)</span>
                 </div>
               </div>
-              <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                Volume level for typing sounds during the call.
-              </p>
             </div>
 
             {/* Max Call Duration */}
@@ -994,9 +937,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                   <span>10:00</span>
                 </div>
               </div>
-              <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                Maximum duration for each call before automatic termination (0 = no limit).
-              </p>
             </div>
           </div>
         </div>
@@ -1006,9 +946,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
           <div className="flex items-center justify-between mb-4">
             <div>
               <h4 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Ready to Create Agent</h4>
-              <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                All configurations are set. Click the button below to create your agent.
-              </p>
             </div>
             <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
               <Bot className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
@@ -1042,20 +979,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
             </button>
 
             {/* Create/Update Agent Button */}
-            {/* Test Dify Integration Button */}
-            <button
-              onClick={testDifyIntegration}
-              disabled={isTestingDify}
-              className={`group relative px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-              {isTestingDify ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Bot className="h-4 w-4" />
-              )}
-              <span className="font-semibold text-sm">{isTestingDify ? 'Testing...' : 'Test Dify'}</span>
-            </button>
 
             <button
               onClick={handleCreateAgent}
