@@ -502,7 +502,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
         tts_config: ttsConfig,
         stt_config: sttConfig,
         // Use dynamically generated Dify API key if available
-        chatbot_api: difyApiKey ? 'https://d22yt2oewbcglh.cloudfront.net/v1/chat-messages' : undefined,
+        chatbot_api: difyApiKey ? process.env.NEXT_PUBLIC_CHATBOT_API_URL : undefined,
         chatbot_key: difyApiKey || undefined
       };
 
