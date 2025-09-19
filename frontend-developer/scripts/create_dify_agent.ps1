@@ -47,7 +47,13 @@ $loginBody = @{
 } | ConvertTo-Json
 
 try {
-    $loginResponse = Invoke-RestMethod -Uri "$CONSOLE_ORIGIN/console/api/login" -Method POST -Body $loginBody -ContentType "application/json" -UseBasicParsing
+    $headers = @{
+        "Content-Type" = "application/json"
+        "X-Requested-With" = "XMLHttpRequest"
+        "Cache-Control" = "no-cache"
+        "User-Agent" = "DifyAgentCreator/1.0"
+    }
+    $loginResponse = Invoke-RestMethod -Uri "$CONSOLE_ORIGIN/console/api/login" -Method POST -Body $loginBody -Headers $headers -UseBasicParsing
     $TOKEN = $loginResponse.data.access_token
     if (-not $TOKEN) {
         throw "Login failed - no token received"

@@ -27,6 +27,9 @@ hdr_ct(){ awk 'BEGIN{IGNORECASE=1}/^content-type:/{print $2}' | tr -d '\r'; }
 say "login"
 RESP=$(curl -sS -X POST "$CONSOLE_ORIGIN/console/api/login" \
   -H "Content-Type: application/json" \
+  -H "X-Requested-With: XMLHttpRequest" \
+  -H "Cache-Control: no-cache" \
+  -H "User-Agent: DifyAgentCreator/1.0" \
   -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}")
 TOKEN=$(echo "$RESP" | jq -r '.data.access_token // .access_token // .data.token // empty')
 [ -n "$TOKEN" ] || { echo "login error"; exit 1; }

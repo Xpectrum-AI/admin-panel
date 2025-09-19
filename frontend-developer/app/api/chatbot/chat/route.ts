@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { difyApiUrl, difyApiKey, message } = body;
+    const { difyApiUrl, difyApiKey, message, conversationId } = body;
 
     if (!difyApiUrl || !difyApiKey || !message) {
       return NextResponse.json(
@@ -18,8 +18,8 @@ export async function POST(request: NextRequest) {
     const requestBody = {
       inputs: {},
       query: message,
-      response_mode: 'streaming',
-      conversation_id: '',
+      response_mode: 'blocking',
+      conversation_id: conversationId || '',
       user: 'preview-user',
       files: []
     };
@@ -61,8 +61,74 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const data = await response.json();
-    return NextResponse.json(data);
+    // Handle response (blocking mode should return JSON directly)
+    const responseText = await response.text();
+    console.log('📡 Raw Dify response:', responseText);
+    
+    try {
+      // Try to parse as JSON first (blocking mode)
+      const data = JSON.parse(responseText);
+      console.log('📡 Parsed JSON data:', data);
+      
+      if (data.answer) {
+        return NextResponse.json({ 
+          answer: data.answer,
+          conversationId: data.conversation_id || conversationId
+        });
+      } else if (data.message) {
+        return NextResponse.json({ 
+          answer: data.message,
+          conversationId: data.conversation_id || conversationId
+        });
+      } else {
+        return NextResponse.json({ 
+          answer: JSON.stringify(data),
+          conversationId: data.conversation_id || conversationId
+        });
+      }
+    } catch (e) {
+      // If not JSON, try to parse as streaming response
+      console.log('📡 Not JSON, trying streaming format');
+      const lines = responseText.split('\n');
+      let finalAnswer = '';
+      let accumulatedAnswer = '';
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.substring(6));
+            console.log('📡 Parsed streaming data:', data);
+            
+            if (data.event === 'message_end' && data.answer) {
+              finalAnswer = data.answer;
+              break;
+            } else if (data.event === 'agent_message' && data.answer) {
+              finalAnswer = data.answer;
+            } else if (data.event === 'message' && data.answer) {
+              finalAnswer = data.answer;
+            } else if (data.answer) {
+              accumulatedAnswer += data.answer;
+            }
+          } catch (e) {
+            continue;
+          }
+        }
+      }
+      
+      const answer = finalAnswer || accumulatedAnswer;
+      if (answer) {
+        return NextResponse.json({ 
+          answer: answer,
+          conversationId: conversationId
+        });
+      }
+      
+      // Final fallback
+      return NextResponse.json(
+        { error: 'No answer found', rawResponse: responseText.substring(0, 500) },
+        { status: 500 }
+      );
+    }
 
   } catch (error) {
     console.error('Chatbot API error:', error);
