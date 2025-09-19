@@ -59,7 +59,13 @@ export async function POST(request: NextRequest) {
       
       const { stdout, stderr } = await execAsync(command, {
         timeout: 60000, // 60 second timeout
-        maxBuffer: 1024 * 1024 * 10 // 10MB buffer
+        maxBuffer: 1024 * 1024 * 10, // 10MB buffer
+        env: {
+          ...process.env,
+          // Prevent browser from detecting curl as login
+          HTTP_USER_AGENT: 'DifyAgentCreator/1.0',
+          CURL_USER_AGENT: 'DifyAgentCreator/1.0'
+        }
       });
 
       console.log('📝 Script stdout:', stdout);
