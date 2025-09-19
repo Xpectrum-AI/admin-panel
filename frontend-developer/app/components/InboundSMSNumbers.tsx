@@ -540,7 +540,7 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
                                                         ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
                                                         : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
                                                     }`}
-                                                    title={assignment.status === 'assigned' ? 'Unassign agent' : 'Assign agent'}
+                                                    title={assignment.status === 'assigned' ? 'Delete agent' : 'Add agent'}
                                                 >
                                                     {isUnassigning === assignment.id ? (
                                                         <RefreshCw className="h-4 w-4 animate-spin" />
