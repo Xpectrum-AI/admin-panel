@@ -24,6 +24,8 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="robots" content="noindex, nofollow" />
       </head>
       <body className={`${inter.className} dark:bg-gray-900 dark:text-white min-h-screen overflow-x-hidden`}>
 
