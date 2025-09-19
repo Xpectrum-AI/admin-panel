@@ -83,9 +83,16 @@ RUN npm run build && \
     rm -rf /tmp/* && \
     rm -rf /var/cache/apk/*
 
-# Production stage - use a smaller base image
+# Production stage - use a smaller base image with required tools
 FROM node:20-alpine AS runner
 WORKDIR /app
+
+# Install required tools for script execution
+RUN apk add --no-cache \
+    curl \
+    jq \
+    bash \
+    && rm -rf /var/cache/apk/*
 
 ENV NODE_ENV=production
 
@@ -94,6 +101,10 @@ COPY --from=builder /app/next.config.ts ./
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/scripts ./scripts
+
+# Make scripts executable
+RUN chmod +x scripts/*.sh scripts/*.ps1
 
 # Environment variables will be set by CDK at runtime
 # Remove hardcoded env file copy

@@ -520,6 +520,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
+                'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
               },
               body: JSON.stringify({
                 provider: 'langgenius/openai/openai',
@@ -589,6 +590,7 @@ Remember: You are the first point of contact for many patients. Your professiona
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
+                'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
               },
               body: JSON.stringify({
                 prompt: defaultPrompt,
