@@ -106,7 +106,6 @@ export async function POST(request: NextRequest) {
         timeout: 60000, // 60 second timeout
         maxBuffer: 1024 * 1024 * 10, // 10MB buffer
         env: envVars // Pass environment variables to the script
-
       });
 
       console.log('📝 Script stdout:', stdout);
@@ -173,50 +172,13 @@ export async function POST(request: NextRequest) {
         cmd: (execError as any)?.cmd
       });
 
-      // Fallback: Try to create a mock Dify agent if script execution fails
-      console.log('🔄 Attempting fallback Dify agent creation...');
-      
-      // Check if we have the required environment variables
-      const hasRequiredEnvVars = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN && 
-                                process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL && 
-                                process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD && 
-                                process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID;
-      
-      if (!hasRequiredEnvVars) {
-        console.error('❌ Missing required Dify environment variables for fallback');
-        return NextResponse.json({
-          success: false,
-          error: 'Failed to execute Dify agent creation script and missing required environment variables',
-          details: execError instanceof Error ? execError.message : 'Unknown error',
-          errorCode: (execError as any)?.code,
-          errorSignal: (execError as any)?.signal,
-          missingEnvVars: {
-            CONSOLE_ORIGIN: !process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN,
-            ADMIN_EMAIL: !process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL,
-            ADMIN_PASSWORD: !process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD,
-            WORKSPACE_ID: !process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID
-          }
-        }, { status: 500 });
-      }
-
-      // Create a fallback response with a generated API key
-      const fallbackApiKey = `app-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      console.log('✅ Created fallback Dify agent with API key:', fallbackApiKey.substring(0, 10) + '...');
-
       return NextResponse.json({
-        success: true,
-        data: {
-          appId: `app-${Date.now()}`,
-          appKey: fallbackApiKey,
-          appName: agentName,
-          serviceOrigin: process.env.NEXT_PUBLIC_DIFY_BASE_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1',
-          organizationId,
-          modelProvider,
-          modelName
-        },
-        message: 'Dify agent created successfully (fallback mode)',
-        warning: 'Created using fallback method due to script execution failure'
-      });
+        success: false,
+        error: 'Failed to execute Dify agent creation script',
+        details: execError instanceof Error ? execError.message : 'Unknown error',
+        errorCode: (execError as any)?.code,
+        errorSignal: (execError as any)?.signal
+      }, { status: 500 });
     }
 
   } catch (error) {
