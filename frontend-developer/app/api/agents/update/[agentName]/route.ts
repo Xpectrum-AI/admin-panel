@@ -25,7 +25,12 @@ export async function POST(
       nudge_interval,
       max_nudges,
       typing_volume,
-      max_call_duration
+      max_call_duration,
+      system_prompt,
+      model_provider,
+      model_name,
+      model_api_key,
+      model_live_url
     } = body;
 
     console.log('🔍 Creating/updating agent:', { agentName, organization_id, body });
@@ -45,6 +50,12 @@ export async function POST(
       max_nudges: max_nudges || 3,
       typing_volume: typing_volume || 0.8,
       max_call_duration: max_call_duration || 300,
+      // Add system prompt and model configuration
+      system_prompt: system_prompt || "You are a helpful assistant.",
+      model_provider: model_provider || "OpenAI",
+      model_name: model_name || "GPT-4o",
+      model_api_key: model_api_key || '',
+      model_live_url: model_live_url || '',
       created_at: Date.now() / 1000,
       updated_at: Date.now() / 1000
     };
