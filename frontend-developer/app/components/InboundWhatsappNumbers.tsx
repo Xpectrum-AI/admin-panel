@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Phone, RefreshCw, Search, Users, Bot, Edit, CheckCircle, XCircle, PhoneCall, MessageSquare, User } from 'lucide-react';
+import { Plus, Phone, RefreshCw, Search, Users, Bot, Edit, CheckCircle, XCircle, PhoneCall, MessageSquare, User, Trash2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuthInfo } from '@propelauth/react';
 import { WhatsAppService } from '../../service/whatsappService';
@@ -30,7 +30,8 @@ interface WhatsAppAssignment {
     voice_enabled?: boolean;
     sms_enabled?: boolean;
     whatsapp_enabled?: boolean;
-    agent_id?: string;
+    agent_id?: string | null;
+    mapping_data?: any;
 }
 
 // Custom WhatsApp icon component
@@ -57,6 +58,9 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
     const [assignments, setAssignments] = useState<WhatsAppAssignment[]>([]);
     const [agents, setAgents] = useState<Agent[]>([]);
     const [organizationPhoneNumbers, setOrganizationPhoneNumbers] = useState<any[]>([]);
+    const [agentMappings, setAgentMappings] = useState<Record<string, any>>({});
+    const [totalMappings, setTotalMappings] = useState<number>(0);
+    const [mappingsLoaded, setMappingsLoaded] = useState<boolean>(false);
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [selectedAgent, setSelectedAgent] = useState<string>('');
     const [selectedPhoneNumber, setSelectedPhoneNumber] = useState<string>('');
@@ -72,40 +76,69 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
         setLoadingOrgPhoneNumbers(true);
         try {
             console.log('🚀 Loading WhatsApp-enabled phone numbers...');
-            // TODO: Implement WhatsApp service call
-            // const response = await WhatsAppService.getWhatsAppEnabledPhoneNumbers();
-            // For now, using sample data
-            const sampleData = {
-                phone_numbers: [
-                    {
-                        phone_id: '1',
-                        number: '+15551234567',
-                        agent_id: 'unassigned',
-                        agent_name: '',
-                        voice_enabled: false,
-                        sms_enabled: false,
-                        whatsapp_enabled: true,
-                        updated_at: '2024-01-15T10:30:00Z'
-                    },
-                    {
-                        phone_id: '2',
-                        number: '+15559876543',
-                        agent_id: 'agent_001',
-                        agent_name: 'Riley',
-                        voice_enabled: false,
-                        sms_enabled: false,
-                        whatsapp_enabled: true,
-                        updated_at: '2024-01-15T09:15:00Z'
-                    }
-                ]
-            };
-            setOrganizationPhoneNumbers(sampleData.phone_numbers);
+            const response = await WhatsAppService.getWhatsAppEnabledPhoneNumbers();
+            console.log('🚀 API response received:', response);
+
+            if (response.success && response.data) {
+                const phoneNumbersData = response.data;
+                console.log('✅ Phone numbers data:', phoneNumbersData);
+
+                if (phoneNumbersData.phone_numbers && Array.isArray(phoneNumbersData.phone_numbers) && phoneNumbersData.phone_numbers.length > 0) {
+                    console.log('✅ Found phone_numbers array:', phoneNumbersData.phone_numbers);
+                    setOrganizationPhoneNumbers(phoneNumbersData.phone_numbers);
+                } else {
+                    console.log('❌ No phone numbers found in response');
+                    setOrganizationPhoneNumbers([]);
+                }
+            } else {
+                console.log('❌ API response failed:', response);
+                setOrganizationPhoneNumbers([]);
+            }
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : 'Unknown error';
             console.error('❌ Error loading WhatsApp-enabled phone numbers:', errorMessage);
             setOrganizationPhoneNumbers([]);
         } finally {
             setLoadingOrgPhoneNumbers(false);
+        }
+    }, []);
+
+    const loadAgentMappings = useCallback(async () => {
+        try {
+            console.log('🚀 Loading WhatsApp agent mappings...');
+            const response = await WhatsAppService.getReceivingNumberAgentMappings();
+            console.log('🚀 Agent mappings response:', response);
+
+            if (response.success && response.data) {
+                const mappingsData = response.data;
+                console.log('✅ Agent mappings data:', mappingsData);
+
+                if (mappingsData.receiving_number_mappings) {
+                    console.log('✅ Found receiving number mappings:', mappingsData.receiving_number_mappings);
+                    // Store the mappings to use when converting phone numbers to assignments
+                    setAgentMappings(mappingsData.receiving_number_mappings);
+                } else {
+                    console.log('❌ No agent mappings found in response');
+                    setAgentMappings({});
+                }
+
+                // Store total mappings count for filtering logic
+                const mappingsCount = mappingsData.total_mappings || 0;
+                console.log('✅ Total mappings count:', mappingsCount);
+                setTotalMappings(mappingsCount);
+                setMappingsLoaded(true);
+            } else {
+                console.log('❌ Agent mappings API response failed:', response);
+                setAgentMappings({});
+                setTotalMappings(0);
+                setMappingsLoaded(true);
+            }
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+            console.error('❌ Error loading WhatsApp agent mappings:', errorMessage);
+            setAgentMappings({});
+            setTotalMappings(0);
+            setMappingsLoaded(true);
         }
     }, []);
 
@@ -160,10 +193,11 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
 
     // Load data on component mount
     useEffect(() => {
-        console.log('🔍 useEffect triggered, loading phone numbers and agents');
+        console.log('🔍 useEffect triggered, loading phone numbers, agents, and mappings');
         loadPhoneNumbers();
         loadAgents();
-    }, [loadPhoneNumbers, loadAgents]);
+        loadAgentMappings();
+    }, [loadPhoneNumbers, loadAgents, loadAgentMappings]);
 
     // Reload data when refreshTrigger changes
     useEffect(() => {
@@ -171,8 +205,9 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
             console.log('🔄 Refresh trigger activated, reloading data');
             loadPhoneNumbers();
             loadAgents();
+            loadAgentMappings();
         }
-    }, [refreshTrigger, loadPhoneNumbers, loadAgents]);
+    }, [refreshTrigger, loadPhoneNumbers, loadAgents, loadAgentMappings]);
 
     // Get friendly name from phone number
     const getFriendlyName = (phoneNumber: string) => {
@@ -193,27 +228,39 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
     useEffect(() => {
         if (organizationPhoneNumbers.length > 0) {
             console.log('🔄 Converting phone numbers to assignments:', organizationPhoneNumbers);
-            const whatsappAssignments: WhatsAppAssignment[] = organizationPhoneNumbers.map((orgPhone: any, index: number) => ({
-                id: orgPhone.phone_id || orgPhone._id || `phone_${index}`,
-                phone_number: orgPhone.number || orgPhone.phone_number || '',
-                friendly_name: getFriendlyName(orgPhone.number || orgPhone.phone_number || ''),
-                agent_name: orgPhone.agent_name || '',
-                agent_prefix: '',
-                assigned_at: orgPhone.updated_at || '',
-                status: (orgPhone.agent_id && orgPhone.agent_id !== 'unassigned' && orgPhone.agent_id !== '' && orgPhone.agent_id !== null) ? 'assigned' as const : 'unassigned' as const,
-                voice_enabled: orgPhone.voice_enabled || false,
-                sms_enabled: orgPhone.sms_enabled || false,
-                whatsapp_enabled: orgPhone.whatsapp_enabled || true, // WhatsApp numbers are WhatsApp enabled by default
-                agent_id: orgPhone.agent_id || null
-            }));
+            console.log('🔄 Using agent mappings:', agentMappings);
 
-            console.log('✅ WhatsApp assignments created:', whatsappAssignments);
+            const whatsappAssignments: WhatsAppAssignment[] = organizationPhoneNumbers.map((orgPhone: any, index: number) => {
+                const phoneNumber = orgPhone.number || orgPhone.phone_number || '';
+                const cleanNumber = phoneNumber.replace(/\D/g, ''); // Remove non-digits for comparison
+
+                // Check if this phone number has an agent mapping
+                const mapping = agentMappings[cleanNumber] || agentMappings[phoneNumber];
+                const isAssigned = !!mapping;
+
+                return {
+                    id: orgPhone.phone_id || orgPhone._id || `phone_${index}`,
+                    phone_number: phoneNumber,
+                    friendly_name: getFriendlyName(phoneNumber),
+                    agent_name: isAssigned ? 'WhatsApp Agent' : '',
+                    agent_prefix: isAssigned ? 'whatsapp_agent' : '',
+                    assigned_at: isAssigned ? (mapping.last_activity || new Date().toISOString()) : '',
+                    status: isAssigned ? 'assigned' as const : 'unassigned' as const,
+                    voice_enabled: orgPhone.voice_enabled || false,
+                    sms_enabled: orgPhone.sms_enabled || false,
+                    whatsapp_enabled: orgPhone.whatsapp_enabled || true, // WhatsApp numbers are WhatsApp enabled by default
+                    agent_id: isAssigned ? 'whatsapp_agent' : null,
+                    mapping_data: mapping || null
+                };
+            });
+
+            console.log('✅ WhatsApp assignments created with mappings:', whatsappAssignments);
             setAssignments(whatsappAssignments);
         } else {
             console.log('❌ No phone numbers to convert to assignments');
             setAssignments([]);
         }
-    }, [organizationPhoneNumbers]);
+    }, [organizationPhoneNumbers, agentMappings]);
 
     // Assignment functions
     const handleAssignAgent = async () => {
@@ -228,31 +275,24 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
 
             const agentApiKey = agent.api_key;
 
-            // TODO: Implement WhatsApp service call
-            // const result = await WhatsAppService.mapReceivingNumberAgent(
-            //     selectedPhoneNumber,
-            //     agentApiKey
-            // );
+            // Find the phone number ID for the selected phone number
+            const selectedPhoneData = organizationPhoneNumbers.find(
+                phone => (phone.number || phone.phone_number) === selectedPhoneNumber
+            );
+            const phoneNumberId = selectedPhoneData?.phone_id || selectedPhoneData?._id || '';
 
-            // For now, simulate success
-            const result = { success: true, message: 'Agent assigned successfully' };
+            // Call the actual WhatsApp service to assign the agent
+            const result = await WhatsAppService.mapReceivingNumberAgent(
+                selectedPhoneNumber,
+                agentApiKey,
+                phoneNumberId
+            );
 
             if (result.success) {
-                // Update local state
-                const updatedAssignments = assignments.map(assignment => {
-                    if (assignment.phone_number === selectedPhoneNumber) {
-                        return {
-                            ...assignment,
-                            agent_name: agent.name,
-                            agent_prefix: agent.agent_prefix,
-                            assigned_at: new Date().toISOString(),
-                            status: 'assigned' as const
-                        };
-                    }
-                    return assignment;
-                });
+                // Refresh data after successful assignment
+                await loadPhoneNumbers();
+                await loadAgentMappings();
 
-                setAssignments(updatedAssignments);
                 setShowAssignModal(false);
                 setSelectedAgent('');
                 setSelectedPhoneNumber('');
@@ -278,27 +318,13 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
         try {
             console.log('🚀 Unassigning agent for phone number:', assignment.phone_number);
 
-            // TODO: Implement WhatsApp service call
-            // const result = await WhatsAppService.unassignReceivingNumberAgent(assignment.phone_number);
-
-            // For now, simulate success
-            const result = { success: true, message: 'Agent unassigned successfully' };
+            // Call the actual WhatsApp service to unassign the agent
+            const result = await WhatsAppService.unassignReceivingNumberAgent(assignment.phone_number);
 
             if (result.success) {
-                // Update local state
-                const updatedAssignments = assignments.map(assignment => {
-                    if (assignment.id === assignmentId) {
-                        return {
-                            ...assignment,
-                            agent_name: '',
-                            agent_prefix: '',
-                            assigned_at: '',
-                            status: 'unassigned' as const
-                        };
-                    }
-                    return assignment;
-                });
-                setAssignments(updatedAssignments);
+                // Refresh data after successful unassignment
+                await loadPhoneNumbers();
+                await loadAgentMappings();
 
                 console.log('✅ Agent unassigned successfully:', result);
             } else {
@@ -327,13 +353,6 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
         return matchesSearch && matchesAgent;
     });
 
-    // Check if any agents are assigned in the filtered assignments
-    const hasAssignedAgents = filteredAssignments.some(assignment => 
-        assignment.status === 'assigned' && 
-        assignment.agent_id && 
-        assignment.agent_id !== 'unassigned' && 
-        assignment.agent_id !== null
-    );
 
     return (
         <div className="flex flex-col h-full">
@@ -432,11 +451,6 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
                                     <th className="text-left py-4 px-6 font-semibold text-sm">
                                         Agent
                                     </th>
-                                    {hasAssignedAgents && (
-                                        <th className="text-left py-4 px-6 font-semibold text-sm">
-                                            Unassign
-                                        </th>
-                                    )}
                                 </tr>
                             </thead>
                             <tbody>
@@ -446,7 +460,7 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
                                         className={`border-b transition-colors duration-200 ${isDarkMode
                                             ? 'border-gray-700 hover:bg-gray-800/50'
                                             : 'border-gray-200 hover:bg-gray-50'
-                                        } ${index % 2 === 0 ? (isDarkMode ? 'bg-gray-900/30' : 'bg-white') : (isDarkMode ? 'bg-gray-800/30' : 'bg-gray-50/50')}`}
+                                            } ${index % 2 === 0 ? (isDarkMode ? 'bg-gray-900/30' : 'bg-white') : (isDarkMode ? 'bg-gray-800/30' : 'bg-gray-50/50')}`}
                                     >
                                         {/* Number Column */}
                                         <td className="py-4 px-6">
@@ -479,12 +493,12 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
                                                         className={`h-4 w-4 ${assignment.voice_enabled
                                                             ? (isDarkMode ? 'text-green-400' : 'text-green-600')
                                                             : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                                                        }`}
+                                                            }`}
                                                     />
                                                     <span className={`text-xs font-medium ${assignment.voice_enabled
                                                         ? (isDarkMode ? 'text-green-400' : 'text-green-600')
                                                         : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                                                    }`}>
+                                                        }`}>
                                                         Voice
                                                     </span>
                                                 </div>
@@ -495,12 +509,12 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
                                                         className={`h-4 w-4 ${assignment.sms_enabled
                                                             ? (isDarkMode ? 'text-blue-400' : 'text-blue-600')
                                                             : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                                                        }`}
+                                                            }`}
                                                     />
                                                     <span className={`text-xs font-medium ${assignment.sms_enabled
                                                         ? (isDarkMode ? 'text-blue-400' : 'text-blue-600')
                                                         : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                                                    }`}>
+                                                        }`}>
                                                         SMS
                                                     </span>
                                                 </div>
@@ -511,12 +525,12 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
                                                         className={`h-4 w-4 ${assignment.whatsapp_enabled
                                                             ? (isDarkMode ? 'text-green-400' : 'text-green-600')
                                                             : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                                                        }`}
+                                                            }`}
                                                     />
                                                     <span className={`text-xs font-medium ${assignment.whatsapp_enabled
                                                         ? (isDarkMode ? 'text-green-400' : 'text-green-600')
                                                         : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                                                    }`}>
+                                                        }`}>
                                                         WhatsApp
                                                     </span>
                                                 </div>
@@ -538,35 +552,26 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
                                                 ) : (
                                                     <XCircle className={`h-4 w-4 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
                                                 )}
+                                                {assignment.status === 'assigned' && (
+                                                    <button
+                                                        onClick={() => handleUnassignAgent(assignment.id)}
+                                                        disabled={isUnassigning === assignment.id}
+                                                        className={`p-1 rounded-lg transition-all duration-200 hover:scale-105 ${isDarkMode
+                                                            ? 'hover:bg-red-900/30 text-red-400 hover:text-red-300'
+                                                            : 'hover:bg-red-50 text-red-500 hover:text-red-600'
+                                                            }`}
+                                                        title="Unassign agent"
+                                                    >
+                                                        {isUnassigning === assignment.id ? (
+                                                            <RefreshCw className="h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <Trash2 className="h-4 w-4" />
+                                                        )}
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
 
-                                        {/* Unassign Column - Only show when there are assigned agents */}
-                                        {hasAssignedAgents && (
-                                            <td className="py-4 px-6">
-                                                <button
-                                                    onClick={() => {
-                                                        if (assignment.status === 'assigned') {
-                                                            handleUnassignAgent(assignment.id);
-                                                        } else {
-                                                            setShowAssignModal(true);
-                                                        }
-                                                    }}
-                                                    disabled={isUnassigning === assignment.id}
-                                                    className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${isDarkMode
-                                                        ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
-                                                        : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
-                                                    }`}
-                                                    title={assignment.status === 'assigned' ? 'Unassign agent' : 'Assign agent'}
-                                                >
-                                                    {isUnassigning === assignment.id ? (
-                                                        <RefreshCw className="h-4 w-4 animate-spin" />
-                                                    ) : (
-                                                        <Edit className="h-4 w-4" />
-                                                    )}
-                                                </button>
-                                            </td>
-                                        )}
                                     </tr>
                                 ))}
                             </tbody>

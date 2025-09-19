@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Phone, RefreshCw, Search, Users, Bot, Edit, CheckCircle, XCircle, PhoneCall, MessageSquare, User } from 'lucide-react';
+import { Plus, Phone, RefreshCw, Search, Users, Bot, Edit, CheckCircle, XCircle, PhoneCall, MessageSquare, User, Trash2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuthInfo } from '@propelauth/react';
 import { SMSService } from '../../service/smsService';
@@ -30,7 +30,8 @@ interface SMSAssignment {
     voice_enabled?: boolean;
     sms_enabled?: boolean;
     whatsapp_enabled?: boolean;
-    agent_id?: string;
+    agent_id?: string | null;
+    mapping_data?: any;
 }
 
 // Custom WhatsApp icon component
@@ -57,6 +58,9 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
     const [assignments, setAssignments] = useState<SMSAssignment[]>([]);
     const [agents, setAgents] = useState<Agent[]>([]);
     const [organizationPhoneNumbers, setOrganizationPhoneNumbers] = useState<any[]>([]);
+    const [agentMappings, setAgentMappings] = useState<Record<string, any>>({});
+    const [totalMappings, setTotalMappings] = useState<number>(0);
+    const [mappingsLoaded, setMappingsLoaded] = useState<boolean>(false);
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [selectedAgent, setSelectedAgent] = useState<string>('');
     const [selectedPhoneNumber, setSelectedPhoneNumber] = useState<string>('');
@@ -97,6 +101,45 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
             setOrganizationPhoneNumbers([]);
         } finally {
             setLoadingOrgPhoneNumbers(false);
+        }
+    }, []);
+
+    const loadAgentMappings = useCallback(async () => {
+        try {
+            console.log('🚀 Loading SMS agent mappings...');
+            const response = await SMSService.getReceivingNumberAgentMappings();
+            console.log('🚀 Agent mappings response:', response);
+
+            if (response.success && response.data) {
+                const mappingsData = response.data;
+                console.log('✅ Agent mappings data:', mappingsData);
+
+                if (mappingsData.receiving_number_mappings) {
+                    console.log('✅ Found receiving number mappings:', mappingsData.receiving_number_mappings);
+                    // Store the mappings to use when converting phone numbers to assignments
+                    setAgentMappings(mappingsData.receiving_number_mappings);
+                } else {
+                    console.log('❌ No agent mappings found in response');
+                    setAgentMappings({});
+                }
+
+                // Store total mappings count for filtering logic
+                const mappingsCount = mappingsData.total_mappings || 0;
+                console.log('✅ Total mappings count:', mappingsCount);
+                setTotalMappings(mappingsCount);
+                setMappingsLoaded(true);
+            } else {
+                console.log('❌ Agent mappings API response failed:', response);
+                setAgentMappings({});
+                setTotalMappings(0);
+                setMappingsLoaded(true);
+            }
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+            console.error('❌ Error loading SMS agent mappings:', errorMessage);
+            setAgentMappings({});
+            setTotalMappings(0);
+            setMappingsLoaded(true);
         }
     }, []);
 
@@ -151,10 +194,11 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
 
     // Load data on component mount
     useEffect(() => {
-        console.log('🔍 useEffect triggered, loading phone numbers and agents');
+        console.log('🔍 useEffect triggered, loading phone numbers, agents, and mappings');
         loadPhoneNumbers();
         loadAgents();
-    }, [loadPhoneNumbers, loadAgents]);
+        loadAgentMappings();
+    }, [loadPhoneNumbers, loadAgents, loadAgentMappings]);
 
     // Reload data when refreshTrigger changes
     useEffect(() => {
@@ -162,8 +206,9 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
             console.log('🔄 Refresh trigger activated, reloading data');
             loadPhoneNumbers();
             loadAgents();
+            loadAgentMappings();
         }
-    }, [refreshTrigger, loadPhoneNumbers, loadAgents]);
+    }, [refreshTrigger, loadPhoneNumbers, loadAgents, loadAgentMappings]);
 
     // Get friendly name from phone number
     const getFriendlyName = (phoneNumber: string) => {
@@ -184,27 +229,39 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
     useEffect(() => {
         if (organizationPhoneNumbers.length > 0) {
             console.log('🔄 Converting phone numbers to assignments:', organizationPhoneNumbers);
-            const smsAssignments: SMSAssignment[] = organizationPhoneNumbers.map((orgPhone: any, index: number) => ({
-                id: orgPhone.phone_id || orgPhone._id || `phone_${index}`,
-                phone_number: orgPhone.number || orgPhone.phone_number || '',
-                friendly_name: getFriendlyName(orgPhone.number || orgPhone.phone_number || ''),
-                agent_name: orgPhone.agent_name || '',
-                agent_prefix: '',
-                assigned_at: orgPhone.updated_at || '',
-                status: (orgPhone.agent_id && orgPhone.agent_id !== 'unassigned' && orgPhone.agent_id !== '' && orgPhone.agent_id !== null) ? 'assigned' as const : 'unassigned' as const,
-                voice_enabled: orgPhone.voice_enabled || false,
-                sms_enabled: orgPhone.sms_enabled || true, // SMS numbers are SMS enabled by default
-                whatsapp_enabled: orgPhone.whatsapp_enabled || false,
-                agent_id: orgPhone.agent_id || null
-            }));
+            console.log('🔄 Using agent mappings:', agentMappings);
 
-            console.log('✅ SMS assignments created:', smsAssignments);
+            const smsAssignments: SMSAssignment[] = organizationPhoneNumbers.map((orgPhone: any, index: number) => {
+                const phoneNumber = orgPhone.number || orgPhone.phone_number || '';
+                const cleanNumber = phoneNumber.replace(/\D/g, ''); // Remove non-digits for comparison
+
+                // Check if this phone number has an agent mapping
+                const mapping = agentMappings[cleanNumber] || agentMappings[phoneNumber];
+                const isAssigned = !!mapping;
+
+                return {
+                    id: orgPhone.phone_id || orgPhone._id || `phone_${index}`,
+                    phone_number: phoneNumber,
+                    friendly_name: getFriendlyName(phoneNumber),
+                    agent_name: isAssigned ? 'SMS Agent' : '',
+                    agent_prefix: isAssigned ? 'sms_agent' : '',
+                    assigned_at: isAssigned ? (mapping.last_activity || new Date().toISOString()) : '',
+                    status: isAssigned ? 'assigned' as const : 'unassigned' as const,
+                    voice_enabled: orgPhone.voice_enabled || false,
+                    sms_enabled: orgPhone.sms_enabled || true, // SMS numbers are SMS enabled by default
+                    whatsapp_enabled: orgPhone.whatsapp_enabled || false,
+                    agent_id: isAssigned ? 'sms_agent' : null,
+                    mapping_data: mapping || null
+                };
+            });
+
+            console.log('✅ SMS assignments created with mappings:', smsAssignments);
             setAssignments(smsAssignments);
         } else {
             console.log('❌ No phone numbers to convert to assignments');
             setAssignments([]);
         }
-    }, [organizationPhoneNumbers]);
+    }, [organizationPhoneNumbers, agentMappings]);
 
     // Assignment functions
     const handleAssignAgent = async () => {
@@ -225,6 +282,9 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
             );
 
             if (result.success) {
+                // Refresh agent mappings to get updated data
+                await loadAgentMappings();
+
                 // Update local state
                 const updatedAssignments = assignments.map(assignment => {
                     if (assignment.phone_number === selectedPhoneNumber) {
@@ -268,6 +328,9 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
             const result = await SMSService.unassignReceivingNumberAgent(assignment.phone_number);
 
             if (result.success) {
+                // Reload agent mappings to get updated data
+                await loadAgentMappings();
+
                 // Update local state
                 const updatedAssignments = assignments.map(assignment => {
                     if (assignment.id === assignmentId) {
@@ -276,7 +339,8 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
                             agent_name: '',
                             agent_prefix: '',
                             assigned_at: '',
-                            status: 'unassigned' as const
+                            status: 'unassigned' as const,
+                            mapping_data: null
                         };
                     }
                     return assignment;
@@ -301,20 +365,37 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
         setAgentSearchTerm('');
     };
 
-    // Filter assignments based on search terms
+    // Filter assignments based on search terms and total mappings
     const filteredAssignments = assignments.filter(assignment => {
         const matchesSearch = assignment.phone_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
             assignment.friendly_name.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesAgent = assignment.agent_name.toLowerCase().includes(agentSearchTerm.toLowerCase()) ||
             assignment.agent_prefix.toLowerCase().includes(agentSearchTerm.toLowerCase());
-        return matchesSearch && matchesAgent;
+
+        // Only apply mapping filter after mappings have been loaded
+        // If total_mappings > 0, only show assigned numbers
+        // If total_mappings = 0, show all numbers
+        const matchesMappingFilter = mappingsLoaded ? (totalMappings > 0 ? assignment.status === 'assigned' : true) : true;
+
+        console.log(`🔍 Filtering assignment ${assignment.phone_number}:`, {
+            status: assignment.status,
+            totalMappings,
+            mappingsLoaded,
+            matchesMappingFilter,
+            matchesSearch,
+            matchesAgent
+        });
+
+        return matchesSearch && matchesAgent && matchesMappingFilter;
     });
 
+    console.log(`📊 Filtering results: mappingsLoaded=${mappingsLoaded}, totalMappings=${totalMappings}, totalAssignments=${assignments.length}, filteredAssignments=${filteredAssignments.length}`);
+
     // Check if any agents are assigned in the filtered assignments
-    const hasAssignedAgents = filteredAssignments.some(assignment => 
-        assignment.status === 'assigned' && 
-        assignment.agent_id && 
-        assignment.agent_id !== 'unassigned' && 
+    const hasAssignedAgents = filteredAssignments.some(assignment =>
+        assignment.status === 'assigned' &&
+        assignment.agent_id &&
+        assignment.agent_id !== 'unassigned' &&
         assignment.agent_id !== null
     );
 
@@ -415,11 +496,6 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
                                     <th className="text-left py-4 px-6 font-semibold text-sm">
                                         Agent
                                     </th>
-                                    {hasAssignedAgents && (
-                                        <th className="text-left py-4 px-6 font-semibold text-sm">
-                                            Unassign
-                                        </th>
-                                    )}
                                 </tr>
                             </thead>
                             <tbody>
@@ -429,7 +505,7 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
                                         className={`border-b transition-colors duration-200 ${isDarkMode
                                             ? 'border-gray-700 hover:bg-gray-800/50'
                                             : 'border-gray-200 hover:bg-gray-50'
-                                        } ${index % 2 === 0 ? (isDarkMode ? 'bg-gray-900/30' : 'bg-white') : (isDarkMode ? 'bg-gray-800/30' : 'bg-gray-50/50')}`}
+                                            } ${index % 2 === 0 ? (isDarkMode ? 'bg-gray-900/30' : 'bg-white') : (isDarkMode ? 'bg-gray-800/30' : 'bg-gray-50/50')}`}
                                     >
                                         {/* Number Column */}
                                         <td className="py-4 px-6">
@@ -462,12 +538,12 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
                                                         className={`h-4 w-4 ${assignment.voice_enabled
                                                             ? (isDarkMode ? 'text-green-400' : 'text-green-600')
                                                             : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                                                        }`}
+                                                            }`}
                                                     />
                                                     <span className={`text-xs font-medium ${assignment.voice_enabled
                                                         ? (isDarkMode ? 'text-green-400' : 'text-green-600')
                                                         : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                                                    }`}>
+                                                        }`}>
                                                         Voice
                                                     </span>
                                                 </div>
@@ -478,12 +554,12 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
                                                         className={`h-4 w-4 ${assignment.sms_enabled
                                                             ? (isDarkMode ? 'text-blue-400' : 'text-blue-600')
                                                             : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                                                        }`}
+                                                            }`}
                                                     />
                                                     <span className={`text-xs font-medium ${assignment.sms_enabled
                                                         ? (isDarkMode ? 'text-blue-400' : 'text-blue-600')
                                                         : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                                                    }`}>
+                                                        }`}>
                                                         SMS
                                                     </span>
                                                 </div>
@@ -494,12 +570,12 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
                                                         className={`h-4 w-4 ${assignment.whatsapp_enabled
                                                             ? (isDarkMode ? 'text-green-400' : 'text-green-600')
                                                             : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                                                        }`}
+                                                            }`}
                                                     />
                                                     <span className={`text-xs font-medium ${assignment.whatsapp_enabled
                                                         ? (isDarkMode ? 'text-green-400' : 'text-green-600')
                                                         : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                                                    }`}>
+                                                        }`}>
                                                         WhatsApp
                                                     </span>
                                                 </div>
@@ -511,8 +587,8 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
                                             <div className="flex items-center gap-2">
                                                 <User className={`h-4 w-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                                                 <span className="text-sm">
-                                                    {assignment.agent_id && assignment.agent_id !== 'unassigned' && assignment.agent_id !== null
-                                                        ? (assignment.agent_name || assignment.agent_id)
+                                                    {assignment.status === 'assigned'
+                                                        ? (assignment.agent_name || 'SMS Agent')
                                                         : 'Unassigned'
                                                     }
                                                 </span>
@@ -521,35 +597,28 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
                                                 ) : (
                                                     <XCircle className={`h-4 w-4 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
                                                 )}
+
+                                                {/* Unassign button for assigned numbers - positioned right after the status icon */}
+                                                {assignment.status === 'assigned' && (
+                                                    <button
+                                                        onClick={() => handleUnassignAgent(assignment.id)}
+                                                        disabled={isUnassigning === assignment.id}
+                                                        className={`p-1.5 rounded-lg transition-all duration-200 hover:scale-105 ${isDarkMode
+                                                            ? 'hover:bg-red-900/30 text-red-400 hover:text-red-300'
+                                                            : 'hover:bg-red-50 text-red-500 hover:text-red-600'
+                                                            }`}
+                                                        title="Unassign agent"
+                                                    >
+                                                        {isUnassigning === assignment.id ? (
+                                                            <RefreshCw className="h-3 w-3 animate-spin" />
+                                                        ) : (
+                                                            <Trash2 className="h-3 w-3" />
+                                                        )}
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
 
-                                        {/* Unassign Column - Only show when there are assigned agents */}
-                                        {hasAssignedAgents && (
-                                            <td className="py-4 px-6">
-                                                <button
-                                                    onClick={() => {
-                                                        if (assignment.status === 'assigned') {
-                                                            handleUnassignAgent(assignment.id);
-                                                        } else {
-                                                            setShowAssignModal(true);
-                                                        }
-                                                    }}
-                                                    disabled={isUnassigning === assignment.id}
-                                                    className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${isDarkMode
-                                                        ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
-                                                        : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
-                                                    }`}
-                                                    title={assignment.status === 'assigned' ? 'Unassign agent' : 'Assign agent'}
-                                                >
-                                                    {isUnassigning === assignment.id ? (
-                                                        <RefreshCw className="h-4 w-4 animate-spin" />
-                                                    ) : (
-                                                        <Edit className="h-4 w-4" />
-                                                    )}
-                                                </button>
-                                            </td>
-                                        )}
                                     </tr>
                                 ))}
                             </tbody>
@@ -610,7 +679,12 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
                                     >
                                         <option value="">Select a phone number</option>
                                         {organizationPhoneNumbers
-                                            .filter(phone => !phone.agent_id || phone.agent_id === 'unassigned' || phone.agent_id === '' || phone.agent_id === null)
+                                            .filter(phone => {
+                                                const phoneNumber = phone.number || phone.phone_number || '';
+                                                const cleanNumber = phoneNumber.replace(/\D/g, '');
+                                                const mapping = agentMappings[cleanNumber] || agentMappings[phoneNumber];
+                                                return !mapping; // Only show unassigned numbers
+                                            })
                                             .map((phone, index) => (
                                                 <option key={phone.phone_id || phone._id || `phone_${index}`} value={phone.number || phone.phone_number}>
                                                     {phone.number || phone.phone_number}
