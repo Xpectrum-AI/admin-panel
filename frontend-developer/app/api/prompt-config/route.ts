@@ -2,61 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const DIFY_BASE_URL = process.env.NEXT_PUBLIC_DIFY_BASE_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1';
 
-export async function GET() {
-  try {
-    console.log('🔍 Fetching current prompt configuration...');
-    
-    const chatbotApiKey = process.env.NEXT_PUBLIC_CHATBOT_API_KEY;
-    if (!chatbotApiKey) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Chatbot API key not configured' 
-        },
-        { status: 400 }
-      );
-    }
-    
-    const response = await fetch(`${DIFY_BASE_URL}/apps/current/prompt`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${chatbotApiKey}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Failed to fetch prompt config:', errorData);
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: errorData.error || `HTTP ${response.status}: ${response.statusText}` 
-        },
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
-    console.log('✅ Prompt config fetched successfully:', data);
-    
-    return NextResponse.json({
-      success: true,
-      data
-    });
-
-  } catch (error) {
-    console.error('❌ Prompt config fetch error:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to fetch prompt configuration',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
-  }
-}
+// GET endpoint removed - using localStorage solution instead
 
 export async function POST(request: NextRequest) {
   try {

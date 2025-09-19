@@ -329,34 +329,6 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
 
   return (
     <div ref={ref} className="space-y-6">
-      {/* Header */}
-      <div className="text-center mb-6">
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <div className={`p-3 rounded-2xl ${isDarkMode ? 'bg-orange-900/50' : 'bg-orange-100'}`}>
-            <MessageSquare className={`h-6 w-6 sm:h-8 sm:w-8 ${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`} />
-          </div>
-          <div className="flex items-center gap-2">
-            <h3 className={`text-xl sm:text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Transcriber Configuration</h3>
-            <button
-              onClick={handleRefreshConfig}
-              disabled={!isEditing}
-              className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${!isEditing
-                ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                : isDarkMode
-                  ? 'bg-orange-800/50 hover:bg-orange-700/50 text-orange-400'
-                  : 'bg-orange-100 hover:bg-orange-200 text-orange-600'
-                }`}
-              title={isEditing ? "Refresh configuration from agent" : "Enable edit mode to refresh configuration"}
-            >
-              <RefreshCw className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-        <p className={`max-w-2xl mx-auto text-sm sm:text-base ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-          {isEditing ? 'Configure speech-to-text settings for accurate transcription of conversations' : 'View your transcriber configuration settings'}
-        </p>
-
-      </div>
 
       {/* Configuration Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -368,7 +340,6 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
             </div>
             <div>
               <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Provider & Language</h4>
-              <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Choose your transcription provider and language</p>
             </div>
           </div>
 
@@ -435,7 +406,6 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
             </div>
             <div>
               <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Model & API</h4>
-              <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Select model and configure API access</p>
             </div>
           </div>
 
@@ -480,20 +450,6 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
         </div>
       </div>
 
-      {/* Pro Tip */}
-      <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200'}`}>
-        <div className="flex items-start gap-3">
-          <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-blue-900/50' : 'bg-blue-100'}`}>
-            <Zap className={`h-4 w-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-          </div>
-          <div>
-            <h4 className={`font-semibold text-sm sm:text-base mb-1 ${isDarkMode ? 'text-blue-300' : 'text-blue-800'}`}>Pro Tip</h4>
-            <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-blue-200' : 'text-blue-700'}`}>
-              For multi-language support, set language to <strong>multi</strong> and use <strong>ElevenLabs Turbo 2.5</strong> in the Voice tab for optimal results.
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Additional Configuration */}
       <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
@@ -503,7 +459,6 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
           </div>
           <div>
             <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Additional Settings</h4>
-            <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Configure advanced transcription options</p>
           </div>
         </div>
 
@@ -519,7 +474,6 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
                 </div>
                 <div>
                   <h5 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Punctuate</h5>
-                  <p className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Add punctuation to the transcription output</p>
                 </div>
               </div>
               <button
@@ -551,7 +505,6 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
                 </div>
                 <div>
                   <h5 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Smart Format</h5>
-                  <p className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Apply smart formatting to the transcription</p>
                 </div>
               </div>
               <button
@@ -583,7 +536,6 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
                 </div>
                 <div>
                   <h5 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Interim Results</h5>
-                  <p className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Show interim transcription results as they come in</p>
                 </div>
               </div>
               <button
