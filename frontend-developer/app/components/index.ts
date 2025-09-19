@@ -6,3 +6,4 @@ export { default as GmailTab } from './GmailTab';
 export { default as OverviewTab } from './OverviewTab';
 export { default as Navbar } from './Navbar';
 export { default as OrgSetup } from './OrgSetup';
+export { default as WidgetConfig } from './config/WidgetConfig';

@@ -162,65 +162,27 @@ export class DashboardService {
     try {
       console.log('🔍 Fetching phone numbers count for organization:', organizationId);
       
-      // Try multiple API endpoints to get phone numbers
-      const endpoints = [
-        `/api/phone-numbers/organization/${organizationId}`,
-        `${process.env.NEXT_PUBLIC_LIVE_API_URL}/phone-numbers/organization/${organizationId}`,
-        `${process.env.NEXT_PUBLIC_LIVE_API_URL}/phone-numbers/status/available`,
-        `${process.env.NEXT_PUBLIC_LIVE_API_URL}/phone-numbers`,
-        `${process.env.NEXT_PUBLIC_LIVE_API_URL}/phone-numbers/assigned`
-      ];
-
-      for (const endpoint of endpoints) {
-        try {
-          console.log('🔍 Trying endpoint:', endpoint);
-          
-          const response = await fetch(endpoint, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-api-key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
-            },
-          });
-
-          console.log('🔍 Phone numbers API response status:', response.status);
-
-          if (response.ok) {
-            const result = await response.json();
-            console.log('🔍 Phone numbers result:', result);
-            
-            // Check if the response contains an error about agents (incorrect endpoint)
-            if (result.status === 'error' && result.message && result.message.includes('No agents found')) {
-              console.log('❌ Endpoint is returning agents instead of phone numbers:', result.message);
-              continue;
-            }
-            
-            if (result.success && result.data) {
-              // Handle different response formats
-              if (Array.isArray(result.data)) {
-                console.log('✅ Found phone numbers (array format):', result.data.length);
-                return result.data.length;
-              } else if (result.data.phone_numbers && Array.isArray(result.data.phone_numbers)) {
-                console.log('✅ Found phone numbers (nested format):', result.data.phone_numbers.length);
-                return result.data.phone_numbers.length;
-              } else if (result.data.count !== undefined) {
-                console.log('✅ Found phone numbers (count format):', result.data.count);
-                return result.data.count;
-              }
-            } else if (Array.isArray(result)) {
-              console.log('✅ Found phone numbers (direct array):', result.length);
-              return result.length;
-            }
-          } else {
-            console.log('❌ Endpoint failed:', endpoint, response.status);
-          }
-        } catch (endpointError) {
-          console.log('❌ Endpoint error:', endpoint, endpointError);
-          continue;
+      // Use the SMS service which we know works with the correct endpoint
+      const { SMSService } = await import('./smsService');
+      const result = await SMSService.getAllPhoneNumbers();
+      
+      console.log('🔍 Phone numbers API response:', result);
+      
+      if (result.success && result.data) {
+        // Handle different response formats
+        if (Array.isArray(result.data)) {
+          console.log('✅ Found phone numbers (array format):', result.data.length);
+          return result.data.length;
+        } else if (result.data.phone_numbers && Array.isArray(result.data.phone_numbers)) {
+          console.log('✅ Found phone numbers (nested format):', result.data.phone_numbers.length);
+          return result.data.phone_numbers.length;
+        } else if (result.data.count !== undefined) {
+          console.log('✅ Found phone numbers (count format):', result.data.count);
+          return result.data.count;
         }
       }
       
-      console.log('❌ No phone numbers found in any endpoint');
+      console.log('❌ No phone numbers found in API response');
       return 0;
     } catch (error) {
       console.error('❌ Error fetching phone numbers count:', error);

@@ -106,6 +106,7 @@ export async function POST(request: NextRequest) {
         timeout: 60000, // 60 second timeout
         maxBuffer: 1024 * 1024 * 10, // 10MB buffer
         env: envVars // Pass environment variables to the script
+
       });
 
       console.log('📝 Script stdout:', stdout);
