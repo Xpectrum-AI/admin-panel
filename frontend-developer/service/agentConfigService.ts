@@ -69,10 +69,11 @@ const getCurrentOrganizationId = (): string | null => {
   return null;
 };
 
-// Helper function to mask API keys
+// Helper function to mask API keys - show only last 4 characters
 export const maskApiKey = (apiKey: string): string => {
-  if (!apiKey || apiKey.length < 8) return '••••••••';
-  return apiKey.substring(0, 4) + '••••••••' + apiKey.substring(apiKey.length - 4);
+  if (!apiKey || apiKey.length < 4) return '••••••••';
+  if (apiKey.length <= 8) return '••••' + apiKey.substring(apiKey.length - 4);
+  return '••••••••••••••••••••••••••••••••' + apiKey.substring(apiKey.length - 4);
 };
 
 // Get environment variables

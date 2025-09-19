@@ -876,6 +876,7 @@ Remember: You are the first point of contact for many patients. Your professiona
         selectedModel: agent.model || 'GPT-4o',
         modelApiKey: agent.modelApiKey || agent.chatbot_key || '',
         modelLiveUrl: agent.chatbot_api || process.env.NEXT_PUBLIC_MODEL_API_BASE_URL || '',
+        chatbot_api: agent.chatbot_api || '', // Include chatbot_api for ModelConfig
         chatbot_key: agent.chatbot_key // Include chatbot_key for proper identification
       },
       // Voice config data - pass the raw backend config directly
@@ -1478,6 +1479,7 @@ Remember: You are the first point of contact for many patients. Your professiona
                           onConfigChange={handleModelConfigChange}
                           existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).modelConfig : null}
                           isEditing={isEditing}
+                          onConfigUpdated={fetchAgents}
                         />
                       </div>
 
