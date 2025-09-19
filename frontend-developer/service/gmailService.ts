@@ -295,7 +295,7 @@ export class GmailService {
     const baseUrl = getApiBaseUrl();
     const liveApiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
     const chatbotApiKey = apiKey;
-    const agentUrl = process.env.NEXT_PUBLIC_DIFY_BASE_URL;
+    const agentUrl = process.env.NEXT_PUBLIC_CHATBOT_API_URL;
     
     // Create query parameters
     const params = new URLSearchParams({
@@ -364,6 +364,26 @@ export class GmailService {
       body: JSON.stringify(message)
     });
     return data;
+  }
+
+  // Unassign email agent
+  static async unassignEmailAgent(emailAddress: string): Promise<{ success: boolean; message: string }> {
+    console.log('🚀 Unassigning Gmail email agent:', { emailAddress });
+
+    try {
+      const result = await makeApiRequest(`/mail/unassign-email-agent/${encodeURIComponent(emailAddress)}`, {
+        method: 'DELETE'
+      });
+      
+      console.log('✅ Gmail email agent unassigned successfully:', result);
+      return {
+        success: true,
+        message: result.message || 'Gmail email agent unassigned successfully!'
+      };
+    } catch (error) {
+      console.error('❌ Failed to unassign Gmail email agent:', error);
+      throw error;
+    }
   }
 }
 
