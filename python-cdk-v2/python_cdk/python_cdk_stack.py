@@ -151,6 +151,11 @@ class AdminPanelDeploymentStack(Stack):
                 "NEXT_PUBLIC_WHISPER_API_KEY": os.environ.get('PRODUCTION_WHISPER_API_KEY' if environment == 'production' else 'DEV_WHISPER_API_KEY', ''),
                 "NEXT_PUBLIC_DEEPGRAM_API_KEY": os.environ.get('PRODUCTION_DEEPGRAM_API_KEY' if environment == 'production' else 'DEV_DEEPGRAM_API_KEY', ''),
                 "NEXT_PUBLIC_CARTESIA_API_KEY": os.environ.get('PRODUCTION_CARTESIA_API_KEY' if environment == 'production' else 'DEV_CARTESIA_API_KEY', ''),
+                # Model Provider API Keys
+                "NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY": os.environ.get('PRODUCTION_MODEL_OPEN_AI_API_KEY' if environment == 'production' else 'DEV_MODEL_OPEN_AI_API_KEY', ''),
+                "NEXT_PUBLIC_MODEL_GROQ_API_KEY": os.environ.get('PRODUCTION_MODEL_GROQ_API_KEY' if environment == 'production' else 'DEV_MODEL_GROQ_API_KEY', ''),
+                "NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY": os.environ.get('PRODUCTION_MODEL_ANTHROPIC_API_KEY' if environment == 'production' else 'DEV_MODEL_ANTHROPIC_API_KEY', ''),
+                "NEXT_PUBLIC_DIFY_BASE_URL": os.environ.get('PRODUCTION_DIFY_BASE_URL' if environment == 'production' else 'DEV_DIFY_BASE_URL', 'https://d22yt2oewbcglh.cloudfront.net/v1'),
                 # Voice Provider Voice IDs
                 "NEXT_PUBLIC_CARTESIA_VOICE_ID": os.environ.get('PRODUCTION_CARTESIA_VOICE_ID' if environment == 'production' else 'DEV_CARTESIA_VOICE_ID', ''),
                 "NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID": os.environ.get('PRODUCTION_ELEVEN_LABS_VOICE_ID' if environment == 'production' else 'DEV_ELEVEN_LABS_VOICE_ID', ''),
