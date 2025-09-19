@@ -5,7 +5,7 @@ import { getCurrentOrganization } from '@/lib/utils/getCurrentOrganization';
 // GET /api/scheduled/agent/[agent_id] - Get scheduled events for an agent
 export async function GET(
   request: NextRequest,
-  { params }: { params: { agent_id: string } }
+  { params }: { params: Promise<{ agent_id: string }> }
 ) {
   try {
     const authResult = await authenticateApiKey(request);
@@ -13,7 +13,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const agentId = params.agent_id;
+    const { agent_id } = await params;
+    const agentId = agent_id;
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const limit = searchParams.get('limit');

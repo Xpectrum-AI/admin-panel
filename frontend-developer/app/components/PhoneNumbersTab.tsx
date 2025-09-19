@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import { Phone, PhoneCall, RefreshCw } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
-import InboundPhoneNumbersTable from './InboundPhoneNumbersTable';
-import OutboundScheduler from './OutboundScheduler';
+import InboundPhoneNumbersTable from './InboundPhoneNumbers';
+import OutboundScheduler from './OutboundPhoneScheduler';
 import { syncPhoneNumbersFromTwilio } from '../../service/phoneNumberService';
 
 interface PhoneNumbersTabProps {

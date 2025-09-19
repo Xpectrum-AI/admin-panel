@@ -5,7 +5,7 @@ import { getCurrentOrganization } from '@/lib/utils/getCurrentOrganization';
 // GET /api/agents/info/[agentName] - Get agent information
 export async function GET(
   request: NextRequest,
-  { params }: { params: { agentName: string } }
+  { params }: { params: Promise<{ agentName: string }> }
 ) {
   try {
     const authResult = await authenticateApiKey(request);
@@ -13,7 +13,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const agentName = params.agentName;
+    const { agentName } = await params;
 
     // Get the current organization from the request
     const currentOrg = getCurrentOrganization(request);
@@ -23,13 +23,13 @@ export async function GET(
       _id: `agent_${Date.now()}`,
       agent_prefix: agentName,
       organization_id: currentOrg, // Use current organization
-      chatbot_api: "https://d22yt2oewbcglh.cloudfront.net/v1/chat-messages",
-      chatbot_key: "REDACTED",
+      chatbot_api: process.env.NEXT_PUBLIC_CHATBOT_API_URL || '',
+      chatbot_key: process.env.NEXT_PUBLIC_CHATBOT_API_KEY || '',
       tts_config: {
         provider: "cartesian",
         cartesian: {
           voice_id: "e8e5fffb-252c-436d-b842-8879b84445b6",
-          tts_api_key: "REDACTED",
+          tts_api_key: process.env.NEXT_PUBLIC_CARTESIA_API_KEY || '',
           model: "sonic-2",
           speed: 1,
           language: "english"
@@ -38,7 +38,7 @@ export async function GET(
       stt_config: {
         provider: "whisper",
         whisper: {
-          api_key: "REDACTED",
+          api_key: process.env.NEXT_PUBLIC_WHISPER_API_KEY || '',
           model: "whisper-1",
           language: "en-US"
         }

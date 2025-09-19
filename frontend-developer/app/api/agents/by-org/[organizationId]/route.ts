@@ -4,7 +4,7 @@ import { authenticateApiKey } from '@/lib/middleware/auth';
 // GET /api/agents/by-org/[organizationId] - Get all agents for an organization
 export async function GET(
   request: NextRequest,
-  { params }: { params: { organizationId: string } }
+  { params }: { params: Promise<{ organizationId: string }> }
 ) {
   try {
     const authResult = await authenticateApiKey(request);
@@ -12,7 +12,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const organizationId = params.organizationId;
+    const { organizationId } = await params;
 
     console.log('🔍 Fetching agents for organization:', organizationId);
     console.log('🔗 NEXT_PUBLIC_LIVE_API_URL:', process.env.NEXT_PUBLIC_LIVE_API_URL);
