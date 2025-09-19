@@ -13,7 +13,7 @@ export default function SMSTab({ }: SMSTabProps) {
 
     // Tab state
     const [activeTab, setActiveTab] = useState<'inbound' | 'outbound'>('inbound');
-    
+
     // Refresh function to trigger data reload in child components
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -25,7 +25,7 @@ export default function SMSTab({ }: SMSTabProps) {
     return (
         <div className="w-full h-full max-w-full mx-auto p-2 sm:p-4 lg:p-6 min-h-0 overflow-hidden">
             <div className={`rounded-xl sm:rounded-2xl border shadow-xl backdrop-blur-sm h-full flex flex-col max-h-full ${isDarkMode ? 'bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800 border-gray-700/50' : 'bg-gradient-to-br from-white via-gray-50 to-white border-gray-200/50'}`}>
-                
+
                 {/* Header */}
                 <div className={`p-3 sm:p-4 lg:p-6 xl:p-8 border-b rounded-t-xl sm:rounded-t-2xl flex-shrink-0 ${isDarkMode ? 'border-gray-700/50 bg-gradient-to-r from-orange-900/20 to-red-900/20' : 'border-gray-200/50 bg-gradient-to-r from-orange-50 to-red-50'}`}>
                     <div className="flex flex-col gap-3 sm:gap-4">
@@ -43,7 +43,7 @@ export default function SMSTab({ }: SMSTabProps) {
                                     {activeTab === 'inbound' ? 'View and manage SMS-enabled phone number assignments to agents' : 'Schedule outbound SMS messages with agents'}
                                 </p>
                             </div>
-                            
+
                             {/* Action Buttons */}
                             <div className="flex flex-col items-end gap-2">
                                 <div className="flex gap-2 sm:gap-3">
@@ -68,15 +68,14 @@ export default function SMSTab({ }: SMSTabProps) {
                     <div className="flex">
                         <button
                             onClick={() => setActiveTab('inbound')}
-                            className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold transition-all duration-300 ${
-                                activeTab === 'inbound'
+                            className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold transition-all duration-300 ${activeTab === 'inbound'
                                     ? isDarkMode
                                         ? 'bg-gradient-to-r from-orange-600/20 to-red-600/20 text-orange-400 border-b-2 border-orange-500'
                                         : 'bg-gradient-to-r from-orange-50 to-red-50 text-orange-600 border-b-2 border-orange-500'
                                     : isDarkMode
                                         ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-800/50'
                                         : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                            }`}
+                                }`}
                         >
                             <div className="flex items-center justify-center gap-2">
                                 <MessageSquare className="h-4 w-4" />
@@ -85,15 +84,14 @@ export default function SMSTab({ }: SMSTabProps) {
                         </button>
                         <button
                             onClick={() => setActiveTab('outbound')}
-                            className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold transition-all duration-300 ${
-                                activeTab === 'outbound'
+                            className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold transition-all duration-300 ${activeTab === 'outbound'
                                     ? isDarkMode
                                         ? 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 text-green-400 border-b-2 border-green-500'
                                         : 'bg-gradient-to-r from-green-50 to-emerald-50 text-green-600 border-b-2 border-green-500'
                                     : isDarkMode
                                         ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-800/50'
                                         : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                            }`}
+                                }`}
                         >
                             <div className="flex items-center justify-center gap-2">
                                 <PhoneCall className="h-4 w-4" />
