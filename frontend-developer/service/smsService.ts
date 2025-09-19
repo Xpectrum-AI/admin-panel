@@ -352,6 +352,23 @@ export class SMSService {
       throw error;
     }
   }
+
+  // Get SMS receiving number agent mappings
+  static async getReceivingNumberAgentMappings(): Promise<PhoneNumberResponse> {
+    try {
+      console.log('🚀 Fetching SMS receiving number agent mappings...');
+      
+      const data = await makeApiRequest('/sms/list-receiving-number-agents', {
+        method: 'GET',
+      });
+      
+      console.log('✅ SMS receiving number agent mappings fetched successfully:', data);
+      return { success: true, data };
+    } catch (error: any) {
+      console.error('❌ Error fetching SMS receiving number agent mappings:', error);
+      return { success: false, message: error.message };
+    }
+  }
 }
 
 export default SMSService;
