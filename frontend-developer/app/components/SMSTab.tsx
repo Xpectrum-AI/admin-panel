@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Activity, RefreshCw, MessageSquare, PhoneCall } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuthInfo } from '@propelauth/react';
 import InboundSMSNumbers from './InboundSMSNumbers';
 import OutboundSMSScheduler from './OutboundSMSScheduler';
 
@@ -10,12 +11,34 @@ interface SMSTabProps { }
 
 export default function SMSTab({ }: SMSTabProps) {
     const { isDarkMode } = useTheme();
+    const { userClass } = useAuthInfo();
 
     // Tab state
     const [activeTab, setActiveTab] = useState<'inbound' | 'outbound'>('inbound');
 
     // Refresh function to trigger data reload in child components
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+    // Organization name state
+    const [organizationName, setOrganizationName] = useState<string>('');
+
+    // Get organization name from user context
+    useEffect(() => {
+        if (userClass) {
+            const orgs = userClass.getOrgs?.() || [];
+            console.log('🔍 Available organizations from userClass:', orgs);
+            if (orgs.length > 0) {
+                const org = orgs[0] as any;
+                const orgName = org.orgName || org.name || '';
+                console.log('🔍 Setting organization name:', orgName);
+                setOrganizationName(orgName);
+            } else {
+                console.log('⚠️ No organizations found in userClass');
+            }
+        } else {
+            console.log('⚠️ userClass is not available');
+        }
+    }, [userClass]);
 
     // Handle refresh trigger
     const handleRefresh = () => {
@@ -47,8 +70,10 @@ export default function SMSTab({ }: SMSTabProps) {
                             {/* Action Buttons */}
                             <div className="flex flex-col items-end gap-2">
                                 <div className="flex gap-2 sm:gap-3">
+                                    {/* Organization Name */}
+
                                     <button className="group relative px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 bg-gray-500 text-white rounded-lg sm:rounded-xl hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 sm:gap-3">
-                                        <span className="text-sm sm:text-base font-semibold">Xpectrum</span>
+                                        <span className="text-sm sm:text-base font-semibold">{organizationName}</span>
                                     </button>
                                     <button
                                         onClick={handleRefresh}
@@ -69,12 +94,12 @@ export default function SMSTab({ }: SMSTabProps) {
                         <button
                             onClick={() => setActiveTab('inbound')}
                             className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold transition-all duration-300 ${activeTab === 'inbound'
-                                    ? isDarkMode
-                                        ? 'bg-gradient-to-r from-orange-600/20 to-red-600/20 text-orange-400 border-b-2 border-orange-500'
-                                        : 'bg-gradient-to-r from-orange-50 to-red-50 text-orange-600 border-b-2 border-orange-500'
-                                    : isDarkMode
-                                        ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-800/50'
-                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                                ? isDarkMode
+                                    ? 'bg-gradient-to-r from-orange-600/20 to-red-600/20 text-orange-400 border-b-2 border-orange-500'
+                                    : 'bg-gradient-to-r from-orange-50 to-red-50 text-orange-600 border-b-2 border-orange-500'
+                                : isDarkMode
+                                    ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-800/50'
+                                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                                 }`}
                         >
                             <div className="flex items-center justify-center gap-2">
@@ -85,12 +110,12 @@ export default function SMSTab({ }: SMSTabProps) {
                         <button
                             onClick={() => setActiveTab('outbound')}
                             className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold transition-all duration-300 ${activeTab === 'outbound'
-                                    ? isDarkMode
-                                        ? 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 text-green-400 border-b-2 border-green-500'
-                                        : 'bg-gradient-to-r from-green-50 to-emerald-50 text-green-600 border-b-2 border-green-500'
-                                    : isDarkMode
-                                        ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-800/50'
-                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                                ? isDarkMode
+                                    ? 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 text-green-400 border-b-2 border-green-500'
+                                    : 'bg-gradient-to-r from-green-50 to-emerald-50 text-green-600 border-b-2 border-green-500'
+                                : isDarkMode
+                                    ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-800/50'
+                                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                                 }`}
                         >
                             <div className="flex items-center justify-center gap-2">
