@@ -71,6 +71,7 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
     const [loading, setLoading] = useState(false);
     const [loadingAgents, setLoadingAgents] = useState(false);
     const [loadingOrgPhoneNumbers, setLoadingOrgPhoneNumbers] = useState(false);
+    const [organizationName, setOrganizationName] = useState<string>('');
 
     const loadPhoneNumbers = useCallback(async () => {
         setLoadingOrgPhoneNumbers(true);
@@ -191,6 +192,24 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
             setLoadingAgents(false);
         }
     }, [getOrganizationId]);
+
+    // Get organization name from user context
+    useEffect(() => {
+        if (userClass) {
+            const orgs = userClass.getOrgs?.() || [];
+            console.log('🔍 Available organizations from userClass:', orgs);
+            if (orgs.length > 0) {
+                const org = orgs[0] as any;
+                const orgName = org.orgName || org.name || '';
+                console.log('🔍 Setting organization name:', orgName);
+                setOrganizationName(orgName);
+            } else {
+                console.log('⚠️ No organizations found in userClass');
+            }
+        } else {
+            console.log('⚠️ userClass is not available');
+        }
+    }, [userClass]);
 
     // Load data on component mount
     useEffect(() => {
@@ -365,31 +384,32 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
         setAgentSearchTerm('');
     };
 
-    // Filter assignments based on search terms and total mappings
+    // Filter assignments based on search terms and agent assignment status
     const filteredAssignments = assignments.filter(assignment => {
         const matchesSearch = assignment.phone_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
             assignment.friendly_name.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesAgent = assignment.agent_name.toLowerCase().includes(agentSearchTerm.toLowerCase()) ||
             assignment.agent_prefix.toLowerCase().includes(agentSearchTerm.toLowerCase());
 
-        // Only apply mapping filter after mappings have been loaded
-        // If total_mappings > 0, only show assigned numbers
-        // If total_mappings = 0, show all numbers
-        const matchesMappingFilter = mappingsLoaded ? (totalMappings > 0 ? assignment.status === 'assigned' : true) : true;
+        // Check if any agents are assigned to any phone numbers
+        const hasAnyAssignedAgents = assignments.some(a => a.status === 'assigned' && a.agent_id && a.agent_id !== 'unassigned' && a.agent_id !== null);
+
+        // If agents are assigned, show only assigned numbers
+        // If no agents are assigned, show only unassigned numbers
+        const matchesAssignmentFilter = hasAnyAssignedAgents ? assignment.status === 'assigned' : assignment.status === 'unassigned';
 
         console.log(`🔍 Filtering assignment ${assignment.phone_number}:`, {
             status: assignment.status,
-            totalMappings,
-            mappingsLoaded,
-            matchesMappingFilter,
+            hasAnyAssignedAgents,
+            matchesAssignmentFilter,
             matchesSearch,
             matchesAgent
         });
 
-        return matchesSearch && matchesAgent && matchesMappingFilter;
+        return matchesSearch && matchesAgent && matchesAssignmentFilter;
     });
 
-    console.log(`📊 Filtering results: mappingsLoaded=${mappingsLoaded}, totalMappings=${totalMappings}, totalAssignments=${assignments.length}, filteredAssignments=${filteredAssignments.length}`);
+    console.log(`📊 Filtering results: totalAssignments=${assignments.length}, filteredAssignments=${filteredAssignments.length}, hasAnyAssignedAgents=${assignments.some(a => a.status === 'assigned' && a.agent_id && a.agent_id !== 'unassigned' && a.agent_id !== null)}`);
 
     // Check if any agents are assigned in the filtered assignments
     const hasAssignedAgents = filteredAssignments.some(assignment =>
@@ -420,6 +440,17 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
                     </div>
 
                     <div className="flex items-center gap-4">
+                        {/* Organization Name */}
+                        {organizationName && (
+                            <div className="flex items-center gap-2">
+                                <span className={`text-sm font-medium px-3 py-2 rounded-lg ${isDarkMode
+                                    ? 'bg-gray-700 text-gray-200 border border-gray-600'
+                                    : 'bg-gray-100 text-gray-700 border border-gray-300'
+                                    }`}>
+                                    {organizationName}
+                                </span>
+                            </div>
+                        )}
                         {/* Assign Agent Button */}
                         <button
                             onClick={() => setShowAssignModal(true)}
@@ -473,10 +504,17 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
                     <div className="text-center py-12">
                         <Phone className={`h-12 w-12 mx-auto mb-4 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`} />
                         <p className={`text-lg font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                            No SMS-enabled phone numbers found
+                            {assignments.some(a => a.status === 'assigned' && a.agent_id && a.agent_id !== 'unassigned' && a.agent_id !== null)
+                                ? 'No assigned SMS numbers found'
+                                : 'No unassigned SMS numbers found'
+                            }
                         </p>
                         <p className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                            {searchTerm ? 'Try adjusting your search' : 'No SMS-enabled phone numbers found for this organization'}
+                            {searchTerm ? 'Try adjusting your search' :
+                                assignments.some(a => a.status === 'assigned' && a.agent_id && a.agent_id !== 'unassigned' && a.agent_id !== null)
+                                    ? 'All SMS numbers are unassigned'
+                                    : 'All SMS numbers are assigned to agents'
+                            }
                         </p>
                     </div>
                 ) : (
