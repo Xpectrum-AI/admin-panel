@@ -193,17 +193,17 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
             Widget Configuration
           </h3>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Configure the Dify widget embed script for your agent
+            Configure the Agent widget embed script for your agent
           </p>
         </div>
       </div>
 
       {/* Configuration Form */}
       <div className="space-y-4">
-        {/* Dify API URL */}
+        {/* Agent API URL */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Dify API URL
+            Agent API URL
           </label>
           <div className="flex gap-2">
             <input
@@ -228,14 +228,14 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
             </button>
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            This URL is automatically configured for your Dify service
+            This URL is automatically configured for your Agent service
           </p>
         </div>
 
-        {/* Dify API Key */}
+        {/* Agent API Key */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Dify API Key
+            Agent API Key
           </label>
           <div className="flex gap-2">
             <input
@@ -356,7 +356,7 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
                 <div className={`mt-2 px-3 py-2 rounded-lg text-xs ${
                   isDarkMode ? 'bg-blue-900/20 border border-blue-700/50 text-blue-200' : 'bg-blue-50 border border-blue-200 text-blue-800'
                 }`}>
-                  <strong>Note:</strong> If you get configuration errors, please configure your agent in the Dify console with a model and prompt first.
+                  <strong>Note:</strong> If you get configuration errors, please configure your agent in the Agent console with a model and prompt first.
                 </div>
               </div>
             </div>
@@ -390,7 +390,7 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
                         {agentName} Assistant
                       </h5>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Powered by Dify
+                        Powered by Agent
                       </p>
                     </div>
                   </div>
