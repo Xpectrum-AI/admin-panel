@@ -22,6 +22,7 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
   const [difyApiKey, setDifyApiKey] = useState('');
   const [copied, setCopied] = useState(false);
   const [widgetScript, setWidgetScript] = useState('');
+  const [voiceWidgetScript, setVoiceWidgetScript] = useState('');
   
   // Chatbot preview state
   const [chatMessages, setChatMessages] = useState<Array<{id: string, type: 'user' | 'bot', message: string, timestamp: Date}>>([]);
@@ -30,17 +31,29 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
   const [showPreview, setShowPreview] = useState(false);
   const [conversationId, setConversationId] = useState('');
 
-  // Generate widget script based on current values
+  // Generate widget scripts based on current values
   useEffect(() => {
-    const script = `<script 
+    // Chatbot widget script
+    const chatbotScript = `<script 
   src="https://widgetbot.netlify.app/bidirectional-embed.js"
   data-dify-api-url="https://d22yt2oewbcglh.cloudfront.net/v1"
   data-dify-api-key="${difyApiKey}"
   data-position="bottom-right"
   data-primary-color="#667eea">
 </script>`;
-    setWidgetScript(script);
-  }, [difyApiKey]);
+    setWidgetScript(chatbotScript);
+
+    // Voice widget script
+    const voiceScript = `<script 
+  src="https://voice-widget.netlify.app/voice-widget.js"
+  agent-api-url="https://d25b4i9wbz6f8t.cloudfront.net"
+  agent-api-key="xpectrum-ai@123"
+  data-agent="${agentName}"
+  data-position="bottom-right"
+  data-primary-color="#667eea">
+</script>`;
+    setVoiceWidgetScript(voiceScript);
+  }, [difyApiKey, agentName]);
 
   // Load existing configuration
   useEffect(() => {
@@ -62,10 +75,11 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
       onConfigChange({
         difyApiUrl,
         difyApiKey,
-        widgetScript
+        widgetScript,
+        voiceWidgetScript
       });
     }
-  }, [difyApiUrl, difyApiKey, widgetScript, onConfigChange]);
+  }, [difyApiUrl, difyApiKey, widgetScript, voiceWidgetScript, onConfigChange]);
 
   const handleCopyScript = async () => {
     try {
@@ -74,6 +88,16 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy script:', err);
+    }
+  };
+
+  const handleCopyVoiceScript = async () => {
+    try {
+      await navigator.clipboard.writeText(voiceWidgetScript);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy voice script:', err);
     }
   };
 
@@ -255,11 +279,11 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
         </div>
       </div>
 
-      {/* Generated Widget Script */}
+      {/* Generated Chatbot Widget Script */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h4 className="text-md font-medium text-gray-900 dark:text-white">
-            Generated Widget Script
+            Chatbot Widget Script
           </h4>
           <button
             onClick={handleCopyScript}
@@ -285,6 +309,36 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
         </div>
       </div>
 
+      {/* Generated Voice Widget Script */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h4 className="text-md font-medium text-gray-900 dark:text-white">
+            Voice Widget Script
+          </h4>
+          <button
+            onClick={handleCopyVoiceScript}
+            className={`px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-2 text-sm ${
+              isDarkMode
+                ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
+                : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            {copied ? 'Copied!' : 'Copy Script'}
+          </button>
+        </div>
+        
+        <div className={`relative rounded-lg border p-4 ${
+          isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'
+        }`}>
+          <pre className={`text-sm overflow-x-auto whitespace-pre-wrap ${
+            isDarkMode ? 'text-gray-300' : 'text-gray-800'
+          }`}>
+            <code>{voiceWidgetScript}</code>
+          </pre>
+        </div>
+      </div>
+
       {/* Usage Instructions */}
       <div className={`rounded-lg border p-4 ${
         isDarkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200'
@@ -293,13 +347,14 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
           <Globe className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
           <div>
             <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
-              How to Use This Widget
+              How to Use These Widgets
             </h4>
             <ol className="text-sm text-blue-800 dark:text-blue-200 space-y-1 list-decimal list-inside">
-              <li>Copy the generated script above</li>
-              <li>Paste it into your website's HTML before the closing &lt;/body&gt; tag</li>
-              <li>The widget will appear in the bottom-right corner of your website</li>
-              <li>Users can interact with your agent through the widget</li>
+              <li>Copy the generated script(s) above (Chatbot Widget for text chat, Voice Widget for voice interaction)</li>
+              <li>Paste the script(s) into your website's HTML before the closing &lt;/body&gt; tag</li>
+              <li>The widgets will appear in the bottom-right corner of your website</li>
+              <li>Users can interact with your agent through text chat or voice</li>
+              <li>You can use both widgets together or choose one based on your needs</li>
             </ol>
           </div>
         </div>
