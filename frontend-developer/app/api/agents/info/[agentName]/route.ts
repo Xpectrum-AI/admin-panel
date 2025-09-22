@@ -18,48 +18,44 @@ export async function GET(
     // Get the current organization from the request
     const currentOrg = getCurrentOrganization(request);
 
-    // Mock agent data - in real implementation, fetch from database
-    const agent = {
-      _id: `agent_${Date.now()}`,
-      agent_prefix: agentName,
-      organization_id: currentOrg, // Use current organization
-      chatbot_api: process.env.NEXT_PUBLIC_CHATBOT_API_URL || '',
-      chatbot_key: process.env.NEXT_PUBLIC_CHATBOT_API_KEY || '',
-      tts_config: {
-        provider: "cartesian",
-        cartesian: {
-          voice_id: "e8e5fffb-252c-436d-b842-8879b84445b6",
-          tts_api_key: process.env.NEXT_PUBLIC_CARTESIA_API_KEY || '',
-          model: "sonic-2",
-          speed: 1,
-          language: "english"
-        }
+    // Call the real backend service to get agent information from MongoDB
+    const backendUrl = process.env.NEXT_PUBLIC_LIVE_API_URL || 'https://d25b4i9wbz6f8t.cloudfront.net';
+    const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
+
+    if (!apiKey) {
+      console.error('❌ Missing API key configuration');
+      return NextResponse.json({ error: 'API key configuration missing' }, { status: 500 });
+    }
+
+    console.log('🔍 Fetching agent info from backend service:', agentName);
+
+    // Call the real backend service
+    const response = await fetch(`${backendUrl}/agents/info/${agentName}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
       },
-      stt_config: {
-        provider: "whisper",
-        whisper: {
-          api_key: process.env.NEXT_PUBLIC_WHISPER_API_KEY || '',
-          model: "whisper-1",
-          language: "en-US"
-        }
-      },
-      initial_message: "Hello! How can I help you today?",
-      nudge_text: "Hello, Are you still there?",
-      nudge_interval: 15,
-      max_nudges: 3,
-      typing_volume: 0.8,
-      max_call_duration: 300,
-      created_at: Date.now() / 1000,
-      updated_at: Date.now() / 1000
-    };
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ Backend service error:', response.status, errorData);
+      throw new Error(`Backend service error: ${response.status} - ${errorData.error || response.statusText}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ Agent info retrieved from backend service (MongoDB):', result);
 
     return NextResponse.json({
       success: true,
-      data: agent,
-      message: 'Agent information retrieved successfully'
+      data: result.data || result,
+      message: 'Agent information retrieved successfully from MongoDB'
     });
   } catch (error) {
     console.error('Agent API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: error instanceof Error ? error.message : 'Internal server error' 
+    }, { status: 500 });
   }
 }

@@ -501,13 +501,17 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
         max_call_duration: maxCallDuration,
         tts_config: ttsConfig,
         stt_config: sttConfig,
-        // Use dynamically generated Dify API key if available
-        chatbot_api: difyApiKey ? process.env.NEXT_PUBLIC_CHATBOT_API_URL : undefined,
-        chatbot_key: difyApiKey || undefined
+        // Use chatbot configuration from ModelConfig (like TTS/STT use their configs)
+        chatbot_api: modelConfig?.chatbot_api || (difyApiKey ? process.env.NEXT_PUBLIC_CHATBOT_API_URL : undefined),
+        chatbot_key: modelConfig?.chatbot_key || difyApiKey || undefined
       };
 
       console.log('Complete config to send:', completeConfig);
       console.log('🔍 Organization ID being sent to API:', completeConfig.organization_id);
+      console.log('🔍 Chatbot config from ModelConfig:', { 
+        chatbot_api: modelConfig?.chatbot_api, 
+        chatbot_key: modelConfig?.chatbot_key 
+      });
 
       const result = await agentConfigService.configureAgent(agentName, completeConfig);
 
@@ -520,6 +524,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
+                'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
               },
               body: JSON.stringify({
                 provider: 'langgenius/openai/openai',
@@ -589,6 +594,7 @@ Remember: You are the first point of contact for many patients. Your professiona
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
+                'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
               },
               body: JSON.stringify({
                 prompt: defaultPrompt,

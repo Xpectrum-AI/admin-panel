@@ -44,6 +44,7 @@ export const modelConfigService = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
         },
         body: JSON.stringify(config),
       });
@@ -86,6 +87,7 @@ export const modelConfigService = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
         },
         body: JSON.stringify(config),
       });
