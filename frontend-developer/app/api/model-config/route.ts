@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { authenticateApiKey } from '@/lib/middleware/auth';
 
 const DIFY_BASE_URL = process.env.NEXT_PUBLIC_DIFY_BASE_URL || '';
 
@@ -78,6 +79,12 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    // Authenticate the request
+    const authResult = await authenticateApiKey(request);
+    if (!authResult.success) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     console.log('⚙️ Configuring model:', body);
     

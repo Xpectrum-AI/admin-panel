@@ -34,14 +34,23 @@ export async function POST(
     } = body;
 
     console.log('🔍 Creating/updating agent:', { agentName, organization_id, body });
+    console.log('🔍 Chatbot API values received:', { chatbot_api, chatbot_key });
 
-    // Mock agent creation/update - in real implementation, save to database
-    const agent = {
-      _id: `agent_${Date.now()}`,
+    // Call the real backend service to save to MongoDB
+    const backendUrl = process.env.NEXT_PUBLIC_LIVE_API_URL || 'https://d25b4i9wbz6f8t.cloudfront.net';
+    const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
+
+    if (!apiKey) {
+      console.error('❌ Missing API key configuration');
+      return NextResponse.json({ error: 'API key configuration missing' }, { status: 500 });
+    }
+
+    // Prepare the complete agent data for the backend
+    const agentData = {
       agent_prefix: agentName,
-      organization_id: organization_id || null, // This should not be null!
-      chatbot_api: chatbot_api || process.env.NEXT_PUBLIC_CHATBOT_API_URL || '',
-      chatbot_key: chatbot_key || process.env.NEXT_PUBLIC_CHATBOT_API_KEY || '',
+      organization_id: organization_id || null,
+      chatbot_api: chatbot_api !== undefined ? chatbot_api : (process.env.NEXT_PUBLIC_CHATBOT_API_URL || ''),
+      chatbot_key: chatbot_key !== undefined ? chatbot_key : (process.env.NEXT_PUBLIC_CHATBOT_API_KEY || ''),
       tts_config: tts_config || {
         provider: 'openai',
         openai: {
@@ -69,7 +78,6 @@ export async function POST(
       max_nudges: max_nudges || 3,
       typing_volume: typing_volume || 0.8,
       max_call_duration: max_call_duration || 300,
-      // Add system prompt and model configuration
       system_prompt: system_prompt || "You are a helpful assistant.",
       model_provider: model_provider || "OpenAI",
       model_name: model_name || "GPT-4o",
@@ -79,15 +87,41 @@ export async function POST(
       updated_at: Date.now() / 1000
     };
 
-    console.log('✅ Agent created/updated:', agent);
+    console.log('🚀 Sending complete agent data to backend service:', agentData);
+
+    // Call the real backend service
+    const response = await fetch(`${backendUrl}/agents/update/${agentName}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+      },
+      body: JSON.stringify(agentData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ Backend service error:', response.status, errorData);
+      throw new Error(`Backend service error: ${response.status} - ${errorData.error || response.statusText}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ Agent saved to backend service (MongoDB):', result);
+    console.log('✅ Chatbot API values saved to MongoDB:', { 
+      chatbot_api: agentData.chatbot_api, 
+      chatbot_key: agentData.chatbot_key 
+    });
 
     return NextResponse.json({
       success: true,
-      data: agent,
-      message: 'Agent created/updated successfully'
+      data: result.data || result,
+      message: 'Agent created/updated successfully in MongoDB'
     });
   } catch (error) {
     console.error('Agent API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: error instanceof Error ? error.message : 'Internal server error' 
+    }, { status: 500 });
   }
 }
+
