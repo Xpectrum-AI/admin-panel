@@ -45,8 +45,8 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
     // Chatbot widget script
     const chatbotScript = `<script 
   src="https://widgetbot.netlify.app/bidirectional-embed.js"
-  data-dify-api-url="https://d22yt2oewbcglh.cloudfront.net/v1"
-  data-dify-api-key="${difyApiKey}"
+  data-agent-api-url="https://d22yt2oewbcglh.cloudfront.net/v1"
+  data-agent-api-key="${difyApiKey}"
   data-position="bottom-right"
   data-primary-color="#667eea">
 </script>`;
