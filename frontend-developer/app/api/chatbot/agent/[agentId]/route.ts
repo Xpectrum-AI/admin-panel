@@ -8,7 +8,31 @@ export async function GET(
   try {
     const { agentId } = await params;
 
-    // Mock agent data - in real implementation, fetch from database
+    // Fetch real agent data from the agents API
+    try {
+      // Use the correct endpoint with a default organization ID
+      const organizationId = 'default_org';
+      const agentsResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/agents/by-org/${organizationId}`);
+      if (agentsResponse.ok) {
+        const agentsData = await agentsResponse.json();
+        const realAgent = agentsData.data?.find((agent: any) => 
+          agent.agent_prefix === agentId || agent.name === agentId || agent._id === agentId
+        );
+        
+        if (realAgent) {
+          console.log('🎯 Found real agent for chatbot:', realAgent.agent_prefix);
+          return NextResponse.json({
+            success: true,
+            data: realAgent,
+            message: 'Agent information retrieved successfully'
+          });
+        }
+      }
+    } catch (fetchError) {
+      console.log('⚠️ Could not fetch real agent data, using fallback:', fetchError);
+    }
+
+    // Fallback to mock agent data if real agent not found
     const agent = {
       _id: `agent_${Date.now()}`,
       agent_prefix: agentId,
