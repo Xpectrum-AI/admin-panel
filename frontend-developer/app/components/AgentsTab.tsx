@@ -796,9 +796,24 @@ Remember: You are the first point of contact for many patients. Your professiona
     console.log('Agent ID:', agent.id);
     console.log('Agent chatbot_key:', agent.chatbot_key);
     console.log('Agent chatbot_api:', agent.chatbot_api);
-    // Open the chatbot page in a new tab
-    const chatbotUrl = `/chatbot/${agent.id}`;
-    console.log('Opening URL:', chatbotUrl);
+    
+    // Pass agent configuration through URL parameters
+    const params = new URLSearchParams();
+    if (agent.chatbot_api) {
+      params.set('api_url', agent.chatbot_api);
+    }
+    if (agent.chatbot_key) {
+      params.set('api_key', agent.chatbot_key);
+    }
+    if (agent.initial_message) {
+      params.set('initial_message', agent.initial_message);
+    }
+    if (agent.name) {
+      params.set('name', agent.name);
+    }
+    
+    const chatbotUrl = `/chatbot/${agent.id}?${params.toString()}`;
+    console.log('Opening URL with config:', chatbotUrl);
     window.open(chatbotUrl, '_blank');
   }, []);
 
@@ -1220,7 +1235,7 @@ Remember: You are the first point of contact for many patients. Your professiona
             isRefreshingAgents={isRefreshingAgents}
             agentsError={agentsError}
           />
-        </div>
+                    </div>
 
         {/* Agent Prefix Modal */}
         {showAgentPrefixModal && (
@@ -1251,8 +1266,8 @@ Remember: You are the first point of contact for many patients. Your professiona
                 }}
               />
               <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => {
+                  <button
+                    onClick={() => {
                     setShowAgentPrefixModal(false);
                     setAgentPrefix('');
                   }}
@@ -1263,17 +1278,17 @@ Remember: You are the first point of contact for many patients. Your professiona
                   }`}
                 >
                   Cancel
-                </button>
-                <button
+                  </button>
+                  <button
                   onClick={handleAgentPrefixSubmit}
                   disabled={!agentPrefix.trim() || isCreatingAgent}
                   className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
+                  >
                   {isCreatingAgent ? 'Creating...' : 'Create Agent'}
-                </button>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
         )}
 
         {/* Success Modal */}
@@ -1287,24 +1302,24 @@ Remember: You are the first point of contact for many patients. Your professiona
                   <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                </div>
+                  </div>
                 <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                   Agent Created Successfully!
                 </h3>
                 <p className={`text-sm mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                   Your new agent has been created and is ready for configuration.
-                </p>
-                <button
+                      </p>
+                      <button
                   onClick={() => setShowSuccessModal(false)}
                   className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
+                      >
                   Continue
-                </button>
-              </div>
-            </div>
-          </div>
+                      </button>
+                    </div>
+                          </div>
+                              </div>
         )}
-      </div>
+                            </div>
     );
   }
 
@@ -1313,7 +1328,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       <div className={`rounded-xl sm:rounded-2xl border shadow-xl backdrop-blur-sm h-full flex flex-col max-h-full ${isDarkMode ? 'bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800 border-gray-700/50' : 'bg-gradient-to-br from-white via-gray-50 to-white border-gray-200/50'}`}>
         {/* Back Button */}
         <div className={`px-4 sm:px-6 lg:px-8 py-3 border-b ${isDarkMode ? 'border-gray-700/50 bg-gray-800/50' : 'border-gray-200/50 bg-gray-50/50'}`}>
-                      <button
+                            <button
             onClick={handleBackToCards}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
               isDarkMode
@@ -1419,7 +1434,7 @@ Remember: You are the first point of contact for many patients. Your professiona
                           ref={modelSectionRef}
                     agentName={selectedAgent.name}
                           onConfigChange={handleModelConfigChange}
-                    existingConfig={modelConfig}
+                          existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).modelConfig : null}
                           isEditing={isEditing}
                           onConfigUpdated={fetchAgents}
                         />
@@ -1441,8 +1456,8 @@ Remember: You are the first point of contact for many patients. Your professiona
                     agentName={selectedAgent.name}
                     onConfigChange={handleWidgetConfigChange}
                     existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).widgetConfig : null}
-                    isEditing={isEditing}
-                  />
+                          isEditing={isEditing}
+                        />
                 )}
                 {activeConfigTab === 'tools' && (
                         <ToolsConfig
