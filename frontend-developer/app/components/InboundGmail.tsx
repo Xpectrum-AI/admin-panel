@@ -393,9 +393,6 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
                                     <th className="text-left py-4 px-6 font-semibold text-sm">
                                         Status
                                     </th>
-                                    <th className="text-left py-4 px-6 font-semibold text-sm">
-                                        Agent
-                                    </th>
                                     {hasAssignedAgents && (
                                         <th className="text-left py-4 px-6 font-semibold text-sm">
                                             Unassign
@@ -438,24 +435,6 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
                                                 <span className={`text-sm ${assignment.is_active ? (isDarkMode ? 'text-green-400' : 'text-green-600') : (isDarkMode ? 'text-gray-400' : 'text-gray-500')}`}>
                                                     {assignment.is_active ? 'Active' : 'Inactive'}
                                                 </span>
-                                            </div>
-                                        </td>
-
-                                        {/* Agent Column */}
-                                        <td className="py-4 px-6">
-                                            <div className="flex items-center gap-2">
-                                                <User className={`h-4 w-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                                                <span className="text-sm">
-                                                    {assignment.agent_id && assignment.agent_id !== 'unassigned' && assignment.agent_id !== null
-                                                        ? (assignment.agent_name || assignment.agent_id)
-                                                        : 'Unassigned'
-                                                    }
-                                                </span>
-                                                {assignment.status === 'assigned' ? (
-                                                    <CheckCircle className={`h-4 w-4 ${isDarkMode ? 'text-green-400' : 'text-green-500'}`} />
-                                                ) : (
-                                                    <XCircle className={`h-4 w-4 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
-                                                )}
                                             </div>
                                         </td>
 
