@@ -305,8 +305,9 @@ export async function POST(request: NextRequest) {
                 conversationIdFromStream = data.conversation_id;
               }
             } else if (data.event === 'message' && data.answer) {
-              console.log('📡 Found message with answer:', data.answer);
-              finalAnswer = data.answer;
+              console.log('📡 Found message with answer chunk:', data.answer);
+              // Accumulate answer chunks instead of replacing
+              accumulatedAnswer += data.answer;
               if (data.conversation_id) {
                 conversationIdFromStream = data.conversation_id;
               }

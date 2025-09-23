@@ -1,7 +1,7 @@
 'use client';
 
 import React, { forwardRef, useState, useRef } from 'react';
-import { Sparkles, CheckCircle, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { Sparkles, CheckCircle, AlertCircle, Loader2, RefreshCw, Copy, Check } from 'lucide-react';
 import { modelConfigService } from '../../../service/modelConfigService';
 import { useTheme } from '../../contexts/ThemeContext';
 import { maskApiKey } from '../../../service/agentConfigService';
@@ -28,6 +28,7 @@ const ModelConfig = forwardRef<HTMLDivElement, ModelConfigProps>(({ agentName = 
   const [modelApiKey, setModelApiKey] = useState(process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '');
   const [agentUrl, setAgentUrl] = useState(process.env.NEXT_PUBLIC_CHATBOT_API_URL || '');
   const [agentApiKey, setAgentApiKey] = useState('');
+  const [copiedAgentApiKey, setCopiedAgentApiKey] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState(`# Appointment Scheduling Agent Prompt
 
 ## Identity & Purpose
@@ -949,8 +950,8 @@ Remember: You are the first point of contact for many patients. Your professiona
             </label>
             <div className="relative">
               <input
-                type={!isEditing ? "text" : "password"}
-                value={!isEditing ? getApiKeyDisplayValue(agentApiKey) : agentApiKey}
+                type="text"
+                value={agentApiKey}
                 onChange={(e) => setAgentApiKey(e.target.value)}
                 disabled={!isEditing}
                 placeholder="Enter your Dify chatbot API key"
