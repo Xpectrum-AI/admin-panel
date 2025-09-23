@@ -30,6 +30,7 @@ import { useAuthInfo, useLogoutFunction } from '@propelauth/react';
 import { SyncLoader } from 'react-spinners';
 import { useRouter } from 'next/navigation';
 import { AgentsTab, PhoneNumbersTab, SMSTab, WhatsAppTab, GmailTab, OrgSetup } from './components';
+import Navbar from './components/Navbar';
 import ChatSidebar from './components/ChatSidebar';
 import { useTheme } from './contexts/ThemeContext';
 import { DashboardService, DashboardStats, OrganizationInfo } from '../service/dashboardService';
@@ -523,168 +524,30 @@ export default function DeveloperDashboard() {
   return (
     <>
       <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-black' : 'bg-gray-50'}`}>
-        {/* Top Navigation Header */}
-        <header className="bg-gray-900 px-3 sm:px-6 py-3 sm:py-4">
-          <div className="flex items-center justify-between">
-            {/* Logo and Navigation */}
-            <div className="flex items-center space-x-2 sm:space-x-4 lg:space-x-8">
-              <div className="flex items-center">
-                <div className="h-8 w-8 sm:h-10 sm:w-10 bg-green-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm sm:text-lg">D</span>
-                </div>
-                <div className="ml-2 sm:ml-4">
-                  <div className="text-white font-bold text-sm sm:text-lg">{organizationName || 'Organization Name'}</div>
-                  <div className="text-gray-400 text-xs sm:text-sm">Organization</div>
-                </div>
-              </div>
-
-              {/* Navigation Tabs - Hidden on mobile, shown on tablet+ */}
-              <nav className="hidden md:flex space-x-1">
-                {navigationItems.map((item) => {
-                  const isActive = activeNavItem === item.name;
-                  return (
-                    <button
-                      key={item.name}
-                      onClick={() => handleNavItemClick(item.name)}
-                      className={`px-3 lg:px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${isActive
-                        ? 'bg-green-500 text-white'
-                        : 'text-white hover:bg-gray-800'
-                        }`}
-                    >
-                      {item.name}
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
-            {/* Right side actions */}
-            <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
-              {/* Mobile Navigation Menu - Only show on mobile */}
-              <div className="md:hidden">
-                <select
-                  value={activeNavItem}
-                  onChange={(e) => handleNavItemClick(e.target.value)}
-                  className={`px-2 py-1 rounded-lg text-sm font-medium transition-all duration-300 ${isDarkMode ? 'bg-gray-800 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-200'}`}
-                >
-                  {navigationItems.map((item) => (
-                    <option key={item.name} value={item.name}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Chat Icon */}
-              <button
-                onClick={() => {
-                  setChatOpen(!chatOpen);
-                  // Clear new message notification when opening chat
-                  if (!chatOpen) {
-                    setHasNewMessages(false);
-                  }
-                }}
-                className={`relative p-2 sm:p-3 rounded-xl transition-all duration-300 group ${isDarkMode ? 'hover:bg-gradient-to-r hover:from-green-500/20 hover:to-blue-500/20 text-green-400 hover:text-green-300' : 'hover:bg-gradient-to-r hover:from-green-100 hover:to-blue-100 text-green-600 hover:text-green-700'}`}
-                title="Chat with Sales Agent (Ctrl+K)"
-              >
-                <div className={`absolute inset-0 rounded-xl bg-gradient-to-r from-green-500/10 to-blue-500/10 opacity-100 transition-opacity duration-300 ${isDarkMode ? 'from-green-500/20 to-blue-500/20' : 'from-green-100 to-blue-100'}`} />
-                <ChatIcon className="h-4 w-4 sm:h-5 sm:w-5 relative z-10 text-current" />
-
-                {/* Message count indicator */}
-                {(() => {
-                  try {
-                    const savedMessages = localStorage.getItem('chatMessages');
-                    if (savedMessages) {
-                      const parsed = JSON.parse(savedMessages);
-                      const messageCount = parsed.length;
-                      // Only show count if there are messages and more than just the welcome message
-                      if (messageCount > 1) {
-                        return (
-                          <div className={`absolute -bottom-1 -right-1 min-w-[16px] sm:min-w-[20px] h-4 sm:h-5 px-1 rounded-full text-xs font-medium flex items-center justify-center ${isDarkMode ? 'bg-blue-500 text-white' : 'bg-blue-600 text-white'}`}>
-                            {messageCount}
-                          </div>
-                        );
-                      }
-                    }
-                  } catch (error) {
-                    console.error('Error getting message count:', error);
-                  }
-                  return null;
-                })()}
-              </button>
-
-              {/* Theme Toggle */}
-              <button
-                onClick={toggleTheme}
-                className={`p-2 rounded-xl transition-all duration-300 ${isDarkMode ? 'hover:bg-gray-800/50 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'}`}
-              >
-                {isDarkMode ? <Sun className="h-4 w-4 sm:h-5 sm:w-5" /> : <Moon className="h-4 w-4 sm:h-5 sm:w-5" />}
-              </button>
-
-              {/* Developer Access Badge - Hidden on mobile */}
-              <div className={`hidden sm:block px-3 sm:px-4 py-2 rounded-xl border ${isDarkMode ? 'bg-gradient-to-r from-green-500/20 to-emerald-600/20 backdrop-blur-sm border-green-500/30' : 'bg-green-50 border-green-200'}`}>
-                <span className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-700'}`}>Developer Access</span>
-              </div>
-
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className={`transition-colors duration-300 ${isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
-                >
-                  <div className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                    <span className="text-white text-sm sm:text-base lg:text-lg font-bold">
-                      {(user?.firstName || localStorage.getItem('pendingFirstName'))?.[0]}{(user?.lastName || localStorage.getItem('pendingLastName'))?.[0]}
-                    </span>
-                  </div>
-                </button>
-                {dropdownOpen && (
-                  <>
-                    {/* Backdrop overlay */}
-                    <div
-                      className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
-                      onClick={() => setDropdownOpen(false)}
-                    />
-                    {/* Dropdown */}
-                    <div className={`fixed top-16 sm:top-20 right-3 sm:right-6 w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] sm:max-w-[calc(100vw-3rem)] rounded-2xl shadow-2xl z-50 animate-fade-in-down ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-xl border border-gray-700/50' : 'bg-white border border-gray-200'}`}>
-                      <div className={`p-4 sm:p-6 ${isDarkMode ? 'border-b border-gray-700/50' : 'border-b border-gray-200'}`}>
-                        <p className={`font-bold text-base sm:text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                          {user?.firstName || localStorage.getItem('pendingFirstName')} {user?.lastName || localStorage.getItem('pendingLastName')}
-                        </p>
-                        <p className={`mt-1 text-sm sm:text-base ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{user?.email}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                          <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>Developer</p>
-                        </div>
-                      </div>
-                      <nav className="p-3 sm:p-4">
-                        <button
-                          onClick={async () => {
-                            try {
-                              setLoggingOut(true);
-                              // Clear chat history before logout
-                              localStorage.removeItem('chatMessages');
-                              await logout(true);
-                              // Redirect to login page
-                              window.location.href = '/login';
-                            } catch (error) {
-                              console.error('Logout error:', error);
-                              setLoggingOut(false);
-                              // Force redirect even if logout fails
-                              window.location.href = '/login';
-                            }
-                          }}
-                          className={`w-full flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-xl transition-all duration-300 group ${isDarkMode ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300' : 'text-red-600 hover:bg-red-50 hover:text-red-700'}`}
-                        >
-                          <LogOut className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
-                          <span className="text-sm sm:text-base">{loggingOut ? 'Logging out...' : 'Log out'}</span>
-                        </button>
-                      </nav>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        </header>
+        {/* Navigation */}
+        <Navbar
+          activeTab={activeNavItem}
+          onChange={(tab) => handleNavItemClick(tab)}
+          activeTitle={activeNavItem}
+          sidebarOpen={true}
+          onToggleSidebar={() => { }}
+          navigationItems={navigationItems}
+          onLogout={async () => {
+            try {
+              setLoggingOut(true);
+              // Clear chat history before logout
+              localStorage.removeItem('chatMessages');
+              await logout(true);
+              // Redirect to login page
+              window.location.href = '/login';
+            } catch (error) {
+              console.error('Logout error:', error);
+              setLoggingOut(false);
+              // Force redirect even if logout fails
+              window.location.href = '/login';
+            }
+          }}
+        />
 
         {/* Main Content Area */}
         <main className="p-3 sm:p-4 lg:p-6">
