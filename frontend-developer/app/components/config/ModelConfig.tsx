@@ -4,20 +4,29 @@ import React, { forwardRef, useState, useRef } from 'react';
 import { Sparkles, CheckCircle, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { modelConfigService } from '../../../service/modelConfigService';
 import { useTheme } from '../../contexts/ThemeContext';
+import { maskApiKey } from '../../../service/agentConfigService';
 
 interface ModelConfigProps {
   agentName?: string;
   onConfigChange?: (config: any) => void;
   existingConfig?: any;
   isEditing?: boolean;
+  onConfigUpdated?: () => void; // Add callback to refresh agent data
 }
 
-const ModelConfig = forwardRef<HTMLDivElement, ModelConfigProps>(({ agentName = 'default', onConfigChange, existingConfig, isEditing = true }, ref) => {
+const ModelConfig = forwardRef<HTMLDivElement, ModelConfigProps>(({ agentName = 'default', onConfigChange, existingConfig, isEditing = true, onConfigUpdated }, ref) => {
   const { isDarkMode } = useTheme();
+
+  // Helper function to get masked display value for API keys
+  const getApiKeyDisplayValue = (actualKey: string) => {
+    if (!actualKey) return '••••••••••••••••••••••••••••••••';
+    return maskApiKey(actualKey);
+  };
   const [selectedModelProvider, setSelectedModelProvider] = useState('OpenAI');
   const [selectedModel, setSelectedModel] = useState('GPT-4o');
   const [modelLiveUrl, setModelLiveUrl] = useState(process.env.NEXT_PUBLIC_DIFY_BASE_URL || '');
   const [modelApiKey, setModelApiKey] = useState(process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '');
+  const [agentUrl, setAgentUrl] = useState(process.env.NEXT_PUBLIC_CHATBOT_API_URL || '');
   const [agentApiKey, setAgentApiKey] = useState('');
   const [systemPrompt, setSystemPrompt] = useState(`# Appointment Scheduling Agent Prompt
 
@@ -72,9 +81,11 @@ Remember: You are the first point of contact for many patients. Your professiona
   const [isLoadingModel, setIsLoadingModel] = useState(false);
   const [isLoadingPrompt, setIsLoadingPrompt] = useState(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [modelConfigStatus, setModelConfigStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [promptConfigStatus, setPromptConfigStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   // Configuration status states
   const [isModelConfigured, setIsModelConfigured] = useState(false);
@@ -94,6 +105,24 @@ Remember: You are the first point of contact for many patients. Your professiona
       // Set model provider and model from existing config
       if (existingConfig.selectedModelProvider) {
         setSelectedModelProvider(existingConfig.selectedModelProvider);
+        
+        // Set the correct API key based on the provider
+        switch (existingConfig.selectedModelProvider) {
+          case 'OpenAI':
+            setModelApiKey(process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '');
+            break;
+          case 'Groq':
+            setModelApiKey(process.env.NEXT_PUBLIC_MODEL_GROQ_API_KEY || '');
+            break;
+          case 'Anthropic':
+            setModelApiKey(process.env.NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY || '');
+            break;
+          case 'DeepSeek':
+            setModelApiKey(existingConfig.modelApiKey || ''); // Use custom key for DeepSeek
+            break;
+          default:
+            setModelApiKey(existingConfig.modelApiKey || ''); // Use custom key for other providers
+        }
       }
       if (existingConfig.selectedModel) {
         setSelectedModel(existingConfig.selectedModel);
@@ -101,9 +130,8 @@ Remember: You are the first point of contact for many patients. Your professiona
       if (existingConfig.modelLiveUrl) {
         setModelLiveUrl(existingConfig.modelLiveUrl);
       }
-      // Set model API key from existing config
-      if (existingConfig.modelApiKey) {
-        setModelApiKey(existingConfig.modelApiKey);
+      if (existingConfig.chatbot_api) {
+        setAgentUrl(existingConfig.chatbot_api);
       }
       
       // Set agent API key from existing config (Dify chatbot key)
@@ -146,9 +174,9 @@ Remember: You are the first point of contact for many patients. Your professiona
             setSystemPrompt(prompt);
             setCurrentPromptConfig(promptData);
             setIsPromptConfigured(true);
-            setIsLoadingPrompt(false);
-            return;
-          }
+        setIsLoadingPrompt(false);
+        return;
+      }
         }
       } catch (error) {
         console.warn('⚠️ Error reading from localStorage:', error);
@@ -218,6 +246,8 @@ Remember: You are the first point of contact for many patients. Your professiona
     setSelectedModelProvider('OpenAI');
     setSelectedModel('GPT-4o');
     setModelApiKey(process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '');
+    setModelLiveUrl(process.env.NEXT_PUBLIC_DIFY_BASE_URL || '');
+    setAgentUrl(process.env.NEXT_PUBLIC_CHATBOT_API_URL || '');
     setAgentApiKey('');
     setSystemPrompt(`# Appointment Scheduling Agent Prompt
 
@@ -312,7 +342,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       console.log('🔄 Agent changed, loading current prompt from localStorage...');
       // Use setTimeout to ensure the component is fully mounted
       setTimeout(() => {
-        fetchCurrentPrompt(true); // Force load when agent changes
+      fetchCurrentPrompt(true); // Force load when agent changes
       }, 100);
       setHasLoadedPromptForAgent(agentName);
     }
@@ -322,17 +352,19 @@ Remember: You are the first point of contact for many patients. Your professiona
   React.useEffect(() => {
     // Load configuration status from localStorage
     const loadPersistentStatus = () => {
-      try {
-        const savedModelConfig = localStorage.getItem(`modelConfig_${agentName}`);
-        const savedPromptConfig = localStorage.getItem(`promptConfig_${agentName}`);
+        try {
+          const savedModelConfig = localStorage.getItem(`modelConfig_${agentName}`);
+          const savedPromptConfig = localStorage.getItem(`promptConfig_${agentName}`);
 
-        if (savedModelConfig) {
-          const modelData = JSON.parse(savedModelConfig);
-          setIsModelConfigured(true);
-          setCurrentModelConfig(modelData);
+          if (savedModelConfig) {
+            const modelData = JSON.parse(savedModelConfig);
+            setIsModelConfigured(true);
+            setCurrentModelConfig(modelData);
           
           // Load the saved UI state
+          let providerToSet = '';
           if (modelData.selectedModelProvider) {
+            providerToSet = modelData.selectedModelProvider;
             setSelectedModelProvider(modelData.selectedModelProvider);
           } else {
             // Fallback: Find the provider that matches the API provider
@@ -340,8 +372,31 @@ Remember: You are the first point of contact for many patients. Your professiona
               modelProviders[key as keyof typeof modelProviders].apiProvider === modelData.provider
             );
             if (providerKey) {
+              providerToSet = providerKey;
               setSelectedModelProvider(providerKey);
             }
+          }
+          
+          // Set the correct API key based on the provider
+          if (providerToSet) {
+            switch (providerToSet) {
+              case 'OpenAI':
+                setModelApiKey(process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '');
+                break;
+              case 'Groq':
+                setModelApiKey(process.env.NEXT_PUBLIC_MODEL_GROQ_API_KEY || '');
+                break;
+              case 'Anthropic':
+                setModelApiKey(process.env.NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY || '');
+                break;
+              case 'DeepSeek':
+                setModelApiKey(modelData.modelApiKey || ''); // Use saved custom key
+                break;
+              default:
+                setModelApiKey(modelData.modelApiKey || ''); // Use saved custom key
+            }
+          } else if (modelData.modelApiKey) {
+            setModelApiKey(modelData.modelApiKey);
           }
           
           if (modelData.selectedModel) {
@@ -354,19 +409,15 @@ Remember: You are the first point of contact for many patients. Your professiona
             setModelLiveUrl(modelData.modelLiveUrl);
           }
           
-          if (modelData.modelApiKey) {
-            setModelApiKey(modelData.modelApiKey);
-          }
-          
           if (modelData.agentApiKey) {
             setAgentApiKey(modelData.agentApiKey);
           }
-        }
+          }
 
-        if (savedPromptConfig) {
-          const promptData = JSON.parse(savedPromptConfig);
-          setIsPromptConfigured(true);
-          setCurrentPromptConfig(promptData);
+          if (savedPromptConfig) {
+            const promptData = JSON.parse(savedPromptConfig);
+            setIsPromptConfigured(true);
+            setCurrentPromptConfig(promptData);
           if (promptData.systemPrompt) {
             setSystemPrompt(promptData.systemPrompt);
           } else if (promptData.prompt) {
@@ -384,12 +435,13 @@ Remember: You are the first point of contact for many patients. Your professiona
                 setSystemPrompt(prompt);
                 setCurrentPromptConfig(promptData);
                 setIsPromptConfigured(true);
-              }
-            } catch (error) {
+        }
+      } catch (error) {
               console.warn('⚠️ Error loading difyPrompt config:', error);
             }
           }
         }
+
       } catch (error) {
         console.warn('⚠️ Error loading persistent status:', error);
         // Fallback to unconfigured state
@@ -432,6 +484,25 @@ Remember: You are the first point of contact for many patients. Your professiona
 
   const handleProviderChange = (provider: string) => {
     setSelectedModelProvider(provider);
+    
+    // Update the model API key based on the selected provider
+    switch (provider) {
+      case 'OpenAI':
+        setModelApiKey(process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '');
+        break;
+      case 'Groq':
+        setModelApiKey(process.env.NEXT_PUBLIC_MODEL_GROQ_API_KEY || '');
+        break;
+      case 'Anthropic':
+        setModelApiKey(process.env.NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY || '');
+        break;
+      case 'DeepSeek':
+        setModelApiKey(''); // DeepSeek requires custom API key
+        break;
+      default:
+        setModelApiKey(''); // Fallback to empty for custom providers
+    }
+    
     // Reset model to first available model for the new provider
     const providerData = modelProviders[provider as keyof typeof modelProviders];
     if (providerData && providerData.models.length > 0) {
@@ -577,16 +648,57 @@ Remember: You are the first point of contact for many patients. Your professiona
     }
   };
 
+  // Handle saving agent configuration (Agent URL and Agent API Key)
+  const handleSaveConfig = async () => {
+    if (!agentName) {
+      setErrorMessage('Agent name is required');
+      return;
+    }
+
+    setIsSavingConfig(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      // Show success message immediately (like TTS/STT do)
+      setSuccessMessage('Agent configuration saved successfully!');
+      setErrorMessage('');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(''), 3000);
+      
+      // Configuration is automatically sent to parent via useEffect onConfigChange
+      // (just like TTS and STT configurations work)
+      console.log('✅ Model configuration updated and sent to parent component');
+      
+      // Trigger refresh of agent data to show updated values
+      if (onConfigUpdated) {
+        onConfigUpdated();
+      }
+    } catch (error) {
+      console.error('❌ Error saving agent configuration:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to save configuration');
+      setSuccessMessage('');
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
+
+
   // Notify parent component of configuration changes
   const lastModelConfigRef = useRef<string>('');
   React.useEffect(() => {
     const config = {
       modelLiveUrl,
       modelApiKey,
+      agentUrl,
       agentApiKey,
       selectedModelProvider,
       selectedModel,
-      systemPrompt
+      systemPrompt,
+      // Include Agent URL and Agent API Key for the existing agent configuration flow
+      chatbot_api: agentUrl,      // Agent URL (from NEXT_PUBLIC_CHATBOT_API_URL)
+      chatbot_key: agentApiKey    // Agent API Key
     };
     
     const configString = JSON.stringify(config);
@@ -594,7 +706,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       lastModelConfigRef.current = configString;
       onConfigChange(config);
     }
-  }, [modelLiveUrl, modelApiKey, agentApiKey, selectedModelProvider, selectedModel, systemPrompt]);
+  }, [modelLiveUrl, modelApiKey, agentUrl, agentApiKey, selectedModelProvider, selectedModel, systemPrompt, onConfigChange]);
 
   return (
     <div ref={ref} className="space-y-6 p-6">
@@ -643,6 +755,16 @@ Remember: You are the first point of contact for many patients. Your professiona
                 <span className="text-sm font-medium">Error</span>
               </div>
               <p className="text-sm mt-1">{errorMessage}</p>
+            </div>
+          )}
+
+          {successMessage && (
+            <div className={`p-3 rounded-xl border ${isDarkMode ? 'bg-green-900/20 border-green-700 text-green-300' : 'bg-green-50 border-green-200 text-green-700'}`}>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                <span className="text-sm font-medium">Success</span>
+              </div>
+              <p className="text-sm mt-1">{successMessage}</p>
             </div>
           )}
           
@@ -751,13 +873,13 @@ Remember: You are the first point of contact for many patients. Your professiona
             </div>
 
             <div>
-            <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Model API Key
-            </label>
+              <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Model API Key
+              </label>
               <div className="relative">
                 <input
-                  type="password"
-                  value={modelApiKey}
+                  type={!isEditing || isUsingModelApiKey ? "text" : "password"}
+                  value={!isEditing || isUsingModelApiKey ? getApiKeyDisplayValue(modelApiKey) : modelApiKey}
                   onChange={(e) => setModelApiKey(e.target.value)}
                   disabled={!isEditing || isUsingModelApiKey}
                 placeholder={isUsingModelApiKey ? `Using configured ${selectedModelProvider} API key` : `Enter your ${selectedModelProvider} API key`}
@@ -787,14 +909,17 @@ Remember: You are the first point of contact for many patients. Your professiona
 
       {/* Dify API Configuration Container */}
         <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
-        <div className="flex items-center gap-3 mb-4">
-          <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-purple-900/50' : 'bg-purple-100'}`}>
-            <Sparkles className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-purple-900/50' : 'bg-purple-100'}`}>
+              <Sparkles className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
             </div>
             <div>
-            <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Agent API Configuration</h4>
+              <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Agent API Configuration</h4>
             </div>
           </div>
+
+        </div>
           
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -803,8 +928,8 @@ Remember: You are the first point of contact for many patients. Your professiona
               </label>
             <input
               type="url"
-              value={modelLiveUrl}
-              onChange={(e) => setModelLiveUrl(e.target.value)}
+              value={agentUrl}
+              onChange={(e) => setAgentUrl(e.target.value)}
                 disabled={!isEditing}
               placeholder="https://your-agent-api-url.com/v1"
               className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
@@ -824,8 +949,8 @@ Remember: You are the first point of contact for many patients. Your professiona
             </label>
             <div className="relative">
               <input
-                type="password"
-                value={agentApiKey}
+                type={!isEditing ? "text" : "password"}
+                value={!isEditing ? getApiKeyDisplayValue(agentApiKey) : agentApiKey}
                 onChange={(e) => setAgentApiKey(e.target.value)}
                 disabled={!isEditing}
                 placeholder="Enter your Dify chatbot API key"
@@ -845,6 +970,35 @@ Remember: You are the first point of contact for many patients. Your professiona
               </div>
             </div>
             </div>
+          </div>
+
+          {/* Save Config Button */}
+          <div className="mt-6 flex justify-end">
+            <button
+              onClick={handleSaveConfig}
+              disabled={isSavingConfig || !agentName}
+              className={`px-6 py-3 rounded-xl font-medium text-sm transition-all duration-300 flex items-center gap-2 ${
+                isSavingConfig || !agentName
+                  ? isDarkMode
+                    ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-lg hover:shadow-purple-500/25'
+                    : 'bg-purple-600 hover:bg-purple-700 text-white shadow-lg hover:shadow-purple-500/25'
+              }`}
+            >
+              {isSavingConfig ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  Save Config
+                </>
+              )}
+            </button>
           </div>
         </div>
     </div>

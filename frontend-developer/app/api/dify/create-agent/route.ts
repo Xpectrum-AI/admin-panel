@@ -43,11 +43,41 @@ export async function POST(request: NextRequest) {
     if (!fs.existsSync(scriptPath)) {
       throw new Error(`Script file not found: ${scriptPath}`);
     }
+    
+    // Check if script is executable (for Unix systems)
+    if (!isWindows) {
+      try {
+        const stats = fs.statSync(scriptPath);
+        const isExecutable = (stats.mode & parseInt('111', 8)) !== 0;
+        if (!isExecutable) {
+          console.log('⚠️ Script is not executable, attempting to make it executable...');
+          fs.chmodSync(scriptPath, '755');
+        }
+      } catch (chmodError) {
+        console.log('⚠️ Could not check/modify script permissions:', chmodError);
+      }
+    }
 
     try {
       // Execute the script
       console.log('🔧 Executing Dify agent creation script...');
       console.log('📁 Script path:', scriptPath);
+      
+      // Prepare environment variables for the script
+      const envVars = {
+        ...process.env,
+        NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN: process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN || '',
+        NEXT_PUBLIC_DIFY_ADMIN_EMAIL: process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL || '',
+        NEXT_PUBLIC_DIFY_ADMIN_PASSWORD: process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD || '',
+        NEXT_PUBLIC_DIFY_WORKSPACE_ID: process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID || '',
+      };
+      
+      console.log('🔧 Environment variables for script:', {
+        CONSOLE_ORIGIN: envVars.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN ? 'Set' : 'Missing',
+        ADMIN_EMAIL: envVars.NEXT_PUBLIC_DIFY_ADMIN_EMAIL ? 'Set' : 'Missing',
+        ADMIN_PASSWORD: envVars.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD ? 'Set' : 'Missing',
+        WORKSPACE_ID: envVars.NEXT_PUBLIC_DIFY_WORKSPACE_ID ? 'Set' : 'Missing',
+      });
       
       // Determine the correct command based on the operating system
       const command = isWindows 
@@ -57,20 +87,37 @@ export async function POST(request: NextRequest) {
       console.log('🔧 Executing command:', command);
       console.log('🔧 Platform:', process.platform);
       
+      // Check if required tools are available (for debugging)
+      try {
+        const { stdout: curlCheck } = await execAsync('which curl', { timeout: 5000 });
+        console.log('✅ curl available:', curlCheck.trim());
+      } catch (curlError) {
+        console.log('⚠️ curl not available:', curlError);
+      }
+      
+      try {
+        const { stdout: jqCheck } = await execAsync('which jq', { timeout: 5000 });
+        console.log('✅ jq available:', jqCheck.trim());
+      } catch (jqError) {
+        console.log('⚠️ jq not available:', jqError);
+      }
+      
       const { stdout, stderr } = await execAsync(command, {
         timeout: 60000, // 60 second timeout
         maxBuffer: 1024 * 1024 * 10, // 10MB buffer
-        env: {
-          ...process.env,
-          // Prevent browser from detecting curl as login
-          HTTP_USER_AGENT: 'DifyAgentCreator/1.0',
-          CURL_USER_AGENT: 'DifyAgentCreator/1.0'
-        }
+        env: envVars // Pass environment variables to the script
       });
 
       console.log('📝 Script stdout:', stdout);
       if (stderr) {
         console.log('⚠️ Script stderr:', stderr);
+      }
+      
+      // Additional debugging for environment issues
+      if (stdout.includes('Error:') || stderr.includes('Error:')) {
+        console.log('❌ Script execution failed with errors');
+        console.log('🔍 Full stdout:', stdout);
+        console.log('🔍 Full stderr:', stderr);
       }
 
       // Parse the JSON output from the script

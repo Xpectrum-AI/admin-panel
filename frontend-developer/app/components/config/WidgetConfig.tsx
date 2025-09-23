@@ -3,6 +3,7 @@
 import React, { forwardRef, useState, useEffect, useRef } from 'react';
 import { Code, Copy, Check, ExternalLink, Globe, MessageCircle, Send, Bot, Phone, PhoneOff, Mic, MicOff, Volume2 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { maskApiKey } from '../../../service/agentConfigService';
 
 interface WidgetConfigProps {
   agentName?: string;
@@ -18,6 +19,12 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
   isEditing = true 
 }, ref) => {
   const { isDarkMode } = useTheme();
+
+  // Helper function to get masked display value for API keys
+  const getApiKeyDisplayValue = (actualKey: string) => {
+    if (!actualKey) return '••••••••••••••••••••••••••••••••';
+    return maskApiKey(actualKey);
+  };
   const [difyApiUrl, setDifyApiUrl] = useState('https://d22yt2oewbcglh.cloudfront.net/v1');
   const [difyApiKey, setDifyApiKey] = useState('');
   const [copiedScript, setCopiedScript] = useState(false);
@@ -303,8 +310,8 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
           </label>
           <div className="flex gap-2">
             <input
-              type="password"
-              value={difyApiKey}
+              type={!isEditing ? "text" : "password"}
+              value={!isEditing ? getApiKeyDisplayValue(difyApiKey) : difyApiKey}
               onChange={(e) => setDifyApiKey(e.target.value)}
               placeholder="app-xxxxxxxxxxxxxxxx"
               className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
