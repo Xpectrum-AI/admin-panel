@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { Bot, Send, Loader2, MessageCircle, Phone, PhoneOff, Mic, MicOff } from 'lucide-react';
 
 interface Message {
@@ -25,6 +25,7 @@ interface AgentConfig {
 
 export default function ChatbotPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const agentId = params.agentId as string;
   
   const [agentConfig, setAgentConfig] = useState<AgentConfig | null>(null);
@@ -51,6 +52,76 @@ export default function ChatbotPage() {
     const fetchAgentConfig = async () => {
       try {
         setIsLoadingAgent(true);
+        
+        // First try to get configuration from URL parameters (passed from AgentsTab)
+        const apiUrl = searchParams.get('api_url');
+        const apiKey = searchParams.get('api_key');
+        const initialMessage = searchParams.get('initial_message');
+        const name = searchParams.get('name');
+        
+        if (apiUrl && apiKey) {
+          console.log('🎯 Using agent config from URL parameters:', { apiUrl, apiKey: apiKey.substring(0, 10) + '...', name });
+          const configFromUrl: AgentConfig = {
+            _id: agentId,
+            agent_prefix: agentId,
+            name: name || agentId,
+            chatbot_api: apiUrl,
+            chatbot_key: apiKey,
+            initial_message: initialMessage || 'Hello! How can I help you today?'
+          };
+          
+          setAgentConfig(configFromUrl);
+          
+          // Add welcome message if available
+          if (configFromUrl.initial_message) {
+            const welcomeMessage: Message = {
+              id: 'welcome',
+              type: 'bot',
+              message: configFromUrl.initial_message,
+              timestamp: new Date()
+            };
+            setMessages([welcomeMessage]);
+          }
+          
+          // Set page title
+          document.title = `${configFromUrl.name || configFromUrl.agent_prefix} | Chat`;
+          return;
+        }
+        
+        // Fallback: try to get the agent from the agents API (same as widget preview)
+        try {
+          const agentsResponse = await fetch('/api/agents/by-org/default_org');
+          if (agentsResponse.ok) {
+            const agentsData = await agentsResponse.json();
+            const realAgent = agentsData.data?.find((agent: any) => 
+              agent.agent_prefix === agentId || agent.name === agentId || agent._id === agentId
+            );
+            
+            if (realAgent) {
+              console.log('🎯 Found real agent for chatbot:', realAgent.agent_prefix);
+              setAgentConfig(realAgent);
+              
+              // Add welcome message if available
+              if (realAgent.initial_message) {
+                const welcomeMessage: Message = {
+                  id: 'welcome',
+                  type: 'bot',
+                  message: realAgent.initial_message,
+                  timestamp: new Date()
+                };
+                setMessages([welcomeMessage]);
+              }
+              
+              // Set page title
+              document.title = `${realAgent.name || realAgent.agent_prefix} | Chat`;
+              return;
+            }
+          }
+        } catch (fetchError) {
+          console.log('⚠️ Could not fetch real agent data, using fallback:', fetchError);
+        }
+        
+        // Fallback to chatbot agent API
         const response = await fetch(`/api/chatbot/agent/${agentId}`);
         
         if (!response.ok) {
@@ -88,7 +159,7 @@ export default function ChatbotPage() {
     if (agentId) {
       fetchAgentConfig();
     }
-  }, [agentId]);
+  }, [agentId, searchParams]);
 
   const sendMessage = async () => {
     if (!currentMessage.trim() || !agentConfig?.chatbot_key || isLoading) return;
