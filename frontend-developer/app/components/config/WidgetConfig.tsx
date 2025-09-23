@@ -74,12 +74,19 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
   // Load existing configuration
   useEffect(() => {
     if (existingConfig) {
+      console.log('🔧 WidgetConfig loading existing config:', existingConfig);
       if (existingConfig.difyApiUrl) {
         // Remove /chat-messages endpoint if present to get base URL
         const baseUrl = existingConfig.difyApiUrl.replace('/chat-messages', '');
         setDifyApiUrl(baseUrl);
       }
       if (existingConfig.difyApiKey) {
+        console.log('🔧 WidgetConfig setting API key:', {
+          apiKey: existingConfig.difyApiKey,
+          apiKeyLength: existingConfig.difyApiKey.length,
+          startsWithApp: existingConfig.difyApiKey.startsWith('app-'),
+          startsWithSk: existingConfig.difyApiKey.startsWith('sk-')
+        });
         setDifyApiKey(existingConfig.difyApiKey);
       }
     }
@@ -148,10 +155,11 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
   const sendMessage = async () => {
     if (!currentMessage.trim() || !difyApiKey || isLoading) return;
 
+    const messageToSend = currentMessage.trim();
     const userMessage = {
       id: Date.now().toString(),
       type: 'user' as const,
-      message: currentMessage,
+      message: messageToSend,
       timestamp: new Date()
     };
 
@@ -160,6 +168,13 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
     setIsLoading(true);
 
     try {
+      console.log('🚀 Sending message to chatbot:', {
+        difyApiUrl,
+        difyApiKey: difyApiKey ? difyApiKey.substring(0, 10) + '...' : 'NO KEY',
+        message: messageToSend,
+        conversationId
+      });
+
       const response = await fetch('/api/chatbot/chat', {
         method: 'POST',
         headers: {
@@ -168,8 +183,9 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
         body: JSON.stringify({
           difyApiUrl,
           difyApiKey,
-          message: currentMessage,
-          conversationId: conversationId
+          message: messageToSend,
+          conversationId: conversationId,
+          useStreaming: true // Use streaming mode since agent doesn't support blocking
         })
       });
 
@@ -179,6 +195,10 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
       }
 
       const data = await response.json();
+      console.log('🤖 Chatbot response data:', data);
+      console.log('🤖 Response answer field:', data.answer);
+      console.log('🤖 Response answer type:', typeof data.answer);
+      console.log('🤖 Response answer length:', data.answer ? data.answer.length : 0);
       
       // Update conversation ID if provided
       if (data.conversationId) {
@@ -192,6 +212,8 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
         timestamp: new Date()
       };
 
+      console.log('🤖 Bot message to display:', botMessage);
+      console.log('🤖 Bot message content:', botMessage.message);
       setChatMessages(prev => [...prev, botMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
@@ -332,6 +354,16 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
                   {copiedKey ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 </button>
           </div>
+          {difyApiKey && !difyApiKey.startsWith('app-') && !difyApiKey.startsWith('sk-') && (
+            <div className={`mt-2 p-3 rounded-lg border ${
+              isDarkMode ? 'bg-yellow-900/20 border-yellow-700 text-yellow-300' : 'bg-yellow-50 border-yellow-200 text-yellow-800'
+            }`}>
+              <p className="text-sm">
+                ⚠️ <strong>Invalid API Key Format:</strong> Dify API keys should start with "app-" or "sk-". 
+                Please check that your agent has a valid Dify API key configured.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
