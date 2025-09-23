@@ -63,7 +63,9 @@ export async function POST(request: NextRequest) {
 
     // Handle response (streaming mode returns Server-Sent Events)
     const responseText = await response.text();
-    console.log('📡 Raw Dify response:', responseText);
+    console.log('📡 Raw Dify response length:', responseText.length);
+    console.log('📡 Raw Dify response (first 500 chars):', responseText.substring(0, 500));
+    console.log('📡 Raw Dify response (last 500 chars):', responseText.substring(Math.max(0, responseText.length - 500)));
     
     try {
       // Try to parse as JSON first (in case of non-streaming response)
@@ -89,43 +91,105 @@ export async function POST(request: NextRequest) {
     } catch (e) {
       // If not JSON, try to parse as streaming response
       console.log('📡 Not JSON, trying streaming format');
+      console.log('📡 Raw response text:', responseText);
+      
       const lines = responseText.split('\n');
       let finalAnswer = '';
       let accumulatedAnswer = '';
+      let conversationIdFromStream = conversationId;
       
       for (const line of lines) {
+        if (line.trim() === '') continue; // Skip empty lines
+        
         if (line.startsWith('data: ')) {
           try {
-            const data = JSON.parse(line.substring(6));
+            const jsonStr = line.substring(6).trim();
+            if (jsonStr === '[DONE]') continue; // Skip DONE markers
+            
+            const data = JSON.parse(jsonStr);
             console.log('📡 Parsed streaming data:', data);
             
-            if (data.event === 'message_end' && data.answer) {
-              finalAnswer = data.answer;
+            // Handle different event types
+            if (data.event === 'message_end') {
+              if (data.answer) {
+                finalAnswer = data.answer;
+              }
+              if (data.conversation_id) {
+                conversationIdFromStream = data.conversation_id;
+              }
               break;
-            } else if (data.event === 'agent_message' && data.answer) {
-              finalAnswer = data.answer;
-            } else if (data.event === 'message' && data.answer) {
-              finalAnswer = data.answer;
+            } else if (data.event === 'agent_message') {
+              if (data.answer) {
+                finalAnswer = data.answer;
+              }
+              if (data.conversation_id) {
+                conversationIdFromStream = data.conversation_id;
+              }
+            } else if (data.event === 'message') {
+              if (data.answer) {
+                finalAnswer = data.answer;
+              }
+              if (data.conversation_id) {
+                conversationIdFromStream = data.conversation_id;
+              }
+            } else if (data.event === 'agent_thought') {
+              // Skip thought events
+              continue;
             } else if (data.answer) {
+              // Accumulate answer chunks
               accumulatedAnswer += data.answer;
+            } else if (data.text) {
+              // Some responses use 'text' instead of 'answer'
+              accumulatedAnswer += data.text;
             }
-          } catch (e) {
+          } catch (parseError) {
+            console.log('📡 Failed to parse line:', line, parseError);
             continue;
+          }
+        } else if (line.startsWith('event: ')) {
+          // Skip event type lines
+          continue;
+        } else {
+          // Try to parse as direct JSON (non-SSE format)
+          try {
+            const data = JSON.parse(line);
+            console.log('📡 Parsed direct JSON:', data);
+            
+            if (data.answer) {
+              finalAnswer = data.answer;
+            } else if (data.text) {
+              finalAnswer = data.text;
+            } else if (data.message) {
+              finalAnswer = data.message;
+            }
+            
+            if (data.conversation_id) {
+              conversationIdFromStream = data.conversation_id;
+            }
+          } catch (directParseError) {
+            // Not JSON, might be plain text response
+            if (line.trim().length > 0) {
+              accumulatedAnswer += line.trim() + ' ';
+            }
           }
         }
       }
       
-      const answer = finalAnswer || accumulatedAnswer;
+      const answer = finalAnswer || accumulatedAnswer.trim();
       if (answer) {
         return NextResponse.json({ 
           answer: answer,
-          conversationId: conversationId
+          conversationId: conversationIdFromStream
         });
       }
       
-      // Final fallback
+      // Final fallback - return the raw response for debugging
       return NextResponse.json(
-        { error: 'No answer found', rawResponse: responseText.substring(0, 500) },
+        { 
+          error: 'No answer found in streaming response', 
+          rawResponse: responseText.substring(0, 1000),
+          lines: lines.slice(0, 10) // First 10 lines for debugging
+        },
         { status: 500 }
       );
     }
