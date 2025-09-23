@@ -29,6 +29,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
   const [configStatus, setConfigStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [isUserChangingProvider, setIsUserChangingProvider] = useState(false);
   const providerChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastConfigRef = useRef<string>('');
 
   // Transcriber state
   const [selectedTranscriberProvider, setSelectedTranscriberProvider] = useState('Deepgram');
@@ -507,10 +508,13 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
     };
     saveStateToLocalStorage(uiConfig);
 
-    if (onConfigChange) {
+    // Only call onConfigChange if it exists and the configuration has actually changed
+    const configString = JSON.stringify(backendConfig);
+    if (onConfigChange && selectedVoiceProvider && configString !== lastConfigRef.current) {
+      lastConfigRef.current = configString;
       onConfigChange(backendConfig);
     }
-  }, [selectedVoiceProvider, selectedVoice, selectedLanguage, speedValue, apiKey, voiceId, stability, similarityBoost, onConfigChange]);
+  }, [selectedVoiceProvider, selectedVoice, selectedLanguage, speedValue, apiKey, voiceId, stability, similarityBoost]);
 
   // Notify parent component of transcriber configuration changes and save to localStorage
   React.useEffect(() => {

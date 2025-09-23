@@ -46,21 +46,6 @@ const WhatsAppIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// Simple Chat icon component
-const ChatIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-  </svg>
-);
-
 // Navigation items for top navbar
 const navigationItems = [
   { name: 'Overview', icon: Building2, color: 'from-blue-500 to-purple-600' },
@@ -74,9 +59,6 @@ const navigationItems = [
 export default function DeveloperDashboard() {
   const [activeNavItem, setActiveNavItem] = useState('Overview');
 
-  // Chat state
-  const [chatOpen, setChatOpen] = useState(false);
-  const [hasNewMessages, setHasNewMessages] = useState(false);
   const { isDarkMode, toggleTheme } = useTheme();
 
   // Profile dropdown state
@@ -184,8 +166,6 @@ export default function DeveloperDashboard() {
     fetchDashboardStats();
   }, [loading, userClass, orgSetupComplete]);
 
-  // No need for organization choice since each user has only one organization
-
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -200,72 +180,10 @@ export default function DeveloperDashboard() {
     };
   }, []);
 
-  // Check for new messages and update notification state
-  useEffect(() => {
-    const checkNewMessages = () => {
-      try {
-        const savedMessages = localStorage.getItem('chatMessages');
-        if (savedMessages) {
-          const parsed = JSON.parse(savedMessages);
-          // Consider it has new messages if more than just the welcome message
-          setHasNewMessages(parsed.length > 1);
-        } else {
-          setHasNewMessages(false);
-        }
-      } catch (error) {
-        console.error('Error checking new messages:', error);
-        setHasNewMessages(false);
-      }
-    };
-
-    // Check initially
-    checkNewMessages();
-
-    // Set up interval to check for new messages
-    const interval = setInterval(checkNewMessages, 5000); // Check every 5 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Ctrl/Cmd + K to toggle chat
-      if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
-        event.preventDefault();
-        setChatOpen(prev => !prev);
-      }
-      // Escape to close chat
-      if (event.key === 'Escape' && chatOpen) {
-        setChatOpen(false);
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [chatOpen]);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [dropdownRef]);
-
   // Handle navigation item click
   const handleNavItemClick = (itemName: string) => {
     setActiveNavItem(itemName);
   };
-
-
 
   // Render content based on active navigation item
   const renderContent = () => {
@@ -573,20 +491,6 @@ export default function DeveloperDashboard() {
           )}
         </main>
 
-        {/* Chat Sidebar */}
-        {chatOpen && (
-          <>
-            {/* Backdrop overlay */}
-            <div
-              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
-              onClick={() => setChatOpen(false)}
-            />
-            {/* Chat Sidebar */}
-            <div className={`fixed top-0 right-0 h-full w-full sm:w-96 sm:max-w-[90vw] ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-xl border-l border-gray-700/50' : 'bg-white border-l border-gray-200'} shadow-2xl z-50 transform transition-transform duration-300 ${chatOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-              <ChatSidebar onClose={() => setChatOpen(false)} />
-            </div>
-          </>
-        )}
       </div>
       <style jsx global>{`
         @keyframes fade-in-down {
