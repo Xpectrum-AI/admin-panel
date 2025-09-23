@@ -1439,7 +1439,7 @@ Remember: You are the first point of contact for many patients. Your professiona
                     ref={widgetSectionRef}
                     agentName={selectedAgent.name}
                     onConfigChange={handleWidgetConfigChange}
-                    existingConfig={widgetConfig}
+                    existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).widgetConfig : null}
                     isEditing={isEditing}
                   />
                 )}

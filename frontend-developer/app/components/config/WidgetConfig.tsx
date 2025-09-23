@@ -184,7 +184,8 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
           difyApiUrl,
           difyApiKey,
           message: messageToSend,
-          conversationId: conversationId
+          conversationId: conversationId,
+          useStreaming: true // Use streaming mode since agent doesn't support blocking
         })
       });
 
