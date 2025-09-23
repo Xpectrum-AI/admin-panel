@@ -30,6 +30,8 @@ import { useAuthInfo, useLogoutFunction } from '@propelauth/react';
 import { SyncLoader } from 'react-spinners';
 import { useRouter } from 'next/navigation';
 import { AgentsTab, PhoneNumbersTab, SMSTab, WhatsAppTab, GmailTab, OrgSetup } from './components';
+import Navbar from './components/Navbar';
+import ChatSidebar from './components/ChatSidebar';
 import { useTheme } from './contexts/ThemeContext';
 import { DashboardService, DashboardStats, OrganizationInfo } from '../service/dashboardService';
 
@@ -43,7 +45,6 @@ const WhatsAppIcon = ({ className }: { className?: string }) => (
     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488" />
   </svg>
 );
-
 
 // Navigation items for top navbar
 const navigationItems = [
@@ -72,6 +73,7 @@ export default function DeveloperDashboard() {
   const [showOrgSetup, setShowOrgSetup] = useState(false);
   const [orgs, setOrgs] = useState<any[]>([]);
   const [orgSetupComplete, setOrgSetupComplete] = useState(false);
+  const [organizationName, setOrganizationName] = useState<string>('');
 
   // Dashboard statistics state
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
@@ -112,6 +114,22 @@ export default function DeveloperDashboard() {
     }
   }, [loading, userClass]);
 
+  // Get organization name from user context
+  useEffect(() => {
+    if (userClass) {
+      const orgs = userClass.getOrgs?.() || [];
+      if (orgs.length > 0) {
+        const org = orgs[0] as any;
+        const orgName = org.orgName || org.name || '';
+        setOrganizationName(orgName);
+      } else {
+        setOrganizationName('Organization Name');
+      }
+    } else {
+      setOrganizationName('Organization Name');
+    }
+  }, [userClass]);
+
   // Fetch dashboard statistics when organization is available
   useEffect(() => {
     const fetchDashboardStats = async () => {
@@ -120,17 +138,17 @@ export default function DeveloperDashboard() {
         if (orgs.length > 0) {
           const currentOrg = orgs[0]; // Get the first organization
           console.log('🔍 Current organization:', currentOrg);
-          
+
           const organizationInfo: OrganizationInfo = {
             orgId: currentOrg.orgId,
             orgName: (currentOrg as any).orgName || (currentOrg as any).name
           };
-          
+
           setStatsLoading(true);
           try {
             // First run debug to see what's happening
             await DashboardService.debugDashboardStats(organizationInfo);
-            
+
             // Then get the actual stats
             const result = await DashboardService.getDashboardStats(organizationInfo);
             if (result.success && result.data) {
@@ -148,8 +166,6 @@ export default function DeveloperDashboard() {
     fetchDashboardStats();
   }, [loading, userClass, orgSetupComplete]);
 
-  // No need for organization choice since each user has only one organization
-
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -164,28 +180,10 @@ export default function DeveloperDashboard() {
     };
   }, []);
 
-
-  // Keyboard shortcuts
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [dropdownRef]);
-
   // Handle navigation item click
   const handleNavItemClick = (itemName: string) => {
     setActiveNavItem(itemName);
   };
-
-
 
   // Render content based on active navigation item
   const renderContent = () => {
@@ -306,28 +304,28 @@ export default function DeveloperDashboard() {
                   Quick Actions
                 </h3>
                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                  <button 
+                  <button
                     onClick={() => handleNavItemClick('Agents')}
                     className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-green-500/20 to-emerald-600/20 border-green-500/30 hover:border-green-400/50' : 'bg-green-50 border-green-200 hover:border-green-300 hover:bg-green-100'}`}
                   >
                     <Bot className={`h-5 w-5 sm:h-6 sm:w-6 mb-2 ${isDarkMode ? 'text-green-400 group-hover:text-green-300' : 'text-green-600 group-hover:text-green-700'}`} />
                     <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-green-300' : 'text-green-700'}`}>Create Agent</p>
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleNavItemClick('Phone Numbers')}
                     className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-blue-500/20 to-indigo-600/20 border-blue-500/30 hover:border-blue-400/50' : 'bg-blue-50 border-blue-200 hover:border-blue-300 hover:bg-blue-100'}`}
                   >
                     <Phone className={`h-5 w-5 sm:h-6 sm:w-6 mb-2 ${isDarkMode ? 'text-blue-400 group-hover:text-blue-300' : 'text-blue-600 group-hover:text-blue-700'}`} />
                     <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>Add Phone</p>
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleNavItemClick('WhatsApp')}
                     className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-purple-500/20 to-pink-600/20 border-purple-500/30 hover:border-purple-400/50' : 'bg-purple-50 border-purple-200 hover:border-purple-300 hover:bg-purple-100'}`}
                   >
                     <Globe className={`h-5 w-5 sm:h-6 sm:w-6 mb-2 ${isDarkMode ? 'text-purple-400 group-hover:text-purple-300' : 'text-purple-600 group-hover:text-purple-700'}`} />
                     <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-purple-300' : 'text-purple-700'}`}>WhatsApp</p>
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleNavItemClick('Gmail')}
                     className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-orange-500/20 to-red-600/20 border-orange-500/30 hover:border-orange-400/50' : 'bg-orange-50 border-orange-200 hover:border-orange-300 hover:bg-orange-100'}`}
                   >
@@ -444,131 +442,30 @@ export default function DeveloperDashboard() {
   return (
     <>
       <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-black' : 'bg-gray-50'}`}>
-        {/* Top Navigation Header */}
-        <header className="bg-gray-900 px-3 sm:px-6 py-3 sm:py-4">
-          <div className="flex items-center justify-between">
-            {/* Logo and Navigation */}
-            <div className="flex items-center space-x-2 sm:space-x-4 lg:space-x-8">
-              <div className="flex items-center">
-                <div className="h-8 w-8 sm:h-10 sm:w-10 bg-green-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm sm:text-lg">D</span>
-                </div>
-                <div className="ml-2 sm:ml-4">
-                  <div className="text-white font-bold text-sm sm:text-lg">Developer</div>
-                  <div className="text-gray-400 text-xs sm:text-sm">Control Center</div>
-                </div>
-              </div>
-
-              {/* Navigation Tabs - Hidden on mobile, shown on tablet+ */}
-              <nav className="hidden md:flex space-x-1">
-                {navigationItems.map((item) => {
-                  const isActive = activeNavItem === item.name;
-                  return (
-                    <button
-                      key={item.name}
-                      onClick={() => handleNavItemClick(item.name)}
-                      className={`px-3 lg:px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${isActive
-                          ? 'bg-green-500 text-white'
-                          : 'text-white hover:bg-gray-800'
-                        }`}
-                    >
-                      {item.name}
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
-            {/* Right side actions */}
-            <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
-              {/* Mobile Navigation Menu - Only show on mobile */}
-              <div className="md:hidden">
-                <select
-                  value={activeNavItem}
-                  onChange={(e) => handleNavItemClick(e.target.value)}
-                  className={`px-2 py-1 rounded-lg text-sm font-medium transition-all duration-300 ${isDarkMode ? 'bg-gray-800 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-200'}`}
-                >
-                  {navigationItems.map((item) => (
-                    <option key={item.name} value={item.name}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-
-              {/* Theme Toggle */}
-              <button
-                onClick={toggleTheme}
-                className={`p-2 rounded-xl transition-all duration-300 ${isDarkMode ? 'hover:bg-gray-800/50 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'}`}
-              >
-                {isDarkMode ? <Sun className="h-4 w-4 sm:h-5 sm:w-5" /> : <Moon className="h-4 w-4 sm:h-5 sm:w-5" />}
-              </button>
-
-              {/* Developer Access Badge - Hidden on mobile */}
-              <div className={`hidden sm:block px-3 sm:px-4 py-2 rounded-xl border ${isDarkMode ? 'bg-gradient-to-r from-green-500/20 to-emerald-600/20 backdrop-blur-sm border-green-500/30' : 'bg-green-50 border-green-200'}`}>
-                <span className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-700'}`}>Developer Access</span>
-              </div>
-
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className={`transition-colors duration-300 ${isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
-                >
-                  <div className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                    <span className="text-white text-sm sm:text-base lg:text-lg font-bold">
-                      {(user?.firstName || localStorage.getItem('pendingFirstName'))?.[0]}{(user?.lastName || localStorage.getItem('pendingLastName'))?.[0]}
-                    </span>
-                  </div>
-                </button>
-                {dropdownOpen && (
-                  <>
-                    {/* Backdrop overlay */}
-                    <div
-                      className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
-                      onClick={() => setDropdownOpen(false)}
-                    />
-                    {/* Dropdown */}
-                    <div className={`fixed top-16 sm:top-20 right-3 sm:right-6 w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] sm:max-w-[calc(100vw-3rem)] rounded-2xl shadow-2xl z-50 animate-fade-in-down ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-xl border border-gray-700/50' : 'bg-white border border-gray-200'}`}>
-                      <div className={`p-4 sm:p-6 ${isDarkMode ? 'border-b border-gray-700/50' : 'border-b border-gray-200'}`}>
-                        <p className={`font-bold text-base sm:text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                          {user?.firstName || localStorage.getItem('pendingFirstName')} {user?.lastName || localStorage.getItem('pendingLastName')}
-                        </p>
-                        <p className={`mt-1 text-sm sm:text-base ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{user?.email}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                          <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>Developer</p>
-                        </div>
-                      </div>
-                      <nav className="p-3 sm:p-4">
-                        <button
-                          onClick={async () => {
-                            try {
-                              setLoggingOut(true);
-                              // Clear chat history before logout
-                              localStorage.removeItem('chatMessages');
-                              await logout(true);
-                              // Redirect to login page
-                              window.location.href = '/login';
-                            } catch (error) {
-                              console.error('Logout error:', error);
-                              setLoggingOut(false);
-                              // Force redirect even if logout fails
-                              window.location.href = '/login';
-                            }
-                          }}
-                          className={`w-full flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-xl transition-all duration-300 group ${isDarkMode ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300' : 'text-red-600 hover:bg-red-50 hover:text-red-700'}`}
-                        >
-                          <LogOut className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
-                          <span className="text-sm sm:text-base">{loggingOut ? 'Logging out...' : 'Log out'}</span>
-                        </button>
-                      </nav>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        </header>
+        {/* Navigation */}
+        <Navbar
+          activeTab={activeNavItem}
+          onChange={(tab) => handleNavItemClick(tab)}
+          activeTitle={activeNavItem}
+          sidebarOpen={true}
+          onToggleSidebar={() => { }}
+          navigationItems={navigationItems}
+          onLogout={async () => {
+            try {
+              setLoggingOut(true);
+              // Clear chat history before logout
+              localStorage.removeItem('chatMessages');
+              await logout(true);
+              // Redirect to login page
+              window.location.href = '/login';
+            } catch (error) {
+              console.error('Logout error:', error);
+              setLoggingOut(false);
+              // Force redirect even if logout fails
+              window.location.href = '/login';
+            }
+          }}
+        />
 
         {/* Main Content Area */}
         <main className="p-3 sm:p-4 lg:p-6">
