@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     const requestBody = {
       inputs: {},
       query: message,
-      response_mode: 'streaming',
+      response_mode: 'blocking',
       conversation_id: conversationId || '',
       user: 'preview-user',
       files: []
@@ -93,201 +93,103 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Handle response (streaming mode returns Server-Sent Events)
+    // Handle response (blocking mode returns JSON directly)
     const responseText = await response.text();
     console.log('📡 Raw Dify response length:', responseText.length);
     console.log('📡 Raw Dify response (first 500 chars):', responseText.substring(0, 500));
     console.log('📡 Raw Dify response (last 500 chars):', responseText.substring(Math.max(0, responseText.length - 500)));
     
     try {
-      // Try to parse as JSON first (in case of non-streaming response)
+      // Parse as JSON (blocking mode should return JSON directly)
       const data = JSON.parse(responseText);
       console.log('📡 Parsed JSON data:', data);
       
+      // Extract answer from various possible fields
+      let answer = '';
+      let conversationIdFromResponse = conversationId;
+      
       if (data.answer) {
-        return NextResponse.json({ 
-          answer: data.answer,
-          conversationId: data.conversation_id || conversationId
-        });
+        answer = data.answer;
+        console.log('📡 Found answer field:', answer);
       } else if (data.message) {
-        return NextResponse.json({ 
-          answer: data.message,
-          conversationId: data.conversation_id || conversationId
-        });
+        answer = data.message;
+        console.log('📡 Found message field:', answer);
+      } else if (data.text) {
+        answer = data.text;
+        console.log('📡 Found text field:', answer);
+      } else if (data.data && data.data.answer) {
+        answer = data.data.answer;
+        console.log('📡 Found data.answer field:', answer);
+      } else if (data.data && data.data.message) {
+        answer = data.data.message;
+        console.log('📡 Found data.message field:', answer);
+      } else if (data.response) {
+        answer = data.response;
+        console.log('📡 Found response field:', answer);
       } else {
-        return NextResponse.json({ 
-          answer: JSON.stringify(data),
-          conversationId: data.conversation_id || conversationId
-        });
-      }
-    } catch (e) {
-      // If not JSON, try to parse as streaming response
-      console.log('📡 Not JSON, trying streaming format');
-      console.log('📡 Raw response text length:', responseText.length);
-      console.log('📡 Raw response text (first 1000 chars):', responseText.substring(0, 1000));
-      
-      const lines = responseText.split('\n');
-      let finalAnswer = '';
-      let accumulatedAnswer = '';
-      let conversationIdFromStream = conversationId;
-      let foundValidData = false;
-      
-      console.log('📡 Total lines to process:', lines.length);
-      
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (line.trim() === '') continue; // Skip empty lines
+        // If no direct answer field, try to extract from the entire response
+        console.log('📡 No direct answer field found, checking full response structure');
+        console.log('📡 Full response keys:', Object.keys(data));
         
-        console.log(`📡 Processing line ${i}:`, line.substring(0, 100));
-        
-        if (line.startsWith('data: ')) {
-          try {
-            const jsonStr = line.substring(6).trim();
-            if (jsonStr === '[DONE]') {
-              console.log('📡 Found [DONE] marker');
-              continue;
-            }
-            
-            const data = JSON.parse(jsonStr);
-            console.log('📡 Parsed streaming data:', data);
-            foundValidData = true;
-            
-            // Handle different event types
-            if (data.event === 'message_end') {
-              console.log('📡 Found message_end event');
-              if (data.answer) {
-                finalAnswer = data.answer;
-                console.log('📡 Final answer from message_end:', finalAnswer);
-              }
-              if (data.conversation_id) {
-                conversationIdFromStream = data.conversation_id;
-              }
-              break;
-            } else if (data.event === 'agent_message') {
-              console.log('📡 Found agent_message event');
-              if (data.answer) {
-                finalAnswer = data.answer;
-                console.log('📡 Final answer from agent_message:', finalAnswer);
-              }
-              if (data.conversation_id) {
-                conversationIdFromStream = data.conversation_id;
-              }
-            } else if (data.event === 'message') {
-              console.log('📡 Found message event');
-              if (data.answer) {
-                finalAnswer = data.answer;
-                console.log('📡 Final answer from message:', finalAnswer);
-              }
-              if (data.conversation_id) {
-                conversationIdFromStream = data.conversation_id;
-              }
-            } else if (data.event === 'agent_thought') {
-              console.log('📡 Found agent_thought event, skipping');
-              continue;
-            } else if (data.answer) {
-              console.log('📡 Found answer chunk:', data.answer);
-              accumulatedAnswer += data.answer;
-            } else if (data.text) {
-              console.log('📡 Found text chunk:', data.text);
-              accumulatedAnswer += data.text;
-            } else if (data.event === 'workflow_finished') {
-              console.log('📡 Found workflow_finished event');
-              if (data.data && data.data.answer) {
-                finalAnswer = data.data.answer;
-                console.log('📡 Final answer from workflow_finished:', finalAnswer);
-              }
-            } else if (data.event === 'message_file') {
-              console.log('📡 Found message_file event, skipping');
-              continue;
-            } else if (data.event === 'message_replace') {
-              console.log('📡 Found message_replace event');
-              if (data.answer) {
-                finalAnswer = data.answer;
-                console.log('📡 Final answer from message_replace:', finalAnswer);
-              }
-            } else if (data.event === 'message_append') {
-              console.log('📡 Found message_append event');
-              if (data.answer) {
-                accumulatedAnswer += data.answer;
-                console.log('📡 Appended answer chunk:', data.answer);
-              }
-            }
-          } catch (parseError) {
-            console.log('📡 Failed to parse line:', line, parseError);
-            continue;
-          }
-        } else if (line.startsWith('event: ')) {
-          console.log('📡 Found event type line:', line);
-          continue;
-        } else if (line.trim().length > 0) {
-          // Try to parse as direct JSON (non-SSE format)
-          try {
-            const data = JSON.parse(line);
-            console.log('📡 Parsed direct JSON:', data);
-            foundValidData = true;
-            
-            if (data.answer) {
-              finalAnswer = data.answer;
-            } else if (data.text) {
-              finalAnswer = data.text;
-            } else if (data.message) {
-              finalAnswer = data.message;
-            }
-            
-            if (data.conversation_id) {
-              conversationIdFromStream = data.conversation_id;
-            }
-          } catch (directParseError) {
-            // Not JSON, might be plain text response
-            console.log('📡 Line is not JSON, treating as plain text:', line);
-            if (line.trim().length > 0) {
-              accumulatedAnswer += line.trim() + ' ';
-            }
+        // Look for any field that might contain the answer
+        for (const [key, value] of Object.entries(data)) {
+          if (typeof value === 'string' && value.length > 0 && key.toLowerCase().includes('answer')) {
+            answer = value;
+            console.log(`📡 Found answer in field ${key}:`, answer);
+            break;
           }
         }
       }
       
-      console.log('📡 Final parsing results:', {
-        finalAnswer,
-        accumulatedAnswer,
-        foundValidData,
-        conversationIdFromStream
-      });
+      // Extract conversation ID
+      if (data.conversation_id) {
+        conversationIdFromResponse = data.conversation_id;
+        console.log('📡 Found conversation_id:', conversationIdFromResponse);
+      } else if (data.conversationId) {
+        conversationIdFromResponse = data.conversationId;
+        console.log('📡 Found conversationId:', conversationIdFromResponse);
+      }
       
-      const answer = finalAnswer || accumulatedAnswer.trim();
       if (answer) {
         console.log('📡 Returning answer:', answer);
         console.log('📡 Answer length:', answer.length);
         return NextResponse.json({ 
           answer: answer,
-          conversationId: conversationIdFromStream
+          conversationId: conversationIdFromResponse
+        });
+      } else {
+        console.log('📡 No answer found in response, returning debug info');
+        return NextResponse.json(
+          { 
+            error: 'No answer found in response', 
+            rawResponse: responseText.substring(0, 1000),
+            responseKeys: Object.keys(data),
+            fullResponse: data
+          },
+          { status: 500 }
+        );
+      }
+    } catch (parseError) {
+      console.log('📡 Failed to parse JSON response:', parseError);
+      console.log('📡 Raw response text:', responseText);
+      
+      // Try to extract answer from raw text using regex
+      const answerMatch = responseText.match(/"answer":\s*"([^"]+)"/);
+      if (answerMatch) {
+        const extractedAnswer = answerMatch[1];
+        console.log('📡 Extracted answer from raw response:', extractedAnswer);
+        return NextResponse.json({ 
+          answer: extractedAnswer,
+          conversationId: conversationId
         });
       }
       
-      // If we have no answer but found valid data, try to extract from raw response
-      if (foundValidData && responseText.trim()) {
-        console.log('📡 No structured answer found, trying to extract from raw response');
-        // Try to find any text that looks like a response
-        const textMatch = responseText.match(/"answer":\s*"([^"]+)"/);
-        if (textMatch) {
-          const extractedAnswer = textMatch[1];
-          console.log('📡 Extracted answer from raw response:', extractedAnswer);
-          return NextResponse.json({ 
-            answer: extractedAnswer,
-            conversationId: conversationIdFromStream
-          });
-        }
-      }
-      
-      // Final fallback - return the raw response for debugging
-      console.log('📡 No answer found, returning error with debug info');
+      // Final fallback
       return NextResponse.json(
         { 
-          error: 'No answer found in streaming response', 
+          error: 'Failed to parse response and no answer found', 
           rawResponse: responseText.substring(0, 1000),
-          lines: lines.slice(0, 10), // First 10 lines for debugging
-          foundValidData,
-          totalLines: lines.length
+          parseError: parseError.message
         },
         { status: 500 }
       );
