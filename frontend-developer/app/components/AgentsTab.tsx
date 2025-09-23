@@ -5,7 +5,6 @@ import { Bot, Settings, Mic, Wrench, BarChart3, MessageSquare, Sparkles, Zap, Ac
 
 import ModelConfig from './config/ModelConfig';
 import VoiceConfig from './config/VoiceConfig';
-import TranscriberConfig from './config/TranscriberConfig';
 import ToolsConfig from './config/ToolsConfig';
 import WidgetConfig from './config/WidgetConfig';
 import AgentCards from './AgentCards';
@@ -147,7 +146,6 @@ export default function AgentsTab({ }: AgentsTabProps) {
   // Refs for scrolling to sections
   const modelSectionRef = useRef<HTMLDivElement>(null);
   const voiceSectionRef = useRef<HTMLDivElement>(null);
-  const transcriberSectionRef = useRef<HTMLDivElement>(null);
   const widgetSectionRef = useRef<HTMLDivElement>(null);
   const toolsSectionRef = useRef<HTMLDivElement>(null);
   // Removed analysis, advanced section refs
@@ -600,10 +598,10 @@ Remember: You are the first point of contact for many patients. Your professiona
     try {
       // Create the agent with all default configurations
       const result = await agentConfigService.configureAgent(agentPrefix.trim(), completeAgentConfig);
-      
+
       if (result.success) {
         console.log('✅ Agent created successfully with default configurations');
-        
+
         // Now POST model and prompt configurations to Dify
         if (difyApiKey) {
           try {
@@ -612,6 +610,7 @@ Remember: You are the first point of contact for many patients. Your professiona
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
+                'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
               },
               body: JSON.stringify({
                 provider: 'langgenius/openai/openai',
@@ -632,6 +631,7 @@ Remember: You are the first point of contact for many patients. Your professiona
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
+                'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
               },
               body: JSON.stringify({
                 prompt: defaultSystemPrompt,
@@ -641,7 +641,7 @@ Remember: You are the first point of contact for many patients. Your professiona
 
             if (promptConfigResponse.ok) {
               console.log('✅ Prompt configuration posted to Dify successfully');
-              
+
               // Save the prompt to localStorage so it can be retrieved later
               try {
                 const promptData = {
@@ -660,7 +660,7 @@ Remember: You are the first point of contact for many patients. Your professiona
             console.error('❌ Error posting configurations to Dify:', configError);
           }
         }
-        
+
         // Create the agent object for UI
     const newAgent: Agent = {
       id: agentPrefix.trim(),
@@ -705,22 +705,22 @@ Remember: You are the first point of contact for many patients. Your professiona
     // Add the new agent to the agents list
     setAgents(prev => [...prev, newAgent]);
         setSelectedAgent(newAgent);
-        
+
         // Set the configurations for the UI
         setModelConfig(defaultConfig.modelConfig);
         setVoiceConfig(defaultConfig.voiceConfig);
         setTranscriberConfig(defaultConfig.transcriberConfig);
-        
+
         // Show success message
         setShowSuccessModal(true);
-        
+
         // Close modal and reset states
         setShowAgentPrefixModal(false);
         setAgentPrefix('');
         setIsCreating(false);
         setIsEditing(false);
         setActiveConfigTab('model');
-        
+
       } else {
         console.error('❌ Failed to create agent:', result.message);
         alert(`❌ Failed to create agent: ${result.message}`);
@@ -901,6 +901,7 @@ Remember: You are the first point of contact for many patients. Your professiona
         selectedModel: agent.model || 'GPT-4o',
         modelApiKey: agent.modelApiKey || agent.chatbot_key || '',
         modelLiveUrl: agent.chatbot_api || process.env.NEXT_PUBLIC_MODEL_API_BASE_URL || '',
+        chatbot_api: agent.chatbot_api || '', // Include chatbot_api for ModelConfig
         chatbot_key: agent.chatbot_key // Include chatbot_key for proper identification
       },
       // Voice config data - pass the raw backend config directly
@@ -1060,10 +1061,6 @@ Remember: You are the first point of contact for many patients. Your professiona
       // Ensure voice config is saved
       console.log('Saving voice config before tab switch:', voiceConfig);
     }
-    if (activeConfigTab === 'transcriber' && transcriberConfig) {
-      // Ensure transcriber config is saved
-      console.log('Saving transcriber config before tab switch:', transcriberConfig);
-    }
 
     setActiveConfigTab(tabId);
     setIsDropdownOpen(false); // Close dropdown on mobile
@@ -1081,9 +1078,6 @@ Remember: You are the first point of contact for many patients. Your professiona
           break;
         case 'voice':
           voiceSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          break;
-        case 'transcriber':
-          transcriberSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           break;
         case 'widget':
           widgetSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1206,10 +1200,9 @@ Remember: You are the first point of contact for many patients. Your professiona
 
   const configTabs = useMemo(() => [
     { id: 'model', label: 'Model', icon: Bot, color: 'from-blue-500 to-purple-600' },
-    { id: 'voice', label: 'Voice', icon: Mic, color: 'from-green-500 to-teal-600' },
-    { id: 'transcriber', label: 'Transcriber', icon: MessageSquare, color: 'from-orange-500 to-red-600' },
-    { id: 'widget', label: 'Widget', icon: Code, color: 'from-purple-500 to-pink-600' },
+    { id: 'voice', label: 'Voice & Transcriber', icon: Mic, color: 'from-green-500 to-teal-600' },
     { id: 'tools', label: 'Configurations', icon: Wrench, color: 'from-gray-600 to-gray-800' },
+    { id: 'widget', label: 'Widget', icon: Code, color: 'from-purple-500 to-pink-600' },
   ], []);
 
   if (showAgentCards) {
@@ -1427,6 +1420,7 @@ Remember: You are the first point of contact for many patients. Your professiona
                           onConfigChange={handleModelConfigChange}
                     existingConfig={modelConfig}
                           isEditing={isEditing}
+                          onConfigUpdated={fetchAgents}
                         />
                 )}
                 {activeConfigTab === 'voice' && (
@@ -1434,16 +1428,9 @@ Remember: You are the first point of contact for many patients. Your professiona
                           ref={voiceSectionRef}
                     agentName={selectedAgent.name}
                           onConfigChange={handleVoiceConfigChange}
-                    existingConfig={voiceConfig}
-                          isEditing={isEditing}
-                        />
-                )}
-                {activeConfigTab === 'transcriber' && (
-                        <TranscriberConfig
-                          ref={transcriberSectionRef}
-                    agentName={selectedAgent.name}
-                          onConfigChange={handleTranscriberConfigChange}
-                    existingConfig={transcriberConfig}
+                          onTranscriberConfigChange={handleTranscriberConfigChange}
+                          existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).voiceConfig : null}
+                          existingTranscriberConfig={selectedAgent ? getAgentConfigData(selectedAgent).transcriberConfig : null}
                           isEditing={isEditing}
                         />
                 )}

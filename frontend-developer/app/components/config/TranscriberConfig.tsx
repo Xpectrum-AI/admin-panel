@@ -439,7 +439,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
                 API Key
               </label>
               <input
-                type="password"
+                type="text"
                 value={getApiKeyDisplayValue(apiKey)}
                 readOnly
                 className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${isDarkMode
