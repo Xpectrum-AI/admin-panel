@@ -90,6 +90,7 @@ export default function DeveloperDashboard() {
   const [showOrgSetup, setShowOrgSetup] = useState(false);
   const [orgs, setOrgs] = useState<any[]>([]);
   const [orgSetupComplete, setOrgSetupComplete] = useState(false);
+  const [organizationName, setOrganizationName] = useState<string>('');
 
   // Dashboard statistics state
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
@@ -130,6 +131,22 @@ export default function DeveloperDashboard() {
     }
   }, [loading, userClass]);
 
+  // Get organization name from user context
+  useEffect(() => {
+    if (userClass) {
+      const orgs = userClass.getOrgs?.() || [];
+      if (orgs.length > 0) {
+        const org = orgs[0] as any;
+        const orgName = org.orgName || org.name || '';
+        setOrganizationName(orgName);
+      } else {
+        setOrganizationName('Organization Name');
+      }
+    } else {
+      setOrganizationName('Organization Name');
+    }
+  }, [userClass]);
+
   // Fetch dashboard statistics when organization is available
   useEffect(() => {
     const fetchDashboardStats = async () => {
@@ -138,17 +155,17 @@ export default function DeveloperDashboard() {
         if (orgs.length > 0) {
           const currentOrg = orgs[0]; // Get the first organization
           console.log('🔍 Current organization:', currentOrg);
-          
+
           const organizationInfo: OrganizationInfo = {
             orgId: currentOrg.orgId,
             orgName: (currentOrg as any).orgName || (currentOrg as any).name
           };
-          
+
           setStatsLoading(true);
           try {
             // First run debug to see what's happening
             await DashboardService.debugDashboardStats(organizationInfo);
-            
+
             // Then get the actual stats
             const result = await DashboardService.getDashboardStats(organizationInfo);
             if (result.success && result.data) {
@@ -368,28 +385,28 @@ export default function DeveloperDashboard() {
                   Quick Actions
                 </h3>
                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                  <button 
+                  <button
                     onClick={() => handleNavItemClick('Agents')}
                     className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-green-500/20 to-emerald-600/20 border-green-500/30 hover:border-green-400/50' : 'bg-green-50 border-green-200 hover:border-green-300 hover:bg-green-100'}`}
                   >
                     <Bot className={`h-5 w-5 sm:h-6 sm:w-6 mb-2 ${isDarkMode ? 'text-green-400 group-hover:text-green-300' : 'text-green-600 group-hover:text-green-700'}`} />
                     <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-green-300' : 'text-green-700'}`}>Create Agent</p>
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleNavItemClick('Phone Numbers')}
                     className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-blue-500/20 to-indigo-600/20 border-blue-500/30 hover:border-blue-400/50' : 'bg-blue-50 border-blue-200 hover:border-blue-300 hover:bg-blue-100'}`}
                   >
                     <Phone className={`h-5 w-5 sm:h-6 sm:w-6 mb-2 ${isDarkMode ? 'text-blue-400 group-hover:text-blue-300' : 'text-blue-600 group-hover:text-blue-700'}`} />
                     <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>Add Phone</p>
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleNavItemClick('WhatsApp')}
                     className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-purple-500/20 to-pink-600/20 border-purple-500/30 hover:border-purple-400/50' : 'bg-purple-50 border-purple-200 hover:border-purple-300 hover:bg-purple-100'}`}
                   >
                     <Globe className={`h-5 w-5 sm:h-6 sm:w-6 mb-2 ${isDarkMode ? 'text-purple-400 group-hover:text-purple-300' : 'text-purple-600 group-hover:text-purple-700'}`} />
                     <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-purple-300' : 'text-purple-700'}`}>WhatsApp</p>
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleNavItemClick('Gmail')}
                     className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-orange-500/20 to-red-600/20 border-orange-500/30 hover:border-orange-400/50' : 'bg-orange-50 border-orange-200 hover:border-orange-300 hover:bg-orange-100'}`}
                   >
@@ -516,8 +533,8 @@ export default function DeveloperDashboard() {
                   <span className="text-white font-bold text-sm sm:text-lg">D</span>
                 </div>
                 <div className="ml-2 sm:ml-4">
-                  <div className="text-white font-bold text-sm sm:text-lg">Developer</div>
-                  <div className="text-gray-400 text-xs sm:text-sm">Control Center</div>
+                  <div className="text-white font-bold text-sm sm:text-lg">{organizationName || 'Organization Name'}</div>
+                  <div className="text-gray-400 text-xs sm:text-sm">Organization</div>
                 </div>
               </div>
 
@@ -530,8 +547,8 @@ export default function DeveloperDashboard() {
                       key={item.name}
                       onClick={() => handleNavItemClick(item.name)}
                       className={`px-3 lg:px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${isActive
-                          ? 'bg-green-500 text-white'
-                          : 'text-white hover:bg-gray-800'
+                        ? 'bg-green-500 text-white'
+                        : 'text-white hover:bg-gray-800'
                         }`}
                     >
                       {item.name}
