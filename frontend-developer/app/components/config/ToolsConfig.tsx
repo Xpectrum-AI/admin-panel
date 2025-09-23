@@ -399,9 +399,25 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                 provider: 'openai',
                 openai: {
                   api_key: effectiveVoiceConfig.apiKey,
-                  voice: effectiveVoiceConfig.voice.toLowerCase(),
-                  response_format: 'mp3',
-                  quality: 'standard',
+                  model: effectiveVoiceConfig.voice.toLowerCase(),
+                  response_format: effectiveVoiceConfig.selectedModel || 'mp3',
+                  voice: effectiveVoiceConfig.responseFormat || 'alloy',
+                  language: effectiveVoiceConfig.language ? 
+                    (effectiveVoiceConfig.language === 'English' ? 'en' : 
+                     effectiveVoiceConfig.language === 'Hindi' ? 'hi' : 
+                     effectiveVoiceConfig.language === 'Spanish' ? 'es' : 
+                     effectiveVoiceConfig.language === 'French' ? 'fr' : 
+                     effectiveVoiceConfig.language === 'German' ? 'de' : 
+                     effectiveVoiceConfig.language === 'Italian' ? 'it' : 
+                     effectiveVoiceConfig.language === 'Portuguese' ? 'pt' : 
+                     effectiveVoiceConfig.language === 'Russian' ? 'ru' : 
+                     effectiveVoiceConfig.language === 'Japanese' ? 'ja' : 
+                     effectiveVoiceConfig.language === 'Korean' ? 'ko' : 
+                     effectiveVoiceConfig.language === 'Chinese' ? 'zh' : 
+                     effectiveVoiceConfig.language === 'Dutch' ? 'nl' : 
+                     effectiveVoiceConfig.language === 'Polish' ? 'pl' : 
+                     effectiveVoiceConfig.language === 'Swedish' ? 'sv' : 
+                     effectiveVoiceConfig.language === 'Turkish' ? 'tr' : 'en') : 'en',
                   speed: effectiveVoiceConfig.speed
                 }
               };
@@ -411,7 +427,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                 provider: 'elevenlabs',
                 elevenlabs: {
                   api_key: effectiveVoiceConfig.apiKey,
-                  voice_id: effectiveVoiceConfig.voiceId,
+                  voice_id: effectiveVoiceConfig.voiceId || 'pNInz6obpgDQGcFmaJgB',
                   model_id: 'eleven_monolingual_v1',
                   stability: effectiveVoiceConfig.stability,
                   similarity_boost: effectiveVoiceConfig.similarityBoost,
@@ -427,7 +443,22 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                   tts_api_key: effectiveVoiceConfig.apiKey,
                   model: effectiveVoiceConfig.voice,
                   speed: effectiveVoiceConfig.speed,
-                  language: effectiveVoiceConfig.language.toLowerCase()
+                  language: effectiveVoiceConfig.language ? 
+                    (effectiveVoiceConfig.language === 'English' ? 'en' : 
+                     effectiveVoiceConfig.language === 'French' ? 'fr' : 
+                     effectiveVoiceConfig.language === 'German' ? 'de' : 
+                     effectiveVoiceConfig.language === 'Spanish' ? 'es' : 
+                     effectiveVoiceConfig.language === 'Portuguese' ? 'pt' : 
+                     effectiveVoiceConfig.language === 'Chinese' ? 'zh' : 
+                     effectiveVoiceConfig.language === 'Japanese' ? 'ja' : 
+                     effectiveVoiceConfig.language === 'Hindi' ? 'hi' : 
+                     effectiveVoiceConfig.language === 'Italian' ? 'it' : 
+                     effectiveVoiceConfig.language === 'Korean' ? 'ko' : 
+                     effectiveVoiceConfig.language === 'Dutch' ? 'nl' : 
+                     effectiveVoiceConfig.language === 'Polish' ? 'pl' : 
+                     effectiveVoiceConfig.language === 'Russian' ? 'ru' : 
+                     effectiveVoiceConfig.language === 'Swedish' ? 'sv' : 
+                     effectiveVoiceConfig.language === 'Turkish' ? 'tr' : 'en') : 'en'
                 }
               };
               break;
@@ -463,10 +494,10 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                 }
               };
               break;
-            case 'Whisper':
+            case 'OpenAI':
               sttConfig = {
-                provider: 'whisper',
-                whisper: {
+                provider: 'openai',
+                openai: {
                   api_key: effectiveTranscriberConfig.apiKey,
                   model: effectiveTranscriberConfig.model,
                   language: effectiveTranscriberConfig.language === 'multi' ? null : effectiveTranscriberConfig.language

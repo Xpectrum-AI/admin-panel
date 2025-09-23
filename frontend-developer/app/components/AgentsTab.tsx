@@ -543,9 +543,10 @@ Remember: You are the first point of contact for many patients. Your professiona
         provider: 'openai' as const,
         openai: {
           api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
-          voice: 'alloy',
-          response_format: 'mp3',
-          quality: 'standard',
+          model: 'tts-1',
+          response_format: 'alloy',
+          voice: 'mp3',
+          language: 'en',
           speed: 1.0
         }
       },

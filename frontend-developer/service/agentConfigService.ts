@@ -26,9 +26,10 @@ export interface TTSConfig {
   };
   openai?: {
     api_key: string;
-    voice: string;
+    model: string;
     response_format: string;
-    quality: string;
+    voice: string;
+    language: string;
     speed: number;
   };
   cartesian?: {
@@ -41,7 +42,7 @@ export interface TTSConfig {
 }
 
 export interface STTConfig {
-  provider: 'deepgram' | 'whisper';
+  provider: 'deepgram' | 'openai';
   deepgram?: {
     api_key: string;
     model: string;
@@ -50,7 +51,7 @@ export interface STTConfig {
     smart_format: boolean;
     interim_results: boolean;
   };
-  whisper?: {
+  openai?: {
     api_key: string;
     model: string;
     language: string | null;
@@ -97,9 +98,10 @@ export const agentConfigService = {
           provider: 'openai',
           openai: {
             api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
-            voice: 'alloy',
+            model: 'tts-1',
             response_format: 'mp3',
-            quality: 'standard',
+            voice: 'alloy',
+            language: 'en',
             speed: 1.0
           }
         },
@@ -173,9 +175,10 @@ export const agentConfigService = {
           provider: 'openai',
           openai: {
             api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
-            voice: 'alloy',
+            model: 'tts-1',
             response_format: 'mp3',
-            quality: 'standard',
+            voice: 'alloy',
+            language: 'en',
             speed: 1.0
           }
         },
@@ -513,7 +516,6 @@ export const agentConfigService = {
     return {
       elevenlabs: process.env.NEXT_PUBLIC_ELEVEN_LABS_API_KEY || '',
       openai: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
-      whisper: process.env.NEXT_PUBLIC_WHISPER_API_KEY || '',
       deepgram: process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY || '',
       cartesia: process.env.NEXT_PUBLIC_CARTESIA_API_KEY || ''
     };
