@@ -8,6 +8,7 @@ import VoiceConfig from './config/VoiceConfig';
 import TranscriberConfig from './config/TranscriberConfig';
 import ToolsConfig from './config/ToolsConfig';
 import WidgetConfig from './config/WidgetConfig';
+import AgentCards from './AgentCards';
 
 import { agentConfigService } from '../../service/agentConfigService';
 import { difyAgentService } from '../../service/difyAgentService';
@@ -82,6 +83,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
 
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [showAgentCards, setShowAgentCards] = useState(true);
 
   const [activeConfigTab, setActiveConfigTab] = useState('model');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -113,15 +115,16 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const [voiceConfig, setVoiceConfig] = useState<any>(null);
   const [transcriberConfig, setTranscriberConfig] = useState<any>(null);
   const [widgetConfig, setWidgetConfig] = useState<any>(null);
+  const [toolsConfig, setToolsConfig] = useState<any>(null);
 
   // Initialize organization ID from user context
   useEffect(() => {
     console.log('🔍 Setting organization ID from user context:', { user, userClass });
-
-    const orgId = (user as any)?.orgIdToOrgMemberInfo ?
-      Object.keys((user as any).orgIdToOrgMemberInfo)[0] :
+    
+    const orgId = (user as any)?.orgIdToOrgMemberInfo ? 
+      Object.keys((user as any).orgIdToOrgMemberInfo)[0] : 
       null;
-
+    
     if (orgId && orgId !== currentOrganizationId) {
       console.log('✅ Setting organization ID from user.orgIdToOrgMemberInfo:', orgId);
       setCurrentOrganizationId(orgId);
@@ -157,9 +160,9 @@ export default function AgentsTab({ }: AgentsTabProps) {
       return;
     }
 
-    console.log('🔄 Starting fetchAgents...', { currentOrganizationId, organizationName });
-    isFetchingRef.current = true;
-    setAgentsError('');
+      console.log('🔄 Starting fetchAgents...', { currentOrganizationId, organizationName });
+      isFetchingRef.current = true;
+      setAgentsError('');
     const shouldShowFullLoader = !(agents && agents.length > 0 && agentsLoaded);
     if (shouldShowFullLoader) {
       setIsLoadingAgents(true);
@@ -167,41 +170,41 @@ export default function AgentsTab({ }: AgentsTabProps) {
       setIsRefreshingAgents(true);
     }
 
-    try {
-      const orgName = organizationName || currentOrganizationId || 'Unknown Organization';
-      console.log('🔍 Using organization name for fetchAgents:', orgName);
+      try {
+        const orgName = organizationName || currentOrganizationId || 'Unknown Organization';
+        console.log('🔍 Using organization name for fetchAgents:', orgName);
       const result = await agentConfigService.getAllAgents(orgName, signal);
-      console.log('📊 getAllAgents result:', result);
+        console.log('📊 getAllAgents result:', result);
 
-      if (result.success) {
-        if (result.data && result.data.length > 0) {
-          // Transform backend data to match our Agent interface
+        if (result.success) {
+          if (result.data && result.data.length > 0) {
+            // Transform backend data to match our Agent interface
           const transformedAgents: Agent[] = result.data.map((agent: any) => ({
-            id: agent.name || agent.id || `agent-${Date.now()}`,
-            name: agent.name || 'Unnamed Agent',
-            status: agent.status || 'draft',
-            model: agent.model || 'GPT-4o',
-            provider: agent.provider || 'OpenAI',
-            cost: agent.cost || '~$0.10/min',
-            latency: agent.latency || '~1000ms',
-            avatar: '🤖',
-            description: agent.description || 'AI Agent',
-            organization_id: agent.organization_id,
-            chatbot_api: agent.chatbot_api,
-            chatbot_key: agent.chatbot_key,
-            tts_config: agent.tts_config,
-            stt_config: agent.stt_config,
-            initial_message: agent.initial_message,
-            nudge_text: agent.nudge_text,
-            nudge_interval: agent.nudge_interval,
-            max_nudges: agent.max_nudges,
-            typing_volume: agent.typing_volume,
-            max_call_duration: agent.max_call_duration,
-            created_at: agent.created_at,
-            updated_at: agent.updated_at
+                id: agent.name || agent.id || `agent-${Date.now()}`,
+                name: agent.name || 'Unnamed Agent',
+                status: agent.status || 'draft',
+                model: agent.model || 'GPT-4o',
+                provider: agent.provider || 'OpenAI',
+                cost: agent.cost || '~$0.10/min',
+                latency: agent.latency || '~1000ms',
+                avatar: '🤖',
+                description: agent.description || 'AI Agent',
+                organization_id: agent.organization_id,
+                chatbot_api: agent.chatbot_api,
+                chatbot_key: agent.chatbot_key,
+                tts_config: agent.tts_config,
+                stt_config: agent.stt_config,
+                initial_message: agent.initial_message,
+                nudge_text: agent.nudge_text,
+                nudge_interval: agent.nudge_interval,
+                max_nudges: agent.max_nudges,
+                typing_volume: agent.typing_volume,
+                max_call_duration: agent.max_call_duration,
+                created_at: agent.created_at,
+                updated_at: agent.updated_at
           }));
 
-          setAgents(transformedAgents);
+            setAgents(transformedAgents);
 
           // Preserve previously selected agent if still present
           const previouslySelectedId = selectedAgentIdRef.current;
@@ -212,54 +215,54 @@ export default function AgentsTab({ }: AgentsTabProps) {
             } else if (!previouslySelectedId) {
               setSelectedAgent(transformedAgents[0]);
             }
-          }
-        } else {
+            }
+          } else {
           // No agents found - normal for new setup
-          setAgents([]);
-          setSelectedAgent(null);
-        }
-      } else {
-        // Don't show error for 405 Method Not Allowed - it's expected
-        if (result.message.includes('405') || result.message.includes('Method Not Allowed')) {
-          console.log('Backend does not support listing all agents. This is normal.');
-          setAgents([]);
-          setSelectedAgent(null);
+            setAgents([]);
+            setSelectedAgent(null);
+          }
         } else {
-          setAgentsError(result.message);
-          setAgents(fallbackAgents);
+          // Don't show error for 405 Method Not Allowed - it's expected
+          if (result.message.includes('405') || result.message.includes('Method Not Allowed')) {
+            console.log('Backend does not support listing all agents. This is normal.');
+            setAgents([]);
+            setSelectedAgent(null);
+          } else {
+            setAgentsError(result.message);
+            setAgents(fallbackAgents);
           if (fallbackAgents.length > 0 && !selectedAgentIdRef.current) {
-            setSelectedAgent(fallbackAgents[0]);
+              setSelectedAgent(fallbackAgents[0]);
+            }
           }
         }
-      }
-    } catch (error) {
+      } catch (error) {
       // Handle abort errors gracefully
       if (error instanceof DOMException && error.name === 'AbortError') {
         console.log('Fetch aborted for fetchAgents');
         return;
       }
-      // Don't show 405 errors as they are expected
-      if (error instanceof Error && error.message.includes('405')) {
-        console.log('Backend does not support listing all agents. This is normal.');
-        setAgents([]);
-        setSelectedAgent(null);
-      } else {
-        console.error('Error fetching agents:', error);
-        setAgentsError('Failed to load agents from server');
-        setAgents(fallbackAgents);
+        // Don't show 405 errors as they are expected
+        if (error instanceof Error && error.message.includes('405')) {
+          console.log('Backend does not support listing all agents. This is normal.');
+          setAgents([]);
+          setSelectedAgent(null);
+        } else {
+          console.error('Error fetching agents:', error);
+          setAgentsError('Failed to load agents from server');
+          setAgents(fallbackAgents);
         if (fallbackAgents.length > 0 && !selectedAgentIdRef.current) {
-          setSelectedAgent(fallbackAgents[0]);
+            setSelectedAgent(fallbackAgents[0]);
+          }
         }
-      }
-    } finally {
-      setIsLoadingAgents(false);
+      } finally {
+        setIsLoadingAgents(false);
       setIsRefreshingAgents(false);
-      setAgentsLoaded(true);
-      loadedOrganizationRef.current = currentOrganizationId || organizationName || '';
-      isFetchingRef.current = false;
-      console.log('🏁 fetchAgents completed');
-    }
-  }, [currentOrganizationId, organizationName, agents, agentsLoaded]);
+        setAgentsLoaded(true);
+        loadedOrganizationRef.current = currentOrganizationId || organizationName || '';
+        isFetchingRef.current = false;
+        console.log('🏁 fetchAgents completed');
+      }
+  }, [currentOrganizationId, organizationName]);
 
   // Load configurations from localStorage
   const loadConfigurationsFromStorage = useCallback(() => {
@@ -318,7 +321,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
   useEffect(() => {
     const currentOrg = currentOrganizationId || organizationName;
     const loadedOrg = loadedOrganizationRef.current;
-
+    
     if (currentOrg && !isLoadingAgents && currentOrg !== loadedOrg && agentsLoaded) {
       console.log('🔄 Organization changed, fetching agents:', { currentOrg, loadedOrg });
       setAgentsLoaded(false);
@@ -402,11 +405,14 @@ export default function AgentsTab({ }: AgentsTabProps) {
 
   // Handle creating a new agent
   const handleCreateNewAgent = useCallback(() => {
+    console.log('🎯 Create New Agent clicked!');
+    console.log('🎯 Current state:', { showAgentPrefixModal, agentPrefix, isCreatingAgent });
     // Show agent prefix modal first
     setShowAgentPrefixModal(true);
     setAgentPrefix('');
     setIsCreatingAgent(false); // Reset loading state when opening modal
-  }, []);
+    console.log('🎯 Modal should be opening now...');
+  }, [showAgentPrefixModal, agentPrefix, isCreatingAgent]);
 
   // Handle agent prefix submission
   const handleAgentPrefixSubmit = useCallback(async () => {
@@ -439,7 +445,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
     // Create Dify agent and get API key immediately
     console.log('🚀 Creating Dify agent for new agent:', agentPrefix.trim());
     let difyApiKey = '';
-
+    
     try {
       const difyResult = await difyAgentService.createDifyAgent({
         agentName: agentPrefix.trim(),
@@ -474,7 +480,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
         }
       }
     }
-
+    
     // Create agent with default configurations
     const defaultSystemPrompt = `# Appointment Scheduling Agent Prompt
 
@@ -656,19 +662,19 @@ Remember: You are the first point of contact for many patients. Your professiona
         }
         
         // Create the agent object for UI
-        const newAgent: Agent = {
-          id: agentPrefix.trim(),
-          name: agentPrefix.trim(),
+    const newAgent: Agent = {
+      id: agentPrefix.trim(),
+      name: agentPrefix.trim(),
           status: 'active',
-          avatar: '🤖',
+      avatar: '🤖',
           description: 'AI Agent - Ready to use',
-          model: 'GPT-4o',
-          provider: 'OpenAI',
-          cost: '~$0.15/min',
-          latency: '~1050ms',
-          organization_id: orgName,
+      model: 'GPT-4o',
+      provider: 'OpenAI',
+      cost: '~$0.15/min',
+      latency: '~1050ms',
+      organization_id: orgName,
           chatbot_api: difyApiKey ? process.env.NEXT_PUBLIC_CHATBOT_API_URL : undefined,
-          chatbot_key: difyApiKey || undefined,
+      chatbot_key: difyApiKey || undefined,
           modelApiKey: difyApiKey || undefined,
           systemPrompt: defaultSystemPrompt, // Set initial prompt
           initial_message: defaultConfig.toolsConfig.initialMessage,
@@ -696,8 +702,8 @@ Remember: You are the first point of contact for many patients. Your professiona
           console.warn('⚠️ Failed to retrieve prompt from localStorage:', error);
         }
 
-        // Add the new agent to the agents list
-        setAgents(prev => [...prev, newAgent]);
+    // Add the new agent to the agents list
+    setAgents(prev => [...prev, newAgent]);
         setSelectedAgent(newAgent);
         
         // Set the configurations for the UI
@@ -723,7 +729,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       console.error('❌ Error creating agent:', error);
       alert(`❌ Error creating agent: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-
+    
     // Reset loading state
     setIsCreatingAgent(false);
   }, [agentPrefix, currentOrganizationId, organizationName, userClass]);
@@ -761,6 +767,7 @@ Remember: You are the first point of contact for many patients. Your professiona
     setSelectedAgent(agent);
     setIsEditing(true);
     setIsCreating(false);
+    setShowAgentCards(false); // Switch to configuration view
 
     // Pre-populate configuration with existing agent data
     if (agent.initial_message) {
@@ -780,6 +787,26 @@ Remember: You are the first point of contact for many patients. Your professiona
     }
 
     setActiveConfigTab('model'); // Start with model configuration
+  }, []);
+
+  // Handle opening agent in new tab
+  const handleOpenAgent = useCallback((agent: Agent) => {
+    console.log('Opening agent in new tab:', agent);
+    console.log('Agent ID:', agent.id);
+    console.log('Agent chatbot_key:', agent.chatbot_key);
+    console.log('Agent chatbot_api:', agent.chatbot_api);
+    // Open the chatbot page in a new tab
+    const chatbotUrl = `/chatbot/${agent.id}`;
+    console.log('Opening URL:', chatbotUrl);
+    window.open(chatbotUrl, '_blank');
+  }, []);
+
+  // Handle going back to agent cards view
+  const handleBackToCards = useCallback(() => {
+    setShowAgentCards(true);
+    setSelectedAgent(null);
+    setIsEditing(false);
+    setIsCreating(false);
   }, []);
 
   // Handle successful agent creation/update - reset edit mode
@@ -864,7 +891,7 @@ Remember: You are the first point of contact for many patients. Your professiona
         toolsConfig: null
       };
     }
-
+    
     return {
       // Model config data
       modelConfig: {
@@ -951,6 +978,14 @@ Remember: You are the first point of contact for many patients. Your professiona
   }, []);
 
   const handleToolsConfigChange = useCallback((config: any) => {
+    setToolsConfig(config);
+    // Save to localStorage
+    try {
+      localStorage.setItem('toolsConfigState', JSON.stringify(config));
+      console.log('Tools config saved to localStorage:', config);
+    } catch (error) {
+      console.warn('Failed to save tools config to localStorage:', error);
+    }
     // Don't update selectedAgent here to avoid infinite loops
     console.log('Tools config changed:', config);
   }, []);
@@ -978,7 +1013,7 @@ Remember: You are the first point of contact for many patients. Your professiona
             organizationId: currentOrganizationId,
             // Note: We don't have the appId stored, but the script can still attempt cleanup
           });
-
+          
           if (difyResult.success) {
             console.log('✅ Dify agent deleted successfully');
           } else {
@@ -1060,7 +1095,7 @@ Remember: You are the first point of contact for many patients. Your professiona
           break;
       }
     }, 100);
-  }, [activeConfigTab, loadConfigurationsFromStorage]); // Add loadConfigurationsFromStorage to dependencies
+  }, [activeConfigTab]); // Remove loadConfigurationsFromStorage from dependencies to prevent infinite loop
 
 
   // Close dropdown when clicking outside
@@ -1177,189 +1212,126 @@ Remember: You are the first point of contact for many patients. Your professiona
     { id: 'tools', label: 'Configurations', icon: Wrench, color: 'from-gray-600 to-gray-800' },
   ], []);
 
+  if (showAgentCards) {
   return (
-    <>
-      <style jsx>{`
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
       <div className="w-full h-full max-w-full mx-auto p-2 sm:p-4 lg:p-6 min-h-0 overflow-hidden">
         <div className={`rounded-xl sm:rounded-2xl border shadow-xl backdrop-blur-sm h-full flex flex-col max-h-full ${isDarkMode ? 'bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800 border-gray-700/50' : 'bg-gradient-to-br from-white via-gray-50 to-white border-gray-200/50'}`}>
-          {/* Header */}
-          <div className={`p-3 sm:p-4 lg:p-6 xl:p-8 border-b rounded-t-xl sm:rounded-t-2xl flex-shrink-0 ${isDarkMode ? 'border-gray-700/50 bg-gradient-to-r from-green-900/20 to-emerald-900/20' : 'border-gray-200/50 bg-gradient-to-r from-green-50 to-emerald-50'}`}>
-            <div className="flex flex-col gap-3 sm:gap-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-                <div className="space-y-1 sm:space-y-2 min-w-0 flex-1">
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <div className="p-1.5 sm:p-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg sm:rounded-xl flex-shrink-0">
-                      <Bot className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
-                    </div>
-                    <h2 className={`text-xl sm:text-2xl lg:text-3xl font-bold bg-clip-text text-transparent truncate ${isDarkMode ? 'bg-gradient-to-r from-white to-gray-300' : 'bg-gradient-to-r from-gray-900 to-gray-700'}`}>
-                      AI Agents
-                    </h2>
-                  </div>
-                </div>
-                {organizationName && (
-                  <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                    <span className={`text-sm sm:text-base font-medium px-2 sm:px-3 py-1 sm:py-2 rounded-lg ${isDarkMode
-                      ? 'bg-gray-700 text-gray-200 border border-gray-600'
-                      : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      }`}>
-                      {organizationName}
-                    </span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                  <button
-                    onClick={handleRefreshAgents}
-                    disabled={isLoadingAgents || isRefreshingAgents}
-                    className={`group relative px-2 sm:px-3 lg:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-1 sm:gap-2 text-xs sm:text-sm lg:text-base ${isDarkMode
-                      ? 'bg-gradient-to-r from-gray-700 to-gray-800 text-gray-300 hover:from-gray-600 hover:to-gray-700'
-                      : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300'
-                      }`}
-                  >
-                    <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 ${(isLoadingAgents || isRefreshingAgents) ? 'animate-spin' : ''}`} />
-                    <span className="font-semibold hidden sm:inline">Refresh</span>
-                  </button>
-                  <button
-                    onClick={handleCreateNewAgent}
-                    className="group relative px-3 sm:px-4 lg:px-6 py-2 sm:py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg sm:rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-1 sm:gap-2 lg:gap-3 text-xs sm:text-sm lg:text-base"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-lg sm:rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                    <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
-                    <span className="font-semibold">Create Agent</span>
-                  </button>
-                </div>
+          <AgentCards
+            agents={agents}
+            onEditAgent={handleEditAgent}
+            onOpenAgent={handleOpenAgent}
+            onCreateAgent={handleCreateNewAgent}
+            onRefreshAgents={handleRefreshAgents}
+            isLoadingAgents={isLoadingAgents}
+            isRefreshingAgents={isRefreshingAgents}
+            agentsError={agentsError}
+          />
+        </div>
+
+        {/* Agent Prefix Modal */}
+        {showAgentPrefixModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className={`p-6 rounded-xl shadow-xl max-w-md w-full mx-4 ${
+              isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+            }`}>
+              <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                Create New Agent
+              </h3>
+              <p className={`text-sm mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                Enter a unique prefix for your new agent. This will be used as the agent identifier.
+              </p>
+              <input
+                type="text"
+                value={agentPrefix}
+                onChange={(e) => setAgentPrefix(e.target.value)}
+                placeholder="e.g., customer-support, sales-bot"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
+                  isDarkMode
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                }`}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleAgentPrefixSubmit();
+                  }
+                }}
+              />
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowAgentPrefixModal(false);
+                    setAgentPrefix('');
+                  }}
+                  className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
+                    isDarkMode
+                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAgentPrefixSubmit}
+                  disabled={!agentPrefix.trim() || isCreatingAgent}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isCreatingAgent ? 'Creating...' : 'Create Agent'}
+                </button>
               </div>
             </div>
           </div>
+        )}
 
-          <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
-            {/* Left Sidebar - Agent List */}
-            <div className={`w-full lg:w-80 xl:w-96 border-b lg:border-b-0 lg:border-r flex flex-col min-h-0 ${isDarkMode ? 'border-gray-700/50 bg-gradient-to-b from-gray-800/50 to-gray-900' : 'border-gray-200/50 bg-gradient-to-b from-gray-50/50 to-white'}`}>
-              <div className="p-3 sm:p-4 lg:p-6 flex-1 min-h-0 flex flex-col">
-                <div className="mb-3 sm:mb-4 lg:mb-6">
-                  <div className="relative group">
-                    <Search className={`absolute left-2 sm:left-3 lg:left-4 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 transition-colors ${isDarkMode ? 'text-gray-500 group-focus-within:text-green-400' : 'text-gray-400 group-focus-within:text-green-500'}`} />
-                    <input
-                      type="text"
-                      placeholder="Search your agents..."
-                      className={`w-full pl-8 sm:pl-10 lg:pl-12 pr-3 sm:pr-4 py-2 sm:py-2.5 lg:py-3 border rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 backdrop-blur-sm transition-all duration-300 text-xs sm:text-sm lg:text-base ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'}`}
-                    />
-                  </div>
+        {/* Success Modal */}
+        {showSuccessModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className={`p-6 rounded-xl shadow-xl max-w-md w-full mx-4 ${
+              isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+            }`}>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
                 </div>
-
-                <div className="space-y-2 sm:space-y-3 flex-1 min-h-0 overflow-y-auto">
-                  {isLoadingAgents && agents.length === 0 ? (
-                    <div className="flex justify-center items-center py-6 sm:py-8">
-                      <RefreshCw className="h-5 w-5 sm:h-6 sm:w-6 text-green-500 animate-spin" />
-                      <span className="ml-2 text-gray-500 text-xs sm:text-sm lg:text-base">Loading agents...</span>
-                    </div>
-                  ) : agentsError ? (
-                    <div className="text-center py-6 sm:py-8 text-red-500">
-                      <p className="text-xs sm:text-sm lg:text-base">{agentsError}</p>
-                      <button onClick={handleRefreshAgents} className="mt-3 sm:mt-4 px-3 sm:px-4 py-1.5 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm">
-                        Retry
-                      </button>
-                    </div>
-                  ) : agents.length === 0 ? (
-                    <div className="text-center py-6 sm:py-8">
-                      <div className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl inline-block mb-3 sm:mb-4 ${isDarkMode ? 'bg-gradient-to-r from-gray-800 to-gray-700' : 'bg-gradient-to-r from-gray-100 to-gray-200'}`}>
-                        <Bot className={`h-6 w-6 sm:h-8 sm:w-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-                      </div>
-                      <h4 className={`text-base sm:text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>No Agents Found</h4>
-                      <p className={`text-xs sm:text-sm mb-3 sm:mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                        Create your first AI agent to get started!
-                      </p>
-                      <button
-                        onClick={handleCreateNewAgent}
-                        className="px-3 sm:px-4 py-1.5 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm"
-                      >
-                        Create First Agent
-                      </button>
-                    </div>
-                  ) : (
-                    agents.map((agent) => (
-                      <div
-                        key={agent.id}
-                        onClick={() => handleSelectAgent(agent)}
-                        className={`w-full p-2 sm:p-3 lg:p-4 rounded-lg sm:rounded-xl text-left transition-all duration-300 transform hover:scale-[1.02] cursor-pointer ${selectedAgent?.id === agent.id
-                          ? isDarkMode
-                            ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-2 border-green-700/50 shadow-lg'
-                            : 'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 shadow-lg'
-                          : isDarkMode
-                            ? 'hover:bg-gray-800/80 border-2 border-transparent hover:border-gray-600 shadow-sm'
-                            : 'hover:bg-white/80 border-2 border-transparent hover:border-gray-200 shadow-sm'
-                          }`}
-                      >
-                        <div className="flex items-start gap-2 sm:gap-3 lg:gap-4">
-                          <div className={`text-lg sm:text-xl lg:text-2xl p-1.5 sm:p-2 rounded-lg ${agent.status === 'active'
-                            ? isDarkMode ? 'bg-green-900/50' : 'bg-green-100'
-                            : agent.status === 'draft'
-                              ? isDarkMode ? 'bg-yellow-900/50' : 'bg-yellow-100'
-                              : isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
-                            }`}>
-                            {agent.avatar}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                              <h3 className={`font-semibold truncate text-xs sm:text-sm lg:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{agent.name}</h3>
-                              <div className={`px-1.5 sm:px-2 lg:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium ${agent.status === 'active'
-                                ? isDarkMode ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-800'
-                                : agent.status === 'draft'
-                                  ? isDarkMode ? 'bg-yellow-900/50 text-yellow-300' : 'bg-yellow-100 text-yellow-800'
-                                  : isDarkMode ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-800'
-                                }`}>
-                                {agent.status}
-                              </div>
-                            </div>
-                            <p className={`text-xs sm:text-sm mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{agent.description}</p>
-                            <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{agent.provider} • {agent.model}</p>
-                          </div>
-                          <div className="flex items-center gap-1 sm:gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditAgent(agent);
-                              }}
-                              className={`p-1 sm:p-1.5 lg:p-2 rounded-lg transition-colors ${isDarkMode
-                                ? 'text-gray-400 hover:text-blue-400 hover:bg-gray-800'
-                                : 'text-gray-500 hover:text-blue-600 hover:bg-gray-100'
-                                }`}
-                              title="Edit Agent"
-                            >
-                              <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteAgent(agent);
-                              }}
-                              disabled={deletingAgentId === agent.id}
-                              className={`p-1 sm:p-1.5 lg:p-2 rounded-lg transition-colors ${deletingAgentId === agent.id
-                                ? isDarkMode
-                                  ? 'text-gray-600 cursor-not-allowed'
-                                  : 'text-gray-400 cursor-not-allowed'
-                                : isDarkMode
-                                  ? 'text-red-400 hover:text-red-300 hover:bg-gray-800'
-                                  : 'text-red-500 hover:text-red-600 hover:bg-gray-100'
-                                }`}
-                              title={deletingAgentId === agent.id ? "Deleting agent..." : "Delete Agent"}
-                            >
-                              {deletingAgentId === agent.id ? (
-                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+                <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  Agent Created Successfully!
+                </h3>
+                <p className={`text-sm mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  Your new agent has been created and is ready for configuration.
+                </p>
+                <button
+                  onClick={() => setShowSuccessModal(false)}
+                  className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Continue
+                </button>
               </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-full max-w-full mx-auto p-2 sm:p-4 lg:p-6 min-h-0 overflow-hidden">
+      <div className={`rounded-xl sm:rounded-2xl border shadow-xl backdrop-blur-sm h-full flex flex-col max-h-full ${isDarkMode ? 'bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800 border-gray-700/50' : 'bg-gradient-to-br from-white via-gray-50 to-white border-gray-200/50'}`}>
+        {/* Back Button */}
+        <div className={`px-4 sm:px-6 lg:px-8 py-3 border-b ${isDarkMode ? 'border-gray-700/50 bg-gray-800/50' : 'border-gray-200/50 bg-gray-50/50'}`}>
+                      <button
+            onClick={handleBackToCards}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
+              isDarkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Agents
+                            </button>
             </div>
 
             {/* Main Content - Agent Configuration */}
@@ -1387,147 +1359,113 @@ Remember: You are the first point of contact for many patients. Your professiona
                       <div className="relative">
                         <button
                           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                          className={`w-full flex items-center justify-between px-3 py-3 rounded-lg font-medium text-sm transition-all duration-300 min-h-[44px] ${activeConfigTab
-                            ? `bg-gradient-to-r ${configTabs.find(tab => tab.id === activeConfigTab)?.color} text-white shadow-lg`
-                            : isDarkMode
-                              ? 'text-gray-400 bg-gray-800 border border-gray-600'
-                              : 'text-gray-600 bg-white border border-gray-200'
-                            }`}
-                        >
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            {(() => {
-                              const activeTab = configTabs.find(tab => tab.id === activeConfigTab);
-                              const Icon = activeTab?.icon || Bot;
-                              return <Icon className="h-4 w-4 flex-shrink-0" />;
-                            })()}
-                            <span className="truncate">{configTabs.find(tab => tab.id === activeConfigTab)?.label || 'Select Tab'}</span>
-                          </div>
-                          <ChevronDown className={`h-4 w-4 transition-transform duration-200 flex-shrink-0 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border transition-colors text-sm font-medium ${isDarkMode
+                        ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        {configTabs.find(tab => tab.id === activeConfigTab)?.icon && (
+                          React.createElement(configTabs.find(tab => tab.id === activeConfigTab)!.icon, { className: 'h-4 w-4' })
+                        )}
+                        {configTabs.find(tab => tab.id === activeConfigTab)?.label}
+                      </span>
+                      <ChevronDown className={`h-4 w-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                         </button>
-
                         {isDropdownOpen && (
-                          <div className={`absolute top-full left-0 right-0 mt-1 rounded-lg shadow-lg border z-50 max-h-60 overflow-y-auto ${isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'}`}>
-                            {configTabs.map((tab) => {
-                              const Icon = tab.icon;
-                              return (
-                                <button
+                      <div className={`absolute top-full left-0 right-0 mt-1 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 focus:outline-none z-10 ${isDarkMode ? 'bg-gray-700' : 'bg-white'}`}>
+                        {configTabs.map((tab) => (
+                          <a
                                   key={tab.id}
+                            href="#"
                                   onClick={() => handleTabClick(tab.id)}
-                                  className={`w-full flex items-center gap-3 px-3 py-3 text-left text-sm transition-colors duration-200 first:rounded-t-lg last:rounded-b-lg min-h-[44px] ${activeConfigTab === tab.id
-                                    ? isDarkMode
-                                      ? 'bg-gray-700 text-white'
-                                      : 'bg-gray-100 text-gray-900'
-                                    : isDarkMode
-                                      ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                    }`}
-                                >
-                                  <Icon className="h-4 w-4 flex-shrink-0" />
-                                  <span className="truncate flex-1">{tab.label}</span>
-                                  {activeConfigTab === tab.id && (
-                                    <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
-                                  )}
-                                </button>
-                              );
-                            })}
+                            className={`flex items-center gap-2 px-4 py-2 text-sm ${activeConfigTab === tab.id
+                              ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                              : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600'
+                              }`}
+                          >
+                            {React.createElement(tab.icon, { className: 'h-4 w-4' })}
+                            {tab.label}
+                          </a>
+                        ))}
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* Tablet & Desktop: Horizontal Tabs */}
-                    <nav className="hidden md:flex justify-start px-2 lg:px-4 xl:px-8 py-2">
-                      <div className="flex w-full overflow-x-auto scroll-smooth hide-scrollbar">
-                        <div className="flex space-x-1 min-w-max">
-                          {configTabs.map((tab) => {
-                            const Icon = tab.icon;
-                            return (
-                              <button
+                {/* Desktop: Tabs (md and up) */}
+                <div className="hidden md:block">
+                  <nav className="-mb-px flex space-x-8 px-4 sm:px-6 lg:px-8" aria-label="Tabs">
+                    {configTabs.map((tab) => (
+                      <a
                                 key={tab.id}
+                        href="#"
                                 onClick={() => handleTabClick(tab.id)}
-                                className={`group relative px-3 md:px-4 lg:px-5 xl:px-6 py-2.5 md:py-3 lg:py-3.5 rounded-lg font-medium text-sm md:text-sm lg:text-base transition-all duration-300 flex items-center gap-2 md:gap-2.5 lg:gap-3 whitespace-nowrap flex-shrink-0 min-h-[44px] ${activeConfigTab === tab.id
-                                  ? `bg-gradient-to-r ${tab.color} text-white shadow-lg`
-                                  : isDarkMode
-                                    ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
-                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                                  }`}
-                              >
-                                <Icon className="h-4 w-4 md:h-4 md:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                                <span className="hidden md:inline lg:inline truncate max-w-[120px]">{tab.label}</span>
-                                {activeConfigTab === tab.id && (
-                                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 md:w-2.5 md:h-2.5 lg:w-3 lg:h-3 bg-white rounded-full"></div>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
+                        className={`
+                          ${activeConfigTab === tab.id
+                            ? `border-purple-500 text-purple-600 ${isDarkMode ? 'dark:text-purple-400' : ''}`
+                            : `border-transparent ${isDarkMode ? 'text-gray-400 hover:text-gray-200 hover:border-gray-300/50' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}`
+                          }
+                          whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors duration-200
+                        `}
+                        aria-current={activeConfigTab === tab.id ? 'page' : undefined}
+                      >
+                        {React.createElement(tab.icon, { className: 'h-5 w-5' })}
+                        {tab.label}
+                      </a>
+                    ))}
                     </nav>
+                </div>
                   </div>
 
                   {/* Configuration Content */}
-                  <div className={`flex-1 min-h-0 overflow-y-auto ${isDarkMode ? 'bg-gradient-to-br from-gray-800/30 to-gray-900' : 'bg-gradient-to-br from-gray-50/30 to-white'}`}>
-                    <div className="max-w-4xl mx-auto lg:max-w-none p-3 sm:p-4 lg:p-6 xl:p-8">
-                      {/* Keep all components mounted but only show the active one */}
-                      <div style={{ display: activeConfigTab === 'model' ? 'block' : 'none' }}>
+              <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 lg:p-8">
+                {activeConfigTab === 'model' && (
                         <ModelConfig
                           ref={modelSectionRef}
-                          agentName={selectedAgent?.name || 'default'}
+                    agentName={selectedAgent.name}
                           onConfigChange={handleModelConfigChange}
-                          existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).modelConfig : null}
+                    existingConfig={modelConfig}
                           isEditing={isEditing}
                         />
-                      </div>
-
-                      <div style={{ display: activeConfigTab === 'voice' ? 'block' : 'none' }}>
+                )}
+                {activeConfigTab === 'voice' && (
                         <VoiceConfig
                           ref={voiceSectionRef}
-                          agentName={selectedAgent?.name || 'default'}
+                    agentName={selectedAgent.name}
                           onConfigChange={handleVoiceConfigChange}
-                          existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).voiceConfig : null}
+                    existingConfig={voiceConfig}
                           isEditing={isEditing}
                         />
-                      </div>
-
-                      <div style={{ display: activeConfigTab === 'transcriber' ? 'block' : 'none' }}>
+                )}
+                {activeConfigTab === 'transcriber' && (
                         <TranscriberConfig
                           ref={transcriberSectionRef}
-                          agentName={selectedAgent?.name || 'default'}
+                    agentName={selectedAgent.name}
                           onConfigChange={handleTranscriberConfigChange}
-                          existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).transcriberConfig : null}
+                    existingConfig={transcriberConfig}
                           isEditing={isEditing}
                         />
-                      </div>
-
-                      <div style={{ display: activeConfigTab === 'widget' ? 'block' : 'none' }}>
-                        <WidgetConfig
-                          ref={widgetSectionRef}
-                          agentName={selectedAgent?.name || 'default'}
-                          onConfigChange={handleWidgetConfigChange}
-                          existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).widgetConfig : null}
-                          isEditing={isEditing}
-                        />
-                      </div>
-
-                      <div style={{ display: activeConfigTab === 'tools' ? 'block' : 'none' }}>
+                )}
+                {activeConfigTab === 'widget' && (
+                  <WidgetConfig
+                    ref={widgetSectionRef}
+                    agentName={selectedAgent.name}
+                    onConfigChange={handleWidgetConfigChange}
+                    existingConfig={widgetConfig}
+                    isEditing={isEditing}
+                  />
+                )}
+                {activeConfigTab === 'tools' && (
                         <ToolsConfig
                           ref={toolsSectionRef}
-                          agentName={selectedAgent?.name || 'default'}
+                    agentName={selectedAgent.name}
                           onConfigChange={handleToolsConfigChange}
-                          existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).toolsConfig : null}
+                    existingConfig={toolsConfig}
                           isEditing={isEditing}
-                          isCreating={isCreating}
-                          onAgentCreated={handleAgentCreated}
-                          // Pass saved configurations from localStorage
-                          modelConfig={modelConfig}
-                          voiceConfig={voiceConfig}
-                          transcriberConfig={transcriberConfig}
-                          currentOrganizationId={organizationName || currentOrganizationId}
                           selectedAgent={selectedAgent}
                         />
-                      </div>
-
-                    </div>
+                )}
                   </div>
                 </div>
               ) : (
@@ -1559,190 +1497,5 @@ Remember: You are the first point of contact for many patients. Your professiona
             </div>
           </div>
         </div>
-
-        {/* Agent Prefix Modal */}
-        {showAgentPrefixModal && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm p-4">
-            <div className={`p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-2xl max-w-md w-full ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
-              <div className="text-center mb-4 sm:mb-6">
-                <div className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl inline-block mb-3 sm:mb-4 ${isDarkMode ? 'bg-green-900/50' : 'bg-green-100'}`}>
-                  <Bot className={`h-6 w-6 sm:h-8 sm:w-8 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
-                </div>
-                <h3 className={`text-lg sm:text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Create New Agent</h3>
-                <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  Enter a unique identifier for your new AI agent. This will be used as the agent's name and ID.
-                </p>
-              </div>
-
-              <div className="space-y-3 sm:space-y-4">
-                <div>
-                  <label className={`block text-xs sm:text-sm font-medium mb-1 sm:mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    Agent Prefix (Agent ID/Name)
-                  </label>
-                  <input
-                    type="text"
-                    value={agentPrefix}
-                    onChange={(e) => setAgentPrefix(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && agentPrefix.trim() && !isCreatingAgent) {
-                        handleAgentPrefixSubmit();
-                      }
-                    }}
-                    disabled={isCreatingAgent}
-                    placeholder="e.g., customer_support, sales_agent, helpdesk"
-                    className={`w-full p-2.5 sm:p-3 rounded-lg sm:rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-xs sm:text-sm ${isCreatingAgent
-                      ? isDarkMode
-                        ? 'bg-gray-800/30 border-gray-700 text-gray-400 placeholder-gray-500 cursor-not-allowed'
-                        : 'bg-gray-100 border-gray-300 text-gray-500 placeholder-gray-400 cursor-not-allowed'
-                      : isDarkMode
-                        ? 'bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-400'
-                        : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-                      }`}
-                    autoFocus
-                  />
-                  <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    Use lowercase letters, numbers, and underscores only
-                  </p>
-
-                  {/* Loading status message */}
-                  {isCreatingAgent && (
-                    <div className={`mt-3 p-3 rounded-lg border ${isDarkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200'}`}>
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                        <div>
-                          <p className={`text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
-                            Creating Dify Agent...
-                          </p>
-                          <p className={`text-xs ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
-                            Generating API key and setting up your agent. This may take a few moments.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex gap-2 sm:gap-3">
-                  <button
-                    onClick={() => {
-                      setShowAgentPrefixModal(false);
-                      setIsCreatingAgent(false); // Reset loading state when closing modal
-                    }}
-                    disabled={isCreatingAgent}
-                    className={`flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border transition-all duration-300 text-xs sm:text-sm font-medium ${isCreatingAgent
-                      ? isDarkMode
-                        ? 'border-gray-700 bg-gray-800 text-gray-500 cursor-not-allowed'
-                        : 'border-gray-300 bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : isDarkMode
-                        ? 'border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600'
-                        : 'border-gray-200 bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleAgentPrefixSubmit}
-                    disabled={!agentPrefix.trim() || isCreatingAgent}
-                    className={`flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl transition-all duration-300 text-xs sm:text-sm font-medium flex items-center justify-center gap-2 ${!agentPrefix.trim() || isCreatingAgent
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-green-600 text-white hover:bg-green-700'
-                      }`}
-                  >
-                    {isCreatingAgent ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Creating Agent...</span>
-                      </>
-                    ) : (
-                      'Create Agent'
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Delete Confirmation Modal */}
-        {showDeleteConfirmation && agentToDelete && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm p-4">
-            <div className={`p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-2xl max-w-md w-full ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
-              <div className="text-center mb-4 sm:mb-6">
-                <div className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl inline-block mb-3 sm:mb-4 ${isDarkMode ? 'bg-red-900/50' : 'bg-red-100'}`}>
-                  <Trash2 className={`h-6 w-6 sm:h-8 sm:w-8 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`} />
-                </div>
-                <h3 className={`text-lg sm:text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Delete Agent</h3>
-                <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  Are you sure you want to delete agent <span className="font-semibold">"{agentToDelete.name}"</span>? This action cannot be undone.
-                </p>
-              </div>
-
-              <div className="flex gap-2 sm:gap-3">
-                <button
-                  onClick={handleCancelDelete}
-                  disabled={deletingAgentId === agentToDelete?.id}
-                  className={`flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border transition-all duration-300 text-xs sm:text-sm font-medium ${deletingAgentId === agentToDelete?.id
-                    ? isDarkMode
-                      ? 'border-gray-700 bg-gray-800 text-gray-500 cursor-not-allowed'
-                      : 'border-gray-300 bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : isDarkMode
-                      ? 'border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600'
-                      : 'border-gray-200 bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConfirmDelete}
-                  disabled={deletingAgentId === agentToDelete?.id}
-                  className={`flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl transition-all duration-300 text-xs sm:text-sm font-medium flex items-center justify-center gap-2 ${deletingAgentId === agentToDelete?.id
-                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                    : 'bg-red-600 text-white hover:bg-red-700'
-                    }`}
-                >
-                  {deletingAgentId === agentToDelete?.id ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Deleting...</span>
-                    </>
-                  ) : (
-                    'Delete Agent'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Success Modal */}
-        {showSuccessModal && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm p-4">
-            <div className={`p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-2xl max-w-md w-full ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
-              <div className="text-center mb-4 sm:mb-6">
-                <div className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl inline-block mb-3 sm:mb-4 ${isDarkMode ? 'bg-green-900/50' : 'bg-green-100'}`}>
-                  <CheckCircle className={`h-6 w-6 sm:h-8 sm:w-8 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
-                </div>
-                <h3 className={`text-lg sm:text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Success!</h3>
-                <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  Agent was created successfully
-                </p>
-              </div>
-
-              <div className="flex justify-center">
-                <button
-                  onClick={() => setShowSuccessModal(false)}
-                  className={`px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl transition-all duration-300 text-xs sm:text-sm font-medium ${isDarkMode
-                    ? 'bg-green-600 text-white hover:bg-green-700'
-                    : 'bg-green-600 text-white hover:bg-green-700'
-                    }`}
-                >
-                  OK
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </>
   );
 }
