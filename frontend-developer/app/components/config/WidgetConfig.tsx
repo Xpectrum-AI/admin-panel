@@ -27,7 +27,10 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
   };
   const [difyApiUrl, setDifyApiUrl] = useState('https://d22yt2oewbcglh.cloudfront.net/v1');
   const [difyApiKey, setDifyApiKey] = useState('');
-  const [copied, setCopied] = useState(false);
+  const [copiedScript, setCopiedScript] = useState(false);
+  const [copiedVoiceScript, setCopiedVoiceScript] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+  const [copiedKey, setCopiedKey] = useState(false);
   const [widgetScript, setWidgetScript] = useState('');
   const [voiceWidgetScript, setVoiceWidgetScript] = useState('');
   
@@ -49,8 +52,8 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
     // Chatbot widget script
     const chatbotScript = `<script 
   src="https://widgetbot.netlify.app/bidirectional-embed.js"
-  data-dify-api-url="https://d22yt2oewbcglh.cloudfront.net/v1"
-  data-dify-api-key="${difyApiKey}"
+  data-agent-api-url="https://d22yt2oewbcglh.cloudfront.net/v1"
+  data-agent-api-key="${difyApiKey}"
   data-position="bottom-right"
   data-primary-color="#667eea">
 </script>`;
@@ -97,8 +100,8 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
   const handleCopyScript = async () => {
     try {
       await navigator.clipboard.writeText(widgetScript);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopiedScript(true);
+      setTimeout(() => setCopiedScript(false), 2000);
     } catch (err) {
       console.error('Failed to copy script:', err);
     }
@@ -107,8 +110,8 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
   const handleCopyVoiceScript = async () => {
     try {
       await navigator.clipboard.writeText(voiceWidgetScript);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopiedVoiceScript(true);
+      setTimeout(() => setCopiedVoiceScript(false), 2000);
     } catch (err) {
       console.error('Failed to copy voice script:', err);
     }
@@ -117,24 +120,24 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
   const handleCopyUrl = async () => {
     try {
       await navigator.clipboard.writeText(difyApiUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopiedUrl(true);
+      setTimeout(() => setCopiedUrl(false), 2000);
     } catch (err) {
       console.error('Failed to copy URL:', err);
     }
   };
 
   const handleCopyKey = async () => {
-    try {
-      // Copy the actual API key, not the masked version
-      const actualKey = difyApiKey || existingConfig?.chatbot_key || '';
-      await navigator.clipboard.writeText(actualKey);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy API key:', err);
-    }
-  };
+  try {
+    // Copy the actual API key, not the masked version
+    const actualKey = difyApiKey || existingConfig?.chatbot_key || '';
+    await navigator.clipboard.writeText(actualKey);
+    setCopiedKey(true);
+    setTimeout(() => setCopiedKey(false), 2000);
+  } catch (err) {
+    console.error('Failed to copy API key:', err);
+  }
+};
 
   // Chatbot preview functions
   const sendMessage = async () => {
@@ -279,16 +282,16 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
                   : 'bg-gray-100 border-gray-300 text-gray-600'
               }`}
             />
-            <button
-              onClick={handleCopyUrl}
-              className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
-                isDarkMode
-                  ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
-                  : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-            </button>
+                <button
+                  onClick={handleCopyUrl}
+                  className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
+                    isDarkMode
+                      ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
+                      : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {copiedUrl ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </button>
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             This URL is automatically configured for your Agent service
@@ -313,77 +316,80 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
               }`}
               disabled={!isEditing}
             />
+                <button
+                  onClick={handleCopyKey}
+                  className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
+                    isDarkMode
+                      ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
+                      : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {copiedKey ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Generated Widget Scripts - Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Chatbot Widget Script */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-md font-medium text-gray-900 dark:text-white">
+              Chatbot Widget Script
+            </h4>
             <button
-              onClick={handleCopyKey}
-              className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
+              onClick={handleCopyScript}
+              className={`px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-2 text-sm ${
                 isDarkMode
                   ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
                   : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
               }`}
             >
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              {copiedScript ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              {copiedScript ? 'Copied!' : 'Copy Script'}
             </button>
           </div>
-        </div>
-      </div>
-
-      {/* Generated Chatbot Widget Script */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h4 className="text-md font-medium text-gray-900 dark:text-white">
-            Chatbot Widget Script
-          </h4>
-          <button
-            onClick={handleCopyScript}
-            className={`px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-2 text-sm ${
-              isDarkMode
-                ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
-                : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-            {copied ? 'Copied!' : 'Copy Script'}
-          </button>
-        </div>
-        
-        <div className={`relative rounded-lg border p-4 ${
-          isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'
-        }`}>
-          <pre className={`text-sm overflow-x-auto whitespace-pre-wrap ${
-            isDarkMode ? 'text-gray-300' : 'text-gray-800'
+          
+          <div className={`relative rounded-lg border p-4 ${
+            isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'
           }`}>
-            <code>{widgetScript}</code>
-          </pre>
+            <pre className={`text-sm overflow-x-auto whitespace-pre-wrap ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-800'
+            }`}>
+              <code>{widgetScript}</code>
+            </pre>
+          </div>
         </div>
-      </div>
 
-      {/* Generated Voice Widget Script */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h4 className="text-md font-medium text-gray-900 dark:text-white">
-            Voice Widget Script
-          </h4>
-          <button
-            onClick={handleCopyVoiceScript}
-            className={`px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-2 text-sm ${
-              isDarkMode
-                ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
-                : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-            {copied ? 'Copied!' : 'Copy Script'}
-          </button>
-        </div>
-        
-        <div className={`relative rounded-lg border p-4 ${
-          isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'
-        }`}>
-          <pre className={`text-sm overflow-x-auto whitespace-pre-wrap ${
-            isDarkMode ? 'text-gray-300' : 'text-gray-800'
+        {/* Voice Widget Script */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-md font-medium text-gray-900 dark:text-white">
+              Voice Widget Script
+            </h4>
+            <button
+              onClick={handleCopyVoiceScript}
+              className={`px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-2 text-sm ${
+                isDarkMode
+                  ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
+                  : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              {copiedVoiceScript ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              {copiedVoiceScript ? 'Copied!' : 'Copy Script'}
+            </button>
+          </div>
+          
+          <div className={`relative rounded-lg border p-4 ${
+            isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'
           }`}>
-            <code>{voiceWidgetScript}</code>
-          </pre>
+            <pre className={`text-sm overflow-x-auto whitespace-pre-wrap ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-800'
+            }`}>
+              <code>{voiceWidgetScript}</code>
+            </pre>
+          </div>
         </div>
       </div>
 
@@ -408,34 +414,130 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
         </div>
       </div>
 
-      {/* Preview Link */}
-      {difyApiUrl && difyApiKey && (
-        <div className={`rounded-lg border p-4 ${
-          isDarkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200'
-        }`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <ExternalLink className="h-5 w-5 text-green-600 dark:text-green-400" />
-              <div>
-                <h4 className="text-sm font-medium text-green-900 dark:text-green-100">
-                  Widget Ready
-                </h4>
-                <p className="text-sm text-green-800 dark:text-green-200">
-                  Your widget is configured and ready to embed
-                </p>
+
+      {/* Live Previews - Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Voice Call Preview - Left Side */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-teal-600">
+              <Phone className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Live Voice Call Preview
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Test your voice widget before embedding it on your website
+              </p>
+            </div>
+          </div>
+
+          <div className={`rounded-lg border overflow-hidden ${
+            isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
+          }`}>
+            {/* Voice Call Header */}
+            <div className={`p-4 border-b ${
+              isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-full bg-gradient-to-r from-green-500 to-teal-600">
+                    <Phone className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <h5 className="font-medium text-gray-900 dark:text-white">
+                      {agentName} Voice Assistant
+                    </h5>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Voice Widget Preview
+                    </p>
+                  </div>
+                </div>
+                {isCallActive && (
+                  <div className="text-sm text-gray-600 dark:text-gray-400 font-mono">
+                    {formatDuration(callDuration)}
+                  </div>
+                )}
               </div>
             </div>
-            <div className="text-xs text-green-600 dark:text-green-400 font-mono">
-              {agentName}
+
+            {/* Voice Call Interface */}
+            <div className="p-6">
+              {!isCallActive ? (
+                <div className="text-center space-y-4">
+                  <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-r from-green-500 to-teal-600 flex items-center justify-center">
+                    <Phone className="h-8 w-8 text-white" />
+                  </div>
+                  <div>
+                    <h6 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                      Ready to Call
+                    </h6>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Click the call button to start a voice conversation with your agent
+                    </p>
+                    <button
+                      onClick={startCall}
+                      className="px-6 py-3 rounded-full bg-gradient-to-r from-green-500 to-teal-600 text-white hover:from-green-600 hover:to-teal-700 transition-colors flex items-center gap-2 mx-auto"
+                    >
+                      <Phone className="h-5 w-5" />
+                      Start Call
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center space-y-6">
+                  {/* Call Status */}
+                  <div className="space-y-2">
+                    <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-r from-green-500 to-teal-600 flex items-center justify-center animate-pulse">
+                      <Volume2 className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h6 className="text-lg font-medium text-gray-900 dark:text-white">
+                        Call Active
+                      </h6>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Duration: {formatDuration(callDuration)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Call Controls */}
+                  <div className="flex items-center justify-center gap-4">
+                    <button
+                      onClick={toggleMute}
+                      className={`p-3 rounded-full transition-colors ${
+                        isMuted
+                          ? 'bg-red-500 hover:bg-red-600 text-white'
+                          : isDarkMode
+                            ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                            : 'bg-gray-200 hover:bg-gray-300 text-gray-600'
+                      }`}
+                    >
+                      {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                    </button>
+                    
+                    <button
+                      onClick={endCall}
+                      className="p-3 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors"
+                    >
+                      <PhoneOff className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  {/* Call Status Text */}
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    {isMuted ? 'Microphone is muted' : 'Speaking...'}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
-      )}
 
-      {/* Live Chatbot Preview */}
-      {difyApiUrl && difyApiKey && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
+        {/* Chatbot Preview - Right Side */}
+        {difyApiUrl && difyApiKey && (
+          <div className="space-y-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600">
                 <MessageCircle className="h-5 w-5 text-white" />
@@ -447,26 +549,9 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Test your chatbot before embedding it on your website
                 </p>
-                <div className={`mt-2 px-3 py-2 rounded-lg text-xs ${
-                  isDarkMode ? 'bg-blue-900/20 border border-blue-700/50 text-blue-200' : 'bg-blue-50 border border-blue-200 text-blue-800'
-                }`}>
-                  <strong>Note:</strong> If you get configuration errors, please configure your agent in the Agent console with a model and prompt first.
-                </div>
               </div>
             </div>
-            <button
-              onClick={() => setShowPreview(!showPreview)}
-              className={`px-4 py-2 rounded-lg border transition-colors ${
-                isDarkMode
-                  ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
-                  : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              {showPreview ? 'Hide Preview' : 'Show Preview'}
-            </button>
-          </div>
 
-          {showPreview && (
             <div className={`rounded-lg border overflow-hidden ${
               isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
             }`}>
@@ -580,143 +665,6 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
                   </button>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Live Voice Call Preview */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-teal-600">
-              <Phone className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Live Voice Call Preview
-              </h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Test your voice widget before embedding it on your website
-              </p>
-              <div className={`mt-2 px-3 py-2 rounded-lg text-xs ${
-                isDarkMode ? 'bg-green-900/20 border border-green-700/50 text-green-200' : 'bg-green-50 border border-green-200 text-green-800'
-              }`}>
-                <strong>Note:</strong> This is a preview interface. The actual voice widget will use your website's microphone permissions.
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={() => setShowVoicePreview(!showVoicePreview)}
-            className={`px-4 py-2 rounded-lg border transition-colors ${
-              isDarkMode
-                ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
-                : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            {showVoicePreview ? 'Hide Preview' : 'Show Preview'}
-          </button>
-        </div>
-
-        {showVoicePreview && (
-          <div className={`rounded-lg border overflow-hidden ${
-            isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
-          }`}>
-            {/* Voice Call Header */}
-            <div className={`p-4 border-b ${
-              isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
-            }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-full bg-gradient-to-r from-green-500 to-teal-600">
-                    <Phone className="h-4 w-4 text-white" />
-                  </div>
-                  <div>
-                    <h5 className="font-medium text-gray-900 dark:text-white">
-                      {agentName} Voice Assistant
-                    </h5>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Voice Widget Preview
-                    </p>
-                  </div>
-                </div>
-                {isCallActive && (
-                  <div className="text-sm text-gray-600 dark:text-gray-400 font-mono">
-                    {formatDuration(callDuration)}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Voice Call Interface */}
-            <div className="p-6">
-              {!isCallActive ? (
-                <div className="text-center space-y-4">
-                  <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-r from-green-500 to-teal-600 flex items-center justify-center">
-                    <Phone className="h-8 w-8 text-white" />
-                  </div>
-                  <div>
-                    <h6 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                      Ready to Call
-                    </h6>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                      Click the call button to start a voice conversation with your agent
-                    </p>
-                    <button
-                      onClick={startCall}
-                      className="px-6 py-3 rounded-full bg-gradient-to-r from-green-500 to-teal-600 text-white hover:from-green-600 hover:to-teal-700 transition-colors flex items-center gap-2 mx-auto"
-                    >
-                      <Phone className="h-5 w-5" />
-                      Start Call
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center space-y-6">
-                  {/* Call Status */}
-                  <div className="space-y-2">
-                    <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-r from-green-500 to-teal-600 flex items-center justify-center animate-pulse">
-                      <Volume2 className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <h6 className="text-lg font-medium text-gray-900 dark:text-white">
-                        Call Active
-                      </h6>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Duration: {formatDuration(callDuration)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Call Controls */}
-                  <div className="flex items-center justify-center gap-4">
-                    <button
-                      onClick={toggleMute}
-                      className={`p-3 rounded-full transition-colors ${
-                        isMuted
-                          ? 'bg-red-500 hover:bg-red-600 text-white'
-                          : isDarkMode
-                            ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                            : 'bg-gray-200 hover:bg-gray-300 text-gray-600'
-                      }`}
-                    >
-                      {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-                    </button>
-                    
-                    <button
-                      onClick={endCall}
-                      className="p-3 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors"
-                    >
-                      <PhoneOff className="h-5 w-5" />
-                    </button>
-                  </div>
-
-                  {/* Call Status Text */}
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    {isMuted ? 'Microphone is muted' : 'Speaking...'}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         )}
