@@ -26,6 +26,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
   const [configStatus, setConfigStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [isUserChangingProvider, setIsUserChangingProvider] = useState(false);
   const providerChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTranscriberConfigRef = useRef<string>('');
 
   const transcriberProviders = {
     'Deepgram': ['nova-2', 'nova-2-general', 'nova-2-meeting', 'nova-2-phonecall', 'nova-2-finance', 'nova-2-conversationalai', 'nova-2-video', 'nova-2-medical', 'nova-2-drivethru', 'nova-2-automotivesales', 'nova-2-legal', 'nova-2-ppc', 'nova-2-government', 'nova-2-entertainment', 'nova-2-streaming', 'nova-2-restaurants'],
@@ -243,10 +244,12 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
     };
     saveStateToLocalStorage(uiConfig);
 
-    if (onConfigChange) {
+    const configString = JSON.stringify(backendConfig);
+    if (onConfigChange && configString !== lastTranscriberConfigRef.current) {
+      lastTranscriberConfigRef.current = configString;
       onConfigChange(backendConfig);
     }
-  }, [selectedTranscriberProvider, selectedModel, selectedLanguage, apiKey, punctuateEnabled, smartFormatEnabled, interimResultEnabled, onConfigChange]);
+  }, [selectedTranscriberProvider, selectedModel, selectedLanguage, apiKey, punctuateEnabled, smartFormatEnabled, interimResultEnabled]);
 
   // Handle configure button click
   const handleConfigure = async () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { forwardRef, useState } from 'react';
+import React, { forwardRef, useState, useRef } from 'react';
 import { Sparkles, CheckCircle, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { modelConfigService } from '../../../service/modelConfigService';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -578,18 +578,23 @@ Remember: You are the first point of contact for many patients. Your professiona
   };
 
   // Notify parent component of configuration changes
+  const lastModelConfigRef = useRef<string>('');
   React.useEffect(() => {
-    if (onConfigChange) {
-      onConfigChange({
-        modelLiveUrl,
-        modelApiKey,
-        agentApiKey,
-        selectedModelProvider,
-        selectedModel,
-        systemPrompt
-      });
+    const config = {
+      modelLiveUrl,
+      modelApiKey,
+      agentApiKey,
+      selectedModelProvider,
+      selectedModel,
+      systemPrompt
+    };
+    
+    const configString = JSON.stringify(config);
+    if (onConfigChange && configString !== lastModelConfigRef.current) {
+      lastModelConfigRef.current = configString;
+      onConfigChange(config);
     }
-  }, [modelLiveUrl, modelApiKey, agentApiKey, selectedModelProvider, selectedModel, systemPrompt, onConfigChange]);
+  }, [modelLiveUrl, modelApiKey, agentApiKey, selectedModelProvider, selectedModel, systemPrompt]);
 
   return (
     <div ref={ref} className="space-y-6 p-6">

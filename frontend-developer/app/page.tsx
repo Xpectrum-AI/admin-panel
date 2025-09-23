@@ -30,7 +30,6 @@ import { useAuthInfo, useLogoutFunction } from '@propelauth/react';
 import { SyncLoader } from 'react-spinners';
 import { useRouter } from 'next/navigation';
 import { AgentsTab, PhoneNumbersTab, SMSTab, WhatsAppTab, GmailTab, OrgSetup } from './components';
-import ChatSidebar from './components/ChatSidebar';
 import { useTheme } from './contexts/ThemeContext';
 import { DashboardService, DashboardStats, OrganizationInfo } from '../service/dashboardService';
 
@@ -45,20 +44,6 @@ const WhatsAppIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// Simple Chat icon component
-const ChatIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-  </svg>
-);
 
 // Navigation items for top navbar
 const navigationItems = [
@@ -73,9 +58,6 @@ const navigationItems = [
 export default function DeveloperDashboard() {
   const [activeNavItem, setActiveNavItem] = useState('Overview');
 
-  // Chat state
-  const [chatOpen, setChatOpen] = useState(false);
-  const [hasNewMessages, setHasNewMessages] = useState(false);
   const { isDarkMode, toggleTheme } = useTheme();
 
   // Profile dropdown state
@@ -182,52 +164,8 @@ export default function DeveloperDashboard() {
     };
   }, []);
 
-  // Check for new messages and update notification state
-  useEffect(() => {
-    const checkNewMessages = () => {
-      try {
-        const savedMessages = localStorage.getItem('chatMessages');
-        if (savedMessages) {
-          const parsed = JSON.parse(savedMessages);
-          // Consider it has new messages if more than just the welcome message
-          setHasNewMessages(parsed.length > 1);
-        } else {
-          setHasNewMessages(false);
-        }
-      } catch (error) {
-        console.error('Error checking new messages:', error);
-        setHasNewMessages(false);
-      }
-    };
-
-    // Check initially
-    checkNewMessages();
-
-    // Set up interval to check for new messages
-    const interval = setInterval(checkNewMessages, 5000); // Check every 5 seconds
-
-    return () => clearInterval(interval);
-  }, []);
 
   // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Ctrl/Cmd + K to toggle chat
-      if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
-        event.preventDefault();
-        setChatOpen(prev => !prev);
-      }
-      // Escape to close chat
-      if (event.key === 'Escape' && chatOpen) {
-        setChatOpen(false);
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [chatOpen]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -557,43 +495,6 @@ export default function DeveloperDashboard() {
                 </select>
               </div>
 
-              {/* Chat Icon */}
-              <button
-                onClick={() => {
-                  setChatOpen(!chatOpen);
-                  // Clear new message notification when opening chat
-                  if (!chatOpen) {
-                    setHasNewMessages(false);
-                  }
-                }}
-                className={`relative p-2 sm:p-3 rounded-xl transition-all duration-300 group ${isDarkMode ? 'hover:bg-gradient-to-r hover:from-green-500/20 hover:to-blue-500/20 text-green-400 hover:text-green-300' : 'hover:bg-gradient-to-r hover:from-green-100 hover:to-blue-100 text-green-600 hover:text-green-700'}`}
-                title="Chat with Sales Agent (Ctrl+K)"
-              >
-                <div className={`absolute inset-0 rounded-xl bg-gradient-to-r from-green-500/10 to-blue-500/10 opacity-100 transition-opacity duration-300 ${isDarkMode ? 'from-green-500/20 to-blue-500/20' : 'from-green-100 to-blue-100'}`} />
-                <ChatIcon className="h-4 w-4 sm:h-5 sm:w-5 relative z-10 text-current" />
-
-                {/* Message count indicator */}
-                {(() => {
-                  try {
-                    const savedMessages = localStorage.getItem('chatMessages');
-                    if (savedMessages) {
-                      const parsed = JSON.parse(savedMessages);
-                      const messageCount = parsed.length;
-                      // Only show count if there are messages and more than just the welcome message
-                      if (messageCount > 1) {
-                        return (
-                          <div className={`absolute -bottom-1 -right-1 min-w-[16px] sm:min-w-[20px] h-4 sm:h-5 px-1 rounded-full text-xs font-medium flex items-center justify-center ${isDarkMode ? 'bg-blue-500 text-white' : 'bg-blue-600 text-white'}`}>
-                            {messageCount}
-                          </div>
-                        );
-                      }
-                    }
-                  } catch (error) {
-                    console.error('Error getting message count:', error);
-                  }
-                  return null;
-                })()}
-              </button>
 
               {/* Theme Toggle */}
               <button
@@ -693,20 +594,6 @@ export default function DeveloperDashboard() {
           )}
         </main>
 
-        {/* Chat Sidebar */}
-        {chatOpen && (
-          <>
-            {/* Backdrop overlay */}
-            <div
-              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
-              onClick={() => setChatOpen(false)}
-            />
-            {/* Chat Sidebar */}
-            <div className={`fixed top-0 right-0 h-full w-full sm:w-96 sm:max-w-[90vw] ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-xl border-l border-gray-700/50' : 'bg-white border-l border-gray-200'} shadow-2xl z-50 transform transition-transform duration-300 ${chatOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-              <ChatSidebar onClose={() => setChatOpen(false)} />
-            </div>
-          </>
-        )}
       </div>
       <style jsx global>{`
         @keyframes fade-in-down {

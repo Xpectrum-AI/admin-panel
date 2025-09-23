@@ -1,6 +1,6 @@
 'use client';
 
-import React, { forwardRef, useState, useEffect } from 'react';
+import React, { forwardRef, useState, useEffect, useRef } from 'react';
 import { Code, Copy, Check, ExternalLink, Globe, MessageCircle, Send, Bot, Phone, PhoneOff, Mic, MicOff, Volume2 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -79,16 +79,21 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
   }, [existingConfig]);
 
   // Notify parent component of configuration changes
+  const lastWidgetConfigRef = useRef<string>('');
   useEffect(() => {
-    if (onConfigChange) {
-      onConfigChange({
-        difyApiUrl,
-        difyApiKey,
-        widgetScript,
-        voiceWidgetScript
-      });
+    const config = {
+      difyApiUrl,
+      difyApiKey,
+      widgetScript,
+      voiceWidgetScript
+    };
+    
+    const configString = JSON.stringify(config);
+    if (onConfigChange && configString !== lastWidgetConfigRef.current) {
+      lastWidgetConfigRef.current = configString;
+      onConfigChange(config);
     }
-  }, [difyApiUrl, difyApiKey, widgetScript, voiceWidgetScript, onConfigChange]);
+  }, [difyApiUrl, difyApiKey, widgetScript, voiceWidgetScript]);
 
   const handleCopyScript = async () => {
     try {
@@ -122,7 +127,9 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
 
   const handleCopyKey = async () => {
     try {
-      await navigator.clipboard.writeText(difyApiKey);
+      // Copy the actual API key, not the masked version
+      const actualKey = difyApiKey || existingConfig?.chatbot_key || '';
+      await navigator.clipboard.writeText(actualKey);
       setCopiedKey(true);
       setTimeout(() => setCopiedKey(false), 2000);
     } catch (err) {
@@ -455,11 +462,8 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
 
             {/* Voice Call Interface */}
             <div className="p-6">
-              {!isCallActive ? (
-                <div className="text-center space-y-4">
-                  <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-r from-green-500 to-teal-600 flex items-center justify-center">
-                    <Phone className="h-8 w-8 text-white" />
-                  </div>
+              <div className="text-center space-y-4">
+                {!isCallActive ? (
                   <div>
                     <h6 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                       Ready to Call
@@ -467,61 +471,57 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                       Click the call button to start a voice conversation with your agent
                     </p>
-                    <button
-                      onClick={startCall}
-                      className="px-6 py-3 rounded-full bg-gradient-to-r from-green-500 to-teal-600 text-white hover:from-green-600 hover:to-teal-700 transition-colors flex items-center gap-2 mx-auto"
-                    >
+                  </div>
+                ) : (
+                  <div>
+                    <h6 className="text-lg font-medium text-gray-900 dark:text-white">
+                      Call Active
+                    </h6>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Duration: {formatDuration(callDuration)}
+                    </p>
+                  </div>
+                )}
+
+                {/* Single Call Button */}
+                <button
+                  onClick={isCallActive ? endCall : startCall}
+                  className={`px-6 py-3 rounded-full text-white transition-colors flex items-center gap-2 mx-auto ${
+                    isCallActive 
+                      ? 'bg-red-500 hover:bg-red-600' 
+                      : 'bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700'
+                  }`}
+                >
+                  {isCallActive ? (
+                    <>
+                      <PhoneOff className="h-5 w-5" />
+                      End Call
+                    </>
+                  ) : (
+                    <>
                       <Phone className="h-5 w-5" />
                       Start Call
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center space-y-6">
-                  {/* Call Status */}
-                  <div className="space-y-2">
-                    <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-r from-green-500 to-teal-600 flex items-center justify-center animate-pulse">
-                      <Volume2 className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <h6 className="text-lg font-medium text-gray-900 dark:text-white">
-                        Call Active
-                      </h6>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Duration: {formatDuration(callDuration)}
-                      </p>
-                    </div>
-                  </div>
+                    </>
+                  )}
+                </button>
 
-                  {/* Call Controls */}
-                  <div className="flex items-center justify-center gap-4">
-                    <button
-                      onClick={toggleMute}
-                      className={`p-3 rounded-full transition-colors ${
-                        isMuted
-                          ? 'bg-red-500 hover:bg-red-600 text-white'
-                          : isDarkMode
-                            ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                            : 'bg-gray-200 hover:bg-gray-300 text-gray-600'
-                      }`}
-                    >
-                      {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-                    </button>
-                    
-                    <button
-                      onClick={endCall}
-                      className="p-3 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors"
-                    >
-                      <PhoneOff className="h-5 w-5" />
-                    </button>
-                  </div>
-
-                  {/* Call Status Text */}
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    {isMuted ? 'Microphone is muted' : 'Speaking...'}
-                  </div>
-                </div>
-              )}
+                {/* Mute Button - Only show when call is active */}
+                {isCallActive && (
+                  <button
+                    onClick={toggleMute}
+                    className={`px-4 py-2 rounded-lg transition-colors text-sm ${
+                      isMuted
+                        ? 'bg-red-500 hover:bg-red-600 text-white'
+                        : isDarkMode
+                          ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                          : 'bg-gray-200 hover:bg-gray-300 text-gray-600'
+                    }`}
+                  >
+                    {isMuted ? <MicOff className="h-4 w-4 inline mr-2" /> : <Mic className="h-4 w-4 inline mr-2" />}
+                    {isMuted ? 'Unmute' : 'Mute'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
