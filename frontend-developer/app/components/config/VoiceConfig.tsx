@@ -19,12 +19,14 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
   // Local state for UI updates
   const [selectedVoiceProvider, setSelectedVoiceProvider] = useState('OpenAI');
   const [selectedLanguage, setSelectedLanguage] = useState('English');
-  const [speedValue, setSpeedValue] = useState(1.0);
+  const [speedValue, setSpeedValue] = useState(0.0);
   const [apiKey, setApiKey] = useState('');
   const [voiceId, setVoiceId] = useState('');
-  const [selectedVoice, setSelectedVoice] = useState('Alloy');
+  const [selectedVoice, setSelectedVoice] = useState('tts-1');
   const [stability, setStability] = useState(0.5);
   const [similarityBoost, setSimilarityBoost] = useState(0.5);
+  const [responseFormat, setResponseFormat] = useState('alloy');
+  const [selectedModel, setSelectedModel] = useState('mp3');
   const [isConfiguring, setIsConfiguring] = useState(false);
   const [configStatus, setConfigStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [isUserChangingProvider, setIsUserChangingProvider] = useState(false);
@@ -45,44 +47,490 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
   const transcriberProviderChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [voiceProviders, setVoiceProviders] = useState({
-    'OpenAI': ['Alloy', 'Echo', 'Fable', 'Onyx', 'Nova', 'Shimmer'],
-    '11Labs': ['Rachel', 'Domi', 'Bella', 'Antoni', 'Elli', 'Josh', 'Arnold', 'Adam', 'Sam'],
-    'Cartesia': ['sonic-2', 'sonic-english', 'sonic-multilingual', 'sonic-ultra'],
-    'Groq': ['llama-3.1-8b', 'llama-3.1-70b', 'mixtral-8x7b']
+    'OpenAI': ['tts-1', 'tts-1-hd', 'gpt-4o-mini-tts'],
+    '11Labs': ['eleven_v3', 'eleven_ttv_v3', 'scribe_v1', 'scribe_v1_experimental', 'eleven_multilingual_v2', 'eleven_flash_v2_5', 'eleven_flash_v2', 'eleven_turbo_v2_5', 'eleven_turbo_v2', 'eleven_multilingual_sts_v2', 'eleven_multilingual_ttv_v2', 'eleven_english_sts_v2'],
+    'Cartesia': ['sonic-2.0', 'sonic-turbo', 'sonic']
   });
 
   const transcriberProviders = {
-    'Deepgram': ['nova-2', 'nova-2-general', 'nova-2-meeting', 'nova-2-phonecall', 'nova-2-finance', 'nova-2-conversationalai', 'nova-2-video', 'nova-2-medical', 'nova-2-drivethru', 'nova-2-automotivesales', 'nova-2-legal', 'nova-2-ppc', 'nova-2-government', 'nova-2-entertainment', 'nova-2-streaming', 'nova-2-restaurants'],
-    'Whisper': ['whisper-1', 'whisper-large-v3'],
-    'Groq': ['llama-3.1-8b', 'llama-3.1-70b', 'mixtral-8x7b']
+    'Deepgram': ['nova-2', 'nova-3'],
+    'OpenAI': ['tts-1', 'tts-1-hd', 'gpt-4o-mini-tts', 'gpt-4o-mini-transcribe']
   };
 
-  const languageMapping = {
-    'english': 'English',
-    'spanish': 'Spanish',
-    'french': 'French',
-    'german': 'German',
-    'italian': 'Italian',
-    'portuguese': 'Portuguese',
-    'russian': 'Russian',
-    'japanese': 'Japanese',
-    'korean': 'Korean',
-    'chinese': 'Chinese',
-    'hindi': 'Hindi',
+  // OpenAI TTS Language Mapping (67 languages)
+  const openaiLanguageMapping = {
+    'af': 'Afrikaans',
+    'ar': 'Arabic',
+    'hy': 'Armenian',
+    'az': 'Azerbaijani',
+    'be': 'Belarusian',
+    'bs': 'Bosnian',
+    'bg': 'Bulgarian',
+    'ca': 'Catalan',
+    'zh': 'Chinese',
+    'hr': 'Croatian',
+    'cs': 'Czech',
+    'da': 'Danish',
+    'nl': 'Dutch',
+    'en': 'English',
+    'et': 'Estonian',
+    'fi': 'Finnish',
+    'fr': 'French',
+    'gl': 'Galician',
+    'de': 'German',
+    'el': 'Greek',
+    'he': 'Hebrew',
+    'hi': 'Hindi',
+    'hu': 'Hungarian',
+    'is': 'Icelandic',
+    'id': 'Indonesian',
+    'it': 'Italian',
+    'ja': 'Japanese',
+    'kn': 'Kannada',
+    'kk': 'Kazakh',
+    'ko': 'Korean',
+    'lv': 'Latvian',
+    'lt': 'Lithuanian',
+    'mk': 'Macedonian',
+    'ms': 'Malay',
+    'mr': 'Marathi',
+    'mi': 'Maori',
+    'ne': 'Nepali',
+    'no': 'Norwegian',
+    'fa': 'Persian',
+    'pl': 'Polish',
+    'pt': 'Portuguese',
+    'ro': 'Romanian',
+    'ru': 'Russian',
+    'sr': 'Serbian',
+    'sk': 'Slovak',
+    'sl': 'Slovenian',
+    'es': 'Spanish',
+    'sw': 'Swahili',
+    'sv': 'Swedish',
+    'tl': 'Tagalog',
+    'ta': 'Tamil',
+    'th': 'Thai',
+    'tr': 'Turkish',
+    'uk': 'Ukrainian',
+    'ur': 'Urdu',
+    'vi': 'Vietnamese',
+    'cy': 'Welsh'
   };
 
-  const reverseLanguageMapping = {
-    'English': 'english',
-    'Spanish': 'spanish',
-    'French': 'french',
-    'German': 'german',
-    'Italian': 'italian',
-    'Portuguese': 'portuguese',
-    'Russian': 'russian',
-    'Japanese': 'japanese',
-    'Korean': 'korean',
-    'Chinese': 'chinese',
-    'Hindi': 'hindi',
+  // Cartesia Language Mapping (15 languages)
+  const cartesiaLanguageMapping = {
+    'en': 'English',
+    'fr': 'French',
+    'de': 'German',
+    'es': 'Spanish',
+    'pt': 'Portuguese',
+    'zh': 'Chinese',
+    'ja': 'Japanese',
+    'hi': 'Hindi',
+    'it': 'Italian',
+    'ko': 'Korean',
+    'nl': 'Dutch',
+    'pl': 'Polish',
+    'ru': 'Russian',
+    'sv': 'Swedish',
+    'tr': 'Turkish'
+  };
+
+  // Reverse mappings for both providers
+  const openaiReverseLanguageMapping = {
+    'Afrikaans': 'af',
+    'Arabic': 'ar',
+    'Armenian': 'hy',
+    'Azerbaijani': 'az',
+    'Belarusian': 'be',
+    'Bosnian': 'bs',
+    'Bulgarian': 'bg',
+    'Catalan': 'ca',
+    'Chinese': 'zh',
+    'Croatian': 'hr',
+    'Czech': 'cs',
+    'Danish': 'da',
+    'Dutch': 'nl',
+    'English': 'en',
+    'Estonian': 'et',
+    'Finnish': 'fi',
+    'French': 'fr',
+    'Galician': 'gl',
+    'German': 'de',
+    'Greek': 'el',
+    'Hebrew': 'he',
+    'Hindi': 'hi',
+    'Hungarian': 'hu',
+    'Icelandic': 'is',
+    'Indonesian': 'id',
+    'Italian': 'it',
+    'Japanese': 'ja',
+    'Kannada': 'kn',
+    'Kazakh': 'kk',
+    'Korean': 'ko',
+    'Latvian': 'lv',
+    'Lithuanian': 'lt',
+    'Macedonian': 'mk',
+    'Malay': 'ms',
+    'Marathi': 'mr',
+    'Maori': 'mi',
+    'Nepali': 'ne',
+    'Norwegian': 'no',
+    'Persian': 'fa',
+    'Polish': 'pl',
+    'Portuguese': 'pt',
+    'Romanian': 'ro',
+    'Russian': 'ru',
+    'Serbian': 'sr',
+    'Slovak': 'sk',
+    'Slovenian': 'sl',
+    'Spanish': 'es',
+    'Swahili': 'sw',
+    'Swedish': 'sv',
+    'Tagalog': 'tl',
+    'Tamil': 'ta',
+    'Thai': 'th',
+    'Turkish': 'tr',
+    'Ukrainian': 'uk',
+    'Urdu': 'ur',
+    'Vietnamese': 'vi',
+    'Welsh': 'cy'
+  };
+
+  const cartesiaReverseLanguageMapping = {
+    'English': 'en',
+    'French': 'fr',
+    'German': 'de',
+    'Spanish': 'es',
+    'Portuguese': 'pt',
+    'Chinese': 'zh',
+    'Japanese': 'ja',
+    'Hindi': 'hi',
+    'Italian': 'it',
+    'Korean': 'ko',
+    'Dutch': 'nl',
+    'Polish': 'pl',
+    'Russian': 'ru',
+    'Swedish': 'sv',
+    'Turkish': 'tr'
+  };
+
+  // 11Labs Language Mapping (ISO 639-3 and ISO 639-1 codes)
+  const elevenLabsLanguageMapping = {
+    // ISO 639-3 codes
+    'afr': 'Afrikaans',
+    'amh': 'Amharic',
+    'ara': 'Arabic',
+    'hye': 'Armenian',
+    'asm': 'Assamese',
+    'ast': 'Asturian',
+    'aze': 'Azerbaijani',
+    'bel': 'Belarusian',
+    'ben': 'Bengali',
+    'bos': 'Bosnian',
+    'bul': 'Bulgarian',
+    'mya': 'Burmese',
+    'yue': 'Cantonese',
+    'cat': 'Catalan',
+    'ceb': 'Cebuano',
+    'nya': 'Chichewa',
+    'hrv': 'Croatian',
+    'ces': 'Czech',
+    'dan': 'Danish',
+    'nld': 'Dutch',
+    'eng': 'English',
+    'est': 'Estonian',
+    'fil': 'Filipino',
+    'fin': 'Finnish',
+    'fra': 'French',
+    'ful': 'Fulah',
+    'glg': 'Galician',
+    'lug': 'Ganda',
+    'kat': 'Georgian',
+    'deu': 'German',
+    'ell': 'Greek',
+    'guj': 'Gujarati',
+    'hau': 'Hausa',
+    'heb': 'Hebrew',
+    'hin': 'Hindi',
+    'hun': 'Hungarian',
+    'isl': 'Icelandic',
+    'ibo': 'Igbo',
+    'ind': 'Indonesian',
+    'gle': 'Irish',
+    'ita': 'Italian',
+    'jpn': 'Japanese',
+    'jav': 'Javanese',
+    'kea': 'Kabuverdianu',
+    'kan': 'Kannada',
+    'kaz': 'Kazakh',
+    'khm': 'Khmer',
+    'kor': 'Korean',
+    'kur': 'Kurdish',
+    'kir': 'Kyrgyz',
+    'lao': 'Lao',
+    'lav': 'Latvian',
+    'lin': 'Lingala',
+    'lit': 'Lithuanian',
+    'luo': 'Luo',
+    'ltz': 'Luxembourgish',
+    'mkd': 'Macedonian',
+    'msa': 'Malay',
+    'mal': 'Malayalam',
+    'mlt': 'Maltese',
+    'zho': 'Mandarin Chinese',
+    'cmn': 'Mandarin Chinese',
+    'mri': 'Māori',
+    'mar': 'Marathi',
+    'mon': 'Mongolian',
+    'nep': 'Nepali',
+    'nso': 'Northern Sotho',
+    'nor': 'Norwegian',
+    'oci': 'Occitan',
+    'ori': 'Odia',
+    'pus': 'Pashto',
+    'fas': 'Persian',
+    'pol': 'Polish',
+    'por': 'Portuguese',
+    'pan': 'Punjabi',
+    'ron': 'Romanian',
+    'rus': 'Russian',
+    'srp': 'Serbian',
+    'sna': 'Shona',
+    'snd': 'Sindhi',
+    'slk': 'Slovak',
+    'slv': 'Slovenian',
+    'som': 'Somali',
+    'spa': 'Spanish',
+    'swa': 'Swahili',
+    'swe': 'Swedish',
+    'tam': 'Tamil',
+    'tgk': 'Tajik',
+    'tel': 'Telugu',
+    'tha': 'Thai',
+    'tur': 'Turkish',
+    'ukr': 'Ukrainian',
+    'umb': 'Umbundu',
+    'urd': 'Urdu',
+    'uzb': 'Uzbek',
+    'vie': 'Vietnamese',
+    'cym': 'Welsh',
+    'wol': 'Wolof',
+    'xho': 'Xhosa',
+    'zul': 'Zulu',
+    // ISO 639-1 codes (for newer models)
+    'en': 'English',
+    'ja': 'Japanese',
+    'zh': 'Chinese',
+    'de': 'German',
+    'hi': 'Hindi',
+    'fr': 'French',
+    'ko': 'Korean',
+    'pt': 'Portuguese',
+    'it': 'Italian',
+    'es': 'Spanish',
+    'id': 'Indonesian',
+    'nl': 'Dutch',
+    'tr': 'Turkish',
+    'pl': 'Polish',
+    'sv': 'Swedish',
+    'bg': 'Bulgarian',
+    'ro': 'Romanian',
+    'ar': 'Arabic',
+    'cs': 'Czech',
+    'el': 'Greek',
+    'fi': 'Finnish',
+    'hr': 'Croatian',
+    'ms': 'Malay',
+    'sk': 'Slovak',
+    'da': 'Danish',
+    'ta': 'Tamil',
+    'uk': 'Ukrainian',
+    'ru': 'Russian',
+    'hu': 'Hungarian',
+    'no': 'Norwegian',
+    'vi': 'Vietnamese'
+  };
+
+  // 11Labs Model Language Support
+  const elevenLabsModelLanguages = {
+    'eleven_v3': ['afr','ara','hye','asm','aze','bel','ben','bos','bul','cat','ceb','nya','hrv','ces','dan','nld','eng','est','fil','fin','fra','glg','kat','deu','ell','guj','hau','heb','hin','hun','isl','ind','gle','ita','jpn','jav','kan','kaz','kir','kor','lav','lin','lit','ltz','mkd','msa','mal','cmn','mar','nep','nor','pus','fas','pol','por','pan','ron','rus','srp','snd','slk','slv','som','spa','swa','swe','tam','tel','tha','tur','ukr','urd','vie','cym'],
+    'eleven_ttv_v3': ['afr','ara','hye','asm','aze','bel','ben','bos','bul','cat','ceb','nya','hrv','ces','dan','nld','eng','est','fil','fin','fra','glg','kat','deu','ell','guj','hau','heb','hin','hun','isl','ind','gle','ita','jpn','jav','kan','kaz','kir','kor','lav','lin','lit','ltz','mkd','msa','mal','cmn','mar','nep','nor','pus','fas','pol','por','pan','ron','rus','srp','snd','slk','slv','som','spa','swa','swe','tam','tel','tha','tur','ukr','urd','vie','cym'],
+    'scribe_v1': ['afr','amh','ara','hye','asm','ast','aze','bel','ben','bos','bul','mya','yue','cat','ceb','nya','hrv','ces','dan','nld','eng','est','fil','fin','fra','ful','glg','lug','kat','deu','ell','guj','hau','heb','hin','hun','isl','ibo','ind','gle','ita','jpn','jav','kea','kan','kaz','khm','kor','kur','kir','lao','lav','lin','lit','luo','ltz','mkd','msa','mal','mlt','zho','mri','mar','mon','nep','nso','nor','oci','ori','pus','fas','pol','por','pan','ron','rus','srp','sna','snd','slk','slv','som','spa','swa','swe','tam','tgk','tel','tha','tur','ukr','umb','urd','uzb','vie','cym','wol','xho','zul'],
+    'scribe_v1_experimental': ['afr','amh','ara','hye','asm','ast','aze','bel','ben','bos','bul','mya','yue','cat','ceb','nya','hrv','ces','dan','nld','eng','est','fil','fin','fra','ful','glg','lug','kat','deu','ell','guj','hau','heb','hin','hun','isl','ibo','ind','gle','ita','jpn','jav','kea','kan','kaz','khm','kor','kur','kir','lao','lav','lin','lit','luo','ltz','mkd','msa','mal','mlt','zho','mri','mar','mon','nep','nso','nor','oci','ori','pus','fas','pol','por','pan','ron','rus','srp','sna','snd','slk','slv','som','spa','swa','swe','tam','tgk','tel','tha','tur','ukr','umb','urd','uzb','vie','cym','wol','xho','zul'],
+    'eleven_multilingual_v2': ['en','ja','zh','de','hi','fr','ko','pt','it','es','id','nl','tr','fil','pl','sv','bg','ro','ar','cs','el','fi','hr','ms','sk','da','ta','uk','ru'],
+    'eleven_flash_v2_5': ['en','ja','zh','de','hi','fr','ko','pt','it','es','id','nl','tr','fil','pl','sv','bg','ro','ar','cs','el','fi','hr','ms','sk','da','ta','uk','ru','hu','no','vi'],
+    'eleven_flash_v2': ['en'],
+    'eleven_turbo_v2_5': ['en','ja','zh','de','hi','fr','ko','pt','it','es','id','nl','tr','fil','pl','sv','bg','ro','ar','cs','el','fi','hr','ms','sk','da','ta','uk','ru','hu','no','vi'],
+    'eleven_turbo_v2': ['en'],
+    'eleven_multilingual_sts_v2': ['en','ja','zh','de','hi','fr','ko','pt','it','es','id','nl','tr','fil','pl','sv','bg','ro','ar','cs','el','fi','hr','ms','sk','da','ta','uk','ru'],
+    'eleven_multilingual_ttv_v2': ['en','ja','zh','de','hi','fr','ko','pt','it','es','id','nl','tr','fil','pl','sv','bg','ro','ar','cs','el','fi','hr','ms','sk','da','ta','uk','ru'],
+    'eleven_english_sts_v2': ['en']
+  };
+
+  // 11Labs Model Display Names
+  const elevenLabsModelNames = {
+    'eleven_v3': 'Eleven v3',
+    'eleven_ttv_v3': 'Eleven TTV v3',
+    'scribe_v1': 'Scribe v1',
+    'scribe_v1_experimental': 'Scribe v1 Experimental',
+    'eleven_multilingual_v2': 'Eleven Multilingual v2',
+    'eleven_flash_v2_5': 'Eleven Flash v2.5',
+    'eleven_flash_v2': 'Eleven Flash v2',
+    'eleven_turbo_v2_5': 'Eleven Turbo v2.5',
+    'eleven_turbo_v2': 'Eleven Turbo v2',
+    'eleven_multilingual_sts_v2': 'Eleven Multilingual STS v2',
+    'eleven_multilingual_ttv_v2': 'Eleven Multilingual TTV v2',
+    'eleven_english_sts_v2': 'Eleven English STS v2'
+  };
+
+  // Deepgram Language Mapping
+  const deepgramLanguageMapping = {
+    'bg': 'Bulgarian',
+    'ca': 'Catalan',
+    'zh': 'Chinese (Mandarin, Simplified)',
+    'zh-CN': 'Chinese (Mandarin, Simplified)',
+    'zh-Hans': 'Chinese (Mandarin, Simplified)',
+    'zh-TW': 'Chinese (Mandarin, Traditional)',
+    'zh-Hant': 'Chinese (Mandarin, Traditional)',
+    'zh-HK': 'Chinese (Cantonese, Traditional)',
+    'cs': 'Czech',
+    'da': 'Danish',
+    'da-DK': 'Danish',
+    'nl': 'Dutch',
+    'en': 'English',
+    'en-US': 'English',
+    'en-AU': 'English',
+    'en-GB': 'English',
+    'en-NZ': 'English',
+    'en-IN': 'English',
+    'et': 'Estonian',
+    'fi': 'Finnish',
+    'nl-BE': 'Flemish',
+    'fr': 'French',
+    'fr-CA': 'French',
+    'de': 'German',
+    'de-CH': 'German (Switzerland)',
+    'el': 'Greek',
+    'hi': 'Hindi',
+    'hu': 'Hungarian',
+    'id': 'Indonesian',
+    'it': 'Italian',
+    'ja': 'Japanese',
+    'ko': 'Korean',
+    'ko-KR': 'Korean',
+    'lv': 'Latvian',
+    'lt': 'Lithuanian',
+    'ms': 'Malay',
+    'no': 'Norwegian',
+    'pl': 'Polish',
+    'pt': 'Portuguese',
+    'pt-BR': 'Portuguese',
+    'pt-PT': 'Portuguese',
+    'ro': 'Romanian',
+    'ru': 'Russian',
+    'sk': 'Slovak',
+    'es': 'Spanish',
+    'es-419': 'Spanish',
+    'sv': 'Swedish',
+    'sv-SE': 'Swedish',
+    'th': 'Thai',
+    'th-TH': 'Thai',
+    'tr': 'Turkish',
+    'uk': 'Ukrainian',
+    'vi': 'Vietnamese'
+  };
+
+  // Deepgram Model Language Support
+  const deepgramModelLanguages = {
+    'nova-2': ['bg', 'ca', 'zh', 'zh-CN', 'zh-Hans', 'zh-TW', 'zh-Hant', 'zh-HK', 'cs', 'da', 'da-DK', 'nl', 'en', 'en-US', 'en-AU', 'en-GB', 'en-NZ', 'en-IN', 'et', 'fi', 'nl-BE', 'fr', 'fr-CA', 'de', 'de-CH', 'el', 'hi', 'hu', 'id', 'it', 'ja', 'ko', 'ko-KR', 'lv', 'lt', 'ms', 'no', 'pl', 'pt', 'pt-BR', 'pt-PT', 'ro', 'ru', 'sk', 'es', 'es-419', 'sv', 'sv-SE', 'th', 'th-TH', 'tr', 'uk', 'vi'],
+    'nova-3': ['bg', 'ca', 'zh', 'zh-CN', 'zh-Hans', 'zh-TW', 'zh-Hant', 'zh-HK', 'cs', 'da', 'da-DK', 'nl', 'en', 'en-US', 'en-AU', 'en-GB', 'en-NZ', 'en-IN', 'et', 'fi', 'nl-BE', 'fr', 'fr-CA', 'de', 'de-CH', 'el', 'hi', 'hu', 'id', 'it', 'ja', 'ko', 'ko-KR', 'lv', 'lt', 'ms', 'no', 'pl', 'pt', 'pt-BR', 'pt-PT', 'ro', 'ru', 'sk', 'es', 'es-419', 'sv', 'sv-SE', 'th', 'th-TH', 'tr', 'uk', 'vi']
+  };
+
+  const openaiModels = {
+    'mp3': 'MP3',
+    'opus': 'Opus',
+    'aac': 'AAC',
+    'flac': 'FLAC',
+    'wav': 'WAV',
+    'pcm': 'PCM'
+  };
+
+  const responseFormats = {
+    'alloy': 'Alloy',
+    'ash': 'Ash',
+    'ballad': 'Ballad',
+    'coral': 'Coral',
+    'echo': 'Echo',
+    'fable': 'Fable',
+    'nova': 'Nova',
+    'onyx': 'Onyx',
+    'sage': 'Sage',
+    'shimmer': 'Shimmer'
+  };
+
+  // Function to get current language mapping based on provider
+  const getCurrentLanguageMapping = () => {
+    if (selectedVoiceProvider === 'Cartesia') {
+      return cartesiaLanguageMapping;
+    } else if (selectedVoiceProvider === '11Labs') {
+      // Get supported languages for the selected model
+      const supportedLanguages = elevenLabsModelLanguages[selectedVoice as keyof typeof elevenLabsModelLanguages] || [];
+      const filteredMapping: { [key: string]: string } = {};
+      supportedLanguages.forEach(langCode => {
+        if (elevenLabsLanguageMapping[langCode as keyof typeof elevenLabsLanguageMapping]) {
+          filteredMapping[langCode] = elevenLabsLanguageMapping[langCode as keyof typeof elevenLabsLanguageMapping];
+        }
+      });
+      return filteredMapping;
+    }
+    return openaiLanguageMapping;
+  };
+
+  const getCurrentReverseLanguageMapping = () => {
+    if (selectedVoiceProvider === 'Cartesia') {
+      return cartesiaReverseLanguageMapping;
+    } else if (selectedVoiceProvider === '11Labs') {
+      // Create reverse mapping for 11Labs
+      const reverseMapping: { [key: string]: string } = {};
+      Object.entries(elevenLabsLanguageMapping).forEach(([code, name]) => {
+        reverseMapping[name] = code;
+      });
+      return reverseMapping;
+    }
+    return openaiReverseLanguageMapping;
+  };
+
+  // Function to get current transcriber language mapping based on provider and model
+  const getCurrentTranscriberLanguageMapping = () => {
+    if (selectedTranscriberProvider === 'Deepgram') {
+      // Get supported languages for the selected model
+      const supportedLanguages = deepgramModelLanguages[selectedTranscriberModel as keyof typeof deepgramModelLanguages] || [];
+      const filteredMapping: { [key: string]: string } = {};
+      supportedLanguages.forEach(langCode => {
+        if (deepgramLanguageMapping[langCode as keyof typeof deepgramLanguageMapping]) {
+          filteredMapping[langCode] = deepgramLanguageMapping[langCode as keyof typeof deepgramLanguageMapping];
+        }
+      });
+      return filteredMapping;
+    } else if (selectedTranscriberProvider === 'OpenAI') {
+      // For OpenAI STT, use the same language mapping as TTS
+      return openaiLanguageMapping;
+    }
+    // Fallback
+    return {
+      'en': 'English',
+      'es': 'Spanish',
+      'fr': 'French',
+      'de': 'German',
+      'it': 'Italian',
+      'pt': 'Portuguese',
+      'ru': 'Russian',
+      'ja': 'Japanese',
+      'ko': 'Korean',
+      'zh': 'Chinese'
+    };
   };
 
   // Load state from localStorage on component mount
@@ -120,7 +568,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
         // Set language (convert backend format to UI format)
         if (ttsConfig.cartesian?.language) {
           const backendLang = ttsConfig.cartesian.language;
-          const uiLang = languageMapping[backendLang as keyof typeof languageMapping] || 'English';
+          const uiLang = cartesiaLanguageMapping[backendLang as keyof typeof cartesiaLanguageMapping] || 'English';
           console.log('Backend language:', backendLang, '-> UI language:', uiLang);
           setSelectedLanguage(uiLang);
         }
@@ -159,9 +607,9 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
 
         // Handle OpenAI config if present
         if (ttsConfig.openai) {
-          if (ttsConfig.openai.voice) {
-            console.log('Backend OpenAI voice:', ttsConfig.openai.voice);
-            setSelectedVoice(ttsConfig.openai.voice);
+          if (ttsConfig.openai.model) {
+            console.log('Backend OpenAI model:', ttsConfig.openai.model);
+            setSelectedVoice(ttsConfig.openai.model);
           }
           if (ttsConfig.openai.speed !== undefined) {
             console.log('Backend OpenAI speed:', ttsConfig.openai.speed);
@@ -170,6 +618,20 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
           if (ttsConfig.openai.api_key) {
             console.log('Backend OpenAI API key:', maskApiKey(ttsConfig.openai.api_key));
             setApiKey(ttsConfig.openai.api_key);
+          }
+          if (ttsConfig.openai.voice) {
+            console.log('Backend OpenAI voice:', ttsConfig.openai.voice);
+            setResponseFormat(ttsConfig.openai.voice);
+          }
+          if (ttsConfig.openai.response_format) {
+            console.log('Backend OpenAI response format:', ttsConfig.openai.response_format);
+            setSelectedModel(ttsConfig.openai.response_format);
+          }
+          if (ttsConfig.openai.language) {
+            const backendLang = ttsConfig.openai.language;
+            const uiLang = openaiLanguageMapping[backendLang as keyof typeof openaiLanguageMapping] || 'English';
+            console.log('Backend OpenAI language:', backendLang, '-> UI language:', uiLang);
+            setSelectedLanguage(uiLang);
           }
         }
 
@@ -212,12 +674,14 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
           const parsedState = JSON.parse(savedState);
           setSelectedVoiceProvider(parsedState.selectedVoiceProvider || 'OpenAI');
           setSelectedLanguage(parsedState.selectedLanguage || 'English');
-          setSpeedValue(parsedState.speedValue || 1.0);
+          setSpeedValue(parsedState.speedValue || 0.0);
           setApiKey(parsedState.apiKey || '');
           setVoiceId(parsedState.voiceId || '');
-          setSelectedVoice(parsedState.selectedVoice || 'Alloy');
+          setSelectedVoice(parsedState.selectedVoice || 'tts-1');
           setStability(parsedState.stability || 0.5);
           setSimilarityBoost(parsedState.similarityBoost || 0.5);
+          setResponseFormat(parsedState.responseFormat || 'alloy');
+          setSelectedModel(parsedState.selectedModel || 'mp3');
         }
       }
 
@@ -230,7 +694,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
           // Set provider (convert backend format to UI format)
           let provider = existingTranscriberConfig.provider;
           if (provider === 'deepgram') provider = 'Deepgram';
-          if (provider === 'whisper') provider = 'Whisper';
+          if (provider === 'openai') provider = 'OpenAI';
 
           console.log('Backend transcriber provider:', existingTranscriberConfig.provider, '-> UI provider:', provider);
           setSelectedTranscriberProvider(provider);
@@ -320,6 +784,8 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
         selectedVoice,
         stability,
         similarityBoost,
+        responseFormat,
+        selectedModel,
         ...updates
       };
       localStorage.setItem('voiceConfigState', JSON.stringify(currentState));
@@ -409,7 +875,9 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
         apiKey,
         voiceId,
         stability,
-        similarityBoost
+        similarityBoost,
+        responseFormat,
+        selectedModel
       };
 
       saveStateToLocalStorage(config);
@@ -479,16 +947,20 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
         tts_api_key: actualApiKey,
         model: selectedVoice,
         speed: speedValue,
-        language: reverseLanguageMapping[selectedLanguage as keyof typeof reverseLanguageMapping] || 'en'
+        language: cartesiaReverseLanguageMapping[selectedLanguage as keyof typeof cartesiaReverseLanguageMapping] || 'en'
       } : null,
       openai: selectedVoiceProvider === 'OpenAI' ? {
-        voice: selectedVoice,
+        model: selectedVoice,
         speed: speedValue,
-        api_key: actualApiKey
+        api_key: actualApiKey,
+        voice: responseFormat,
+        response_format: selectedModel,
+        language: openaiReverseLanguageMapping[selectedLanguage as keyof typeof openaiReverseLanguageMapping] || 'en'
       } : null,
       elevenlabs: selectedVoiceProvider === '11Labs' ? {
-        voice_id: actualVoiceId,
+        voice_id: actualVoiceId || 'pNInz6obpgDQGcFmaJgB',
         api_key: actualApiKey,
+        model_id: 'eleven_monolingual_v1',
         speed: speedValue,
         stability,
         similarity_boost: similarityBoost
@@ -504,7 +976,9 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
       apiKey,
       voiceId,
       stability,
-      similarityBoost
+      similarityBoost,
+      responseFormat,
+      selectedModel
     };
     saveStateToLocalStorage(uiConfig);
 
@@ -514,7 +988,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
       lastConfigRef.current = configString;
       onConfigChange(backendConfig);
     }
-  }, [selectedVoiceProvider, selectedVoice, selectedLanguage, speedValue, apiKey, voiceId, stability, similarityBoost]);
+  }, [selectedVoiceProvider, selectedVoice, selectedLanguage, speedValue, apiKey, voiceId, stability, similarityBoost, responseFormat, selectedModel]);
 
   // Notify parent component of transcriber configuration changes and save to localStorage
   React.useEffect(() => {
@@ -529,15 +1003,15 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
         case 'Deepgram':
           actualTranscriberApiKey = defaultApiKeys.deepgram || '';
           break;
-        case 'Whisper':
-          actualTranscriberApiKey = defaultApiKeys.whisper || '';
+        case 'OpenAI':
+          actualTranscriberApiKey = defaultApiKeys.openai || '';
           break;
       }
     }
 
     // Convert UI format to backend format
     const backendTranscriberConfig = {
-      provider: selectedTranscriberProvider === 'Deepgram' ? 'deepgram' : 'whisper',
+      provider: selectedTranscriberProvider === 'Deepgram' ? 'deepgram' : 'openai',
       deepgram: selectedTranscriberProvider === 'Deepgram' ? {
         api_key: actualTranscriberApiKey,
         model: selectedTranscriberModel,
@@ -546,7 +1020,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
         smart_format: smartFormatEnabled,
         interim_results: interimResultEnabled
       } : null,
-      whisper: selectedTranscriberProvider === 'Whisper' ? {
+      openai: selectedTranscriberProvider === 'OpenAI' ? {
         api_key: actualTranscriberApiKey,
         model: selectedTranscriberModel,
         language: selectedTranscriberLanguage === 'multi' ? null : selectedTranscriberLanguage
@@ -583,13 +1057,13 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
     }
 
     // Reset related state when provider changes
-    let defaultVoice = 'Alloy';
+    let defaultVoice = 'tts-1';
     if (newProvider === 'OpenAI') {
-      defaultVoice = 'Alloy';
+      defaultVoice = 'tts-1';
     } else if (newProvider === 'Cartesia') {
-      defaultVoice = 'sonic-2';
+      defaultVoice = 'sonic-2.0';
     } else if (newProvider === '11Labs') {
-      defaultVoice = 'Rachel';
+      defaultVoice = 'eleven_v3';
     }
 
     // Update the provider and voice state
@@ -694,6 +1168,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
     switch (selectedVoiceProvider) {
       case 'OpenAI':
         return (
+          <div className="space-y-4">
           <div>
             <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
               API Key
@@ -708,6 +1183,59 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                 }`}
               placeholder="Default API key loaded"
             />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Voice
+                </label>
+                <select
+                  value={responseFormat}
+                  onChange={(e) => {
+                    setResponseFormat(e.target.value);
+                    saveStateToLocalStorage({ responseFormat: e.target.value });
+                  }}
+                  disabled={!isEditing}
+                  className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
+                    ? isDarkMode
+                      ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                    : isDarkMode
+                      ? 'bg-gray-700/50 border-gray-600 text-gray-200'
+                      : 'bg-gray-50 border-gray-200 text-gray-900'
+                    }`}
+                >
+                  {Object.entries(responseFormats).map(([key, value]) => (
+                    <option key={key} value={key}>{value}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Response Format
+                </label>
+                <select
+                  value={selectedModel}
+                  onChange={(e) => {
+                    setSelectedModel(e.target.value);
+                    saveStateToLocalStorage({ selectedModel: e.target.value });
+                  }}
+                  disabled={!isEditing}
+                  className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
+                    ? isDarkMode
+                      ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                    : isDarkMode
+                      ? 'bg-gray-700/50 border-gray-600 text-gray-200'
+                      : 'bg-gray-50 border-gray-200 text-gray-900'
+                    }`}
+                >
+                  {Object.entries(openaiModels).map(([key, value]) => (
+                    <option key={key} value={key}>{value}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
         );
       case '11Labs':
@@ -734,13 +1262,28 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
               </label>
               <input
                 type="text"
-                value={voiceId ? maskApiKey(voiceId) : '••••••••••••••••••••••••••••••••'}
+                value={voiceId ? maskApiKey(voiceId) : 'pNInz6obpgDQGcFmaJgB'}
                 readOnly
                 className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${isDarkMode
                   ? 'border-gray-600 bg-gray-700/50 text-gray-400'
                   : 'border-gray-200 bg-gray-100/50 text-gray-500'
                   }`}
-                placeholder="Default voice ID loaded"
+                placeholder="Default voice ID (Adam voice)"
+              />
+            </div>
+            <div>
+              <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Model ID
+              </label>
+              <input
+                type="text"
+                value="eleven_monolingual_v1"
+                readOnly
+                className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${isDarkMode
+                  ? 'border-gray-600 bg-gray-700/50 text-gray-400'
+                  : 'border-gray-200 bg-gray-100/50 text-gray-500'
+                  }`}
+                placeholder="Default model ID (free tier)"
               />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -758,7 +1301,11 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                     setStability(parseFloat(e.target.value));
                     saveStateToLocalStorage({ stability: parseFloat(e.target.value) });
                   }}
-                  className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}
+                  disabled={!isEditing}
+                  className={`w-full h-2 rounded-lg appearance-none ${!isEditing
+                    ? 'cursor-not-allowed opacity-50'
+                    : 'cursor-pointer'
+                    } ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}
                 />
                 <div className="flex justify-between text-xs text-gray-500 mt-1">
                   <span>0</span>
@@ -780,7 +1327,11 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                     setSimilarityBoost(parseFloat(e.target.value));
                     saveStateToLocalStorage({ similarityBoost: parseFloat(e.target.value) });
                   }}
-                  className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}
+                  disabled={!isEditing}
+                  className={`w-full h-2 rounded-lg appearance-none ${!isEditing
+                    ? 'cursor-not-allowed opacity-50'
+                    : 'cursor-pointer'
+                    } ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}
                 />
                 <div className="flex justify-between text-xs text-gray-500 mt-1">
                   <span>0</span>
@@ -823,6 +1374,54 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                   }`}
                 placeholder="Default voice ID loaded"
               />
+            </div>
+            <div>
+              <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Speed: {speedValue}
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min="-2"
+                  max="2"
+                  step="0.1"
+                  value={speedValue}
+                  onChange={(e) => {
+                    handleSpeedChange(e.target.value);
+                    saveStateToLocalStorage({ speedValue: parseFloat(e.target.value) });
+                  }}
+                  disabled={!isEditing}
+                  className={`flex-1 h-2 rounded-lg appearance-none ${!isEditing
+                    ? 'cursor-not-allowed opacity-50'
+                    : 'cursor-pointer'
+                    } ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}
+                />
+                <input
+                  type="number"
+                  min="-2"
+                  max="2"
+                  step="0.1"
+                  value={speedValue}
+                  onChange={(e) => {
+                    handleSpeedChange(e.target.value);
+                    saveStateToLocalStorage({ speedValue: parseFloat(e.target.value) });
+                  }}
+                  disabled={!isEditing}
+                  className={`w-16 p-2 rounded-lg border text-center text-sm ${!isEditing
+                    ? isDarkMode
+                      ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                    : isDarkMode
+                      ? 'bg-gray-700/50 border-gray-600 text-gray-200'
+                      : 'bg-gray-50 border-gray-200 text-gray-900'
+                    }`}
+                />
+              </div>
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>-2.0x</span>
+                <span>0.0x</span>
+                <span>2.0x</span>
+              </div>
             </div>
           </div>
         );
@@ -881,7 +1480,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
 
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Voice
+                Model
               </label>
               <select
                 value={selectedVoice}
@@ -939,8 +1538,8 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                     : 'bg-gray-50 border-gray-200 text-gray-900'
                   }`}
               >
-                {Object.keys(languageMapping).map((key) => (
-                  <option key={key} value={languageMapping[key as keyof typeof languageMapping]}>{languageMapping[key as keyof typeof languageMapping]}</option>
+                {Object.entries(getCurrentLanguageMapping()).map(([code, name]) => (
+                  <option key={code} value={name}>{name}</option>
                 ))}
               </select>
             </div>
@@ -1112,8 +1711,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                     }`}
                 >
                   <option value="Deepgram">Deepgram</option>
-                  <option value="Whisper">Whisper</option>
-                  <option value="Groq">Groq</option>
+                  <option value="OpenAI">OpenAI</option>
                 </select>
               </div>
 
@@ -1137,12 +1735,9 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                       : 'bg-gray-50 border-gray-200 text-gray-900'
                     }`}
                 >
-                  <option value="en-US">English (US)</option>
-                  <option value="multi">Multi-language</option>
-                  <option value="es-ES">Spanish</option>
-                  <option value="fr-FR">French</option>
-                  <option value="de-DE">German</option>
-                  <option value="hi">Hindi</option>
+                  {Object.entries(getCurrentTranscriberLanguageMapping()).map(([code, name]) => (
+                    <option key={code} value={code}>{name}</option>
+                  ))}
                 </select>
               </div>
             </div>
