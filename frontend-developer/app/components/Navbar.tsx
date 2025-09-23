@@ -3,41 +3,57 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Sun, Moon, LogOut, User as UserIcon } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
-
-// Mock for @propelauth/react since it cannot be resolved in this environment.
-// This provides a sample user object for the component to use.
-const useAuthInfo = () => ({
-    user: {
-        firstName: 'Karthik',
-        lastName: 'Konduru',
-        email: 'karthik.konduru@example.com',
-    }
-});
+import { useAuthInfo } from '@propelauth/react';
 
 interface NavbarProps {
-    activeTab: 'Overview' | 'Agents';
-    onChange: (tab: 'Overview' | 'Agents') => void;
+    activeTab: string;
+    onChange: (tab: string) => void;
     activeTitle: string;
     sidebarOpen: boolean;
     onToggleSidebar: () => void;
     onLogout: () => Promise<void> | void;
+    navigationItems?: Array<{ name: string; icon: any; color: string }>;
 }
 
 export default function Navbar({
     activeTab,
     onChange,
-    onLogout
+    onLogout,
+    navigationItems = []
 }: NavbarProps) {
-    const tabs: Array<{ id: 'Overview' | 'Agents'; label: string }> = [
-        { id: 'Overview', label: 'Overview' },
-        { id: 'Agents', label: 'Agents' }
-    ];
+    // Convert navigationItems to tabs format for the navbar
+    const tabs = navigationItems.map(item => ({
+        id: item.name,
+        label: item.name
+    }));
 
-    const { user } = useAuthInfo();
+    const { user, userClass } = useAuthInfo();
     const { isDarkMode, toggleTheme } = useTheme();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [organizationName, setOrganizationName] = useState<string>('');
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Get organization name from user context
+    useEffect(() => {
+        console.log('🔍 Navbar: Fetching organization name...');
+        if (userClass) {
+            const orgs = userClass.getOrgs?.() || [];
+            console.log('🔍 Navbar: Organizations found:', orgs);
+            if (orgs.length > 0) {
+                const org = orgs[0] as any;
+                const orgName = org.orgName || org.name || '';
+                console.log('🔍 Navbar: Setting organization name to:', orgName);
+                setOrganizationName(orgName);
+            } else {
+                console.log('⚠️ Navbar: No organizations found, using fallback');
+                setOrganizationName('My Organization');
+            }
+        } else {
+            console.log('⚠️ Navbar: userClass not available, using fallback');
+            setOrganizationName('My Organization');
+        }
+    }, [userClass]);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -45,18 +61,18 @@ export default function Navbar({
                 setDropdownOpen(false);
             }
         }
-        
+
         function handleEscapeKey(event: KeyboardEvent) {
             if (event.key === 'Escape') {
                 setDropdownOpen(false);
             }
         }
-        
+
         if (dropdownOpen) {
             document.addEventListener('mousedown', handleClickOutside);
             document.addEventListener('keydown', handleEscapeKey);
         }
-        
+
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
             document.removeEventListener('keydown', handleEscapeKey);
@@ -64,16 +80,20 @@ export default function Navbar({
     }, [dropdownOpen]);
 
     return (
-        <nav className={` w-full ${isDarkMode ? 'bg-gray-900/80 backdrop-blur-xl border-b border-gray-700/50' : 'bg-white border-b border-gray-200'}`}>
+        <nav className={`w-full ${isDarkMode ? 'bg-gray-900/80 backdrop-blur-xl border-b border-gray-700/50' : 'bg-white border-b border-gray-200'}`}>
             <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center flex-wrap gap-3 sm:gap-4">
                         <div className="h-10 w-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-                            <span className="text-white font-bold text-lg">D</span>
+                            <span className="text-white font-bold text-lg">
+                                {organizationName.charAt(0).toUpperCase() }
+                            </span>
                         </div>
                         <div className="ml-3 sm:ml-4">
-                            <span className="text-xl font-bold bg-gradient-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent">Developer</span>
-                            <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-xs`}>Control Center</p>
+                            <span className="text-xl font-bold bg-gradient-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent">
+                                {organizationName || 'Organization Name'}
+                            </span>
+                            <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-xs`}>Organization</p>
                         </div>
                         <div className="ml-0 sm:ml-6 mt-1 sm:mt-0 flex items-center gap-1 overflow-x-auto w-full sm:w-auto">
                             {tabs.map((tab) => (
@@ -125,6 +145,12 @@ export default function Navbar({
                                             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                                             <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>Developer</p>
                                         </div>
+                                        {organizationName && (
+                                            <div className="flex items-center gap-2 mt-2">
+                                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                                <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>{organizationName}</p>
+                                            </div>
+                                        )}
                                     </div>
                                     <nav className="p-3 sm:p-4">
                                         <button
