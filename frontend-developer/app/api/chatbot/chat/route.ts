@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     const requestBody = {
       inputs: {},
       query: message,
-      response_mode: 'blocking',
+      response_mode: 'streaming',
       conversation_id: conversationId || '',
       user: 'preview-user',
       files: []
@@ -61,12 +61,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Handle response (blocking mode should return JSON directly)
+    // Handle response (streaming mode returns Server-Sent Events)
     const responseText = await response.text();
     console.log('📡 Raw Dify response:', responseText);
     
     try {
-      // Try to parse as JSON first (blocking mode)
+      // Try to parse as JSON first (in case of non-streaming response)
       const data = JSON.parse(responseText);
       console.log('📡 Parsed JSON data:', data);
       
