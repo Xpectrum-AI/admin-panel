@@ -114,7 +114,8 @@ export default function ChatbotPage() {
           difyApiUrl: agentConfig.chatbot_api || 'https://d22yt2oewbcglh.cloudfront.net/v1',
           difyApiKey: agentConfig.chatbot_key,
           message: currentMessage,
-          conversationId: conversationId
+          conversationId: conversationId,
+          useStreaming: true // Use streaming mode for full chatbot page (agent supports streaming)
         })
       });
 
