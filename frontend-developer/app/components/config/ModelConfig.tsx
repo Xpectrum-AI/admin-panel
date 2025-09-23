@@ -1,6 +1,6 @@
 'use client';
 
-import React, { forwardRef, useState } from 'react';
+import React, { forwardRef, useState, useRef } from 'react';
 import { Sparkles, CheckCircle, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { modelConfigService } from '../../../service/modelConfigService';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -686,20 +686,25 @@ Remember: You are the first point of contact for many patients. Your professiona
 
 
   // Notify parent component of configuration changes
+  const lastModelConfigRef = useRef<string>('');
   React.useEffect(() => {
-    if (onConfigChange) {
-      onConfigChange({
-        modelLiveUrl,
-        modelApiKey,
-        agentUrl,
-        agentApiKey,
-        selectedModelProvider,
-        selectedModel,
-        systemPrompt,
-        // Include Agent URL and Agent API Key for the existing agent configuration flow
-        chatbot_api: agentUrl,      // Agent URL (from NEXT_PUBLIC_CHATBOT_API_URL)
-        chatbot_key: agentApiKey    // Agent API Key
-      });
+    const config = {
+      modelLiveUrl,
+      modelApiKey,
+      agentUrl,
+      agentApiKey,
+      selectedModelProvider,
+      selectedModel,
+      systemPrompt,
+      // Include Agent URL and Agent API Key for the existing agent configuration flow
+      chatbot_api: agentUrl,      // Agent URL (from NEXT_PUBLIC_CHATBOT_API_URL)
+      chatbot_key: agentApiKey    // Agent API Key
+    };
+    
+    const configString = JSON.stringify(config);
+    if (onConfigChange && configString !== lastModelConfigRef.current) {
+      lastModelConfigRef.current = configString;
+      onConfigChange(config);
     }
   }, [modelLiveUrl, modelApiKey, agentUrl, agentApiKey, selectedModelProvider, selectedModel, systemPrompt, onConfigChange]);
 
