@@ -47,6 +47,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     needs: test
+    permissions:
+      id-token: write
+      contents: read
     
     steps:
     - name: Checkout code
