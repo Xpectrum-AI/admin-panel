@@ -47,9 +47,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     needs: test
-    permissions:
-      id-token: write
-      contents: read
     
     steps:
     - name: Checkout code
@@ -58,14 +55,13 @@ jobs:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        role-to-assume: arn:aws:iam::049229311248:role/GitHubActionsRole
+        aws-access-key-id: ${{ secrets.DEV_AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.DEV_AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
     - name: Login to Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
-      with:
-        region: ${{ env.AWS_REGION }}
 
     - name: Build and push Main Frontend image to ECR
       env:
@@ -77,9 +73,6 @@ jobs:
       run: |
         # Set ECR repository URI
         REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
-        
-        # Ensure ECR login with current AWS credentials
-        aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${REPO}
         
         # Build, tag, and push main frontend with environment variables
         cd frontend
@@ -124,9 +117,6 @@ jobs:
       run: |
         # Set ECR repository URI
         REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
-        
-        # Ensure ECR login with current AWS credentials
-        aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${REPO}
         
         # Build, tag, and push developer frontend with environment variables
         cd frontend-developer
