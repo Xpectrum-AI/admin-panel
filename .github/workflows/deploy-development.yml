@@ -64,6 +64,8 @@ jobs:
     - name: Login to Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
+      with:
+        region: ${{ env.AWS_REGION }}
 
     - name: Build and push Main Frontend image to ECR
       env:
@@ -75,6 +77,9 @@ jobs:
       run: |
         # Set ECR repository URI
         REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
+        
+        # Ensure ECR login with current AWS credentials
+        aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${REPO}
         
         # Build, tag, and push main frontend with environment variables
         cd frontend
@@ -119,6 +124,9 @@ jobs:
       run: |
         # Set ECR repository URI
         REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
+        
+        # Ensure ECR login with current AWS credentials
+        aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${REPO}
         
         # Build, tag, and push developer frontend with environment variables
         cd frontend-developer
