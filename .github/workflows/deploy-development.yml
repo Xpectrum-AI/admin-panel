@@ -5,7 +5,7 @@ on:
 
 env:
   AWS_REGION: us-west-1
-  ACCOUNT_ID: 641623447164
+  ACCOUNT_ID: 049229311248
 
 jobs:
   test:
