@@ -64,10 +64,10 @@ function testDifyCredentials() {
   console.log('\n🧪 Test 3: Dify Credentials');
   
   const credentials = {
-    consoleOrigin: 'https://test.xpectrum-ai.com',
+    consoleOrigin: 'https://agent-dev.xpectrum-ai.com',
     adminEmail: 'ghosh.ishw@gmail.com',
     adminPassword: 'Ghosh1@*123',
-    workspaceId: 'cd0309e7-6517-4932-8fc8-21c3bc4eb41b'
+    workspaceId: 'ffd028ab-6128-44fa-84cf-f3c12633e6da'
   };
 
   console.log('Dify Console Origin:', credentials.consoleOrigin);
@@ -81,7 +81,7 @@ async function testDifyLogin() {
   console.log('\n🧪 Test 4: Dify Login Endpoint');
   
   try {
-    const response = await fetch('https://test.xpectrum-ai.com/console/api/login', {
+    const response = await fetch('https://agent-dev.xpectrum-ai.com/console/api/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
