@@ -20,62 +20,8 @@ function getModelApiKey(provider: string): string | null {
   }
 }
 
-export async function GET() {
-  try {
-    console.log('🔍 Fetching current model configuration...');
-    
-    // For getting model config, we need to use the chatbot API key
-    const chatbotApiKey = process.env.NEXT_PUBLIC_CHATBOT_API_KEY;
-    if (!chatbotApiKey) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Chatbot API key not configured' 
-        },
-        { status: 400 }
-      );
-    }
-    
-    const response = await fetch(`${DIFY_BASE_URL}/apps/current/model-config`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${chatbotApiKey}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Failed to fetch model config:', errorData);
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: errorData.error || `HTTP ${response.status}: ${response.statusText}` 
-        },
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
-    console.log('✅ Model config fetched successfully:', data);
-    
-    return NextResponse.json({
-      success: true,
-      data
-    });
-
-  } catch (error) {
-    console.error('❌ Model config fetch error:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to fetch model configuration',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
-  }
-}
+// Note: Dify API doesn't support GET requests for model configuration
+// Only POST requests are supported for model configuration
 
 export async function POST(request: NextRequest) {
   try {
@@ -119,13 +65,14 @@ export async function POST(request: NextRequest) {
       api_key: apiKey
     };
     
-    // Use the chatbot API key from the request body, fallback to environment variable
-    const chatbotApiKey = body.chatbot_api_key || process.env.NEXT_PUBLIC_CHATBOT_API_KEY;
-    if (!chatbotApiKey) {
+    // Use the Dify API key from the request body, fallback to environment variable
+    const difyApiKey = body.chatbot_api_key || process.env.NEXT_PUBLIC_CHATBOT_API_KEY;
+    console.log('🔍 Dify API key:', difyApiKey);
+    if (!difyApiKey) {
       return NextResponse.json(
         { 
           success: false, 
-          error: 'Chatbot API key not provided and not configured in environment' 
+          error: 'Dify API key not provided and not configured in environment' 
         },
         { status: 400 }
       );
@@ -134,7 +81,7 @@ export async function POST(request: NextRequest) {
     const response = await fetch(`${DIFY_BASE_URL}/apps/current/model-config`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${chatbotApiKey}`,
+        'Authorization': `Bearer ${difyApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(configPayload),

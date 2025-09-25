@@ -906,10 +906,10 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
     // Get the actual API key from environment variables if the state is empty
     const defaultApiKeys = agentConfigService.getFullApiKeys();
     const defaultVoiceIds = agentConfigService.getDefaultVoiceIds();
-
+    
     let actualApiKey = apiKey;
     let actualVoiceId = voiceId;
-
+    
     // Use environment variable API key if the state is empty
     if (!actualApiKey) {
       switch (selectedVoiceProvider) {

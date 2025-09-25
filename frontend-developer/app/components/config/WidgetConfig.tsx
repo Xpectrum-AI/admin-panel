@@ -12,11 +12,11 @@ interface WidgetConfigProps {
   isEditing?: boolean;
 }
 
-const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({ 
-  agentName = 'default', 
-  onConfigChange, 
-  existingConfig, 
-  isEditing = true 
+const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
+  agentName = 'default',
+  onConfigChange,
+  existingConfig,
+  isEditing = true
 }, ref) => {
   const { isDarkMode } = useTheme();
 
@@ -25,7 +25,7 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
     if (!actualKey) return '••••••••••••••••••••••••••••••••';
     return maskApiKey(actualKey);
   };
-  const [difyApiUrl, setDifyApiUrl] = useState('https://d22yt2oewbcglh.cloudfront.net/v1');
+  const [difyApiUrl, setDifyApiUrl] = useState(process.env.NEXT_PUBLIC_CHATBOT_API_URL || 'https://dlb20rrk0t1tl.cloudfront.net/v1/chat-messages');
   const [difyApiKey, setDifyApiKey] = useState('');
   const [copiedScript, setCopiedScript] = useState(false);
   const [copiedVoiceScript, setCopiedVoiceScript] = useState(false);
@@ -33,9 +33,9 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
   const [copiedKey, setCopiedKey] = useState(false);
   const [widgetScript, setWidgetScript] = useState('');
   const [voiceWidgetScript, setVoiceWidgetScript] = useState('');
-  
+
   // Chatbot preview state
-  const [chatMessages, setChatMessages] = useState<Array<{id: string, type: 'user' | 'bot', message: string, timestamp: Date}>>([]);
+  const [chatMessages, setChatMessages] = useState<Array<{ id: string, type: 'user' | 'bot', message: string, timestamp: Date }>>([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -52,7 +52,7 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
     // Chatbot widget script
     const chatbotScript = `<script 
   src="https://widgetbot.netlify.app/bidirectional-embed.js"
-  data-agent-api-url="https://d22yt2oewbcglh.cloudfront.net/v1"
+  data-agent-api-url="${difyApiUrl}"
   data-agent-api-key="${difyApiKey}"
   data-position="bottom-right"
   data-primary-color="#667eea">
@@ -62,14 +62,14 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
     // Voice widget script
     const voiceScript = `<script 
   src="https://voice-widget.netlify.app/voice-widget.js"
-  agent-api-url="https://d25b4i9wbz6f8t.cloudfront.net"
-  agent-api-key="xpectrum-ai@123"
+  agent-api-url="${difyApiUrl.replace('/v1', '')}"
+  agent-api-key="${difyApiKey}"
   data-agent="${agentName}"
   data-position="bottom-right"
   data-primary-color="#667eea">
 </script>`;
     setVoiceWidgetScript(voiceScript);
-  }, [difyApiKey, agentName]);
+  }, [difyApiKey, difyApiUrl, agentName]);
 
   // Load existing configuration
   useEffect(() => {
@@ -101,13 +101,13 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
       widgetScript,
       voiceWidgetScript
     };
-    
+
     const configString = JSON.stringify(config);
     if (onConfigChange && configString !== lastWidgetConfigRef.current) {
       lastWidgetConfigRef.current = configString;
       onConfigChange(config);
     }
-  }, [difyApiUrl, difyApiKey, widgetScript, voiceWidgetScript]);
+  }, [difyApiUrl, difyApiKey, widgetScript, voiceWidgetScript, onConfigChange]);
 
   const handleCopyScript = async () => {
     try {
@@ -199,12 +199,12 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
       console.log('🤖 Response answer field:', data.answer);
       console.log('🤖 Response answer type:', typeof data.answer);
       console.log('🤖 Response answer length:', data.answer ? data.answer.length : 0);
-      
+
       // Update conversation ID if provided
       if (data.conversationId) {
         setConversationId(data.conversationId);
       }
-      
+
       const botMessage = {
         id: (Date.now() + 1).toString(),
         type: 'bot' as const,
@@ -249,7 +249,7 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
     const timer = setInterval(() => {
       setCallDuration(prev => prev + 1);
     }, 1000);
-    
+
     // Store timer reference for cleanup
     (window as any).voiceCallTimer = timer;
   };
@@ -303,22 +303,20 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
               type="url"
               value={difyApiUrl}
               readOnly
-              className={`flex-1 px-3 py-2 border rounded-lg transition-colors ${
-                isDarkMode
-                  ? 'bg-gray-800 border-gray-600 text-gray-400'
-                  : 'bg-gray-100 border-gray-300 text-gray-600'
-              }`}
+              className={`flex-1 px-3 py-2 border rounded-lg transition-colors ${isDarkMode
+                ? 'bg-gray-800 border-gray-600 text-gray-400'
+                : 'bg-gray-100 border-gray-300 text-gray-600'
+                }`}
             />
-                <button
-                  onClick={handleCopyUrl}
-                  className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
-                    isDarkMode
-                      ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
-                      : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  {copiedUrl ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                </button>
+            <button
+              onClick={handleCopyUrl}
+              className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${isDarkMode
+                ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
+                : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+                }`}
+            >
+              {copiedUrl ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            </button>
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             This URL is automatically configured for your Agent service
@@ -336,30 +334,27 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
               value={!isEditing ? getApiKeyDisplayValue(difyApiKey) : difyApiKey}
               onChange={(e) => setDifyApiKey(e.target.value)}
               placeholder="app-xxxxxxxxxxxxxxxx"
-              className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
-                isDarkMode
-                  ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400'
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-              }`}
+              className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${isDarkMode
+                ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400'
+                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                }`}
               disabled={!isEditing}
             />
-                <button
-                  onClick={handleCopyKey}
-                  className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
-                    isDarkMode
-                      ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
-                      : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  {copiedKey ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                </button>
+            <button
+              onClick={handleCopyKey}
+              className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${isDarkMode
+                ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
+                : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+                }`}
+            >
+              {copiedKey ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            </button>
           </div>
           {difyApiKey && !difyApiKey.startsWith('app-') && !difyApiKey.startsWith('sk-') && (
-            <div className={`mt-2 p-3 rounded-lg border ${
-              isDarkMode ? 'bg-yellow-900/20 border-yellow-700 text-yellow-300' : 'bg-yellow-50 border-yellow-200 text-yellow-800'
-            }`}>
+            <div className={`mt-2 p-3 rounded-lg border ${isDarkMode ? 'bg-yellow-900/20 border-yellow-700 text-yellow-300' : 'bg-yellow-50 border-yellow-200 text-yellow-800'
+              }`}>
               <p className="text-sm">
-                ⚠️ <strong>Invalid API Key Format:</strong> Dify API keys should start with "app-" or "sk-". 
+                ⚠️ <strong>Invalid API Key Format:</strong> Dify API keys should start with "app-" or "sk-".
                 Please check that your agent has a valid Dify API key configured.
               </p>
             </div>
@@ -377,23 +372,20 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
             </h4>
             <button
               onClick={handleCopyScript}
-              className={`px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-2 text-sm ${
-                isDarkMode
-                  ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
-                  : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
-              }`}
+              className={`px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-2 text-sm ${isDarkMode
+                ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
+                : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+                }`}
             >
               {copiedScript ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               {copiedScript ? 'Copied!' : 'Copy Script'}
             </button>
           </div>
-          
-          <div className={`relative rounded-lg border p-4 ${
-            isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'
-          }`}>
-            <pre className={`text-sm overflow-x-auto whitespace-pre-wrap ${
-              isDarkMode ? 'text-gray-300' : 'text-gray-800'
+
+          <div className={`relative rounded-lg border p-4 ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'
             }`}>
+            <pre className={`text-sm overflow-x-auto whitespace-pre-wrap ${isDarkMode ? 'text-gray-300' : 'text-gray-800'
+              }`}>
               <code>{widgetScript}</code>
             </pre>
           </div>
@@ -407,23 +399,20 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
             </h4>
             <button
               onClick={handleCopyVoiceScript}
-              className={`px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-2 text-sm ${
-                isDarkMode
-                  ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
-                  : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
-              }`}
+              className={`px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-2 text-sm ${isDarkMode
+                ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
+                : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+                }`}
             >
               {copiedVoiceScript ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               {copiedVoiceScript ? 'Copied!' : 'Copy Script'}
             </button>
           </div>
-          
-          <div className={`relative rounded-lg border p-4 ${
-            isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'
-          }`}>
-            <pre className={`text-sm overflow-x-auto whitespace-pre-wrap ${
-              isDarkMode ? 'text-gray-300' : 'text-gray-800'
+
+          <div className={`relative rounded-lg border p-4 ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'
             }`}>
+            <pre className={`text-sm overflow-x-auto whitespace-pre-wrap ${isDarkMode ? 'text-gray-300' : 'text-gray-800'
+              }`}>
               <code>{voiceWidgetScript}</code>
             </pre>
           </div>
@@ -431,9 +420,8 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
       </div>
 
       {/* Usage Instructions */}
-      <div className={`rounded-lg border p-4 ${
-        isDarkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200'
-      }`}>
+      <div className={`rounded-lg border p-4 ${isDarkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200'
+        }`}>
         <div className="flex items-start gap-3">
           <Globe className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
           <div>
@@ -470,13 +458,11 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
             </div>
           </div>
 
-          <div className={`rounded-lg border overflow-hidden ${
-            isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
-          }`}>
-            {/* Voice Call Header */}
-            <div className={`p-4 border-b ${
-              isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+          <div className={`rounded-lg border overflow-hidden ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
             }`}>
+            {/* Voice Call Header */}
+            <div className={`p-4 border-b ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+              }`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-full bg-gradient-to-r from-green-500 to-teal-600">
@@ -525,11 +511,10 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
                 {/* Single Call Button */}
                 <button
                   onClick={isCallActive ? endCall : startCall}
-                  className={`px-6 py-3 rounded-full text-white transition-colors flex items-center gap-2 mx-auto ${
-                    isCallActive 
-                      ? 'bg-red-500 hover:bg-red-600' 
-                      : 'bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700'
-                  }`}
+                  className={`px-6 py-3 rounded-full text-white transition-colors flex items-center gap-2 mx-auto ${isCallActive
+                    ? 'bg-red-500 hover:bg-red-600'
+                    : 'bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700'
+                    }`}
                 >
                   {isCallActive ? (
                     <>
@@ -548,13 +533,12 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
                 {isCallActive && (
                   <button
                     onClick={toggleMute}
-                    className={`px-4 py-2 rounded-lg transition-colors text-sm ${
-                      isMuted
-                        ? 'bg-red-500 hover:bg-red-600 text-white'
-                        : isDarkMode
-                          ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                          : 'bg-gray-200 hover:bg-gray-300 text-gray-600'
-                    }`}
+                    className={`px-4 py-2 rounded-lg transition-colors text-sm ${isMuted
+                      ? 'bg-red-500 hover:bg-red-600 text-white'
+                      : isDarkMode
+                        ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                        : 'bg-gray-200 hover:bg-gray-300 text-gray-600'
+                      }`}
                   >
                     {isMuted ? <MicOff className="h-4 w-4 inline mr-2" /> : <Mic className="h-4 w-4 inline mr-2" />}
                     {isMuted ? 'Unmute' : 'Mute'}
@@ -582,13 +566,11 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
               </div>
             </div>
 
-            <div className={`rounded-lg border overflow-hidden ${
-              isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
-            }`}>
-              {/* Chat Header */}
-              <div className={`p-4 border-b ${
-                isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+            <div className={`rounded-lg border overflow-hidden ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
               }`}>
+              {/* Chat Header */}
+              <div className={`p-4 border-b ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+                }`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-600">
@@ -630,18 +612,16 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
                       className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
-                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                          message.type === 'user'
-                            ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
-                            : isDarkMode
-                              ? 'bg-gray-800 text-gray-100'
-                              : 'bg-gray-100 text-gray-900'
-                        }`}
+                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.type === 'user'
+                          ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
+                          : isDarkMode
+                            ? 'bg-gray-800 text-gray-100'
+                            : 'bg-gray-100 text-gray-900'
+                          }`}
                       >
                         <p className="text-sm">{message.message}</p>
-                        <p className={`text-xs mt-1 ${
-                          message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
-                        }`}>
+                        <p className={`text-xs mt-1 ${message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
+                          }`}>
                           {message.timestamp.toLocaleTimeString()}
                         </p>
                       </div>
@@ -650,9 +630,8 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
                 )}
                 {isLoading && (
                   <div className="flex justify-start">
-                    <div className={`max-w-xs px-4 py-2 rounded-lg ${
-                      isDarkMode ? 'bg-gray-800 text-gray-100' : 'bg-gray-100 text-gray-900'
-                    }`}>
+                    <div className={`max-w-xs px-4 py-2 rounded-lg ${isDarkMode ? 'bg-gray-800 text-gray-100' : 'bg-gray-100 text-gray-900'
+                      }`}>
                       <div className="flex items-center gap-2">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
                         <span className="text-sm">Thinking...</span>
@@ -663,9 +642,8 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
               </div>
 
               {/* Chat Input */}
-              <div className={`p-4 border-t ${
-                isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
-              }`}>
+              <div className={`p-4 border-t ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+                }`}>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -674,22 +652,20 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
                     onKeyPress={handleKeyPress}
                     placeholder="Type your message here..."
                     disabled={isLoading}
-                    className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
-                      isDarkMode
-                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                    }`}
+                    className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${isDarkMode
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                      }`}
                   />
                   <button
                     onClick={sendMessage}
                     disabled={!currentMessage.trim() || isLoading}
-                    className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-                      currentMessage.trim() && !isLoading
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700'
-                        : isDarkMode
-                          ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    }`}
+                    className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${currentMessage.trim() && !isLoading
+                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700'
+                      : isDarkMode
+                        ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      }`}
                   >
                     <Send className="h-4 w-4" />
                   </button>

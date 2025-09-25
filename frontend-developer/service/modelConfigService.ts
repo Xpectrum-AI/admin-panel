@@ -27,14 +27,17 @@ const getEnvironmentVariables = () => {
 };
 
 export const modelConfigService = {
+  // Note: Dify API doesn't support GET requests for model configuration
+  // Model configuration is managed through localStorage and POST requests only
+
   // Configure model
   async configureModel(config: ModelConfigRequest): Promise<ModelConfigResponse> {
     try {
       const env = getEnvironmentVariables();
       
-      // Validate only when making the API call
-      if (!env.DIFY_BASE_URL || !env.CHATBOT_API_KEY) {
-        throw new Error('Missing required environment variables for model configuration');
+      // Only validate DIFY_BASE_URL, chatbot_api_key comes from the request
+      if (!env.DIFY_BASE_URL) {
+        throw new Error('Missing required environment variable: NEXT_PUBLIC_DIFY_BASE_URL');
       }
 
       console.log('⚙️ Making API call to model configuration endpoint');
@@ -75,9 +78,9 @@ export const modelConfigService = {
       console.log('🚀 Starting prompt configuration...');
       const env = getEnvironmentVariables();
       
-      // Validate only when making the API call
-      if (!env.DIFY_BASE_URL || !env.CHATBOT_API_KEY) {
-        throw new Error('Missing required environment variables for prompt configuration');
+      // Only validate DIFY_BASE_URL, chatbot_api_key comes from the request
+      if (!env.DIFY_BASE_URL) {
+        throw new Error('Missing required environment variable: NEXT_PUBLIC_DIFY_BASE_URL');
       }
 
       console.log('⚙️ Making API call to prompt configuration endpoint');

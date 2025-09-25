@@ -31,6 +31,8 @@ export async function GET(
         }
       });
 
+ 
+
       if (response.ok) {
         const backendData = await response.json();
         console.log('🔍 Backend agents response:', backendData);
@@ -39,6 +41,9 @@ export async function GET(
           data: backendData,
           message: `Found agents for organization ${organizationId}`
         });
+      } else {
+        const errorText = await response.text();
+        console.log('❌ Backend error response:', errorText);
       }
     } catch (backendError) {
       console.log('⚠️ Backend API not available, using mock data:', backendError);
@@ -53,7 +58,12 @@ export async function GET(
         model: 'GPT-4o',
         provider: 'OpenAI',
         description: 'Customer support agent',
-        initial_message: 'Hello! How can I help you today?',
+        initial_message: 'Welcome! I am your customer support assistant. How can I help you today?',
+        nudge_text: 'Are you still there? I am here to help!',
+        nudge_interval: 20,
+        max_nudges: 5,
+        typing_volume: 0.9,
+        max_call_duration: 600,
         chatbot_api: 'https://d22yt2oewbcglh.cloudfront.net/v1',
         chatbot_key: 'REDACTED',
         organization_id: organizationId,
@@ -67,7 +77,12 @@ export async function GET(
         model: 'GPT-4o',
         provider: 'OpenAI',
         description: 'Sales assistant agent',
-        initial_message: 'Hello! How can I help you today?',
+        initial_message: 'Hi there! I am your sales assistant. What can I help you with today?',
+        nudge_text: 'Hello, are you still interested in our services?',
+        nudge_interval: 30,
+        max_nudges: 3,
+        typing_volume: 0.7,
+        max_call_duration: 900,
         chatbot_api: 'https://d22yt2oewbcglh.cloudfront.net/v1',
         chatbot_key: 'REDACTED',
         organization_id: organizationId,
@@ -81,7 +96,12 @@ export async function GET(
         model: 'GPT-4o',
         provider: 'OpenAI',
         description: 'Sales bot for lead generation',
-        initial_message: 'Hello! How can I help you today?',
+        initial_message: 'Hello! I am your sales bot. Ready to help you generate leads!',
+        nudge_text: 'Still interested in our products?',
+        nudge_interval: 25,
+        max_nudges: 4,
+        typing_volume: 0.8,
+        max_call_duration: 1200,
         chatbot_api: 'https://d22yt2oewbcglh.cloudfront.net/v1',
         chatbot_key: 'REDACTED',
         organization_id: organizationId,
