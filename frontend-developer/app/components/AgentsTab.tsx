@@ -119,11 +119,11 @@ export default function AgentsTab({ }: AgentsTabProps) {
   // Initialize organization ID from user context
   useEffect(() => {
     console.log('🔍 Setting organization ID from user context:', { user, userClass });
-    
-    const orgId = (user as any)?.orgIdToOrgMemberInfo ? 
-      Object.keys((user as any).orgIdToOrgMemberInfo)[0] : 
+
+    const orgId = (user as any)?.orgIdToOrgMemberInfo ?
+      Object.keys((user as any).orgIdToOrgMemberInfo)[0] :
       null;
-    
+
     if (orgId && orgId !== currentOrganizationId) {
       console.log('✅ Setting organization ID from user.orgIdToOrgMemberInfo:', orgId);
       setCurrentOrganizationId(orgId);
@@ -148,6 +148,30 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const voiceSectionRef = useRef<HTMLDivElement>(null);
   const widgetSectionRef = useRef<HTMLDivElement>(null);
   const toolsSectionRef = useRef<HTMLDivElement>(null);
+
+  // Debug function to log current state
+  const logCurrentState = useCallback(() => {
+    console.log('=== Current AgentsTab State ===');
+    console.log('Selected Agent:', selectedAgent);
+    console.log('Model Config:', modelConfig);
+    console.log('Voice Config:', voiceConfig);
+    console.log('Transcriber Config:', transcriberConfig);
+    console.log('Widget Config:', widgetConfig);
+    console.log('Tools Config:', toolsConfig);
+    console.log('Active Config Tab:', activeConfigTab);
+    console.log('================================');
+  }, [selectedAgent, modelConfig, voiceConfig, transcriberConfig, widgetConfig, toolsConfig, activeConfigTab]);
+
+  // Debug function to check localStorage state
+  const logLocalStorageState = useCallback(() => {
+    console.log('=== localStorage State ===');
+    console.log('Model Config:', localStorage.getItem('modelConfigState'));
+    console.log('Voice Config:', localStorage.getItem('voiceConfigState'));
+    console.log('Transcriber Config:', localStorage.getItem('transcriberConfigState'));
+    console.log('Widget Config:', localStorage.getItem('widgetConfigState'));
+    console.log('Tools Config:', localStorage.getItem('toolsConfigState'));
+    console.log('==========================');
+  }, []);
   // Removed analysis, advanced section refs
 
   // Fetch agents from backend with debouncing and duplicate call prevention
@@ -158,9 +182,9 @@ export default function AgentsTab({ }: AgentsTabProps) {
       return;
     }
 
-      console.log('🔄 Starting fetchAgents...', { currentOrganizationId, organizationName });
-      isFetchingRef.current = true;
-      setAgentsError('');
+    console.log('🔄 Starting fetchAgents...', { currentOrganizationId, organizationName });
+    isFetchingRef.current = true;
+    setAgentsError('');
     const shouldShowFullLoader = !(agents && agents.length > 0 && agentsLoaded);
     if (shouldShowFullLoader) {
       setIsLoadingAgents(true);
@@ -168,41 +192,52 @@ export default function AgentsTab({ }: AgentsTabProps) {
       setIsRefreshingAgents(true);
     }
 
-      try {
-        const orgName = organizationName || currentOrganizationId || 'Unknown Organization';
-        console.log('🔍 Using organization name for fetchAgents:', orgName);
+    try {
+      const orgName = organizationName || currentOrganizationId || 'Unknown Organization';
+      console.log('🔍 Using organization name for fetchAgents:', orgName);
       const result = await agentConfigService.getAllAgents(orgName, signal);
-        console.log('📊 getAllAgents result:', result);
+      console.log('📊 getAllAgents result:', result);
 
-        if (result.success) {
-          if (result.data && result.data.length > 0) {
-            // Transform backend data to match our Agent interface
-          const transformedAgents: Agent[] = result.data.map((agent: any) => ({
-                id: agent.name || agent.id || `agent-${Date.now()}`,
-                name: agent.name || 'Unnamed Agent',
-                status: agent.status || 'draft',
-                model: agent.model || 'GPT-4o',
-                provider: agent.provider || 'OpenAI',
-                cost: agent.cost || '~$0.10/min',
-                latency: agent.latency || '~1000ms',
-                avatar: '🤖',
-                description: agent.description || 'AI Agent',
-                organization_id: agent.organization_id,
-                chatbot_api: agent.chatbot_api,
-                chatbot_key: agent.chatbot_key,
-                tts_config: agent.tts_config,
-                stt_config: agent.stt_config,
-                initial_message: agent.initial_message,
-                nudge_text: agent.nudge_text,
-                nudge_interval: agent.nudge_interval,
-                max_nudges: agent.max_nudges,
-                typing_volume: agent.typing_volume,
-                max_call_duration: agent.max_call_duration,
-                created_at: agent.created_at,
-                updated_at: agent.updated_at
-          }));
+      if (result.success) {
+        if (result.data && result.data.length > 0) {
+          console.log('🔍 Raw agent data from API:', result.data);
+          // Transform backend data to match our Agent interface
+          const transformedAgents: Agent[] = result.data.map((agent: any) => {
+            console.log('🔍 Processing agent:', agent.name, 'with data:', {
+              initial_message: agent.initial_message,
+              nudge_text: agent.nudge_text,
+              nudge_interval: agent.nudge_interval,
+              max_nudges: agent.max_nudges,
+              typing_volume: agent.typing_volume,
+              max_call_duration: agent.max_call_duration
+            });
+            return {
+              id: agent.name || agent.id || `agent-${Date.now()}`,
+              name: agent.name || 'Unnamed Agent',
+              status: agent.status || 'draft',
+              model: agent.model || 'GPT-4o',
+              provider: agent.provider || 'OpenAI',
+              cost: agent.cost || '~$0.10/min',
+              latency: agent.latency || '~1000ms',
+              avatar: '🤖',
+              description: agent.description || 'AI Agent',
+              organization_id: agent.organization_id,
+              chatbot_api: agent.chatbot_api,
+              chatbot_key: agent.chatbot_key,
+              tts_config: agent.tts_config,
+              stt_config: agent.stt_config,
+              initial_message: agent.initial_message,
+              nudge_text: agent.nudge_text,
+              nudge_interval: agent.nudge_interval,
+              max_nudges: agent.max_nudges,
+              typing_volume: agent.typing_volume,
+              max_call_duration: agent.max_call_duration,
+              created_at: agent.created_at,
+              updated_at: agent.updated_at
+            };
+          });
 
-            setAgents(transformedAgents);
+          setAgents(transformedAgents);
 
           // Preserve previously selected agent if still present
           const previouslySelectedId = selectedAgentIdRef.current;
@@ -213,98 +248,112 @@ export default function AgentsTab({ }: AgentsTabProps) {
             } else if (!previouslySelectedId) {
               setSelectedAgent(transformedAgents[0]);
             }
-            }
-          } else {
-          // No agents found - normal for new setup
-            setAgents([]);
-            setSelectedAgent(null);
           }
         } else {
-          // Don't show error for 405 Method Not Allowed - it's expected
-          if (result.message.includes('405') || result.message.includes('Method Not Allowed')) {
-            console.log('Backend does not support listing all agents. This is normal.');
-            setAgents([]);
-            setSelectedAgent(null);
-          } else {
-            setAgentsError(result.message);
-            setAgents(fallbackAgents);
+          // No agents found - normal for new setup
+          setAgents([]);
+          setSelectedAgent(null);
+        }
+      } else {
+        // Don't show error for 405 Method Not Allowed - it's expected
+        if (result.message.includes('405') || result.message.includes('Method Not Allowed')) {
+          console.log('Backend does not support listing all agents. This is normal.');
+          setAgents([]);
+          setSelectedAgent(null);
+        } else {
+          setAgentsError(result.message);
+          setAgents(fallbackAgents);
           if (fallbackAgents.length > 0 && !selectedAgentIdRef.current) {
-              setSelectedAgent(fallbackAgents[0]);
-            }
+            setSelectedAgent(fallbackAgents[0]);
           }
         }
-      } catch (error) {
+      }
+    } catch (error) {
       // Handle abort errors gracefully
       if (error instanceof DOMException && error.name === 'AbortError') {
         console.log('Fetch aborted for fetchAgents');
         return;
       }
-        // Don't show 405 errors as they are expected
-        if (error instanceof Error && error.message.includes('405')) {
-          console.log('Backend does not support listing all agents. This is normal.');
-          setAgents([]);
-          setSelectedAgent(null);
-        } else {
-          console.error('Error fetching agents:', error);
-          setAgentsError('Failed to load agents from server');
-          setAgents(fallbackAgents);
+      // Don't show 405 errors as they are expected
+      if (error instanceof Error && error.message.includes('405')) {
+        console.log('Backend does not support listing all agents. This is normal.');
+        setAgents([]);
+        setSelectedAgent(null);
+      } else {
+        console.error('Error fetching agents:', error);
+        setAgentsError('Failed to load agents from server');
+        setAgents(fallbackAgents);
         if (fallbackAgents.length > 0 && !selectedAgentIdRef.current) {
-            setSelectedAgent(fallbackAgents[0]);
-          }
+          setSelectedAgent(fallbackAgents[0]);
         }
-      } finally {
-        setIsLoadingAgents(false);
-      setIsRefreshingAgents(false);
-        setAgentsLoaded(true);
-        loadedOrganizationRef.current = currentOrganizationId || organizationName || '';
-        isFetchingRef.current = false;
-        console.log('🏁 fetchAgents completed');
       }
+    } finally {
+      setIsLoadingAgents(false);
+      setIsRefreshingAgents(false);
+      setAgentsLoaded(true);
+      loadedOrganizationRef.current = currentOrganizationId || organizationName || '';
+      isFetchingRef.current = false;
+      console.log('🏁 fetchAgents completed');
+    }
   }, [currentOrganizationId, organizationName]);
 
-  // Load configurations from localStorage
+  // Load configurations from localStorage only when no existing config is present
   const loadConfigurationsFromStorage = useCallback(() => {
     try {
-      // Load voice config
-      const savedVoiceConfig = localStorage.getItem('voiceConfigState');
-      if (savedVoiceConfig) {
-        const parsedVoiceConfig = JSON.parse(savedVoiceConfig);
-        setVoiceConfig(parsedVoiceConfig);
-        console.log('Loaded voice config from localStorage:', parsedVoiceConfig);
+      // Only load from localStorage if we don't have existing configurations
+      // This prevents overriding user changes or existing agent configurations
+
+      // Load voice config only if not already set
+      if (!voiceConfig) {
+        const savedVoiceConfig = localStorage.getItem('voiceConfigState');
+        if (savedVoiceConfig) {
+          const parsedVoiceConfig = JSON.parse(savedVoiceConfig);
+          setVoiceConfig(parsedVoiceConfig);
+          console.log('Loaded voice config from localStorage:', parsedVoiceConfig);
+        }
       }
 
-      // Load transcriber config
-      const savedTranscriberConfig = localStorage.getItem('transcriberConfigState');
-      if (savedTranscriberConfig) {
-        const parsedTranscriberConfig = JSON.parse(savedTranscriberConfig);
-        setTranscriberConfig(parsedTranscriberConfig);
-        console.log('Loaded transcriber config from localStorage:', parsedTranscriberConfig);
+      // Load transcriber config only if not already set
+      if (!transcriberConfig) {
+        const savedTranscriberConfig = localStorage.getItem('transcriberConfigState');
+        if (savedTranscriberConfig) {
+          const parsedTranscriberConfig = JSON.parse(savedTranscriberConfig);
+          setTranscriberConfig(parsedTranscriberConfig);
+          console.log('Loaded transcriber config from localStorage:', parsedTranscriberConfig);
+        }
       }
 
-      // Load model config
-      const savedModelConfig = localStorage.getItem('modelConfigState');
-      if (savedModelConfig) {
-        const parsedModelConfig = JSON.parse(savedModelConfig);
-        setModelConfig(parsedModelConfig);
-        console.log('Loaded model config from localStorage:', parsedModelConfig);
+      // Load model config only if not already set
+      if (!modelConfig) {
+        const savedModelConfig = localStorage.getItem('modelConfigState');
+        if (savedModelConfig) {
+          const parsedModelConfig = JSON.parse(savedModelConfig);
+          setModelConfig(parsedModelConfig);
+          console.log('Loaded model config from localStorage:', parsedModelConfig);
+        }
       }
 
-      // Load widget config
-      const savedWidgetConfig = localStorage.getItem('widgetConfigState');
-      if (savedWidgetConfig) {
-        const parsedWidgetConfig = JSON.parse(savedWidgetConfig);
-        setWidgetConfig(parsedWidgetConfig);
-        console.log('Loaded widget config from localStorage:', parsedWidgetConfig);
+      // Load widget config only if not already set
+      if (!widgetConfig) {
+        const savedWidgetConfig = localStorage.getItem('widgetConfigState');
+        if (savedWidgetConfig) {
+          const parsedWidgetConfig = JSON.parse(savedWidgetConfig);
+          setWidgetConfig(parsedWidgetConfig);
+          console.log('Loaded widget config from localStorage:', parsedWidgetConfig);
+        }
       }
     } catch (error) {
       console.warn('Failed to load configurations from localStorage:', error);
     }
-  }, []);
+  }, [voiceConfig, transcriberConfig, modelConfig, widgetConfig]);
 
-  // Load configurations from localStorage on mount
+  // Load configurations from localStorage on mount only if no existing configs
   useEffect(() => {
-    loadConfigurationsFromStorage();
-  }, [loadConfigurationsFromStorage]);
+    // Only load from localStorage if we don't have any existing configurations
+    if (!voiceConfig && !transcriberConfig && !modelConfig && !widgetConfig) {
+      loadConfigurationsFromStorage();
+    }
+  }, [loadConfigurationsFromStorage, voiceConfig, transcriberConfig, modelConfig, widgetConfig]);
 
   // Initial fetch when component mounts and organization is available
   useEffect(() => {
@@ -319,7 +368,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
   useEffect(() => {
     const currentOrg = currentOrganizationId || organizationName;
     const loadedOrg = loadedOrganizationRef.current;
-    
+
     if (currentOrg && !isLoadingAgents && currentOrg !== loadedOrg && agentsLoaded) {
       console.log('🔄 Organization changed, fetching agents:', { currentOrg, loadedOrg });
       setAgentsLoaded(false);
@@ -356,17 +405,31 @@ export default function AgentsTab({ }: AgentsTabProps) {
       if (selectedAgent.initial_message && (!modelConfig || modelConfig.firstMessage !== selectedAgent.initial_message)) {
         const modelConfigData = { firstMessage: selectedAgent.initial_message };
         setModelConfig(modelConfigData);
-        console.log('Updated model config:', modelConfigData);
+        console.log('✅ Updated model config:', modelConfigData);
       }
 
       if (selectedAgent.tts_config && JSON.stringify(voiceConfig) !== JSON.stringify(selectedAgent.tts_config)) {
-        console.log('Updated voice config:', selectedAgent.tts_config);
+        console.log('✅ Updated voice config:', selectedAgent.tts_config);
         setVoiceConfig(selectedAgent.tts_config);
       }
 
       if (selectedAgent.stt_config && JSON.stringify(transcriberConfig) !== JSON.stringify(selectedAgent.stt_config)) {
-        console.log('Updated transcriber config:', selectedAgent.stt_config);
+        console.log('✅ Updated transcriber config:', selectedAgent.stt_config);
         setTranscriberConfig(selectedAgent.stt_config);
+      }
+
+      // Update tools config if available
+      if (selectedAgent.initial_message || selectedAgent.nudge_text || selectedAgent.nudge_interval) {
+        const toolsConfigData = {
+          initialMessage: selectedAgent.initial_message || 'Hello! How can I help you today?',
+          nudgeText: selectedAgent.nudge_text || 'Hello, Are you still there?',
+          nudgeInterval: selectedAgent.nudge_interval || 15,
+          maxNudges: selectedAgent.max_nudges || 3,
+          typingVolume: selectedAgent.typing_volume || 0.8,
+          maxCallDuration: selectedAgent.max_call_duration || 300
+        };
+        setToolsConfig(toolsConfigData);
+        console.log('✅ Updated tools config:', toolsConfigData);
       }
     }
   }, [selectedAgent?.id]); // Only depend on the agent ID, not the entire object
@@ -443,7 +506,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
     // Create Dify agent and get API key immediately
     console.log('🚀 Creating Dify agent for new agent:', agentPrefix.trim());
     let difyApiKey = '';
-    
+
     try {
       const difyResult = await difyAgentService.createDifyAgent({
         agentName: agentPrefix.trim(),
@@ -478,56 +541,9 @@ export default function AgentsTab({ }: AgentsTabProps) {
         }
       }
     }
-    
+
     // Create agent with default configurations
-    const defaultSystemPrompt = `# Appointment Scheduling Agent Prompt
-
-## Identity & Purpose
-You are Riley, an appointment scheduling voice agent for Wellness Partners, a multi-specialty health clinic. Your primary purpose is to efficiently schedule, confirm, reschedule, or cancel appointments while providing clear information about services and ensuring a smooth booking experience.
-
-## Voice & Persona
-### Personality
-- Sound friendly, organized, and efficient
-- Project a helpful and patient demeanor, especially with elderly or confused callers
-- Maintain a warm but professional tone throughout the conversation
-- Convey confidence and competence in managing the scheduling system
-
-### Speech Characteristics
-- Speak clearly and at a moderate pace
-- Use simple, direct language that's easy to understand
-- Avoid medical jargon unless the caller uses it first
-- Be concise but thorough in your responses
-
-## Core Responsibilities
-1. **Appointment Scheduling**: Help callers book new appointments
-2. **Appointment Management**: Confirm, reschedule, or cancel existing appointments
-3. **Service Information**: Provide details about available services and providers
-4. **Calendar Navigation**: Check availability and suggest optimal time slots
-5. **Patient Support**: Address questions about appointments, policies, and procedures
-
-## Key Guidelines
-- Always verify caller identity before accessing appointment information
-- Confirm all appointment details (date, time, provider, service) before finalizing
-- Be proactive in suggesting alternative times if preferred slots are unavailable
-- Maintain patient confidentiality and follow HIPAA guidelines
-- Escalate complex medical questions to appropriate staff members
-- End calls with clear confirmation of next steps
-
-## Service Areas
-- Primary Care
-- Cardiology
-- Dermatology
-- Orthopedics
-- Pediatrics
-- Women's Health
-- Mental Health Services
-
-## Operating Hours
-- Monday-Friday: 8:00 AM - 6:00 PM
-- Saturday: 9:00 AM - 2:00 PM
-- Sunday: Closed
-
-Remember: You are the first point of contact for many patients. Your professionalism and helpfulness directly impact their experience with Wellness Partners.`;
+    const defaultSystemPrompt = 'Hello! How can I help you today?';
 
     const defaultConfig = {
       // Model Configuration
@@ -662,21 +678,34 @@ Remember: You are the first point of contact for many patients. Your professiona
           }
         }
 
+        // Get Dify configuration from localStorage if available
+        let difyConfig = null;
+        try {
+          const storedDifyConfig = localStorage.getItem(`difyConfig_${agentPrefix.trim()}`);
+          if (storedDifyConfig) {
+            difyConfig = JSON.parse(storedDifyConfig);
+            console.log('✅ Retrieved Dify config for agent creation:', difyConfig);
+          }
+        } catch (error) {
+          console.warn('⚠️ Failed to retrieve Dify config for agent creation:', error);
+        }
+
         // Create the agent object for UI
-    const newAgent: Agent = {
-      id: agentPrefix.trim(),
-      name: agentPrefix.trim(),
+        const newAgent: Agent = {
+          id: agentPrefix.trim(),
+          name: agentPrefix.trim(),
           status: 'active',
-      avatar: '🤖',
+          avatar: '🤖',
           description: 'AI Agent - Ready to use',
-      model: 'GPT-4o',
-      provider: 'OpenAI',
-      cost: '~$0.15/min',
-      latency: '~1050ms',
-      organization_id: orgName,
-          chatbot_api: difyApiKey ? process.env.NEXT_PUBLIC_CHATBOT_API_URL : undefined,
-      chatbot_key: difyApiKey || undefined,
-          modelApiKey: difyApiKey || undefined,
+          model: 'GPT-4o',
+          provider: 'OpenAI',
+          cost: '~$0.15/min',
+          latency: '~1050ms',
+          organization_id: orgName,
+          // Use Dify configuration if available, otherwise fallback to environment
+          chatbot_api: difyConfig?.chatbot_api || (difyApiKey ? process.env.NEXT_PUBLIC_CHATBOT_API_URL : undefined),
+          chatbot_key: difyConfig?.chatbot_key || difyApiKey || undefined,
+          modelApiKey: difyConfig?.chatbot_key || difyApiKey || undefined,
           systemPrompt: defaultSystemPrompt, // Set initial prompt
           initial_message: defaultConfig.toolsConfig.initialMessage,
           nudge_text: defaultConfig.toolsConfig.nudgeText,
@@ -687,6 +716,14 @@ Remember: You are the first point of contact for many patients. Your professiona
           tts_config: defaultConfig.voiceConfig,
           stt_config: defaultConfig.transcriberConfig
         };
+
+        // Log the final agent configuration
+        console.log('🔍 Final agent configuration for UI:', {
+          chatbot_api: newAgent.chatbot_api,
+          chatbot_key: newAgent.chatbot_key ? newAgent.chatbot_key.substring(0, 10) + '...' : 'NO KEY',
+          difyConfig_used: !!difyConfig,
+          difyApiKey_used: !!difyApiKey
+        });
 
         // Get the actual prompt from localStorage (saved when posted to Dify)
         try {
@@ -703,8 +740,8 @@ Remember: You are the first point of contact for many patients. Your professiona
           console.warn('⚠️ Failed to retrieve prompt from localStorage:', error);
         }
 
-    // Add the new agent to the agents list
-    setAgents(prev => [...prev, newAgent]);
+        // Add the new agent to the agents list
+        setAgents(prev => [...prev, newAgent]);
         setSelectedAgent(newAgent);
 
         // Set the configurations for the UI
@@ -730,7 +767,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       console.error('❌ Error creating agent:', error);
       alert(`❌ Error creating agent: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-    
+
     // Reset loading state
     setIsCreatingAgent(false);
   }, [agentPrefix, currentOrganizationId, organizationName, userClass]);
@@ -796,7 +833,7 @@ Remember: You are the first point of contact for many patients. Your professiona
     console.log('Agent ID:', agent.id);
     console.log('Agent chatbot_key:', agent.chatbot_key);
     console.log('Agent chatbot_api:', agent.chatbot_api);
-    
+
     // Pass agent configuration through URL parameters
     const params = new URLSearchParams();
     if (agent.chatbot_api) {
@@ -811,7 +848,7 @@ Remember: You are the first point of contact for many patients. Your professiona
     if (agent.name) {
       params.set('name', agent.name);
     }
-    
+
     const chatbotUrl = `/chatbot/${agent.id}?${params.toString()}`;
     console.log('Opening URL with config:', chatbotUrl);
     window.open(chatbotUrl, '_blank');
@@ -843,25 +880,40 @@ Remember: You are the first point of contact for many patients. Your professiona
   useEffect(() => {
     if (selectedAgent && agents.length > 0) {
       const updatedAgent = agents.find(agent => agent.id === selectedAgent.id);
-      if (updatedAgent && updatedAgent !== selectedAgent) {
-        console.log('🔄 Updating selected agent with fresh data from agents list:', updatedAgent);
-        setSelectedAgent(updatedAgent);
+      if (updatedAgent) {
+        // Check if the agent data has actually changed by comparing key fields
+        const hasChanges =
+          updatedAgent.initial_message !== selectedAgent.initial_message ||
+          updatedAgent.nudge_text !== selectedAgent.nudge_text ||
+          updatedAgent.nudge_interval !== selectedAgent.nudge_interval ||
+          updatedAgent.max_nudges !== selectedAgent.max_nudges ||
+          updatedAgent.typing_volume !== selectedAgent.typing_volume ||
+          updatedAgent.max_call_duration !== selectedAgent.max_call_duration ||
+          JSON.stringify(updatedAgent.tts_config) !== JSON.stringify(selectedAgent.tts_config) ||
+          JSON.stringify(updatedAgent.stt_config) !== JSON.stringify(selectedAgent.stt_config);
 
-        // Update configuration state with fresh data
-        if (updatedAgent.initial_message) {
-          const modelConfigData = { firstMessage: updatedAgent.initial_message };
-          setModelConfig(modelConfigData);
-          console.log('Updated model config:', modelConfigData);
-        }
+        if (hasChanges) {
+          console.log('🔄 Updating selected agent with fresh data from agents list:', updatedAgent);
+          setSelectedAgent(updatedAgent);
 
-        if (updatedAgent.tts_config) {
-          console.log('Updated voice config:', updatedAgent.tts_config);
-          setVoiceConfig(updatedAgent.tts_config);
-        }
+          // Update configuration state with fresh data
+          if (updatedAgent.initial_message) {
+            const modelConfigData = { firstMessage: updatedAgent.initial_message };
+            setModelConfig(modelConfigData);
+            console.log('Updated model config:', modelConfigData);
+          }
 
-        if (updatedAgent.stt_config) {
-          console.log('Updated transcriber config:', updatedAgent.stt_config);
-          setTranscriberConfig(updatedAgent.stt_config);
+          if (updatedAgent.tts_config) {
+            console.log('Updated voice config:', updatedAgent.tts_config);
+            setVoiceConfig(updatedAgent.tts_config);
+          }
+
+          if (updatedAgent.stt_config) {
+            console.log('Updated transcriber config:', updatedAgent.stt_config);
+            setTranscriberConfig(updatedAgent.stt_config);
+          }
+        } else {
+          console.log('ℹ️ Selected agent data unchanged, no update needed');
         }
       }
     }
@@ -907,12 +959,17 @@ Remember: You are the first point of contact for many patients. Your professiona
         toolsConfig: null
       };
     }
-    
+
     return {
       // Model config data
       modelConfig: {
         firstMessage: agent.initial_message || '',
         systemPrompt: agent.initial_message || '',
+        // Use the correct field names that ToolsConfig expects
+        provider: agent.provider || 'langgenius/openai/openai',
+        model: agent.model || 'gpt-4o',
+        api_key: agent.modelApiKey || agent.chatbot_key || '',
+        // Keep the old field names for backward compatibility with ModelConfig
         selectedModelProvider: agent.provider || 'OpenAI',
         selectedModel: agent.model || 'GPT-4o',
         modelApiKey: agent.modelApiKey || agent.chatbot_key || '',
@@ -926,7 +983,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       transcriberConfig: agent.stt_config || null,
       // Widget config data
       widgetConfig: {
-        difyApiUrl: agent.chatbot_api ? agent.chatbot_api.replace('/chat-messages', '') : process.env.NEXT_PUBLIC_DIFY_BASE_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1',
+        difyApiUrl: agent.chatbot_api ? agent.chatbot_api.replace('/chat-messages', '') : process.env.NEXT_PUBLIC_DIFY_BASE_URL || process.env.NEXT_PUBLIC_CHATBOT_API_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1',
         difyApiKey: agent.chatbot_key || ''
       },
       // Tools config data
@@ -943,68 +1000,64 @@ Remember: You are the first point of contact for many patients. Your professiona
 
   // Handle configuration changes from child components
   const handleModelConfigChange = useCallback((config: any) => {
+    console.log('🔄 Model config changed in AgentsTab:', config);
     setModelConfig(config);
+    console.log('🔄 ModelConfig state updated to:', config);
     // Save to localStorage
     try {
       localStorage.setItem('modelConfigState', JSON.stringify(config));
-      console.log('Model config saved to localStorage:', config);
+      console.log('✅ Model config saved to localStorage:', config);
     } catch (error) {
       console.warn('Failed to save model config to localStorage:', error);
     }
-    // Don't update selectedAgent here to avoid infinite loops
-    console.log('Model config changed:', config);
   }, []);
 
   const handleVoiceConfigChange = useCallback((config: any) => {
+    console.log('🔄 Voice config changed:', config);
     setVoiceConfig(config);
     // Save to localStorage
     try {
       localStorage.setItem('voiceConfigState', JSON.stringify(config));
-      console.log('Voice config saved to localStorage:', config);
+      console.log('✅ Voice config saved to localStorage:', config);
     } catch (error) {
       console.warn('Failed to save voice config to localStorage:', error);
     }
-    // Don't update selectedAgent here to avoid infinite loops
-    console.log('Voice config changed:', config);
   }, []);
 
   const handleTranscriberConfigChange = useCallback((config: any) => {
+    console.log('🔄 Transcriber config changed:', config);
     setTranscriberConfig(config);
     // Save to localStorage
     try {
       localStorage.setItem('transcriberConfigState', JSON.stringify(config));
-      console.log('Transcriber config saved to localStorage:', config);
+      console.log('✅ Transcriber config saved to localStorage:', config);
     } catch (error) {
       console.warn('Failed to save transcriber config to localStorage:', error);
     }
-    // Don't update selectedAgent here to avoid infinite loops
-    console.log('Transcriber config changed:', config);
   }, []);
 
   const handleWidgetConfigChange = useCallback((config: any) => {
+    console.log('🔄 Widget config changed:', config);
     setWidgetConfig(config);
     // Save to localStorage
     try {
       localStorage.setItem('widgetConfigState', JSON.stringify(config));
-      console.log('Widget config saved to localStorage:', config);
+      console.log('✅ Widget config saved to localStorage:', config);
     } catch (error) {
       console.warn('Failed to save widget config to localStorage:', error);
     }
-    // Don't update selectedAgent here to avoid infinite loops
-    console.log('Widget config changed:', config);
   }, []);
 
   const handleToolsConfigChange = useCallback((config: any) => {
+    console.log('🔄 Tools config changed:', config);
     setToolsConfig(config);
     // Save to localStorage
     try {
       localStorage.setItem('toolsConfigState', JSON.stringify(config));
-      console.log('Tools config saved to localStorage:', config);
+      console.log('✅ Tools config saved to localStorage:', config);
     } catch (error) {
       console.warn('Failed to save tools config to localStorage:', error);
     }
-    // Don't update selectedAgent here to avoid infinite loops
-    console.log('Tools config changed:', config);
   }, []);
 
   // Handle showing delete confirmation
@@ -1030,7 +1083,7 @@ Remember: You are the first point of contact for many patients. Your professiona
             organizationId: currentOrganizationId,
             // Note: We don't have the appId stored, but the script can still attempt cleanup
           });
-          
+
           if (difyResult.success) {
             console.log('✅ Dify agent deleted successfully');
           } else {
@@ -1042,7 +1095,8 @@ Remember: You are the first point of contact for many patients. Your professiona
       }
 
       // Delete the agent from the backend
-      const result = await agentConfigService.deleteAgent(agentToDelete.name, currentOrganizationId);
+      const orgName = organizationName || currentOrganizationId || 'Unknown Organization';
+      const result = await agentConfigService.deleteAgent(agentToDelete.name, orgName);
       if (result.success) {
         // Remove agent from local state
         setAgents(prev => prev.filter(a => a.id !== agentToDelete.id));
@@ -1072,19 +1126,10 @@ Remember: You are the first point of contact for many patients. Your professiona
 
   // Function to handle tab clicks and scroll to section
   const handleTabClick = useCallback((tabId: string) => {
-    // Save current configurations before switching tabs
-    if (activeConfigTab === 'voice' && voiceConfig) {
-      // Ensure voice config is saved
-      console.log('Saving voice config before tab switch:', voiceConfig);
-    }
+    console.log('🔄 Switching to tab:', tabId, 'from:', activeConfigTab);
 
     setActiveConfigTab(tabId);
     setIsDropdownOpen(false); // Close dropdown on mobile
-
-    // Refresh configurations from localStorage when switching tabs
-    setTimeout(() => {
-      loadConfigurationsFromStorage();
-    }, 50);
 
     // Scroll to the corresponding section
     setTimeout(() => {
@@ -1105,7 +1150,7 @@ Remember: You are the first point of contact for many patients. Your professiona
           break;
       }
     }, 100);
-  }, [activeConfigTab]); // Remove loadConfigurationsFromStorage from dependencies to prevent infinite loop
+  }, [activeConfigTab]);
 
 
   // Close dropdown when clicking outside
@@ -1149,9 +1194,11 @@ Remember: You are the first point of contact for many patients. Your professiona
     if (!selectedAgent) return;
 
     console.log('🔄 Manually refreshing selected agent configuration:', selectedAgent.name);
+    setIsRefreshingAgents(true);
 
     try {
-      const result = await agentConfigService.getAllAgents(currentOrganizationId);
+      const orgName = organizationName || currentOrganizationId || 'Unknown Organization';
+      const result = await agentConfigService.getAllAgents(orgName);
       if (result.success && result.data) {
         const updatedAgent = result.data.find((a: any) => a.name === selectedAgent.name);
         if (updatedAgent) {
@@ -1207,12 +1254,30 @@ Remember: You are the first point of contact for many patients. Your professiona
             console.log('🔄 Updated transcriber config:', transformedAgent.stt_config);
             setTranscriberConfig(transformedAgent.stt_config);
           }
+
+          // Update tools config as well
+          const toolsConfigData = {
+            initialMessage: transformedAgent.initial_message || 'Hello! How can I help you today?',
+            nudgeText: transformedAgent.nudge_text || 'Hello, Are you still there?',
+            nudgeInterval: transformedAgent.nudge_interval || 15,
+            maxNudges: transformedAgent.max_nudges || 3,
+            typingVolume: transformedAgent.typing_volume || 0.8,
+            maxCallDuration: transformedAgent.max_call_duration || 300
+          };
+          setToolsConfig(toolsConfigData);
+          console.log('🔄 Updated tools config:', toolsConfigData);
+        } else {
+          console.warn('⚠️ Agent not found in refresh response:', selectedAgent.name);
         }
+      } else {
+        console.warn('⚠️ Failed to fetch agents for refresh:', result.message);
       }
     } catch (error) {
       console.error('Error manually refreshing agent configuration:', error);
+    } finally {
+      setIsRefreshingAgents(false);
     }
-  }, [selectedAgent?.name]);
+  }, [selectedAgent?.name, organizationName, currentOrganizationId]);
 
   const configTabs = useMemo(() => [
     { id: 'model', label: 'Model', icon: Bot, color: 'from-blue-500 to-purple-600' },
@@ -1222,7 +1287,7 @@ Remember: You are the first point of contact for many patients. Your professiona
   ], []);
 
   if (showAgentCards) {
-  return (
+    return (
       <div className="w-full h-full max-w-full mx-auto p-2 sm:p-4 lg:p-6 min-h-0 overflow-hidden">
         <div className={`rounded-xl sm:rounded-2xl border shadow-xl backdrop-blur-sm h-full flex flex-col max-h-full ${isDarkMode ? 'bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800 border-gray-700/50' : 'bg-gradient-to-br from-white via-gray-50 to-white border-gray-200/50'}`}>
           <AgentCards
@@ -1231,18 +1296,18 @@ Remember: You are the first point of contact for many patients. Your professiona
             onOpenAgent={handleOpenAgent}
             onCreateAgent={handleCreateNewAgent}
             onRefreshAgents={handleRefreshAgents}
+            onDeleteAgent={handleDeleteAgent}
             isLoadingAgents={isLoadingAgents}
             isRefreshingAgents={isRefreshingAgents}
             agentsError={agentsError}
           />
-                    </div>
+        </div>
 
         {/* Agent Prefix Modal */}
         {showAgentPrefixModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className={`p-6 rounded-xl shadow-xl max-w-md w-full mx-4 ${
-              isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
-            }`}>
+            <div className={`p-6 rounded-xl shadow-xl max-w-md w-full mx-4 ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+              }`}>
               <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                 Create New Agent
               </h3>
@@ -1254,11 +1319,10 @@ Remember: You are the first point of contact for many patients. Your professiona
                 value={agentPrefix}
                 onChange={(e) => setAgentPrefix(e.target.value)}
                 placeholder="e.g., customer-support, sales-bot"
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
-                  isDarkMode
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                }`}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${isDarkMode
+                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                  }`}
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
                     handleAgentPrefixSubmit();
@@ -1266,60 +1330,58 @@ Remember: You are the first point of contact for many patients. Your professiona
                 }}
               />
               <div className="flex gap-3 mt-6">
-                  <button
-                    onClick={() => {
+                <button
+                  onClick={() => {
                     setShowAgentPrefixModal(false);
                     setAgentPrefix('');
                   }}
-                  className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
-                    isDarkMode
-                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
+                  className={`flex-1 px-4 py-2 rounded-lg transition-colors ${isDarkMode
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
                 >
                   Cancel
-                  </button>
-                  <button
+                </button>
+                <button
                   onClick={handleAgentPrefixSubmit}
                   disabled={!agentPrefix.trim() || isCreatingAgent}
                   className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
+                >
                   {isCreatingAgent ? 'Creating...' : 'Create Agent'}
-                  </button>
-                </div>
+                </button>
               </div>
             </div>
+          </div>
         )}
 
         {/* Success Modal */}
         {showSuccessModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className={`p-6 rounded-xl shadow-xl max-w-md w-full mx-4 ${
-              isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
-            }`}>
+            <div className={`p-6 rounded-xl shadow-xl max-w-md w-full mx-4 ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+              }`}>
               <div className="text-center">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  </div>
+                </div>
                 <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                   Agent Created Successfully!
                 </h3>
                 <p className={`text-sm mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                   Your new agent has been created and is ready for configuration.
-                      </p>
-                      <button
+                </p>
+                <button
                   onClick={() => setShowSuccessModal(false)}
                   className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                      >
+                >
                   Continue
-                      </button>
-                    </div>
-                          </div>
-                              </div>
+                </button>
+              </div>
+            </div>
+          </div>
         )}
-                            </div>
+      </div>
     );
   }
 
@@ -1328,46 +1390,73 @@ Remember: You are the first point of contact for many patients. Your professiona
       <div className={`rounded-xl sm:rounded-2xl border shadow-xl backdrop-blur-sm h-full flex flex-col max-h-full ${isDarkMode ? 'bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800 border-gray-700/50' : 'bg-gradient-to-br from-white via-gray-50 to-white border-gray-200/50'}`}>
         {/* Back Button */}
         <div className={`px-4 sm:px-6 lg:px-8 py-3 border-b ${isDarkMode ? 'border-gray-700/50 bg-gray-800/50' : 'border-gray-200/50 bg-gray-50/50'}`}>
-                            <button
+          <button
             onClick={handleBackToCards}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
-              isDarkMode
-                ? 'text-gray-300 hover:text-white hover:bg-gray-700'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${isDarkMode
+              ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Agents
-                            </button>
-            </div>
+          </button>
+        </div>
 
-            {/* Main Content - Agent Configuration */}
-            <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-              {selectedAgent ? (
-                <div className="flex-1 min-h-0 flex flex-col">
-                  {/* Agent Header */}
-                  <div className={`px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b ${isDarkMode ? 'border-gray-700/50 bg-gradient-to-r from-gray-800/50 to-gray-900' : 'border-gray-200/50 bg-gradient-to-r from-gray-50/50 to-white'}`}>
-                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 mb-3 sm:mb-4 text-center sm:text-left">
-                      <div className={`text-2xl sm:text-3xl p-2 sm:p-3 rounded-lg sm:rounded-xl flex-shrink-0 ${isDarkMode ? 'bg-gradient-to-r from-green-900/50 to-emerald-900/50' : 'bg-gradient-to-r from-green-100 to-emerald-100'}`}>
-                        {selectedAgent.avatar}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className={`text-lg sm:text-xl lg:text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{selectedAgent.name}</h3>
-                        <p className={`text-sm sm:text-base ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{selectedAgent.description}</p>
-                        <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>ID: {selectedAgent.id}</p>
-                      </div>
-                    </div>
+        {/* Main Content - Agent Configuration */}
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          {selectedAgent ? (
+            <div className="flex-1 min-h-0 flex flex-col">
+              {/* Agent Header */}
+              <div className={`px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b ${isDarkMode ? 'border-gray-700/50 bg-gradient-to-r from-gray-800/50 to-gray-900' : 'border-gray-200/50 bg-gradient-to-r from-gray-50/50 to-white'}`}>
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 mb-3 sm:mb-4 text-center sm:text-left">
+                  <div className={`text-2xl sm:text-3xl p-2 sm:p-3 rounded-lg sm:rounded-xl flex-shrink-0 ${isDarkMode ? 'bg-gradient-to-r from-green-900/50 to-emerald-900/50' : 'bg-gradient-to-r from-green-100 to-emerald-100'}`}>
+                    {selectedAgent.avatar}
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className={`text-lg sm:text-xl lg:text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{selectedAgent.name}</h3>
+                    <p className={`text-sm sm:text-base ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{selectedAgent.description}</p>
+                    <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>ID: {selectedAgent.id}</p>
+                  </div>
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <button
+                      onClick={() => setIsEditing(!isEditing)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isEditing
+                        ? 'bg-green-600 text-white hover:bg-green-700'
+                        : isDarkMode
+                          ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
+                          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                        }`}
+                    >
+                      <Settings className="h-4 w-4" />
+                      {isEditing ? 'Save' : 'Edit'}
+                    </button>
+                    <button
+                      onClick={refreshSelectedAgentConfig}
+                      disabled={isRefreshingAgents}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isRefreshingAgents
+                        ? 'opacity-50 cursor-not-allowed'
+                        : isDarkMode
+                          ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
+                          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                        }`}
+                    >
+                      <RefreshCw className={`h-4 w-4 ${isRefreshingAgents ? 'animate-spin' : ''}`} />
+                      Refresh
+                    </button>
+                  </div>
+                </div>
+              </div>
 
-                  {/* Configuration Tabs */}
-                  <div className={`border-b flex-shrink-0 ${isDarkMode ? 'border-gray-700/50 bg-gray-900' : 'border-gray-200/50 bg-white'}`}>
-                    {/* Mobile: Dropdown (xs to md) */}
-                    <div className="block md:hidden px-2 sm:px-3 py-2 dropdown-container">
-                      <div className="relative">
-                        <button
-                          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              {/* Configuration Tabs */}
+              <div className={`border-b flex-shrink-0 ${isDarkMode ? 'border-gray-700/50 bg-gray-900' : 'border-gray-200/50 bg-white'}`}>
+                {/* Mobile: Dropdown (xs to md) */}
+                <div className="block md:hidden px-2 sm:px-3 py-2 dropdown-container">
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                       className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border transition-colors text-sm font-medium ${isDarkMode
                         ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
                         : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -1380,14 +1469,14 @@ Remember: You are the first point of contact for many patients. Your professiona
                         {configTabs.find(tab => tab.id === activeConfigTab)?.label}
                       </span>
                       <ChevronDown className={`h-4 w-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                        </button>
-                        {isDropdownOpen && (
+                    </button>
+                    {isDropdownOpen && (
                       <div className={`absolute top-full left-0 right-0 mt-1 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 focus:outline-none z-10 ${isDarkMode ? 'bg-gray-700' : 'bg-white'}`}>
                         {configTabs.map((tab) => (
                           <a
-                                  key={tab.id}
+                            key={tab.id}
                             href="#"
-                                  onClick={() => handleTabClick(tab.id)}
+                            onClick={() => handleTabClick(tab.id)}
                             className={`flex items-center gap-2 px-4 py-2 text-sm ${activeConfigTab === tab.id
                               ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
                               : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600'
@@ -1397,19 +1486,19 @@ Remember: You are the first point of contact for many patients. Your professiona
                             {tab.label}
                           </a>
                         ))}
-                          </div>
-                        )}
                       </div>
-                    </div>
+                    )}
+                  </div>
+                </div>
 
                 {/* Desktop: Tabs (md and up) */}
                 <div className="hidden md:block">
                   <nav className="-mb-px flex space-x-8 px-4 sm:px-6 lg:px-8" aria-label="Tabs">
                     {configTabs.map((tab) => (
                       <a
-                                key={tab.id}
+                        key={tab.id}
                         href="#"
-                                onClick={() => handleTabClick(tab.id)}
+                        onClick={() => handleTabClick(tab.id)}
                         className={`
                           ${activeConfigTab === tab.id
                             ? `border-purple-500 text-purple-600 ${isDarkMode ? 'dark:text-purple-400' : ''}`
@@ -1423,32 +1512,47 @@ Remember: You are the first point of contact for many patients. Your professiona
                         {tab.label}
                       </a>
                     ))}
-                    </nav>
+                  </nav>
                 </div>
-                  </div>
+              </div>
 
-                  {/* Configuration Content */}
+              {/* Debug Section - only show in development */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="px-4 sm:px-6 lg:px-8 py-2 border-b border-gray-200 dark:border-gray-700">
+                  <button
+                    onClick={() => {
+                      logCurrentState();
+                      logLocalStorageState();
+                    }}
+                    className="px-3 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:hover:bg-yellow-900/50"
+                  >
+                    Debug State
+                  </button>
+                </div>
+              )}
+
+              {/* Configuration Content */}
               <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 lg:p-8">
                 {activeConfigTab === 'model' && (
-                        <ModelConfig
-                          ref={modelSectionRef}
+                  <ModelConfig
+                    ref={modelSectionRef}
                     agentName={selectedAgent.name}
-                          onConfigChange={handleModelConfigChange}
-                          existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).modelConfig : null}
-                          isEditing={isEditing}
-                          onConfigUpdated={fetchAgents}
-                        />
+                    onConfigChange={handleModelConfigChange}
+                    existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).modelConfig : null}
+                    isEditing={isEditing}
+                    onConfigUpdated={fetchAgents}
+                  />
                 )}
                 {activeConfigTab === 'voice' && (
-                        <VoiceConfig
-                          ref={voiceSectionRef}
+                  <VoiceConfig
+                    ref={voiceSectionRef}
                     agentName={selectedAgent.name}
-                          onConfigChange={handleVoiceConfigChange}
-                          onTranscriberConfigChange={handleTranscriberConfigChange}
-                          existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).voiceConfig : null}
-                          existingTranscriberConfig={selectedAgent ? getAgentConfigData(selectedAgent).transcriberConfig : null}
-                          isEditing={isEditing}
-                        />
+                    onConfigChange={handleVoiceConfigChange}
+                    onTranscriberConfigChange={handleTranscriberConfigChange}
+                    existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).voiceConfig : null}
+                    existingTranscriberConfig={selectedAgent ? getAgentConfigData(selectedAgent).transcriberConfig : null}
+                    isEditing={isEditing}
+                  />
                 )}
                 {activeConfigTab === 'widget' && (
                   <WidgetConfig
@@ -1456,49 +1560,55 @@ Remember: You are the first point of contact for many patients. Your professiona
                     agentName={selectedAgent.name}
                     onConfigChange={handleWidgetConfigChange}
                     existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).widgetConfig : null}
-                          isEditing={isEditing}
-                        />
+                    isEditing={isEditing}
+                  />
                 )}
                 {activeConfigTab === 'tools' && (
-                        <ToolsConfig
-                          ref={toolsSectionRef}
+                  <ToolsConfig
+                    key={`tools-${selectedAgent.id}-${selectedAgent.updated_at || Date.now()}`}
+                    ref={toolsSectionRef}
                     agentName={selectedAgent.name}
-                          onConfigChange={handleToolsConfigChange}
-                    existingConfig={toolsConfig}
-                          isEditing={isEditing}
-                          selectedAgent={selectedAgent}
-                        />
+                    onConfigChange={handleToolsConfigChange}
+                    existingConfig={selectedAgent ? getAgentConfigData(selectedAgent).toolsConfig : null}
+                    isEditing={isEditing}
+                    selectedAgent={selectedAgent}
+                    currentOrganizationId={currentOrganizationId}
+                    modelConfig={modelConfig}
+                    voiceConfig={voiceConfig}
+                    transcriberConfig={transcriberConfig}
+                    onAgentCreated={handleAgentCreated}
+                  />
                 )}
-                  </div>
-                </div>
-              ) : (
-                <div className="flex-1 min-h-0 flex items-center justify-center overflow-y-auto">
-                  <div className="p-4 sm:p-6 lg:p-8 xl:p-12 text-center max-w-md mx-auto">
-                    <div className={`p-3 sm:p-4 lg:p-6 rounded-lg sm:rounded-xl lg:rounded-2xl inline-block mb-3 sm:mb-4 lg:mb-6 ${isDarkMode ? 'bg-gradient-to-r from-gray-800 to-gray-700' : 'bg-gradient-to-r from-gray-100 to-gray-200'}`}>
-                      <Bot className={`h-6 w-6 sm:h-8 sm:w-8 lg:h-12 lg:w-12 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-                    </div>
-                    <h3 className={`text-base sm:text-lg lg:text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                      {agents.length === 0 ? 'Welcome to AI Agents!' : 'Select an Agent'}
-                    </h3>
-                    <p className={`mb-3 sm:mb-4 lg:mb-6 text-xs sm:text-sm lg:text-base ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                      {agents.length === 0
-                        ? 'Create your first AI agent to start building intelligent conversational experiences.'
-                        : 'Choose an agent from the sidebar to configure its settings'
-                      }
-                    </p>
-                    {agents.length === 0 && (
-                      <button
-                        onClick={handleCreateNewAgent}
-                        className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 bg-green-600 text-white rounded-lg sm:rounded-xl hover:bg-green-700 transition-colors font-semibold text-xs sm:text-sm lg:text-base"
-                      >
-                        Create Your First Agent
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex-1 min-h-0 flex items-center justify-center overflow-y-auto">
+              <div className="p-4 sm:p-6 lg:p-8 xl:p-12 text-center max-w-md mx-auto">
+                <div className={`p-3 sm:p-4 lg:p-6 rounded-lg sm:rounded-xl lg:rounded-2xl inline-block mb-3 sm:mb-4 lg:mb-6 ${isDarkMode ? 'bg-gradient-to-r from-gray-800 to-gray-700' : 'bg-gradient-to-r from-gray-100 to-gray-200'}`}>
+                  <Bot className={`h-6 w-6 sm:h-8 sm:w-8 lg:h-12 lg:w-12 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                </div>
+                <h3 className={`text-base sm:text-lg lg:text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  {agents.length === 0 ? 'Welcome to AI Agents!' : 'Select an Agent'}
+                </h3>
+                <p className={`mb-3 sm:mb-4 lg:mb-6 text-xs sm:text-sm lg:text-base ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  {agents.length === 0
+                    ? 'Create your first AI agent to start building intelligent conversational experiences.'
+                    : 'Choose an agent from the sidebar to configure its settings'
+                  }
+                </p>
+                {agents.length === 0 && (
+                  <button
+                    onClick={handleCreateNewAgent}
+                    className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 bg-green-600 text-white rounded-lg sm:rounded-xl hover:bg-green-700 transition-colors font-semibold text-xs sm:text-sm lg:text-base"
+                  >
+                    Create Your First Agent
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
+      </div>
+    </div>
   );
 }

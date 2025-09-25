@@ -20,7 +20,13 @@ export async function GET(
         );
         
         if (realAgent) {
-          console.log('🎯 Found real agent for chatbot:', realAgent.agent_prefix);
+          console.log('🎯 Found real agent for chatbot:', {
+            agent_prefix: realAgent.agent_prefix,
+            name: realAgent.name,
+            chatbot_api: realAgent.chatbot_api,
+            has_chatbot_key: !!realAgent.chatbot_key,
+            chatbot_key_preview: realAgent.chatbot_key ? realAgent.chatbot_key.substring(0, 10) + '...' : 'NO KEY'
+          });
           return NextResponse.json({
             success: true,
             data: realAgent,
@@ -33,13 +39,23 @@ export async function GET(
     }
 
     // Fallback to mock agent data if real agent not found
+    const fallbackChatbotApi = process.env.NEXT_PUBLIC_CHATBOT_API_URL || 'https://dlb20rrk0t1tl.cloudfront.net/v1';
+    const fallbackChatbotKey = process.env.NEXT_PUBLIC_CHATBOT_API_KEY || 'REDACTED';
+    
+    console.log('🔄 Using fallback agent configuration:', {
+      agentId,
+      chatbot_api: fallbackChatbotApi,
+      has_chatbot_key: !!fallbackChatbotKey,
+      chatbot_key_preview: fallbackChatbotKey ? fallbackChatbotKey.substring(0, 10) + '...' : 'NO KEY'
+    });
+    
     const agent = {
       _id: `agent_${Date.now()}`,
       agent_prefix: agentId,
       name: agentId, // Add name field for compatibility
       organization_id: 'default_org', // Use default organization for public access
-      chatbot_api: process.env.NEXT_PUBLIC_CHATBOT_API_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1',
-      chatbot_key: process.env.NEXT_PUBLIC_CHATBOT_API_KEY || 'REDACTED',
+      chatbot_api: fallbackChatbotApi,
+      chatbot_key: fallbackChatbotKey,
       tts_config: {
         provider: "cartesian",
         cartesian: {

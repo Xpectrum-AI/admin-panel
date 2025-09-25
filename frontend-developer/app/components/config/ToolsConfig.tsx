@@ -36,6 +36,46 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
 }, ref) => {
   const { isDarkMode } = useTheme();
 
+  // Debug logging for props
+  console.log('🔍 ToolsConfig received props:', {
+    modelConfig,
+    voiceConfig,
+    transcriberConfig,
+    isEditing,
+    selectedAgent: selectedAgent?.name,
+    existingConfig
+  });
+
+  // Debug modelConfig specifically
+  if (modelConfig) {
+    console.log('🔍 ToolsConfig modelConfig details:', {
+      provider: modelConfig.provider,
+      model: modelConfig.model,
+      selectedModelProvider: modelConfig.selectedModelProvider,
+      selectedModel: modelConfig.selectedModel,
+      api_key: modelConfig.api_key,
+      modelApiKey: modelConfig.modelApiKey
+    });
+  }
+
+  // Debug selectedAgent tools data specifically
+  if (selectedAgent) {
+    console.log('🔍 SelectedAgent tools data:', {
+      initial_message: selectedAgent.initial_message,
+      nudge_text: selectedAgent.nudge_text,
+      nudge_interval: selectedAgent.nudge_interval,
+      max_nudges: selectedAgent.max_nudges,
+      typing_volume: selectedAgent.typing_volume,
+      max_call_duration: selectedAgent.max_call_duration
+    });
+  }
+
+  // Track when component mounts and props change
+  useEffect(() => {
+    console.log('🔄 ToolsConfig component mounted or props changed');
+    console.log('🔄 Current modelConfig:', modelConfig);
+  }, [modelConfig, voiceConfig, transcriberConfig, isEditing]);
+
   // Tools configuration state
   const [initialMessage, setInitialMessage] = useState('Hello! How can I help you today?');
   const [nudgeText, setNudgeText] = useState('Hello, Are you still there?');
@@ -43,6 +83,18 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
   const [maxNudges, setMaxNudges] = useState(3);
   const [typingVolume, setTypingVolume] = useState(0.8);
   const [maxCallDuration, setMaxCallDuration] = useState(300);
+
+  // Debug current state values
+  useEffect(() => {
+    console.log('🔍 Current ToolsConfig state values:', {
+      initialMessage,
+      nudgeText,
+      nudgeInterval,
+      maxNudges,
+      typingVolume,
+      maxCallDuration
+    });
+  }, [initialMessage, nudgeText, nudgeInterval, maxNudges, typingVolume, maxCallDuration]);
 
   // Loading and error states
   const [isLoading, setIsLoading] = useState(false);
@@ -56,37 +108,116 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
   const [localModelConfig, setLocalModelConfig] = useState<any>(null);
   const [localTranscriberConfig, setLocalTranscriberConfig] = useState<any>(null);
 
-  // Update initial message when modelConfig changes
+  // Update form fields when modelConfig changes (only if no agent data available)
   useEffect(() => {
-    if (modelConfig?.firstMessage) {
-      setInitialMessage(modelConfig.firstMessage);
+    console.log('🔄 ToolsConfig - modelConfig changed:', modelConfig);
+    console.log('🔄 ToolsConfig - modelConfig type:', typeof modelConfig);
+    console.log('🔄 ToolsConfig - modelConfig keys:', modelConfig ? Object.keys(modelConfig) : 'null');
+
+    if (modelConfig) {
+      // Only update initial message from modelConfig if we don't have agent data
+      // Agent data (selectedAgent/existingConfig) should take priority
+      if (!selectedAgent && !existingConfig) {
+        if (modelConfig.firstMessage) {
+          console.log('✅ Using firstMessage from modelConfig:', modelConfig.firstMessage);
+          setInitialMessage(modelConfig.firstMessage);
+        } else if (modelConfig.systemPrompt) {
+          // If no firstMessage, use systemPrompt as initial message
+          console.log('✅ Using systemPrompt as initial message:', modelConfig.systemPrompt);
+          setInitialMessage(modelConfig.systemPrompt);
+        }
+      } else {
+        console.log('ℹ️ Agent data available, skipping modelConfig initial message update');
+      }
+
+      // Note: Other form fields (nudgeText, nudgeInterval, etc.) are not provided by ModelConfig
+      // They should come from existingConfig or selectedAgent
+      console.log('ℹ️ ModelConfig only provides model-related fields, tools fields come from existingConfig');
+    } else {
+      console.log('⚠️ No modelConfig provided');
     }
-  }, [modelConfig]);
+  }, [modelConfig, selectedAgent, existingConfig]);
 
   // Populate form fields when editing an existing agent
   useEffect(() => {
-    if (isEditing) {
-      if (existingConfig) {
-        // Use existingConfig if available (from getAgentConfigData)
-        console.log('🔄 ToolsConfig: Loading form with existing config:', existingConfig);
-        setInitialMessage(existingConfig.initialMessage || 'Hello! How can I help you today?');
-        setNudgeText(existingConfig.nudgeText || 'Hello, Are you still there?');
-        setNudgeInterval(existingConfig.nudgeInterval || 15);
-        setMaxNudges(existingConfig.maxNudges || 3);
-        setTypingVolume(existingConfig.typingVolume || 0.8);
-        setMaxCallDuration(existingConfig.maxCallDuration || 300);
-      } else if (existingAgent) {
-        // Fallback to existingAgent if existingConfig is not available
-        console.log('🔄 ToolsConfig: Loading form with existing agent:', existingAgent);
-        setInitialMessage(existingAgent.initial_message || 'Hello! How can I help you today?');
-        setNudgeText(existingAgent.nudge_text || 'Hello, Are you still there?');
-        setNudgeInterval(existingAgent.nudge_interval || 15);
-        setMaxNudges(existingAgent.max_nudges || 3);
-        setTypingVolume(existingAgent.typing_volume || 0.8);
-        setMaxCallDuration(existingAgent.max_call_duration || 300);
-      }
+    console.log('🔄 ToolsConfig - existingConfig changed:', existingConfig);
+    console.log('🔄 ToolsConfig - isEditing:', isEditing);
+    console.log('🔄 ToolsConfig - modelConfig present:', !!modelConfig);
+    console.log('🔄 ToolsConfig - selectedAgent:', selectedAgent);
+
+    // Always populate form fields when we have data, regardless of editing state
+    if (selectedAgent) {
+      console.log('🔄 ToolsConfig: Loading form with selectedAgent data:', selectedAgent);
+
+      // Always update initial message from selectedAgent (it has priority over modelConfig)
+      setInitialMessage(selectedAgent.initial_message || 'Hello! How can I help you today?');
+
+      // Update other tools configuration fields from selectedAgent
+      console.log('🔧 Setting form fields from selectedAgent:', {
+        nudge_text: selectedAgent.nudge_text,
+        nudge_interval: selectedAgent.nudge_interval,
+        max_nudges: selectedAgent.max_nudges,
+        typing_volume: selectedAgent.typing_volume,
+        max_call_duration: selectedAgent.max_call_duration
+      });
+
+      setNudgeText(selectedAgent.nudge_text || 'Hello, Are you still there?');
+      setNudgeInterval(selectedAgent.nudge_interval || 15);
+      setMaxNudges(selectedAgent.max_nudges || 3);
+      setTypingVolume(selectedAgent.typing_volume || 0.8);
+      setMaxCallDuration(selectedAgent.max_call_duration || 300);
+
+      console.log('✅ ToolsConfig form fields updated from selectedAgent:', {
+        initialMessage: selectedAgent.initial_message || 'Hello! How can I help you today?',
+        nudgeText: selectedAgent.nudge_text || 'Hello, Are you still there?',
+        nudgeInterval: selectedAgent.nudge_interval || 15,
+        maxNudges: selectedAgent.max_nudges || 3,
+        typingVolume: selectedAgent.typing_volume || 0.8,
+        maxCallDuration: selectedAgent.max_call_duration || 300
+      });
+    } else if (existingConfig) {
+      // Fallback to existingConfig if selectedAgent is not available
+      console.log('🔄 ToolsConfig: Loading form with existing config:', existingConfig);
+
+      // Always update initial message from existingConfig (it has priority over modelConfig)
+      setInitialMessage(existingConfig.initialMessage || 'Hello! How can I help you today?');
+
+      setNudgeText(existingConfig.nudgeText || 'Hello, Are you still there?');
+      setNudgeInterval(existingConfig.nudgeInterval || 15);
+      setMaxNudges(existingConfig.maxNudges || 3);
+      setTypingVolume(existingConfig.typingVolume || 0.8);
+      setMaxCallDuration(existingConfig.maxCallDuration || 300);
+
+      console.log('✅ ToolsConfig form fields updated from existingConfig:', {
+        initialMessage: existingConfig.initialMessage || 'Hello! How can I help you today?',
+        nudgeText: existingConfig.nudgeText || 'Hello, Are you still there?',
+        nudgeInterval: existingConfig.nudgeInterval || 15,
+        maxNudges: existingConfig.maxNudges || 3,
+        typingVolume: existingConfig.typingVolume || 0.8,
+        maxCallDuration: existingConfig.maxCallDuration || 300
+      });
     }
-  }, [isEditing, existingAgent, existingConfig]);
+  }, [selectedAgent, existingConfig, modelConfig]);
+
+  // Notify parent component of configuration changes
+  React.useEffect(() => {
+    const config = {
+      initialMessage,
+      nudgeText,
+      nudgeInterval,
+      maxNudges,
+      typingVolume,
+      maxCallDuration
+    };
+
+    // Save to localStorage
+    try {
+      localStorage.setItem('toolsConfigState', JSON.stringify(config));
+      console.log('✅ Tools config saved to localStorage:', config);
+    } catch (error) {
+      console.warn('Failed to save tools config to localStorage:', error);
+    }
+  }, [initialMessage, nudgeText, nudgeInterval, maxNudges, typingVolume, maxCallDuration]);
 
   // Debug logging for configuration data
   useEffect(() => {
@@ -101,13 +232,20 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
   }, [voiceConfig, transcriberConfig, existingAgent, existingConfig, isEditing, agentName]);
 
   // Load saved configuration from localStorage on component mount
+  // Only load from localStorage if we don't have selectedAgent data
   useEffect(() => {
+    // Skip localStorage loading if we have selectedAgent data (it takes priority)
+    if (selectedAgent) {
+      console.log('🔄 Skipping localStorage load - selectedAgent data takes priority');
+      return;
+    }
+
     try {
       // Load tools config
       const savedToolsConfig = localStorage.getItem('toolsConfigState');
       if (savedToolsConfig) {
         const parsedConfig = JSON.parse(savedToolsConfig);
-        console.log('Loading saved tools config:', parsedConfig);
+        console.log('Loading saved tools config from localStorage:', parsedConfig);
 
         if (parsedConfig.initialMessage) setInitialMessage(parsedConfig.initialMessage);
         if (parsedConfig.nudgeText) setNudgeText(parsedConfig.nudgeText);
@@ -122,7 +260,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
     } catch (error) {
       console.warn('Failed to load saved configs:', error);
     }
-  }, []); // Load once on mount
+  }, [selectedAgent]); // Re-run when selectedAgent changes
 
   // Function to refresh configurations from localStorage
   const refreshConfigurations = () => {
@@ -320,7 +458,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
 
       // Step 1: Use pre-generated Dify API key (if available)
       let difyApiKey = '';
-      
+
       // Check if this agent already has a Dify API key from the main creation flow
       const agentWithKey = selectedAgent || existingAgent;
       if (agentWithKey?.chatbot_key && agentWithKey.chatbot_key.startsWith('app-')) {
@@ -331,17 +469,21 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
         // Fallback: Try to create Dify agent if no key exists (for existing agents)
         const isNewAgentCreation = isCreating && !isEditing;
         console.log('🔍 Agent creation check:', { isCreating, isEditing, isNewAgentCreation, agentName, hasExistingKey: !!agentWithKey?.chatbot_key });
-        
+
         if (isNewAgentCreation) {
           console.log('🚀 Creating Dify agent for new agent (fallback):', agentName);
           setSuccessMessage('Creating Dify agent and generating API key...');
-          
+
           try {
+            // Use model configuration from ModelConfig if available, otherwise use defaults
+            const difyModelProvider = modelConfig?.provider || 'langgenius/openai/openai';
+            const difyModelName = modelConfig?.model || 'gpt-4o';
+
             const difyResult = await difyAgentService.createDifyAgent({
               agentName: agentName,
-              organizationId: currentOrganizationId,
-              modelProvider: 'langgenius/openai/openai',
-              modelName: 'gpt-4o'
+              organizationId: selectedAgent?.organization_id || currentOrganizationId,
+              modelProvider: difyModelProvider,
+              modelName: difyModelName
             });
 
             console.log('📋 Dify result:', difyResult);
@@ -352,7 +494,22 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
               setSuccessMessage('Dify agent creation failed, using fallback configuration...');
             } else {
               difyApiKey = difyResult.data.appKey;
+              // Store the Dify configuration for use in agent config
+              const difyConfig = {
+                chatbot_api: difyResult.data.serviceOrigin || process.env.NEXT_PUBLIC_CHATBOT_API_URL,
+                chatbot_key: difyResult.data.appKey
+              };
+
+              // Store in localStorage for persistence
+              try {
+                localStorage.setItem(`difyConfig_${agentName}`, JSON.stringify(difyConfig));
+                console.log('✅ Dify configuration stored in localStorage:', difyConfig);
+              } catch (error) {
+                console.warn('⚠️ Failed to store Dify config in localStorage:', error);
+              }
+
               console.log('✅ Dify agent created successfully with API key:', difyApiKey.substring(0, 10) + '...');
+              console.log('✅ Dify service origin:', difyResult.data.serviceOrigin);
               setSuccessMessage('Dify agent created! Configuring local agent...');
             }
           } catch (difyError) {
@@ -402,22 +559,22 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                   model: effectiveVoiceConfig.voice.toLowerCase(),
                   response_format: effectiveVoiceConfig.selectedModel || 'mp3',
                   voice: effectiveVoiceConfig.responseFormat || 'alloy',
-                  language: effectiveVoiceConfig.language ? 
-                    (effectiveVoiceConfig.language === 'English' ? 'en' : 
-                     effectiveVoiceConfig.language === 'Hindi' ? 'hi' : 
-                     effectiveVoiceConfig.language === 'Spanish' ? 'es' : 
-                     effectiveVoiceConfig.language === 'French' ? 'fr' : 
-                     effectiveVoiceConfig.language === 'German' ? 'de' : 
-                     effectiveVoiceConfig.language === 'Italian' ? 'it' : 
-                     effectiveVoiceConfig.language === 'Portuguese' ? 'pt' : 
-                     effectiveVoiceConfig.language === 'Russian' ? 'ru' : 
-                     effectiveVoiceConfig.language === 'Japanese' ? 'ja' : 
-                     effectiveVoiceConfig.language === 'Korean' ? 'ko' : 
-                     effectiveVoiceConfig.language === 'Chinese' ? 'zh' : 
-                     effectiveVoiceConfig.language === 'Dutch' ? 'nl' : 
-                     effectiveVoiceConfig.language === 'Polish' ? 'pl' : 
-                     effectiveVoiceConfig.language === 'Swedish' ? 'sv' : 
-                     effectiveVoiceConfig.language === 'Turkish' ? 'tr' : 'en') : 'en',
+                  language: effectiveVoiceConfig.language ?
+                    (effectiveVoiceConfig.language === 'English' ? 'en' :
+                      effectiveVoiceConfig.language === 'Hindi' ? 'hi' :
+                        effectiveVoiceConfig.language === 'Spanish' ? 'es' :
+                          effectiveVoiceConfig.language === 'French' ? 'fr' :
+                            effectiveVoiceConfig.language === 'German' ? 'de' :
+                              effectiveVoiceConfig.language === 'Italian' ? 'it' :
+                                effectiveVoiceConfig.language === 'Portuguese' ? 'pt' :
+                                  effectiveVoiceConfig.language === 'Russian' ? 'ru' :
+                                    effectiveVoiceConfig.language === 'Japanese' ? 'ja' :
+                                      effectiveVoiceConfig.language === 'Korean' ? 'ko' :
+                                        effectiveVoiceConfig.language === 'Chinese' ? 'zh' :
+                                          effectiveVoiceConfig.language === 'Dutch' ? 'nl' :
+                                            effectiveVoiceConfig.language === 'Polish' ? 'pl' :
+                                              effectiveVoiceConfig.language === 'Swedish' ? 'sv' :
+                                                effectiveVoiceConfig.language === 'Turkish' ? 'tr' : 'en') : 'en',
                   speed: effectiveVoiceConfig.speed
                 }
               };
@@ -443,22 +600,22 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                   tts_api_key: effectiveVoiceConfig.apiKey,
                   model: effectiveVoiceConfig.voice,
                   speed: effectiveVoiceConfig.speed,
-                  language: effectiveVoiceConfig.language ? 
-                    (effectiveVoiceConfig.language === 'English' ? 'en' : 
-                     effectiveVoiceConfig.language === 'French' ? 'fr' : 
-                     effectiveVoiceConfig.language === 'German' ? 'de' : 
-                     effectiveVoiceConfig.language === 'Spanish' ? 'es' : 
-                     effectiveVoiceConfig.language === 'Portuguese' ? 'pt' : 
-                     effectiveVoiceConfig.language === 'Chinese' ? 'zh' : 
-                     effectiveVoiceConfig.language === 'Japanese' ? 'ja' : 
-                     effectiveVoiceConfig.language === 'Hindi' ? 'hi' : 
-                     effectiveVoiceConfig.language === 'Italian' ? 'it' : 
-                     effectiveVoiceConfig.language === 'Korean' ? 'ko' : 
-                     effectiveVoiceConfig.language === 'Dutch' ? 'nl' : 
-                     effectiveVoiceConfig.language === 'Polish' ? 'pl' : 
-                     effectiveVoiceConfig.language === 'Russian' ? 'ru' : 
-                     effectiveVoiceConfig.language === 'Swedish' ? 'sv' : 
-                     effectiveVoiceConfig.language === 'Turkish' ? 'tr' : 'en') : 'en'
+                  language: effectiveVoiceConfig.language ?
+                    (effectiveVoiceConfig.language === 'English' ? 'en' :
+                      effectiveVoiceConfig.language === 'French' ? 'fr' :
+                        effectiveVoiceConfig.language === 'German' ? 'de' :
+                          effectiveVoiceConfig.language === 'Spanish' ? 'es' :
+                            effectiveVoiceConfig.language === 'Portuguese' ? 'pt' :
+                              effectiveVoiceConfig.language === 'Chinese' ? 'zh' :
+                                effectiveVoiceConfig.language === 'Japanese' ? 'ja' :
+                                  effectiveVoiceConfig.language === 'Hindi' ? 'hi' :
+                                    effectiveVoiceConfig.language === 'Italian' ? 'it' :
+                                      effectiveVoiceConfig.language === 'Korean' ? 'ko' :
+                                        effectiveVoiceConfig.language === 'Dutch' ? 'nl' :
+                                          effectiveVoiceConfig.language === 'Polish' ? 'pl' :
+                                            effectiveVoiceConfig.language === 'Russian' ? 'ru' :
+                                              effectiveVoiceConfig.language === 'Swedish' ? 'sv' :
+                                                effectiveVoiceConfig.language === 'Turkish' ? 'tr' : 'en') : 'en'
                 }
               };
               break;
@@ -522,8 +679,22 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
 
       // Complete agent configuration
       console.log('🔍 ToolsConfig - currentOrganizationId:', currentOrganizationId);
+      console.log('🔍 ToolsConfig - selectedAgent.organization_id:', selectedAgent?.organization_id);
+
+      // Get Dify configuration from localStorage if available
+      let difyConfig = null;
+      try {
+        const storedDifyConfig = localStorage.getItem(`difyConfig_${agentName}`);
+        if (storedDifyConfig) {
+          difyConfig = JSON.parse(storedDifyConfig);
+          console.log('✅ Retrieved Dify config from localStorage:', difyConfig);
+        }
+      } catch (error) {
+        console.warn('⚠️ Failed to retrieve Dify config from localStorage:', error);
+      }
+
       const completeConfig = {
-        organization_id: currentOrganizationId, // This should be organization name, not ID
+        organization_id: selectedAgent?.organization_id || currentOrganizationId, // Use agent's org ID first, fallback to current
         initial_message: initialMessage,
         nudge_text: nudgeText,
         nudge_interval: nudgeInterval,
@@ -532,17 +703,28 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
         max_call_duration: maxCallDuration,
         tts_config: ttsConfig,
         stt_config: sttConfig,
-        // Use chatbot configuration from ModelConfig (like TTS/STT use their configs)
-        chatbot_api: modelConfig?.chatbot_api || (difyApiKey ? process.env.NEXT_PUBLIC_CHATBOT_API_URL : undefined),
-        chatbot_key: modelConfig?.chatbot_key || difyApiKey || undefined
+        // Use Dify configuration if available, otherwise fallback to ModelConfig or environment
+        chatbot_api: difyConfig?.chatbot_api || modelConfig?.chatbot_api || (difyApiKey ? process.env.NEXT_PUBLIC_CHATBOT_API_URL : undefined),
+        chatbot_key: difyConfig?.chatbot_key || modelConfig?.chatbot_key || difyApiKey || undefined,
+        // Include system prompt from ModelConfig
+        system_prompt: modelConfig?.systemPrompt || modelConfig?.system_prompt
       };
 
       console.log('Complete config to send:', completeConfig);
       console.log('🔍 Organization ID being sent to API:', completeConfig.organization_id);
-      console.log('🔍 Chatbot config from ModelConfig:', { 
-        chatbot_api: modelConfig?.chatbot_api, 
-        chatbot_key: modelConfig?.chatbot_key 
+      console.log('🔍 Dify config being used:', {
+        chatbot_api: difyConfig?.chatbot_api,
+        chatbot_key: difyConfig?.chatbot_key ? difyConfig.chatbot_key.substring(0, 10) + '...' : 'NO KEY'
       });
+      console.log('🔍 Chatbot config from ModelConfig:', {
+        chatbot_api: modelConfig?.chatbot_api,
+        chatbot_key: modelConfig?.chatbot_key ? modelConfig.chatbot_key.substring(0, 10) + '...' : 'NO KEY'
+      });
+      console.log('🔍 Final chatbot config in completeConfig:', {
+        chatbot_api: completeConfig.chatbot_api,
+        chatbot_key: completeConfig.chatbot_key ? completeConfig.chatbot_key.substring(0, 10) + '...' : 'NO KEY'
+      });
+      console.log('🔍 Full ModelConfig received:', modelConfig);
 
       const result = await agentConfigService.configureAgent(agentName, completeConfig);
 
@@ -551,6 +733,27 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
         if (difyApiKey) {
           try {
             console.log('🔧 Posting model configuration to Dify...');
+
+            // Use model configuration from ModelConfig if available, otherwise use defaults
+            const modelProvider = modelConfig?.provider || 'langgenius/openai/openai';
+            const modelName = modelConfig?.model || 'gpt-4o';
+            const modelApiKey = modelConfig?.api_key || modelConfig?.modelApiKey || process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '';
+
+            console.log('🔍 ModelConfig fields:', {
+              provider: modelConfig?.provider,
+              model: modelConfig?.model,
+              selectedModelProvider: modelConfig?.selectedModelProvider,
+              selectedModel: modelConfig?.selectedModel,
+              api_key: modelConfig?.api_key,
+              modelApiKey: modelConfig?.modelApiKey
+            });
+
+            console.log('🔧 Using model config from ModelConfig:', {
+              provider: modelProvider,
+              model: modelName,
+              apiKey: modelApiKey ? modelApiKey.substring(0, 10) + '...' : 'NO KEY'
+            });
+
             const modelConfigResponse = await fetch('/api/model-config', {
               method: 'POST',
               headers: {
@@ -558,9 +761,9 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                 'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
               },
               body: JSON.stringify({
-                provider: 'langgenius/openai/openai',
-                model: 'gpt-4o',
-                api_key: process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '',
+                provider: modelProvider,
+                model: modelName,
+                api_key: modelApiKey,
                 chatbot_api_key: difyApiKey
               })
             });
@@ -572,54 +775,11 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
             }
 
             console.log('🔧 Posting prompt configuration to Dify...');
-            const defaultPrompt = `# Appointment Scheduling Agent Prompt
 
-## Identity & Purpose
-You are Riley, an appointment scheduling voice agent for Wellness Partners, a multi-specialty health clinic. Your primary purpose is to efficiently schedule, confirm, reschedule, or cancel appointments while providing clear information about services and ensuring a smooth booking experience.
+            // Use the prompt from ModelConfig if available, otherwise use default
+            const promptToUse = modelConfig?.systemPrompt || modelConfig?.system_prompt || 'Hello! How can I help you today?';
 
-## Voice & Persona
-### Personality
-- Sound friendly, organized, and efficient
-- Project a helpful and patient demeanor, especially with elderly or confused callers
-- Maintain a warm but professional tone throughout the conversation
-- Convey confidence and competence in managing the scheduling system
-
-### Speech Characteristics
-- Speak clearly and at a moderate pace
-- Use simple, direct language that's easy to understand
-- Avoid medical jargon unless the caller uses it first
-- Be concise but thorough in your responses
-
-## Core Responsibilities
-1. **Appointment Scheduling**: Help callers book new appointments
-2. **Appointment Management**: Confirm, reschedule, or cancel existing appointments
-3. **Service Information**: Provide details about available services and providers
-4. **Calendar Navigation**: Check availability and suggest optimal time slots
-5. **Patient Support**: Address questions about appointments, policies, and procedures
-
-## Key Guidelines
-- Always verify caller identity before accessing appointment information
-- Confirm all appointment details (date, time, provider, service) before finalizing
-- Be proactive in suggesting alternative times if preferred slots are unavailable
-- Maintain patient confidentiality and follow HIPAA guidelines
-- Escalate complex medical questions to appropriate staff members
-- End calls with clear confirmation of next steps
-
-## Service Areas
-- Primary Care
-- Cardiology
-- Dermatology
-- Orthopedics
-- Pediatrics
-- Women's Health
-- Mental Health Services
-
-## Operating Hours
-- Monday-Friday: 8:00 AM - 6:00 PM
-- Saturday: 9:00 AM - 2:00 PM
-- Sunday: Closed
-
-Remember: You are the first point of contact for many patients. Your professionalism and helpfulness directly impact their experience with Wellness Partners.`;
+            console.log('🔧 Using prompt from ModelConfig:', promptToUse.substring(0, 100) + '...');
 
             const promptConfigResponse = await fetch('/api/prompt-config', {
               method: 'POST',
@@ -628,7 +788,7 @@ Remember: You are the first point of contact for many patients. Your professiona
                 'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
               },
               body: JSON.stringify({
-                prompt: defaultPrompt,
+                prompt: promptToUse,
                 chatbot_api_key: difyApiKey
               })
             });
@@ -644,9 +804,9 @@ Remember: You are the first point of contact for many patients. Your professiona
         }
 
         setConfigStatus('success');
-        const successMsg = isEditing 
+        const successMsg = isEditing
           ? `Agent "${agentName}" updated successfully!`
-          : difyApiKey 
+          : difyApiKey
             ? `Agent "${agentName}" created successfully with Dify integration! API key generated.`
             : `Agent "${agentName}" created successfully!`;
         setSuccessMessage(successMsg);
@@ -694,12 +854,16 @@ Remember: You are the first point of contact for many patients. Your professiona
 
     try {
       console.log('🧪 Testing Dify integration for agent:', agentName);
-      
+
+      // Use model configuration from ModelConfig if available, otherwise use defaults
+      const testModelProvider = modelConfig?.provider || 'langgenius/openai/openai';
+      const testModelName = modelConfig?.model || 'gpt-4o';
+
       const difyResult = await difyAgentService.createDifyAgent({
         agentName: `${agentName}_test_${Date.now()}`,
-        organizationId: currentOrganizationId,
-        modelProvider: 'langgenius/openai/openai',
-        modelName: 'gpt-4o'
+        organizationId: selectedAgent?.organization_id || currentOrganizationId,
+        modelProvider: testModelProvider,
+        modelName: testModelName
       });
 
       console.log('📋 Dify test result:', difyResult);
