@@ -1123,7 +1123,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       transcriberConfig: agent.stt_config || null,
       // Widget config data
       widgetConfig: {
-        difyApiUrl: agent.chatbot_api ? agent.chatbot_api.replace('/chat-messages', '') : process.env.NEXT_PUBLIC_DIFY_BASE_URL || process.env.NEXT_PUBLIC_CHATBOT_API_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1',
+        difyApiUrl: agent.chatbot_api ? agent.chatbot_api.replace('/chat-messages', '') : process.env.NEXT_PUBLIC_DIFY_BASE_URL || process.env.NEXT_PUBLIC_CHATBOT_API_URL || 'https://dlb20rrk0t1tl.cloudfront.net/v1',
         difyApiKey: agent.chatbot_key || ''
       },
       // Tools config data

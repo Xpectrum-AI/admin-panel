@@ -64,8 +64,8 @@ export async function GET(
         max_nudges: 5,
         typing_volume: 0.9,
         max_call_duration: 600,
-        chatbot_api: 'https://d22yt2oewbcglh.cloudfront.net/v1',
-        chatbot_key: 'app-y6KZcETrVIOgJTMIHb06UUFG',
+        chatbot_api: 'https://dlb20rrk0t1tl.cloudfront.net/v1',
+        chatbot_key: 'app-n7DlZX2MOhaIncYyGJzUZ12g',
         organization_id: organizationId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -83,8 +83,8 @@ export async function GET(
         max_nudges: 3,
         typing_volume: 0.7,
         max_call_duration: 900,
-        chatbot_api: 'https://d22yt2oewbcglh.cloudfront.net/v1',
-        chatbot_key: 'app-y6KZcETrVIOgJTMIHb06UUFG',
+        chatbot_api: 'https://dlb20rrk0t1tl.cloudfront.net/v1',
+        chatbot_key: 'app-n7DlZX2MOhaIncYyGJzUZ12g',
         organization_id: organizationId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -102,8 +102,8 @@ export async function GET(
         max_nudges: 4,
         typing_volume: 0.8,
         max_call_duration: 1200,
-        chatbot_api: 'https://d22yt2oewbcglh.cloudfront.net/v1',
-        chatbot_key: 'app-y6KZcETrVIOgJTMIHb06UUFG',
+        chatbot_api: 'https://dlb20rrk0t1tl.cloudfront.net/v1',
+        chatbot_key: 'app-n7DlZX2MOhaIncYyGJzUZ12g',
         organization_id: organizationId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
