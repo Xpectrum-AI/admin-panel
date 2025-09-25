@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import { Bot, Send, Loader2, MessageCircle, Phone, PhoneOff, Mic, MicOff } from 'lucide-react';
+import { Bot, Send, Loader2, MessageCircle, Phone, PhoneOff, Mic, MicOff, MoreVertical, RotateCcw, X } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Message {
   id: string;
@@ -277,94 +279,290 @@ export default function ChatbotPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium">
-              {agentConfig.avatar ? (
-                <img src={agentConfig.avatar} alt={agentConfig.name || agentConfig.agent_prefix} className="w-full h-full object-cover rounded-full" />
-              ) : (
-                (agentConfig.name || agentConfig.agent_prefix || 'A').charAt(0).toUpperCase()
-              )}
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">{agentConfig.name || agentConfig.agent_prefix}</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">AI Assistant</p>
-            </div>
-          </div>
-          <button
-            onClick={clearChat}
-            className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
-          >
-            Clear Chat
-          </button>
+    <>
+      {/* Add CSS styles */}
+      <style jsx>{`
+        .markdown-content {
+          overflow-wrap: break-word;
+        }
+        .markdown-content p {
+          margin-bottom: 0.5rem;
+        }
+        .markdown-content h1 {
+          font-size: 1.5rem;
+          font-weight: 600;
+          margin-top: 1rem;
+          margin-bottom: 0.5rem;
+        }
+        .markdown-content h2 {
+          font-size: 1.25rem;
+          font-weight: 600;
+          margin-top: 1rem;
+          margin-bottom: 0.5rem;
+        }
+        .markdown-content h3 {
+          font-size: 1.125rem;
+          font-weight: 600;
+          margin-top: 1rem;
+          margin-bottom: 0.5rem;
+        }
+        .markdown-content a {
+          text-decoration: underline;
+        }
+        .markdown-content ul {
+          list-style-type: disc;
+          padding-left: 1.5rem;
+          margin-bottom: 0.5rem;
+        }
+        .markdown-content ol {
+          list-style-type: decimal;
+          padding-left: 1.5rem;
+          margin-bottom: 0.5rem;
+        }
+        .markdown-content li {
+          margin-bottom: 0.25rem;
+        }
+        .markdown-content pre {
+          background-color: rgba(0, 0, 0, 0.1);
+          padding: 0.5rem;
+          border-radius: 60px;
+          margin-bottom: 0.5rem;
+          overflow-x: auto;
+        }
+        .markdown-content code {
+          background-color: rgba(0, 0, 0, 0.1);
+          padding: 0.125rem 0.25rem;
+          border-radius: 60px;
+          font-family: monospace;
+          font-size: 0.875rem;
+        }
+        .markdown-content blockquote {
+          border-left: 4px solid;
+          padding-left: 0.5rem;
+          margin-left: 0.5rem;
+          font-style: italic;
+          margin-bottom: 0.5rem;
+          opacity: 0.8;
+        }
+        .markdown-content table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 0.5rem;
+        }
+        .markdown-content th, 
+        .markdown-content td {
+          border: 1px solid;
+          padding: 0.25rem 0.5rem;
+        }
+        .text-white .markdown-content pre,
+        .text-white .markdown-content code {
+          background-color: rgba(0, 0, 0, 0.3);
+        }
+        .text-white .markdown-content a {
+          color: #9dcdfb;
+        }
+        .typing-dots {
+          display: inline-flex;
+          align-items: center;
+          height: 20px;
+        }
+        .typing-dots span {
+          display: inline-block;
+          width: 8px;
+          height: 8px;
+          border-radius: 60px;
+          background-color: #718096;
+          margin: 0 2px;
+          transform: translateY(0);
+        }
+        .typing-dots span:nth-child(1) {
+          animation: dancing-dots 1.4s infinite 0s;
+        }
+        .typing-dots span:nth-child(2) {
+          animation: dancing-dots 1.4s infinite 0.2s;
+        }
+        .typing-dots span:nth-child(3) {
+          animation: dancing-dots 1.4s infinite 0.4s;
+        }
+        @keyframes dancing-dots {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-6px);
+          }
+        }
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in-up {
+          animation: fadeInUp 0.3s ease-out forwards;
+        }
+      `}</style>
+      
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        {/* Background Image */}
+        <div className="fixed top-0 left-0 w-full h-full z-0 overflow-hidden">
+          <div 
+            className="w-full h-full object-cover"
+            style={{ 
+              background: 'linear-gradient(0deg, #1E88E5 0%, #64B5F6 30%, #BBDEFB 60%, #FFFFFF 100%)',
+              opacity: 0.9,
+              pointerEvents: 'none',
+            }}
+          />
         </div>
-      </div>
-
-      {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="max-w-4xl mx-auto space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.type === 'user'
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
-                  : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700'
-                  }`}
-              >
-                <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-                <p className={`text-xs mt-1 ${message.type === 'user' ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
-                  }`}>
-                  {message.timestamp.toLocaleTimeString()}
-                </p>
+      
+      {/* Chat Interface */}
+      <div className="relative z-10">
+        <div 
+          className="bg-white rounded-[30px] shadow-2xl w-[460px] flex flex-col animate-fade-in-up"
+          style={{
+            background: 'linear-gradient(0deg, #1E88E5 0%, #64B5F6 30%, #BBDEFB 60%, #FFFFFF 100%)',
+            height: '720px',
+            animation: 'fadeInUp 0.3s ease-out forwards',
+          }}
+        >
+          {/* Header */}
+          <div className="text-white p-4 rounded-t-[30px] flex justify-between items-center"
+               style={{ backgroundColor: '#1E88E5' }}>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-white bg-opacity-20 flex items-center justify-center text-white font-medium">
+                {agentConfig.avatar ? (
+                  <img src={agentConfig.avatar} alt={agentConfig.name || agentConfig.agent_prefix} className="w-full h-full object-cover rounded-full" />
+                ) : (
+                  (agentConfig.name || agentConfig.agent_prefix || 'A').charAt(0).toUpperCase()
+                )}
+              </div>
+              <div className="flex flex-col">
+                <h1 className="text-lg font-semibold text-white">{agentConfig.name || agentConfig.agent_prefix}</h1>
+                <p className="text-xs text-blue-100">AI Assistant</p>
               </div>
             </div>
-          ))}
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="max-w-xs px-4 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                  <span className="text-sm">Thinking...</span>
+            <div className="relative">
+              <button
+                onClick={() => document.getElementById('menu-dropdown')?.classList.toggle('hidden')}
+                className="text-white hover:text-gray-200"
+              >
+                <MoreVertical className="h-6 w-6" />
+              </button>
+              <div 
+                id="menu-dropdown" 
+                className="hidden absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-lg z-50"
+              >
+                <div className="py-1">
+                  <button 
+                    onClick={() => {
+                      document.getElementById('menu-dropdown')?.classList.add('hidden');
+                      clearChat();
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                  >
+                    <RotateCcw className="h-5 w-5 mr-2" />
+                    Refresh Chat
+                  </button>
+                  <button 
+                    onClick={() => {
+                      document.getElementById('menu-dropdown')?.classList.add('hidden');
+                      window.close();
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                  >
+                    <X className="h-5 w-5 mr-2" />
+                    Close Chat
+                  </button>
                 </div>
               </div>
             </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
+          </div>
 
-      {/* Chat Input */}
-      <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={currentMessage}
-              onChange={(e) => setCurrentMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type your message here..."
-              disabled={isLoading}
-              className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-            />
-            <button
-              onClick={sendMessage}
-              disabled={!currentMessage.trim() || isLoading}
-              className={`px-6 py-3 rounded-lg transition-colors flex items-center gap-2 ${currentMessage.trim() && !isLoading
-                ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700'
-                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                }`}
-            >
-              <Send className="h-4 w-4" />
-            </button>
+          {/* Chat Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[80%] rounded-2xl p-3 ${
+                    message.type === 'user'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-white bg-opacity-80 text-gray-800'
+                  }`}
+                >
+                  <div className={`markdown-content text-sm ${message.type === 'user' ? 'text-white' : 'text-gray-800'}`}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {message.message}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="max-w-[80%] rounded-2xl p-3 bg-white bg-opacity-80">
+                  <div className="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Chat Input */}
+          <div className="p-4">
+            <div className="flex gap-2 items-center">
+              <textarea
+                value={currentMessage}
+                onChange={(e) => {
+                  setCurrentMessage(e.target.value);
+                  // Auto-resize textarea
+                  e.target.style.height = 'auto';
+                  const newHeight = Math.min(e.target.scrollHeight, 150);
+                  e.target.style.height = `${newHeight}px`;
+                }}
+                className="flex-1 border rounded-2xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-y-auto bg-white"
+                placeholder="Type your message..."
+                disabled={isLoading}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    if (!isLoading) sendMessage();
+                  }
+                }}
+                rows={2}
+                style={{ minHeight: '80px', maxHeight: '150px' }}
+              />
+              <button
+                onClick={sendMessage}
+                disabled={isLoading}
+                className={`px-4 py-2 rounded-2xl text-white ${
+                  isLoading
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-blue-500 hover:bg-blue-600"
+                } transition-colors duration-200`}
+              >
+                {isLoading ? (
+                  <Loader2 className="animate-spin h-5 w-5" />
+                ) : (
+                  <Send className="h-5 w-5" style={{ transform: 'rotate(45deg)' }} />
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
+    </>
   );
 }
