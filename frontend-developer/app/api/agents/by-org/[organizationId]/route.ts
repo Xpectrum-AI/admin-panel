@@ -65,7 +65,7 @@ export async function GET(
         typing_volume: 0.9,
         max_call_duration: 600,
         chatbot_api: process.env.NEXT_PUBLIC_CHATBOT_API_URL || process.env.NEXT_PUBLIC_DIFY_BASE_URL || 'https://dlb20rrk0t1tl.cloudfront.net/v1',
-        chatbot_key: 'app-y6KZcETrVIOgJTMIHb06UUFG',
+        chatbot_key: process.env.NEXT_PUBLIC_CHATBOT_API_KEY || 'app-n7DlZX2MOhaIncYyGJzUZ12g',
         organization_id: organizationId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -84,7 +84,7 @@ export async function GET(
         typing_volume: 0.7,
         max_call_duration: 900,
         chatbot_api: process.env.NEXT_PUBLIC_CHATBOT_API_URL || process.env.NEXT_PUBLIC_DIFY_BASE_URL || 'https://dlb20rrk0t1tl.cloudfront.net/v1',
-        chatbot_key: 'app-y6KZcETrVIOgJTMIHb06UUFG',
+        chatbot_key: process.env.NEXT_PUBLIC_CHATBOT_API_KEY || 'app-n7DlZX2MOhaIncYyGJzUZ12g',
         organization_id: organizationId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -103,7 +103,7 @@ export async function GET(
         typing_volume: 0.8,
         max_call_duration: 1200,
         chatbot_api: process.env.NEXT_PUBLIC_CHATBOT_API_URL || process.env.NEXT_PUBLIC_DIFY_BASE_URL || 'https://dlb20rrk0t1tl.cloudfront.net/v1',
-        chatbot_key: 'app-y6KZcETrVIOgJTMIHb06UUFG',
+        chatbot_key: process.env.NEXT_PUBLIC_CHATBOT_API_KEY || 'app-n7DlZX2MOhaIncYyGJzUZ12g',
         organization_id: organizationId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

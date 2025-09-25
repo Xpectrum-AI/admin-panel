@@ -64,10 +64,10 @@ function testDifyCredentials() {
   console.log('\n🧪 Test 3: Dify Credentials');
   
   const credentials = {
-    consoleOrigin: process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN,
-    adminEmail: process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL,
-    adminPassword: process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD,
-    workspaceId: process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID
+    consoleOrigin: process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN || 'https://agent-dev.xpectrum-ai.com',
+    adminEmail: process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL || 'ghosh.ishw@gmail.com',
+    adminPassword: process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD || 'Ghosh1@*123',
+    workspaceId: process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID || 'ffd028ab-6128-44fa-84cf-f3c12633e6da'
   };
 
   console.log('Dify Console Origin:', credentials.consoleOrigin || '❌ Missing');
@@ -81,9 +81,9 @@ async function testDifyLogin() {
   console.log('\n🧪 Test 4: Dify Login Endpoint');
   
   try {
-    const consoleOrigin = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN;
-    const adminEmail = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL;
-    const adminPassword = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD;
+    const consoleOrigin = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN || 'https://agent-dev.xpectrum-ai.com';
+    const adminEmail = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL || 'ghosh.ishw@gmail.com';
+    const adminPassword = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD || 'Ghosh1@*123';
     
     if (!consoleOrigin || !adminEmail || !adminPassword) {
       console.log('❌ Missing Dify credentials in environment variables');
