@@ -405,6 +405,13 @@ export default function ChatbotPage() {
         .animate-fade-in-up {
           animation: fadeInUp 0.3s ease-out forwards;
         }
+        textarea {
+          color: #1f2937 !important;
+          font-size: 14px;
+        }
+        textarea::placeholder {
+          color: #6b7280 !important;
+        }
       `}</style>
       
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -531,7 +538,7 @@ export default function ChatbotPage() {
                   const newHeight = Math.min(e.target.scrollHeight, 150);
                   e.target.style.height = `${newHeight}px`;
                 }}
-                className="flex-1 border rounded-2xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-y-auto bg-white"
+                className="flex-1 border border-gray-300 rounded-2xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none overflow-y-auto bg-white text-gray-900 placeholder-gray-500"
                 placeholder="Type your message..."
                 disabled={isLoading}
                 onKeyDown={(e) => {
