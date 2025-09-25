@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Test the Dify API directly
-    const difyServiceUrl = 'https://d22yt2oewbcglh.cloudfront.net/v1/chat-messages';
+    const difyServiceUrl = process.env.NEXT_PUBLIC_CHATBOT_API_URL || process.env.NEXT_PUBLIC_DIFY_BASE_URL + '/chat-messages' || 'https://dlb20rrk0t1tl.cloudfront.net/v1/chat-messages';
     const requestBody = {
       inputs: {},
       query: message,

@@ -37,7 +37,7 @@ export async function POST(
     console.log('🔍 Chatbot API values received:', { chatbot_api, chatbot_key });
 
     // Call the real backend service to save to MongoDB
-    const backendUrl = process.env.NEXT_PUBLIC_LIVE_API_URL || 'https://d25b4i9wbz6f8t.cloudfront.net';
+    const backendUrl = process.env.NEXT_PUBLIC_LIVE_API_URL || 'https://d2ref4sfj4q82j.cloudfront.net';
     const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
 
     if (!apiKey) {
@@ -46,21 +46,38 @@ export async function POST(
     }
 
     // Prepare the complete agent data for the backend
+    // Handle TTS config - swap values if provided, or use swapped defaults
+    let processedTtsConfig;
+    if (tts_config && tts_config.openai) {
+      // If TTS config is provided, swap the values to compensate for backend swapping
+      processedTtsConfig = {
+        ...tts_config,
+        openai: {
+          ...tts_config.openai,
+          voice: tts_config.openai.response_format,  // Swap: send response_format as voice
+          response_format: tts_config.openai.voice   // Swap: send voice as response_format
+        }
+      };
+    } else {
+      // Use swapped defaults
+      processedTtsConfig = {
+        provider: 'openai',
+        openai: {
+          api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
+          voice: 'mp3',  // Swap: send mp3 as voice so backend swaps it to response_format
+          response_format: 'alloy',  // Swap: send alloy as response_format so backend swaps it to voice
+          quality: 'standard',
+          speed: 1.0
+        }
+      };
+    }
+
     const agentData = {
       agent_prefix: agentName,
       organization_id: organization_id || null,
       chatbot_api: chatbot_api !== undefined ? chatbot_api : (process.env.NEXT_PUBLIC_CHATBOT_API_URL || ''),
       chatbot_key: chatbot_key !== undefined ? chatbot_key : (process.env.NEXT_PUBLIC_CHATBOT_API_KEY || ''),
-      tts_config: tts_config || {
-        provider: 'openai',
-        openai: {
-          api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
-          voice: 'alloy',
-          response_format: 'mp3',
-          quality: 'standard',
-          speed: 1.0
-        }
-      },
+      tts_config: processedTtsConfig,
       stt_config: stt_config || {
         provider: 'deepgram',
         deepgram: {
