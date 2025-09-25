@@ -29,9 +29,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
   const lastTranscriberConfigRef = useRef<string>('');
 
   const transcriberProviders = {
-    'Deepgram': ['nova-2', 'nova-2-general', 'nova-2-meeting', 'nova-2-phonecall', 'nova-2-finance', 'nova-2-conversationalai', 'nova-2-video', 'nova-2-medical', 'nova-2-drivethru', 'nova-2-automotivesales', 'nova-2-legal', 'nova-2-ppc', 'nova-2-government', 'nova-2-entertainment', 'nova-2-streaming', 'nova-2-restaurants'],
-    'Whisper': ['whisper-1', 'whisper-large-v3'],
-    'Groq': ['llama-3.1-8b', 'llama-3.1-70b', 'mixtral-8x7b']
+    'Deepgram': ['nova-2', 'nova-2-general', 'nova-2-meeting', 'nova-2-phonecall', 'nova-2-finance', 'nova-2-conversationalai', 'nova-2-video', 'nova-2-medical', 'nova-2-drivethru', 'nova-2-automotivesales', 'nova-2-legal', 'nova-2-ppc', 'nova-2-government', 'nova-2-entertainment', 'nova-2-streaming', 'nova-2-restaurants']
   };
 
   // Load state from localStorage on component mount
@@ -178,15 +176,8 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
   useEffect(() => {
     const defaultApiKeys = agentConfigService.getFullApiKeys();
 
-    // Set default API key based on selected provider
-    switch (selectedTranscriberProvider) {
-      case 'Deepgram':
-        setApiKey(defaultApiKeys.deepgram || '');
-        break;
-      case 'Whisper':
-        setApiKey(defaultApiKeys.whisper || '');
-        break;
-    }
+    // Set default API key for Deepgram (only supported provider)
+    setApiKey(defaultApiKeys.deepgram || '');
   }, [selectedTranscriberProvider]);
 
   // Helper function to get display value for API key
@@ -202,34 +193,22 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
     
     let actualApiKey = apiKey;
     
-    // Use environment variable API key if the state is empty
+    // Use environment variable API key if the state is empty (Deepgram only)
     if (!actualApiKey) {
-      switch (selectedTranscriberProvider) {
-        case 'Deepgram':
-          actualApiKey = defaultApiKeys.deepgram || '';
-          break;
-        case 'Whisper':
-          actualApiKey = defaultApiKeys.whisper || '';
-          break;
-      }
+      actualApiKey = defaultApiKeys.deepgram || '';
     }
 
-    // Convert UI format to backend format
+    // Convert UI format to backend format (only Deepgram supported)
     const backendConfig = {
-      provider: selectedTranscriberProvider === 'Deepgram' ? 'deepgram' : 'whisper',
-      deepgram: selectedTranscriberProvider === 'Deepgram' ? {
+      provider: 'deepgram',
+      deepgram: {
         api_key: actualApiKey,
         model: selectedModel,
         language: selectedLanguage,
         punctuate: punctuateEnabled,
         smart_format: smartFormatEnabled,
         interim_results: interimResultEnabled
-      } : null,
-      whisper: selectedTranscriberProvider === 'Whisper' ? {
-        api_key: actualApiKey,
-        model: selectedModel,
-        language: selectedLanguage === 'multi' ? null : selectedLanguage
-      } : null
+      }
     };
 
     // Save to localStorage in UI format
@@ -312,8 +291,8 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
 
     setSelectedTranscriberProvider(provider);
 
-    // Reset model to first available model for the new provider
-    const providerData = transcriberProviders[provider as keyof typeof transcriberProviders];
+    // Reset model to first available model for Deepgram
+    const providerData = transcriberProviders['Deepgram'];
     if (providerData && providerData.length > 0) {
       setSelectedModel(providerData[0]);
       saveStateToLocalStorage({
@@ -354,19 +333,13 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
               <select
                 value={selectedTranscriberProvider}
                 onChange={(e) => handleProviderChange(e.target.value)}
-                disabled={!isEditing}
-                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
-                  ? isDarkMode
-                    ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
-                    : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
-                  : isDarkMode
-                    ? 'bg-gray-700/50 border-gray-600 text-gray-200'
-                    : 'bg-gray-50 border-gray-200 text-gray-900'
-                  }`}
+                disabled={true}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${isDarkMode
+                  ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
               >
                 <option value="Deepgram">Deepgram</option>
-                <option value="Whisper">Whisper</option>
-                <option value="Groq">Groq</option>
               </select>
             </div>
 
@@ -454,112 +427,114 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
       </div>
 
 
-      {/* Additional Configuration */}
-      <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
-        <div className="flex items-center gap-3 mb-4">
-          <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-purple-900/50' : 'bg-purple-100'}`}>
-            <Settings className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+      {/* Additional Configuration - Only show for Deepgram */}
+      {selectedTranscriberProvider === 'Deepgram' && (
+        <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
+          <div className="flex items-center gap-3 mb-4">
+            <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-purple-900/50' : 'bg-purple-100'}`}>
+              <Settings className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+            </div>
+            <div>
+              <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Additional Settings</h4>
+            </div>
           </div>
-          <div>
-            <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Additional Settings</h4>
+
+          <div className="space-y-4">
+            {/* Punctuate Toggle */}
+            <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h5 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Punctuate</h5>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setPunctuateEnabled(!punctuateEnabled);
+                    saveStateToLocalStorage({ punctuateEnabled: !punctuateEnabled });
+                  }}
+                  disabled={!isEditing}
+                  className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
+                    ? 'opacity-50 cursor-not-allowed'
+                    : punctuateEnabled
+                      ? (isDarkMode ? 'bg-green-600' : 'bg-green-500')
+                      : (isDarkMode ? 'bg-gray-600' : 'bg-gray-300')
+                    }`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out ${punctuateEnabled ? 'right-1' : 'left-1'}`}></div>
+                </button>
+              </div>
+            </div>
+
+            {/* Smart Format Toggle */}
+            <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h5 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Smart Format</h5>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setSmartFormatEnabled(!smartFormatEnabled);
+                    saveStateToLocalStorage({ smartFormatEnabled: !smartFormatEnabled });
+                  }}
+                  disabled={!isEditing}
+                  className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
+                    ? 'opacity-50 cursor-not-allowed'
+                    : smartFormatEnabled
+                      ? (isDarkMode ? 'bg-green-600' : 'bg-green-500')
+                      : (isDarkMode ? 'bg-gray-600' : 'bg-gray-300')
+                    }`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out ${smartFormatEnabled ? 'right-1' : 'left-1'}`}></div>
+                </button>
+              </div>
+            </div>
+
+            {/* Interim Result Toggle */}
+            <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h5 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Interim Results</h5>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setInterimResultEnabled(!interimResultEnabled);
+                    saveStateToLocalStorage({ interimResultEnabled: !interimResultEnabled });
+                  }}
+                  disabled={!isEditing}
+                  className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
+                    ? 'opacity-50 cursor-not-allowed'
+                    : interimResultEnabled
+                      ? (isDarkMode ? 'bg-green-600' : 'bg-green-500')
+                      : (isDarkMode ? 'bg-gray-600' : 'bg-gray-300')
+                    }`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out ${interimResultEnabled ? 'right-1' : 'left-1'}`}></div>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-
-        <div className="space-y-4">
-          {/* Punctuate Toggle */}
-          <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-                  </svg>
-                </div>
-                <div>
-                  <h5 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Punctuate</h5>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setPunctuateEnabled(!punctuateEnabled);
-                  saveStateToLocalStorage({ punctuateEnabled: !punctuateEnabled });
-                }}
-                disabled={!isEditing}
-                className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
-                  ? 'opacity-50 cursor-not-allowed'
-                  : punctuateEnabled
-                    ? (isDarkMode ? 'bg-green-600' : 'bg-green-500')
-                    : (isDarkMode ? 'bg-gray-600' : 'bg-gray-300')
-                  }`}
-              >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out ${punctuateEnabled ? 'right-1' : 'left-1'}`}></div>
-              </button>
-            </div>
-          </div>
-
-          {/* Smart Format Toggle */}
-          <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <h5 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Smart Format</h5>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setSmartFormatEnabled(!smartFormatEnabled);
-                  saveStateToLocalStorage({ smartFormatEnabled: !smartFormatEnabled });
-                }}
-                disabled={!isEditing}
-                className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
-                  ? 'opacity-50 cursor-not-allowed'
-                  : smartFormatEnabled
-                    ? (isDarkMode ? 'bg-green-600' : 'bg-green-500')
-                    : (isDarkMode ? 'bg-gray-600' : 'bg-gray-300')
-                  }`}
-              >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out ${smartFormatEnabled ? 'right-1' : 'left-1'}`}></div>
-              </button>
-            </div>
-          </div>
-
-          {/* Interim Result Toggle */}
-          <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <div>
-                  <h5 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Interim Results</h5>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setInterimResultEnabled(!interimResultEnabled);
-                  saveStateToLocalStorage({ interimResultEnabled: !interimResultEnabled });
-                }}
-                disabled={!isEditing}
-                className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
-                  ? 'opacity-50 cursor-not-allowed'
-                  : interimResultEnabled
-                    ? (isDarkMode ? 'bg-green-600' : 'bg-green-500')
-                    : (isDarkMode ? 'bg-gray-600' : 'bg-gray-300')
-                  }`}
-              >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out ${interimResultEnabled ? 'right-1' : 'left-1'}`}></div>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* Configure Button */}
       <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>

@@ -22,11 +22,11 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
   const [speedValue, setSpeedValue] = useState(0.0);
   const [apiKey, setApiKey] = useState('');
   const [voiceId, setVoiceId] = useState('');
-  const [selectedVoice, setSelectedVoice] = useState('tts-1');
+  const [selectedModel, setSelectedModel] = useState('tts-1');
   const [stability, setStability] = useState(0.5);
   const [similarityBoost, setSimilarityBoost] = useState(0.5);
-  const [responseFormat, setResponseFormat] = useState('alloy');
-  const [selectedModel, setSelectedModel] = useState('mp3');
+  const [selectedVoice, setSelectedVoice] = useState('alloy');
+  const [responseFormat, setResponseFormat] = useState('mp3');
   const [isConfiguring, setIsConfiguring] = useState(false);
   const [configStatus, setConfigStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [isUserChangingProvider, setIsUserChangingProvider] = useState(false);
@@ -960,11 +960,11 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
         language: cartesiaReverseLanguageMapping[selectedLanguage as keyof typeof cartesiaReverseLanguageMapping] || 'en'
       } : null,
       openai: selectedVoiceProvider === 'OpenAI' ? {
-        model: selectedVoice,
+        model: selectedModel,
         speed: speedValue,
         api_key: actualApiKey,
-        voice: responseFormat,
-        response_format: selectedModel,
+        voice: selectedVoice,
+        response_format: responseFormat,
         language: openaiReverseLanguageMapping[selectedLanguage as keyof typeof openaiReverseLanguageMapping] || 'en'
       } : null,
       elevenlabs: selectedVoiceProvider === '11Labs' ? {
@@ -1805,16 +1805,17 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
           </div>
         </div>
 
-        {/* Additional Transcriber Settings */}
-        <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
-          <div className="flex items-center gap-3 mb-4">
-            <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-purple-900/50' : 'bg-purple-100'}`}>
-              <Settings className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+        {/* Additional Transcriber Settings - Only show for Deepgram */}
+        {selectedTranscriberProvider === 'Deepgram' && (
+          <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-purple-900/50' : 'bg-purple-100'}`}>
+                <Settings className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+              </div>
+              <div>
+                <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Additional Settings</h4>
+              </div>
             </div>
-            <div>
-              <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Additional Settings</h4>
-            </div>
-          </div>
 
           <div className="space-y-4">
             {/* Punctuate Toggle */}
@@ -1908,6 +1909,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
             </div>
           </div>
         </div>
+        )}
 
         {/* Transcriber Configure Button */}
         <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
