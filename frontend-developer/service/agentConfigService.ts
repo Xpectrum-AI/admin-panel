@@ -489,6 +489,40 @@ export const agentConfigService = {
     }
   },
 
+  // Delete agent by name using FastAPI endpoint
+  async deleteAgentByName(agentName: string): Promise<{ success: boolean; message: string }> {
+    try {
+      console.log('🚀 Deleting agent by name:', agentName);
+      
+      const response = await fetch(`/api/agents/delete/${agentName}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Successfully deleted agent by name:', agentName, 'Response:', result);
+      
+      return {
+        success: true,
+        message: result.message || 'Agent deleted successfully'
+      };
+    } catch (error) {
+      console.error('Delete agent by name error:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to delete agent by name'
+      };
+    }
+  },
+
   // Get default API keys (masked for display)
   getDefaultApiKeys() {
     // Environment variables are accessed directly
