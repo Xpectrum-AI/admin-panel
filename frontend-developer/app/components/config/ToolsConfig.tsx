@@ -1,8 +1,7 @@
 'use client';
 
 import React, { forwardRef, useState, useEffect } from 'react';
-import { Wrench, CheckCircle, AlertCircle, Loader2, Clock, Volume2, MessageSquare, Timer, Zap, Bot, Settings, RefreshCw } from 'lucide-react';
-import { agentConfigService } from '../../../service/agentConfigService';
+import { Wrench, CheckCircle, AlertCircle, Clock, Volume2, MessageSquare, Timer, Settings, RefreshCw, Zap } from 'lucide-react';
 import { difyAgentService } from '../../../service/difyAgentService';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -11,7 +10,6 @@ interface ToolsConfigProps {
   modelConfig?: any;
   voiceConfig?: any;
   transcriberConfig?: any;
-  onAgentCreated?: () => void;
   isEditing?: boolean;
   isCreating?: boolean;
   existingAgent?: any;
@@ -26,7 +24,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
   modelConfig,
   voiceConfig,
   transcriberConfig,
-  onAgentCreated,
   isEditing = false,
   isCreating = false,
   existingAgent,
@@ -97,7 +94,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
   }, [initialMessage, nudgeText, nudgeInterval, maxNudges, typingVolume, maxCallDuration]);
 
   // Loading and error states
-  const [isLoading, setIsLoading] = useState(false);
   const [configStatus, setConfigStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -446,446 +442,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
     refreshConfigurations();
   }, [voiceConfig, modelConfig]); // Refresh when props change
 
-  const handleCreateAgent = async () => {
-    setIsLoading(true);
-    setConfigStatus('idle');
-    setErrorMessage('');
-
-    try {
-      console.log('=== Creating/Updating Agent ===');
-      console.log('Initial voiceConfig:', voiceConfig);
-      console.log('Initial transcriberConfig:', transcriberConfig);
-
-      // Step 1: Use pre-generated Dify API key (if available)
-      let difyApiKey = '';
-
-      // Check if this agent already has a Dify API key from the main creation flow
-      const agentWithKey = selectedAgent || existingAgent;
-      if (agentWithKey?.chatbot_key && agentWithKey.chatbot_key.startsWith('app-')) {
-        difyApiKey = agentWithKey.chatbot_key;
-        console.log('✅ Using pre-generated Dify API key:', difyApiKey.substring(0, 10) + '...');
-        setSuccessMessage('Using pre-generated Dify API key...');
-      } else {
-        // Fallback: Try to create Dify agent if no key exists (for existing agents)
-        const isNewAgentCreation = isCreating && !isEditing;
-        console.log('🔍 Agent creation check:', { isCreating, isEditing, isNewAgentCreation, agentName, hasExistingKey: !!agentWithKey?.chatbot_key });
-
-        if (isNewAgentCreation) {
-          console.log('🚀 Creating Dify agent for new agent (fallback):', agentName);
-          setSuccessMessage('Creating Dify agent and generating API key...');
-
-          try {
-            // Use model configuration from ModelConfig if available, otherwise use defaults
-            const difyModelProvider = modelConfig?.provider || 'langgenius/openai/openai';
-            const difyModelName = modelConfig?.model || 'gpt-4o';
-
-            const difyResult = await difyAgentService.createDifyAgent({
-              agentName: agentName,
-              organizationId: selectedAgent?.organization_id || currentOrganizationId,
-              modelProvider: difyModelProvider,
-              modelName: difyModelName
-            });
-
-            console.log('📋 Dify result:', difyResult);
-
-            if (!difyResult.success || !difyResult.data?.appKey) {
-              console.error('❌ Dify agent creation failed:', difyResult);
-              console.warn('⚠️ Continuing with fallback API key configuration');
-              setSuccessMessage('Dify agent creation failed, using fallback configuration...');
-            } else {
-              difyApiKey = difyResult.data.appKey;
-              // Store the Dify configuration for use in agent config
-              const difyConfig = {
-                chatbot_api: difyResult.data.serviceOrigin || process.env.NEXT_PUBLIC_CHATBOT_API_URL,
-                chatbot_key: difyResult.data.appKey
-              };
-
-              // Store in localStorage for persistence
-              try {
-                localStorage.setItem(`difyConfig_${agentName}`, JSON.stringify(difyConfig));
-                console.log('✅ Dify configuration stored in localStorage:', difyConfig);
-              } catch (error) {
-                console.warn('⚠️ Failed to store Dify config in localStorage:', error);
-              }
-
-              console.log('✅ Dify agent created successfully with API key:', difyApiKey.substring(0, 10) + '...');
-              console.log('✅ Dify service origin:', difyResult.data.serviceOrigin);
-              setSuccessMessage('Dify agent created! Configuring local agent...');
-            }
-          } catch (difyError) {
-            console.error('❌ Dify agent creation error:', difyError);
-            console.warn('⚠️ Continuing with fallback API key configuration');
-            setSuccessMessage('Dify agent creation failed, using fallback configuration...');
-          }
-        } else {
-          console.log('ℹ️ Skipping Dify creation - not a new agent creation and no existing key');
-        }
-      }
-
-      // Validate configurations - check both props and localStorage
-      const effectiveVoiceConfig = voiceConfig || localVoiceConfig;
-      const effectiveModelConfig = modelConfig || localModelConfig;
-      const effectiveTranscriberConfig = transcriberConfig || localTranscriberConfig;
-
-      if (!effectiveVoiceConfig) {
-        throw new Error('Voice configuration is required. Please configure in the Voice tab.');
-      }
-
-      if (!effectiveTranscriberConfig) {
-        throw new Error('Transcriber configuration is required. Please configure in the Transcriber tab.');
-      }
-
-      // Build TTS configuration
-      let ttsConfig: any = {};
-      if (effectiveVoiceConfig) {
-        // Check if voiceConfig is already in backend format
-        if (effectiveVoiceConfig.tts_config) {
-          // Already in backend format, use as is
-          ttsConfig = effectiveVoiceConfig.tts_config;
-          console.log('Using existing TTS config from backend:', ttsConfig);
-        } else if (effectiveVoiceConfig.provider) {
-          // Already in backend format, use as is
-          ttsConfig = effectiveVoiceConfig;
-          console.log('Using existing TTS config with provider:', ttsConfig);
-        } else {
-          // Convert from UI format to backend format
-          console.log('Converting UI format to backend format for TTS');
-          switch (effectiveVoiceConfig.voiceProvider) {
-            case 'OpenAI':
-              ttsConfig = {
-                provider: 'openai',
-                openai: {
-                  api_key: effectiveVoiceConfig.apiKey,
-                  model: effectiveVoiceConfig.voice.toLowerCase(),
-                  response_format: effectiveVoiceConfig.selectedModel || 'mp3',
-                  voice: effectiveVoiceConfig.responseFormat || 'alloy',
-                  language: effectiveVoiceConfig.language ?
-                    (effectiveVoiceConfig.language === 'English' ? 'en' :
-                      effectiveVoiceConfig.language === 'Hindi' ? 'hi' :
-                        effectiveVoiceConfig.language === 'Spanish' ? 'es' :
-                          effectiveVoiceConfig.language === 'French' ? 'fr' :
-                            effectiveVoiceConfig.language === 'German' ? 'de' :
-                              effectiveVoiceConfig.language === 'Italian' ? 'it' :
-                                effectiveVoiceConfig.language === 'Portuguese' ? 'pt' :
-                                  effectiveVoiceConfig.language === 'Russian' ? 'ru' :
-                                    effectiveVoiceConfig.language === 'Japanese' ? 'ja' :
-                                      effectiveVoiceConfig.language === 'Korean' ? 'ko' :
-                                        effectiveVoiceConfig.language === 'Chinese' ? 'zh' :
-                                          effectiveVoiceConfig.language === 'Dutch' ? 'nl' :
-                                            effectiveVoiceConfig.language === 'Polish' ? 'pl' :
-                                              effectiveVoiceConfig.language === 'Swedish' ? 'sv' :
-                                                effectiveVoiceConfig.language === 'Turkish' ? 'tr' : 'en') : 'en',
-                  speed: effectiveVoiceConfig.speed
-                }
-              };
-              break;
-            case '11Labs':
-              ttsConfig = {
-                provider: 'elevenlabs',
-                elevenlabs: {
-                  api_key: effectiveVoiceConfig.apiKey,
-                  voice_id: effectiveVoiceConfig.voiceId || 'pNInz6obpgDQGcFmaJgB',
-                  model_id: 'eleven_monolingual_v1',
-                  stability: effectiveVoiceConfig.stability,
-                  similarity_boost: effectiveVoiceConfig.similarityBoost,
-                  speed: effectiveVoiceConfig.speed
-                }
-              };
-              break;
-            case 'Cartesia':
-              ttsConfig = {
-                provider: 'cartesian',
-                cartesian: {
-                  voice_id: effectiveVoiceConfig.voiceId,
-                  tts_api_key: effectiveVoiceConfig.apiKey,
-                  model: effectiveVoiceConfig.voice,
-                  speed: effectiveVoiceConfig.speed,
-                  language: effectiveVoiceConfig.language ?
-                    (effectiveVoiceConfig.language === 'English' ? 'en' :
-                      effectiveVoiceConfig.language === 'French' ? 'fr' :
-                        effectiveVoiceConfig.language === 'German' ? 'de' :
-                          effectiveVoiceConfig.language === 'Spanish' ? 'es' :
-                            effectiveVoiceConfig.language === 'Portuguese' ? 'pt' :
-                              effectiveVoiceConfig.language === 'Chinese' ? 'zh' :
-                                effectiveVoiceConfig.language === 'Japanese' ? 'ja' :
-                                  effectiveVoiceConfig.language === 'Hindi' ? 'hi' :
-                                    effectiveVoiceConfig.language === 'Italian' ? 'it' :
-                                      effectiveVoiceConfig.language === 'Korean' ? 'ko' :
-                                        effectiveVoiceConfig.language === 'Dutch' ? 'nl' :
-                                          effectiveVoiceConfig.language === 'Polish' ? 'pl' :
-                                            effectiveVoiceConfig.language === 'Russian' ? 'ru' :
-                                              effectiveVoiceConfig.language === 'Swedish' ? 'sv' :
-                                                effectiveVoiceConfig.language === 'Turkish' ? 'tr' : 'en') : 'en'
-                }
-              };
-              break;
-          }
-          console.log('Converted TTS config:', ttsConfig);
-        }
-      } else {
-        console.log('No voiceConfig provided');
-      }
-
-      // Build STT configuration
-      let sttConfig: any = {};
-      if (effectiveTranscriberConfig) {
-        // Check if transcriberConfig is already in backend format
-        if (effectiveTranscriberConfig.provider) {
-          // Already in backend format, use as is
-          sttConfig = effectiveTranscriberConfig;
-          console.log('Using existing STT config from backend:', sttConfig);
-        } else {
-          // Convert from UI format to backend format
-          console.log('Converting UI format to backend format for STT');
-          switch (effectiveTranscriberConfig.transcriberProvider || effectiveTranscriberConfig.selectedTranscriberProvider) {
-            case 'Deepgram':
-              sttConfig = {
-                provider: 'deepgram',
-                deepgram: {
-                  api_key: effectiveTranscriberConfig.apiKey,
-                  model: effectiveTranscriberConfig.model,
-                  language: effectiveTranscriberConfig.language,
-                  punctuate: effectiveTranscriberConfig.punctuate,
-                  smart_format: effectiveTranscriberConfig.smartFormat,
-                  interim_results: effectiveTranscriberConfig.interimResults
-                }
-              };
-              break;
-            case 'OpenAI':
-              sttConfig = {
-                provider: 'openai',
-                openai: {
-                  api_key: effectiveTranscriberConfig.apiKey,
-                  model: effectiveTranscriberConfig.model,
-                  language: effectiveTranscriberConfig.language === 'multi' ? null : effectiveTranscriberConfig.language
-                }
-              };
-              break;
-          }
-          console.log('Converted STT config:', sttConfig);
-        }
-      } else {
-        console.log('No transcriberConfig provided');
-      }
-
-      // Validate final configurations
-      if (!ttsConfig.provider) {
-        throw new Error('Invalid TTS configuration: missing provider');
-      }
-
-      if (!sttConfig.provider) {
-        throw new Error('Invalid STT configuration: missing provider');
-      }
-
-      // Complete agent configuration
-      console.log('🔍 ToolsConfig - currentOrganizationId:', currentOrganizationId);
-      console.log('🔍 ToolsConfig - selectedAgent.organization_id:', selectedAgent?.organization_id);
-
-      // Get Dify configuration from localStorage if available
-      let difyConfig = null;
-      try {
-        const storedDifyConfig = localStorage.getItem(`difyConfig_${agentName}`);
-        if (storedDifyConfig) {
-          difyConfig = JSON.parse(storedDifyConfig);
-          console.log('✅ Retrieved Dify config from localStorage:', difyConfig);
-        }
-      } catch (error) {
-        console.warn('⚠️ Failed to retrieve Dify config from localStorage:', error);
-      }
-
-      const completeConfig = {
-        organization_id: selectedAgent?.organization_id || currentOrganizationId, // Use agent's org ID first, fallback to current
-        initial_message: initialMessage,
-        nudge_text: nudgeText,
-        nudge_interval: nudgeInterval,
-        max_nudges: maxNudges,
-        typing_volume: typingVolume,
-        max_call_duration: maxCallDuration,
-        tts_config: ttsConfig,
-        stt_config: sttConfig,
-        // Use Dify configuration if available, otherwise fallback to ModelConfig or environment
-        chatbot_api: difyConfig?.chatbot_api || modelConfig?.chatbot_api || (difyApiKey ? process.env.NEXT_PUBLIC_CHATBOT_API_URL : undefined),
-        chatbot_key: difyConfig?.chatbot_key || modelConfig?.chatbot_key || difyApiKey || undefined,
-        // Include system prompt from ModelConfig
-        system_prompt: modelConfig?.systemPrompt || modelConfig?.system_prompt
-      };
-
-      console.log('Complete config to send:', completeConfig);
-      console.log('🔍 Organization ID being sent to API:', completeConfig.organization_id);
-      console.log('🔍 Dify config being used:', {
-        chatbot_api: difyConfig?.chatbot_api,
-        chatbot_key: difyConfig?.chatbot_key ? difyConfig.chatbot_key.substring(0, 10) + '...' : 'NO KEY'
-      });
-      console.log('🔍 Chatbot config from ModelConfig:', {
-        chatbot_api: modelConfig?.chatbot_api,
-        chatbot_key: modelConfig?.chatbot_key ? modelConfig.chatbot_key.substring(0, 10) + '...' : 'NO KEY'
-      });
-      console.log('🔍 Final chatbot config in completeConfig:', {
-        chatbot_api: completeConfig.chatbot_api,
-        chatbot_key: completeConfig.chatbot_key ? completeConfig.chatbot_key.substring(0, 10) + '...' : 'NO KEY'
-      });
-      console.log('🔍 Full ModelConfig received:', modelConfig);
-
-      const result = await agentConfigService.configureAgent(agentName, completeConfig);
-
-      if (result.success) {
-        // Now POST model and prompt configurations to Dify if we have an API key
-        if (difyApiKey) {
-          try {
-            console.log('🔧 Posting model configuration to Dify...');
-
-            // Use model configuration from ModelConfig if available, otherwise use defaults
-            const modelProvider = modelConfig?.provider || 'langgenius/openai/openai';
-            const modelName = modelConfig?.model || 'gpt-4o';
-            const modelApiKey = modelConfig?.api_key || modelConfig?.modelApiKey || process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '';
-
-            console.log('🔍 ModelConfig fields:', {
-              provider: modelConfig?.provider,
-              model: modelConfig?.model,
-              selectedModelProvider: modelConfig?.selectedModelProvider,
-              selectedModel: modelConfig?.selectedModel,
-              api_key: modelConfig?.api_key,
-              modelApiKey: modelConfig?.modelApiKey
-            });
-
-            console.log('🔧 Using model config from ModelConfig:', {
-              provider: modelProvider,
-              model: modelName,
-              apiKey: modelApiKey ? modelApiKey.substring(0, 10) + '...' : 'NO KEY'
-            });
-
-            const modelConfigResponse = await fetch('/api/model-config', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
-              },
-              body: JSON.stringify({
-                provider: modelProvider,
-                model: modelName,
-                api_key: modelApiKey,
-                chatbot_api_key: difyApiKey
-              })
-            });
-
-            if (modelConfigResponse.ok) {
-              console.log('✅ Model configuration posted to Dify successfully');
-            } else {
-              console.warn('⚠️ Failed to post model configuration to Dify');
-            }
-
-            console.log('🔧 Posting prompt configuration to Dify...');
-
-            // Use the prompt from ModelConfig if available, otherwise use default
-            const promptToUse = modelConfig?.systemPrompt || modelConfig?.system_prompt || `# Appointment Scheduling Agent Prompt
-
-## Identity & Purpose
-You are Riley, an appointment scheduling voice agent for Wellness Partners, a multi-specialty health clinic. Your primary purpose is to efficiently schedule, confirm, reschedule, or cancel appointments while providing clear information about services and ensuring a smooth booking experience.
-
-## Voice & Persona
-### Personality
-- Sound friendly, organized, and efficient
-- Project a helpful and patient demeanor, especially with elderly or confused callers
-- Maintain a warm but professional tone throughout the conversation
-- Convey confidence and competence in managing the scheduling system
-
-### Speech Characteristics
-- Speak clearly and at a moderate pace
-- Use simple, direct language that's easy to understand
-- Avoid medical jargon unless the caller uses it first
-- Be concise but thorough in your responses
-
-## Core Responsibilities
-1. **Appointment Scheduling**: Help callers book new appointments
-2. **Appointment Management**: Confirm, reschedule, or cancel existing appointments
-3. **Service Information**: Provide details about available services and providers
-4. **Calendar Navigation**: Check availability and suggest optimal time slots
-5. **Patient Support**: Address questions about appointments, policies, and procedures
-
-## Key Guidelines
-- Always verify caller identity before accessing appointment information
-- Confirm all appointment details (date, time, provider, service) before finalizing
-- Be proactive in suggesting alternative times if preferred slots are unavailable
-- Maintain patient confidentiality and follow HIPAA guidelines
-- Escalate complex medical questions to appropriate staff members
-- End calls with clear confirmation of next steps
-
-## Service Areas
-- Primary Care
-- Cardiology
-- Dermatology
-- Orthopedics
-- Pediatrics
-- Women's Health
-- Mental Health Services
-
-## Operating Hours
-- Monday-Friday: 8:00 AM - 6:00 PM
-- Saturday: 9:00 AM - 2:00 PM
-- Sunday: Closed
-
-Remember: You are the first point of contact for many patients. Your professionalism and helpfulness directly impact their experience with Wellness Partners.`;
-
-            console.log('🔧 Using prompt from ModelConfig:', promptToUse.substring(0, 100) + '...');
-
-            const promptConfigResponse = await fetch('/api/prompt-config', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
-              },
-              body: JSON.stringify({
-                prompt: promptToUse,
-                chatbot_api_key: difyApiKey
-              })
-            });
-
-            if (promptConfigResponse.ok) {
-              console.log('✅ Prompt configuration posted to Dify successfully');
-            } else {
-              console.warn('⚠️ Failed to post prompt configuration to Dify');
-            }
-          } catch (configError) {
-            console.error('❌ Error posting configurations to Dify:', configError);
-          }
-        }
-
-        setConfigStatus('success');
-        const successMsg = isEditing
-          ? `Agent "${agentName}" updated successfully!`
-          : difyApiKey
-            ? `Agent "${agentName}" created successfully with Dify integration! API key generated.`
-            : `Agent "${agentName}" created successfully!`;
-        setSuccessMessage(successMsg);
-        setErrorMessage('');
-        setTimeout(() => {
-          setConfigStatus('idle');
-          setSuccessMessage('');
-        }, 5000); // Longer timeout to show the success message
-
-        // Call the callback to reset edit mode and refresh agents list
-        if (onAgentCreated) {
-          try {
-            // Add a small delay to ensure the backend has processed the creation/update
-            setTimeout(async () => {
-              console.log('🔄 Calling onAgentCreated callback to reset edit mode...');
-              await onAgentCreated();
-            }, 1000);
-          } catch (error) {
-            console.warn('Error calling onAgentCreated callback:', error);
-          }
-        }
-      } else {
-        setConfigStatus('error');
-        setErrorMessage(result.message || (isEditing ? 'Failed to update agent' : 'Failed to create agent'));
-      }
-    } catch (error) {
-      setConfigStatus('error');
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to create agent');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const formatDuration = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
@@ -977,7 +533,7 @@ Remember: You are the first point of contact for many patients. Your professiona
           </div>
 
           <div>
-            <label className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+            <label className={`text-sm font-semibold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
               <MessageSquare className="h-4 w-4" />
               Initial Message
             </label>
@@ -1013,7 +569,7 @@ Remember: You are the first point of contact for many patients. Your professiona
           <div className="space-y-6">
             {/* Nudge Text */}
             <div>
-              <label className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              <label className={`text-sm font-semibold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 <MessageSquare className="h-4 w-4" />
                 Nudge Text
               </label>
@@ -1037,7 +593,7 @@ Remember: You are the first point of contact for many patients. Your professiona
             {/* Nudge Interval and Max Nudges */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
-                <label className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <label className={`text-sm font-semibold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   <Clock className="h-4 w-4" />
                   Nudge Interval (seconds)
                 </label>
@@ -1060,7 +616,7 @@ Remember: You are the first point of contact for many patients. Your professiona
               </div>
 
               <div>
-                <label className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <label className={`text-sm font-semibold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   <MessageSquare className="h-4 w-4" />
                   Max Nudges
                 </label>
@@ -1099,7 +655,7 @@ Remember: You are the first point of contact for many patients. Your professiona
           <div className="space-y-6">
             {/* Typing Volume */}
             <div>
-              <label className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              <label className={`text-sm font-semibold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 <Volume2 className="h-4 w-4" />
                 Typing Volume
               </label>
@@ -1145,7 +701,7 @@ Remember: You are the first point of contact for many patients. Your professiona
 
             {/* Max Call Duration */}
             <div>
-              <label className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              <label className={`text-sm font-semibold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 <Clock className="h-4 w-4" />
                 Max Call Duration
               </label>
@@ -1189,19 +745,21 @@ Remember: You are the first point of contact for many patients. Your professiona
           </div>
         </div>
 
-        {/* Create Agent Button */}
+        {/* Save Configuration Button */}
         <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white/50 border-gray-200'}`}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h4 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Ready to Create Agent</h4>
+              <h4 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Save Configuration</h4>
+              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                Save your changes to localStorage. Use the "Update Agent" button in the header to apply changes to the server.
+              </p>
             </div>
             <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-              <Bot className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
+              <Settings className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
             </div>
           </div>
 
-          <div className="flex justify-end gap-3">
-            {/* Save Configuration Button */}
+          <div className="flex justify-end">
             <button
               onClick={() => {
                 // Save current configuration to localStorage
@@ -1224,22 +782,6 @@ Remember: You are the first point of contact for many patients. Your professiona
             >
               <Settings className="h-5 w-5" />
               <span className="font-semibold">Save Config</span>
-            </button>
-
-            {/* Create/Update Agent Button */}
-
-            <button
-              onClick={handleCreateAgent}
-              disabled={isLoading || !isEditing || !(voiceConfig || localVoiceConfig) || !(transcriberConfig || localTranscriberConfig)}
-              className={`group relative px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-              {isLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Zap className="h-5 w-5" />
-              )}
-              <span className="font-semibold">{isLoading ? 'Processing...' : (isCreating ? 'Create Agent' : 'Update Agent')}</span>
             </button>
           </div>
         </div>
