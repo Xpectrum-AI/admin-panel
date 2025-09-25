@@ -902,6 +902,81 @@ Remember: You are the first point of contact for many patients. Your professiona
     window.open(chatbotUrl, '_blank');
   }, []);
 
+  // Helper function to convert UI voice config to backend format
+  const convertUIVoiceConfigToBackend = useCallback((uiConfig: any) => {
+    if (!uiConfig || !uiConfig.voiceProvider) return null;
+
+    const provider = uiConfig.voiceProvider;
+    const backendConfig = {
+      provider: provider === 'Cartesia' ? 'cartesian' :
+        provider === '11Labs' ? 'elevenlabs' : 'openai',
+      cartesian: null,
+      openai: null,
+      elevenlabs: null
+    };
+
+    if (provider === 'Cartesia') {
+      backendConfig.cartesian = {
+        voice_id: uiConfig.voiceId || '',
+        tts_api_key: uiConfig.apiKey || '',
+        model: uiConfig.voice || 'sonic-2.0',
+        speed: uiConfig.speed || 1.0,
+        language: uiConfig.language === 'English' ? 'en' : 'en' // Add proper language mapping if needed
+      };
+    } else if (provider === 'OpenAI') {
+      backendConfig.openai = {
+        model: uiConfig.voice || 'tts-1',
+        speed: uiConfig.speed || 1.0,
+        api_key: uiConfig.apiKey || '',
+        voice: uiConfig.responseFormat || 'alloy',
+        response_format: uiConfig.selectedModel || 'mp3',
+        language: uiConfig.language === 'English' ? 'en' : 'en' // Add proper language mapping if needed
+      };
+    } else if (provider === '11Labs') {
+      backendConfig.elevenlabs = {
+        voice_id: uiConfig.voiceId || 'pNInz6obpgDQGcFmaJgB',
+        api_key: uiConfig.apiKey || '',
+        model_id: 'eleven_monolingual_v1',
+        speed: uiConfig.speed || 1.0,
+        stability: uiConfig.stability || 0.5,
+        similarity_boost: uiConfig.similarityBoost || 0.5
+      };
+    }
+
+    return backendConfig;
+  }, []);
+
+  // Helper function to convert UI transcriber config to backend format
+  const convertUITranscriberConfigToBackend = useCallback((uiConfig: any) => {
+    if (!uiConfig || !uiConfig.selectedTranscriberProvider) return null;
+
+    const provider = uiConfig.selectedTranscriberProvider;
+    const backendConfig = {
+      provider: provider === 'Deepgram' ? 'deepgram' : 'openai',
+      deepgram: null,
+      openai: null
+    };
+
+    if (provider === 'Deepgram') {
+      backendConfig.deepgram = {
+        api_key: uiConfig.transcriberApiKey || '',
+        model: uiConfig.selectedTranscriberModel || 'nova-2',
+        language: uiConfig.selectedTranscriberLanguage || 'en-US',
+        punctuate: uiConfig.punctuateEnabled !== undefined ? uiConfig.punctuateEnabled : true,
+        smart_format: uiConfig.smartFormatEnabled !== undefined ? uiConfig.smartFormatEnabled : true,
+        interim_results: uiConfig.interimResultEnabled !== undefined ? uiConfig.interimResultEnabled : false
+      };
+    } else if (provider === 'OpenAI') {
+      backendConfig.openai = {
+        api_key: uiConfig.transcriberApiKey || '',
+        model: uiConfig.selectedTranscriberModel || 'tts-1',
+        language: uiConfig.selectedTranscriberLanguage === 'multi' ? null : (uiConfig.selectedTranscriberLanguage || 'en')
+      };
+    }
+
+    return backendConfig;
+  }, []);
+
   // Handle update agent (save all changes from current UI state)
   const handleUpdateAgent = useCallback(async () => {
     if (!selectedAgent) return;
@@ -933,8 +1008,26 @@ Remember: You are the first point of contact for many patients. Your professiona
 
       // Fallback to current state if localStorage is empty
       const tools = currentToolsConfig || toolsConfig || getAgentConfigData(selectedAgent).toolsConfig;
-      const voice = currentVoiceConfig || (voiceConfig ?? selectedAgent.tts_config ?? null);
-      const transcriber = currentTranscriberConfig || (transcriberConfig ?? selectedAgent.stt_config ?? null);
+
+      // Convert UI voice config to backend format if it exists
+      let voice = null;
+      if (currentVoiceConfig) {
+        voice = convertUIVoiceConfigToBackend(currentVoiceConfig);
+      } else if (voiceConfig) {
+        voice = voiceConfig; // Already in backend format
+      } else if (selectedAgent.tts_config) {
+        voice = selectedAgent.tts_config; // Already in backend format
+      }
+
+      // Convert UI transcriber config to backend format if it exists
+      let transcriber = null;
+      if (currentTranscriberConfig) {
+        transcriber = convertUITranscriberConfigToBackend(currentTranscriberConfig);
+      } else if (transcriberConfig) {
+        transcriber = transcriberConfig; // Already in backend format
+      } else if (selectedAgent.stt_config) {
+        transcriber = selectedAgent.stt_config; // Already in backend format
+      }
       const model = currentModelConfig || modelConfig;
 
       // Dify config priority: localStorage → ModelConfig → selectedAgent
@@ -992,7 +1085,7 @@ Remember: You are the first point of contact for many patients. Your professiona
     } finally {
       setIsUpdatingAgent(false);
     }
-  }, [selectedAgent, toolsConfig, voiceConfig, transcriberConfig, modelConfig, currentOrganizationId, organizationName, fetchAgents]);
+  }, [selectedAgent, toolsConfig, voiceConfig, transcriberConfig, modelConfig, currentOrganizationId, organizationName, fetchAgents, convertUIVoiceConfigToBackend, convertUITranscriberConfigToBackend]);
 
   // Handle going back to agent cards view
   const handleBackToCards = useCallback(() => {
@@ -1117,8 +1210,12 @@ Remember: You are the first point of contact for many patients. Your professiona
         chatbot_api: agent.chatbot_api || '', // Include chatbot_api for ModelConfig
         chatbot_key: agent.chatbot_key // Include chatbot_key for proper identification
       },
-      // Voice config data - pass the raw backend config directly
-      voiceConfig: agent.tts_config || null,
+      // Voice config data - only pass if it has actual configuration data
+      voiceConfig: agent.tts_config && (
+        (agent.tts_config.cartesian && Object.values(agent.tts_config.cartesian).some(v => v !== null && v !== undefined)) ||
+        (agent.tts_config.openai && Object.values(agent.tts_config.openai).some(v => v !== null && v !== undefined)) ||
+        (agent.tts_config.elevenlabs && Object.values(agent.tts_config.elevenlabs).some(v => v !== null && v !== undefined))
+      ) ? agent.tts_config : null,
       // Transcriber config data - pass the raw backend config directly
       transcriberConfig: agent.stt_config || null,
       // Widget config data
