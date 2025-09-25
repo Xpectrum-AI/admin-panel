@@ -44,12 +44,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Make the request to Dify API through our server (avoiding CORS)
-    // Use the correct Dify service URL with chat-messages endpoint
-    const difyServiceUrl = 'https://d22yt2oewbcglh.cloudfront.net/v1/chat-messages';
+    // Use the provided Dify service URL with chat-messages endpoint
+    const difyServiceUrl = `${difyApiUrl.replace(/\/$/, '')}/chat-messages`;
     
     // Determine response mode based on useStreaming parameter
-    // Both widget preview and full chatbot page use streaming mode since agent doesn't support blocking
-    const responseMode = 'streaming'; // Force streaming mode for all requests
+    const responseMode = useStreaming ? 'streaming' : 'blocking';
     
     const requestBody = {
       inputs: {},
@@ -61,7 +60,8 @@ export async function POST(request: NextRequest) {
     };
     
     console.log('🚀 Making request to Dify API:', {
-      url: difyServiceUrl,
+      originalDifyApiUrl: difyApiUrl,
+      constructedDifyServiceUrl: difyServiceUrl,
       apiKey: difyApiKey ? difyApiKey.substring(0, 10) + '...' : 'NO API KEY',
       apiKeyLength: difyApiKey ? difyApiKey.length : 0,
       message: message.substring(0, 50) + '...',

@@ -16,13 +16,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('⚙️ Configuring prompt:', body);
     
-    // Use the chatbot API key from the request body, fallback to environment variable
-    const chatbotApiKey = body.chatbot_api_key || process.env.NEXT_PUBLIC_CHATBOT_API_KEY;
-    if (!chatbotApiKey) {
+    // Use the Dify API key from the request body, fallback to environment variable
+    const difyApiKey = body.chatbot_api_key || process.env.NEXT_PUBLIC_CHATBOT_API_KEY;
+    if (!difyApiKey) {
       return NextResponse.json(
         { 
           success: false, 
-          error: 'Chatbot API key not provided and not configured in environment' 
+          error: 'Dify API key not provided and not configured in environment' 
         },
         { status: 400 }
       );
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     const response = await fetch(`${DIFY_BASE_URL}/apps/current/prompt`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${chatbotApiKey}`,
+        'Authorization': `Bearer ${difyApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(configPayload),

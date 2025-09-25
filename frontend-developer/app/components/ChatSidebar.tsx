@@ -32,7 +32,7 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
     } catch (error) {
       console.error('Error loading chat messages:', error);
     }
-    
+
     // Default welcome message if no saved messages
     return [{
       id: '1',
@@ -74,22 +74,22 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
         const allKeys = Object.keys(localStorage);
         const modelConfigKeys = allKeys.filter(key => key.startsWith('modelConfig_'));
         const promptConfigKeys = allKeys.filter(key => key.startsWith('promptConfig_'));
-        
+
         console.log('🔍 ChatSidebar - Checking localStorage for agent configs:');
         console.log('🔍 All localStorage keys:', allKeys);
         console.log('🔍 Model config keys:', modelConfigKeys);
         console.log('🔍 Prompt config keys:', promptConfigKeys);
-        
+
         // Find the first agent that has both model and prompt configured
         let foundConfiguredAgent = false;
         for (const modelKey of modelConfigKeys) {
           const agentName = modelKey.replace('modelConfig_', '');
           const promptKey = `promptConfig_${agentName}`;
-          
+
           console.log(`🔍 Checking agent: ${agentName}`);
           console.log(`🔍 Model config:`, localStorage.getItem(modelKey));
           console.log(`🔍 Prompt config:`, localStorage.getItem(promptKey));
-          
+
           if (localStorage.getItem(promptKey)) {
             // Found a configured agent
             foundConfiguredAgent = true;
@@ -97,7 +97,7 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
             break;
           }
         }
-        
+
         if (foundConfiguredAgent) {
           setAgentStatus('configured');
           console.log('🔍 Agent status set to: configured');
@@ -110,7 +110,7 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
         setAgentStatus('not-configured');
       }
     };
-    
+
     checkAgentStatus();
   }, []);
 
@@ -132,16 +132,16 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
       // Check if any agent is configured
       const allKeys = Object.keys(localStorage);
       const modelConfigKeys = allKeys.filter(key => key.startsWith('modelConfig_'));
-      
+
       // Find the first agent that has both model and prompt configured
       let modelConfig = null;
       let promptConfig = null;
       let agentName = '';
-      
+
       for (const modelKey of modelConfigKeys) {
         const currentAgentName = modelKey.replace('modelConfig_', '');
         const promptKey = `promptConfig_${currentAgentName}`;
-        
+
         if (localStorage.getItem(promptKey)) {
           modelConfig = localStorage.getItem(modelKey);
           promptConfig = localStorage.getItem(promptKey);
@@ -149,7 +149,7 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
           break;
         }
       }
-      
+
       if (!modelConfig || !promptConfig) {
         const agentMessage: ChatMessage = {
           id: (Date.now() + 1).toString(),
@@ -164,7 +164,7 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
       // Parse configurations
       const modelData = JSON.parse(modelConfig);
       const promptData = JSON.parse(promptConfig);
-      
+
       // Make real API call to AI model
       const chatResponse = await fetch('/api/chat', {
         method: 'POST',
@@ -184,7 +184,7 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
       }
 
       const aiData = await chatResponse.json();
-      
+
       const agentMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         type: 'agent',
@@ -196,7 +196,7 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
     } catch (error) {
       console.error('Error sending message:', error);
       let errorContent = 'Sorry, I encountered an error. Please try again.';
-      
+
       if (error instanceof Error) {
         if (error.message.includes('Chat API error: 401')) {
           errorContent = '⚠️ Authentication failed. Please check your API keys in the environment variables.';
@@ -208,7 +208,7 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
           errorContent = '⚠️ Network error. Please check your internet connection and try again.';
         }
       }
-      
+
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         type: 'agent',
@@ -253,19 +253,17 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
               Sales Agent Chat
             </h3>
             <div className="flex items-center gap-1 sm:gap-2">
-              <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
-                agentStatus === 'configured' ? 'bg-green-500' : 
-                agentStatus === 'not-configured' ? 'bg-red-500' : 
-                'bg-yellow-500 animate-pulse'
-              }`} />
-              <p className={`text-xs ${
-                agentStatus === 'configured' ? (isDarkMode ? 'text-green-400' : 'text-green-600') :
-                agentStatus === 'not-configured' ? (isDarkMode ? 'text-red-400' : 'text-red-600') :
-                (isDarkMode ? 'text-yellow-400' : 'text-yellow-600')
-              }`}>
+              <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${agentStatus === 'configured' ? 'bg-green-500' :
+                  agentStatus === 'not-configured' ? 'bg-red-500' :
+                    'bg-yellow-500 animate-pulse'
+                }`} />
+              <p className={`text-xs ${agentStatus === 'configured' ? (isDarkMode ? 'text-green-400' : 'text-green-600') :
+                  agentStatus === 'not-configured' ? (isDarkMode ? 'text-red-400' : 'text-red-600') :
+                    (isDarkMode ? 'text-yellow-400' : 'text-yellow-600')
+                }`}>
                 {agentStatus === 'configured' ? 'Ready' :
-                 agentStatus === 'not-configured' ? 'Not Configured' :
-                 'Checking...'}
+                  agentStatus === 'not-configured' ? 'Not Configured' :
+                    'Checking...'}
               </p>
             </div>
           </div>
@@ -295,35 +293,32 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
             className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div className={`flex items-start gap-2 sm:gap-3 max-w-[85%] sm:max-w-[80%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-              <div className={`p-1.5 sm:p-2 rounded-lg ${
-                message.type === 'user' 
+              <div className={`p-1.5 sm:p-2 rounded-lg ${message.type === 'user'
                   ? isDarkMode ? 'bg-blue-500/20' : 'bg-blue-100'
                   : isDarkMode ? 'bg-green-500/20' : 'bg-green-100'
-              }`}>
+                }`}>
                 {message.type === 'user' ? (
                   <User className={`h-3 w-3 sm:h-4 sm:w-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
                 ) : (
                   <Bot className={`h-3 w-3 sm:h-4 sm:w-4 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
                 )}
               </div>
-              <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${
-                message.type === 'user'
+              <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${message.type === 'user'
                   ? isDarkMode ? 'bg-blue-500/20 text-white' : 'bg-blue-100 text-blue-900'
                   : isDarkMode ? 'bg-gray-700/50 text-white' : 'bg-gray-100 text-gray-900'
-              }`}>
+                }`}>
                 <p className="text-xs sm:text-sm leading-relaxed">{message.content}</p>
-                <p className={`text-xs mt-1 sm:mt-2 ${
-                  message.type === 'user'
+                <p className={`text-xs mt-1 sm:mt-2 ${message.type === 'user'
                     ? isDarkMode ? 'text-blue-300' : 'text-blue-600'
                     : isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                }`}>
+                  }`}>
                   {message.timestamp.toLocaleTimeString()}
                 </p>
               </div>
             </div>
           </div>
         ))}
-        
+
         {isLoading && (
           <div className="flex justify-start">
             <div className="flex items-start gap-2 sm:gap-3">
@@ -339,7 +334,7 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
             </div>
           </div>
         )}
-        
+
         {agentStatus === 'not-configured' && (
           <div className="flex justify-center">
             <div className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 border-dashed ${isDarkMode ? 'border-gray-600 bg-gray-800/30' : 'border-gray-300 bg-gray-50'}`}>
@@ -355,7 +350,7 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
             </div>
           </div>
         )}
-        
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -370,20 +365,18 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
             onKeyPress={handleKeyPress}
             placeholder={agentStatus === 'configured' ? "Type your message..." : "Configure agent first..."}
             disabled={isLoading || agentStatus !== 'configured'}
-            className={`flex-1 px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm ${
-              isDarkMode 
-                ? 'bg-gray-700/50 border-gray-600 text-white placeholder-gray-400' 
+            className={`flex-1 px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm ${isDarkMode
+                ? 'bg-gray-700/50 border-gray-600 text-white placeholder-gray-400'
                 : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
-            } ${agentStatus !== 'configured' ? 'opacity-50 cursor-not-allowed' : ''}`}
+              } ${agentStatus !== 'configured' ? 'opacity-50 cursor-not-allowed' : ''}`}
           />
           <button
             onClick={sendMessage}
             disabled={!inputMessage.trim() || isLoading || agentStatus !== 'configured'}
-            className={`p-2 sm:p-2.5 rounded-lg transition-all duration-300 ${
-              !inputMessage.trim() || isLoading || agentStatus !== 'configured'
+            className={`p-2 sm:p-2.5 rounded-lg transition-all duration-300 ${!inputMessage.trim() || isLoading || agentStatus !== 'configured'
                 ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
                 : 'bg-green-600 text-white hover:bg-green-700 transform hover:scale-105'
-            }`}
+              }`}
           >
             <Send className="h-3 w-3 sm:h-4 sm:w-4" />
           </button>

@@ -27,7 +27,7 @@ export default function ChatbotPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const agentId = params.agentId as string;
-  
+
   const [agentConfig, setAgentConfig] = useState<AgentConfig | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
@@ -35,7 +35,7 @@ export default function ChatbotPage() {
   const [isLoadingAgent, setIsLoadingAgent] = useState(true);
   const [conversationId, setConversationId] = useState('');
   const [error, setError] = useState<string | null>(null);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom when new messages arrive
@@ -52,13 +52,13 @@ export default function ChatbotPage() {
     const fetchAgentConfig = async () => {
       try {
         setIsLoadingAgent(true);
-        
+
         // First try to get configuration from URL parameters (passed from AgentsTab)
         const apiUrl = searchParams.get('api_url');
         const apiKey = searchParams.get('api_key');
         const initialMessage = searchParams.get('initial_message');
         const name = searchParams.get('name');
-        
+
         if (apiUrl && apiKey) {
           console.log('🎯 Using agent config from URL parameters:', { apiUrl, apiKey: apiKey.substring(0, 10) + '...', name });
           const configFromUrl: AgentConfig = {
@@ -69,9 +69,9 @@ export default function ChatbotPage() {
             chatbot_key: apiKey,
             initial_message: initialMessage || 'Hello! How can I help you today?'
           };
-          
+
           setAgentConfig(configFromUrl);
-          
+
           // Add welcome message if available
           if (configFromUrl.initial_message) {
             const welcomeMessage: Message = {
@@ -82,25 +82,25 @@ export default function ChatbotPage() {
             };
             setMessages([welcomeMessage]);
           }
-          
+
           // Set page title
           document.title = `${configFromUrl.name || configFromUrl.agent_prefix} | Chat`;
           return;
         }
-        
+
         // Fallback: try to get the agent from the agents API (same as widget preview)
         try {
           const agentsResponse = await fetch('/api/agents/by-org/default_org');
           if (agentsResponse.ok) {
             const agentsData = await agentsResponse.json();
-            const realAgent = agentsData.data?.find((agent: any) => 
+            const realAgent = agentsData.data?.find((agent: any) =>
               agent.agent_prefix === agentId || agent.name === agentId || agent._id === agentId
             );
-            
+
             if (realAgent) {
               console.log('🎯 Found real agent for chatbot:', realAgent.agent_prefix);
               setAgentConfig(realAgent);
-              
+
               // Add welcome message if available
               if (realAgent.initial_message) {
                 const welcomeMessage: Message = {
@@ -111,7 +111,7 @@ export default function ChatbotPage() {
                 };
                 setMessages([welcomeMessage]);
               }
-              
+
               // Set page title
               document.title = `${realAgent.name || realAgent.agent_prefix} | Chat`;
               return;
@@ -120,20 +120,20 @@ export default function ChatbotPage() {
         } catch (fetchError) {
           console.log('⚠️ Could not fetch real agent data, using fallback:', fetchError);
         }
-        
+
         // Fallback to chatbot agent API
         const response = await fetch(`/api/chatbot/agent/${agentId}`);
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch agent: ${response.status}`);
         }
-        
+
         const responseData = await response.json();
         console.log('API Response:', responseData);
         const data = responseData.data || responseData; // Handle both wrapped and direct responses
         console.log('Agent Config Data:', data);
         setAgentConfig(data);
-        
+
         // Add welcome message if available
         if (data.initial_message) {
           const welcomeMessage: Message = {
@@ -144,10 +144,10 @@ export default function ChatbotPage() {
           };
           setMessages([welcomeMessage]);
         }
-        
+
         // Set page title
         document.title = `${data.name || data.agent_prefix} | Chat`;
-        
+
       } catch (err) {
         console.error('Error fetching agent config:', err);
         setError(err instanceof Error ? err.message : 'Failed to load agent');
@@ -182,7 +182,7 @@ export default function ChatbotPage() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          difyApiUrl: agentConfig.chatbot_api || 'https://d22yt2oewbcglh.cloudfront.net/v1',
+          difyApiUrl: agentConfig.chatbot_api || process.env.NEXT_PUBLIC_CHATBOT_API_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1',
           difyApiKey: agentConfig.chatbot_key,
           message: currentMessage,
           conversationId: conversationId,
@@ -234,7 +234,7 @@ export default function ChatbotPage() {
   const clearChat = () => {
     setMessages([]);
     setConversationId('');
-    
+
     // Re-add welcome message if available
     if (agentConfig?.initial_message) {
       const welcomeMessage: Message = {
@@ -265,8 +265,8 @@ export default function ChatbotPage() {
           <div className="text-red-500 text-4xl mb-4">⚠️</div>
           <h2 className="text-red-700 dark:text-red-400 text-xl mb-2">Error Loading Chatbot</h2>
           <p className="text-red-600 dark:text-red-300 mb-4">{error || 'Agent not found'}</p>
-          <a 
-            href="/" 
+          <a
+            href="/"
             className="inline-block bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
           >
             Return to Dashboard
@@ -312,16 +312,14 @@ export default function ChatbotPage() {
               className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                  message.type === 'user'
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
-                    : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700'
-                }`}
+                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.type === 'user'
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
+                  : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700'
+                  }`}
               >
                 <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-                <p className={`text-xs mt-1 ${
-                  message.type === 'user' ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
-                }`}>
+                <p className={`text-xs mt-1 ${message.type === 'user' ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
+                  }`}>
                   {message.timestamp.toLocaleTimeString()}
                 </p>
               </div>
@@ -357,11 +355,10 @@ export default function ChatbotPage() {
             <button
               onClick={sendMessage}
               disabled={!currentMessage.trim() || isLoading}
-              className={`px-6 py-3 rounded-lg transition-colors flex items-center gap-2 ${
-                currentMessage.trim() && !isLoading
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700'
-                  : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-              }`}
+              className={`px-6 py-3 rounded-lg transition-colors flex items-center gap-2 ${currentMessage.trim() && !isLoading
+                ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700'
+                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                }`}
             >
               <Send className="h-4 w-4" />
             </button>
