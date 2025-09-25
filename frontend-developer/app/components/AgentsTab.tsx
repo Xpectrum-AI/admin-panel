@@ -13,6 +13,7 @@ import { agentConfigService } from '../../service/agentConfigService';
 import { difyAgentService } from '../../service/difyAgentService';
 import { useAuthInfo } from '@propelauth/react';
 import { useTheme } from '../contexts/ThemeContext';
+import { generateAgentUuid, extractAgentName, getDisplayName } from '../../lib/utils/agentUuid';
 
 interface Agent {
   id: string;
@@ -213,8 +214,8 @@ export default function AgentsTab({ }: AgentsTabProps) {
               max_call_duration: agent.max_call_duration
             });
             return {
-              id: agent.name || agent.id || `agent-${Date.now()}`,
-              name: agent.name || 'Unnamed Agent',
+              id: agent.name || agent.id || `agent-${Date.now()}`, // Keep the full UUID as ID
+              name: getDisplayName(agent.name || agent.id || 'Unnamed Agent'), // Display only the agent name
               status: agent.status || 'draft',
               model: agent.model || 'GPT-4o',
               provider: agent.provider || 'OpenAI',
@@ -504,13 +505,17 @@ export default function AgentsTab({ }: AgentsTabProps) {
     // Start loading state
     setIsCreatingAgent(true);
 
+    // Generate UUID for the agent
+    const agentNameUuid = generateAgentUuid(agentPrefix.trim());
+    console.log('🆔 Generated agent UUID:', agentNameUuid);
+
     // Create Dify agent and get API key immediately
-    console.log('🚀 Creating Dify agent for new agent:', agentPrefix.trim());
+    console.log('🚀 Creating Dify agent for new agent:', agentNameUuid);
     let difyApiKey = '';
 
     try {
       const difyResult = await difyAgentService.createDifyAgent({
-        agentName: agentPrefix.trim(),
+        agentName: agentNameUuid, // Use the UUID format for Dify
         organizationId: currentOrganizationId || organizationName,
         modelProvider: 'langgenius/openai/openai',
         modelName: 'gpt-4o'
@@ -608,8 +613,8 @@ Remember: You are the first point of contact for many patients. Your professiona
         openai: {
           api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
           model: 'tts-1',
-          response_format: 'alloy',
-          voice: 'mp3',
+          response_format: 'mp3',
+          voice: 'alloy',
           language: 'en',
           speed: 1.0
         }
@@ -661,8 +666,8 @@ Remember: You are the first point of contact for many patients. Your professiona
     console.log('🔧 Creating agent with complete configuration:', completeAgentConfig);
 
     try {
-      // Create the agent with all default configurations
-      const result = await agentConfigService.configureAgent(agentPrefix.trim(), completeAgentConfig);
+      // Create the agent with all default configurations using UUID
+      const result = await agentConfigService.configureAgent(agentNameUuid, completeAgentConfig);
 
       if (result.success) {
         console.log('✅ Agent created successfully with default configurations');
@@ -740,8 +745,8 @@ Remember: You are the first point of contact for many patients. Your professiona
 
         // Create the agent object for UI
         const newAgent: Agent = {
-          id: agentPrefix.trim(),
-          name: agentPrefix.trim(),
+          id: agentNameUuid, // Use UUID as the ID
+          name: getDisplayName(agentNameUuid), // Display only the agent name
           status: 'active',
           avatar: '🤖',
           description: 'AI Agent - Ready to use',
@@ -1068,7 +1073,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       console.log('🔍 Transcriber config being used:', transcriber);
       console.log('🔍 Model config being used:', model);
 
-      const result = await agentConfigService.configureAgent(selectedAgent.name, completeConfig);
+      const result = await agentConfigService.configureAgent(selectedAgent.id, completeConfig);
 
       if (result.success) {
         console.log('✅ Agent updated successfully');
@@ -1220,7 +1225,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       transcriberConfig: agent.stt_config || null,
       // Widget config data
       widgetConfig: {
-        difyApiUrl: agent.chatbot_api ? agent.chatbot_api.replace('/chat-messages', '') : process.env.NEXT_PUBLIC_DIFY_BASE_URL || process.env.NEXT_PUBLIC_CHATBOT_API_URL || 'https://d22yt2oewbcglh.cloudfront.net/v1',
+        difyApiUrl: agent.chatbot_api ? agent.chatbot_api.replace('/chat-messages', '') : process.env.NEXT_PUBLIC_DIFY_BASE_URL || process.env.NEXT_PUBLIC_CHATBOT_API_URL?.replace('/chat-messages', '') || 'https://dlb20rrk0t1tl.cloudfront.net/v1',
         difyApiKey: agent.chatbot_key || ''
       },
       // Tools config data
@@ -1313,10 +1318,10 @@ Remember: You are the first point of contact for many patients. Your professiona
     try {
       // First, try to delete the Dify agent if it has a chatbot_key
       if (agentToDelete.chatbot_key) {
-        console.log('🗑️ Deleting Dify agent for:', agentToDelete.name);
+        console.log('🗑️ Deleting Dify agent for:', agentToDelete.id);
         try {
           const difyResult = await difyAgentService.deleteDifyAgent({
-            agentName: agentToDelete.name,
+            agentName: agentToDelete.id, // Use UUID for Dify deletion
             organizationId: currentOrganizationId,
             // Note: We don't have the appId stored, but the script can still attempt cleanup
           });
@@ -1333,7 +1338,7 @@ Remember: You are the first point of contact for many patients. Your professiona
 
       // Delete the agent from the backend
       const orgName = organizationName || currentOrganizationId || 'Unknown Organization';
-      const result = await agentConfigService.deleteAgent(agentToDelete.name, orgName);
+      const result = await agentConfigService.deleteAgent(agentToDelete.id, orgName);
       if (result.success) {
         // Remove agent from local state
         setAgents(prev => prev.filter(a => a.id !== agentToDelete.id));
@@ -1822,10 +1827,10 @@ Remember: You are the first point of contact for many patients. Your professiona
                     isEditing={isEditing}
                     selectedAgent={selectedAgent}
                     currentOrganizationId={currentOrganizationId}
-                    modelConfig={modelConfig}
-                    voiceConfig={voiceConfig}
-                    transcriberConfig={transcriberConfig}
-                  />
+                          modelConfig={modelConfig}
+                          voiceConfig={voiceConfig}
+                          transcriberConfig={transcriberConfig}
+                        />
                 )}
               </div>
             </div>

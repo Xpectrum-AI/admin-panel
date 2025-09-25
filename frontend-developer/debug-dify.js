@@ -15,7 +15,7 @@ async function testApiEndpoint() {
       },
       body: JSON.stringify({
         agentName: 'debug-test-agent',
-        organizationId: 'Xpectrum_AI',
+        organizationId: process.env.NEXT_PUBLIC_PROPELAUTH_URL ? 'test-org' : 'Xpectrum_AI',
         modelProvider: 'langgenius/openai/openai',
         modelName: 'gpt-4o'
       }),
@@ -59,21 +59,21 @@ function testEnvironmentVariables() {
   });
 }
 
-// Test 3: Check Dify credentials (from the script)
+// Test 3: Check Dify credentials (from environment variables)
 function testDifyCredentials() {
   console.log('\n🧪 Test 3: Dify Credentials');
   
   const credentials = {
-    consoleOrigin: 'https://test.xpectrum-ai.com',
-    adminEmail: 'ghosh.ishw@gmail.com',
-    adminPassword: 'Ghosh1@*123',
-    workspaceId: 'cd0309e7-6517-4932-8fc8-21c3bc4eb41b'
+    consoleOrigin: process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN,
+    adminEmail: process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL,
+    adminPassword: process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD,
+    workspaceId: process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID
   };
 
-  console.log('Dify Console Origin:', credentials.consoleOrigin);
-  console.log('Admin Email:', credentials.adminEmail);
+  console.log('Dify Console Origin:', credentials.consoleOrigin || '❌ Missing');
+  console.log('Admin Email:', credentials.adminEmail || '❌ Missing');
   console.log('Admin Password:', credentials.adminPassword ? '✅ Set' : '❌ Missing');
-  console.log('Workspace ID:', credentials.workspaceId);
+  console.log('Workspace ID:', credentials.workspaceId || '❌ Missing');
 }
 
 // Test 4: Test Dify login endpoint
@@ -81,14 +81,23 @@ async function testDifyLogin() {
   console.log('\n🧪 Test 4: Dify Login Endpoint');
   
   try {
-    const response = await fetch('https://test.xpectrum-ai.com/console/api/login', {
+    const consoleOrigin = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN;
+    const adminEmail = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL;
+    const adminPassword = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD;
+    
+    if (!consoleOrigin || !adminEmail || !adminPassword) {
+      console.log('❌ Missing Dify credentials in environment variables');
+      return false;
+    }
+    
+    const response = await fetch(`${consoleOrigin}/console/api/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        email: 'ghosh.ishw@gmail.com',
-        password: 'Ghosh1@*123'
+        email: adminEmail,
+        password: adminPassword
       }),
     });
 
