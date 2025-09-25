@@ -25,7 +25,7 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
     if (!actualKey) return '••••••••••••••••••••••••••••••••';
     return maskApiKey(actualKey);
   };
-  const [difyApiUrl, setDifyApiUrl] = useState(process.env.NEXT_PUBLIC_CHATBOT_API_URL || 'https://dlb20rrk0t1tl.cloudfront.net/v1');
+  const [difyApiUrl, setDifyApiUrl] = useState(process.env.NEXT_PUBLIC_CHATBOT_API_URL || 'https://dlb20rrk0t1tl.cloudfront.net/v1/chat-messages');
   const [difyApiKey, setDifyApiKey] = useState('');
   const [copiedScript, setCopiedScript] = useState(false);
   const [copiedVoiceScript, setCopiedVoiceScript] = useState(false);
