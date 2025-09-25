@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bot, MessageCircle, Edit, BarChart3, ExternalLink, Plus, RefreshCw, QrCode, Trash2, ChevronDown } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { agentConfigService } from '../../service/agentConfigService';
 
 // QR Code Content Component
 const QrCodeContent: React.FC<{ agent: Agent }> = ({ agent }) => {
@@ -108,7 +109,6 @@ interface AgentCardsProps {
   onOpenAgent: (agent: Agent) => void;
   onCreateAgent: () => void;
   onRefreshAgents: () => void;
-  onDeleteAgent: (agent: Agent) => void;
   isLoadingAgents: boolean;
   isRefreshingAgents: boolean;
   agentsError?: string;
@@ -120,7 +120,6 @@ export default function AgentCards({
   onOpenAgent,
   onCreateAgent,
   onRefreshAgents,
-  onDeleteAgent,
   isLoadingAgents,
   isRefreshingAgents,
   agentsError
@@ -134,6 +133,7 @@ export default function AgentCards({
   // Settings dropdown state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
+  const [isDeletingAgent, setIsDeletingAgent] = useState(false);
 
   // Function to show the QR code modal
   const showQrCodeModal = (agent: Agent) => {
@@ -164,11 +164,23 @@ export default function AgentCards({
   const handleDeleteAgent = async () => {
     if (!agentToDelete) return;
 
+    setIsDeletingAgent(true);
     try {
       console.log('Deleting agent:', agentToDelete.name);
 
-      // Call the parent component's delete function
-      onDeleteAgent(agentToDelete);
+      // Use the deleteAgentByName service directly
+      const result = await agentConfigService.deleteAgentByName(agentToDelete.name);
+
+      if (result.success) {
+        console.log(`Agent "${agentToDelete.name}" deleted successfully`);
+        alert(`Agent "${agentToDelete.name}" deleted successfully`);
+
+        // Call the parent component's refresh function to update the agents list
+        onRefreshAgents();
+      } else {
+        console.error('Failed to delete agent:', result.message);
+        alert(`Failed to delete agent: ${result.message}`);
+      }
 
       // Close the modal
       setShowDeleteModal(false);
@@ -176,6 +188,8 @@ export default function AgentCards({
     } catch (error) {
       console.error('Error deleting agent:', error);
       alert('Failed to delete agent. Please try again.');
+    } finally {
+      setIsDeletingAgent(false);
     }
   };
 
@@ -469,9 +483,20 @@ export default function AgentCards({
                   </button>
                   <button
                     onClick={handleDeleteAgent}
-                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    disabled={isDeletingAgent}
+                    className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 ${isDeletingAgent
+                      ? 'bg-red-400 text-white cursor-not-allowed'
+                      : 'bg-red-600 text-white hover:bg-red-700'
+                      }`}
                   >
-                    Delete Agent
+                    {isDeletingAgent ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      'Delete Agent'
+                    )}
                   </button>
                 </div>
               </div>
