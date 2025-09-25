@@ -22,11 +22,11 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
   const [speedValue, setSpeedValue] = useState(0.0);
   const [apiKey, setApiKey] = useState('');
   const [voiceId, setVoiceId] = useState('');
-  const [selectedVoice, setSelectedVoice] = useState('tts-1');
+  const [selectedModel, setSelectedModel] = useState('tts-1');
   const [stability, setStability] = useState(0.5);
   const [similarityBoost, setSimilarityBoost] = useState(0.5);
-  const [responseFormat, setResponseFormat] = useState('alloy');
-  const [selectedModel, setSelectedModel] = useState('mp3');
+  const [selectedVoice, setSelectedVoice] = useState('alloy');
+  const [responseFormat, setResponseFormat] = useState('mp3');
   const [isConfiguring, setIsConfiguring] = useState(false);
   const [configStatus, setConfigStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [isUserChangingProvider, setIsUserChangingProvider] = useState(false);
@@ -355,17 +355,17 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
 
   // 11Labs Model Language Support
   const elevenLabsModelLanguages = {
-    'eleven_v3': ['afr','ara','hye','asm','aze','bel','ben','bos','bul','cat','ceb','nya','hrv','ces','dan','nld','eng','est','fil','fin','fra','glg','kat','deu','ell','guj','hau','heb','hin','hun','isl','ind','gle','ita','jpn','jav','kan','kaz','kir','kor','lav','lin','lit','ltz','mkd','msa','mal','cmn','mar','nep','nor','pus','fas','pol','por','pan','ron','rus','srp','snd','slk','slv','som','spa','swa','swe','tam','tel','tha','tur','ukr','urd','vie','cym'],
-    'eleven_ttv_v3': ['afr','ara','hye','asm','aze','bel','ben','bos','bul','cat','ceb','nya','hrv','ces','dan','nld','eng','est','fil','fin','fra','glg','kat','deu','ell','guj','hau','heb','hin','hun','isl','ind','gle','ita','jpn','jav','kan','kaz','kir','kor','lav','lin','lit','ltz','mkd','msa','mal','cmn','mar','nep','nor','pus','fas','pol','por','pan','ron','rus','srp','snd','slk','slv','som','spa','swa','swe','tam','tel','tha','tur','ukr','urd','vie','cym'],
-    'scribe_v1': ['afr','amh','ara','hye','asm','ast','aze','bel','ben','bos','bul','mya','yue','cat','ceb','nya','hrv','ces','dan','nld','eng','est','fil','fin','fra','ful','glg','lug','kat','deu','ell','guj','hau','heb','hin','hun','isl','ibo','ind','gle','ita','jpn','jav','kea','kan','kaz','khm','kor','kur','kir','lao','lav','lin','lit','luo','ltz','mkd','msa','mal','mlt','zho','mri','mar','mon','nep','nso','nor','oci','ori','pus','fas','pol','por','pan','ron','rus','srp','sna','snd','slk','slv','som','spa','swa','swe','tam','tgk','tel','tha','tur','ukr','umb','urd','uzb','vie','cym','wol','xho','zul'],
-    'scribe_v1_experimental': ['afr','amh','ara','hye','asm','ast','aze','bel','ben','bos','bul','mya','yue','cat','ceb','nya','hrv','ces','dan','nld','eng','est','fil','fin','fra','ful','glg','lug','kat','deu','ell','guj','hau','heb','hin','hun','isl','ibo','ind','gle','ita','jpn','jav','kea','kan','kaz','khm','kor','kur','kir','lao','lav','lin','lit','luo','ltz','mkd','msa','mal','mlt','zho','mri','mar','mon','nep','nso','nor','oci','ori','pus','fas','pol','por','pan','ron','rus','srp','sna','snd','slk','slv','som','spa','swa','swe','tam','tgk','tel','tha','tur','ukr','umb','urd','uzb','vie','cym','wol','xho','zul'],
-    'eleven_multilingual_v2': ['en','ja','zh','de','hi','fr','ko','pt','it','es','id','nl','tr','fil','pl','sv','bg','ro','ar','cs','el','fi','hr','ms','sk','da','ta','uk','ru'],
-    'eleven_flash_v2_5': ['en','ja','zh','de','hi','fr','ko','pt','it','es','id','nl','tr','fil','pl','sv','bg','ro','ar','cs','el','fi','hr','ms','sk','da','ta','uk','ru','hu','no','vi'],
+    'eleven_v3': ['afr', 'ara', 'hye', 'asm', 'aze', 'bel', 'ben', 'bos', 'bul', 'cat', 'ceb', 'nya', 'hrv', 'ces', 'dan', 'nld', 'eng', 'est', 'fil', 'fin', 'fra', 'glg', 'kat', 'deu', 'ell', 'guj', 'hau', 'heb', 'hin', 'hun', 'isl', 'ind', 'gle', 'ita', 'jpn', 'jav', 'kan', 'kaz', 'kir', 'kor', 'lav', 'lin', 'lit', 'ltz', 'mkd', 'msa', 'mal', 'cmn', 'mar', 'nep', 'nor', 'pus', 'fas', 'pol', 'por', 'pan', 'ron', 'rus', 'srp', 'snd', 'slk', 'slv', 'som', 'spa', 'swa', 'swe', 'tam', 'tel', 'tha', 'tur', 'ukr', 'urd', 'vie', 'cym'],
+    'eleven_ttv_v3': ['afr', 'ara', 'hye', 'asm', 'aze', 'bel', 'ben', 'bos', 'bul', 'cat', 'ceb', 'nya', 'hrv', 'ces', 'dan', 'nld', 'eng', 'est', 'fil', 'fin', 'fra', 'glg', 'kat', 'deu', 'ell', 'guj', 'hau', 'heb', 'hin', 'hun', 'isl', 'ind', 'gle', 'ita', 'jpn', 'jav', 'kan', 'kaz', 'kir', 'kor', 'lav', 'lin', 'lit', 'ltz', 'mkd', 'msa', 'mal', 'cmn', 'mar', 'nep', 'nor', 'pus', 'fas', 'pol', 'por', 'pan', 'ron', 'rus', 'srp', 'snd', 'slk', 'slv', 'som', 'spa', 'swa', 'swe', 'tam', 'tel', 'tha', 'tur', 'ukr', 'urd', 'vie', 'cym'],
+    'scribe_v1': ['afr', 'amh', 'ara', 'hye', 'asm', 'ast', 'aze', 'bel', 'ben', 'bos', 'bul', 'mya', 'yue', 'cat', 'ceb', 'nya', 'hrv', 'ces', 'dan', 'nld', 'eng', 'est', 'fil', 'fin', 'fra', 'ful', 'glg', 'lug', 'kat', 'deu', 'ell', 'guj', 'hau', 'heb', 'hin', 'hun', 'isl', 'ibo', 'ind', 'gle', 'ita', 'jpn', 'jav', 'kea', 'kan', 'kaz', 'khm', 'kor', 'kur', 'kir', 'lao', 'lav', 'lin', 'lit', 'luo', 'ltz', 'mkd', 'msa', 'mal', 'mlt', 'zho', 'mri', 'mar', 'mon', 'nep', 'nso', 'nor', 'oci', 'ori', 'pus', 'fas', 'pol', 'por', 'pan', 'ron', 'rus', 'srp', 'sna', 'snd', 'slk', 'slv', 'som', 'spa', 'swa', 'swe', 'tam', 'tgk', 'tel', 'tha', 'tur', 'ukr', 'umb', 'urd', 'uzb', 'vie', 'cym', 'wol', 'xho', 'zul'],
+    'scribe_v1_experimental': ['afr', 'amh', 'ara', 'hye', 'asm', 'ast', 'aze', 'bel', 'ben', 'bos', 'bul', 'mya', 'yue', 'cat', 'ceb', 'nya', 'hrv', 'ces', 'dan', 'nld', 'eng', 'est', 'fil', 'fin', 'fra', 'ful', 'glg', 'lug', 'kat', 'deu', 'ell', 'guj', 'hau', 'heb', 'hin', 'hun', 'isl', 'ibo', 'ind', 'gle', 'ita', 'jpn', 'jav', 'kea', 'kan', 'kaz', 'khm', 'kor', 'kur', 'kir', 'lao', 'lav', 'lin', 'lit', 'luo', 'ltz', 'mkd', 'msa', 'mal', 'mlt', 'zho', 'mri', 'mar', 'mon', 'nep', 'nso', 'nor', 'oci', 'ori', 'pus', 'fas', 'pol', 'por', 'pan', 'ron', 'rus', 'srp', 'sna', 'snd', 'slk', 'slv', 'som', 'spa', 'swa', 'swe', 'tam', 'tgk', 'tel', 'tha', 'tur', 'ukr', 'umb', 'urd', 'uzb', 'vie', 'cym', 'wol', 'xho', 'zul'],
+    'eleven_multilingual_v2': ['en', 'ja', 'zh', 'de', 'hi', 'fr', 'ko', 'pt', 'it', 'es', 'id', 'nl', 'tr', 'fil', 'pl', 'sv', 'bg', 'ro', 'ar', 'cs', 'el', 'fi', 'hr', 'ms', 'sk', 'da', 'ta', 'uk', 'ru'],
+    'eleven_flash_v2_5': ['en', 'ja', 'zh', 'de', 'hi', 'fr', 'ko', 'pt', 'it', 'es', 'id', 'nl', 'tr', 'fil', 'pl', 'sv', 'bg', 'ro', 'ar', 'cs', 'el', 'fi', 'hr', 'ms', 'sk', 'da', 'ta', 'uk', 'ru', 'hu', 'no', 'vi'],
     'eleven_flash_v2': ['en'],
-    'eleven_turbo_v2_5': ['en','ja','zh','de','hi','fr','ko','pt','it','es','id','nl','tr','fil','pl','sv','bg','ro','ar','cs','el','fi','hr','ms','sk','da','ta','uk','ru','hu','no','vi'],
+    'eleven_turbo_v2_5': ['en', 'ja', 'zh', 'de', 'hi', 'fr', 'ko', 'pt', 'it', 'es', 'id', 'nl', 'tr', 'fil', 'pl', 'sv', 'bg', 'ro', 'ar', 'cs', 'el', 'fi', 'hr', 'ms', 'sk', 'da', 'ta', 'uk', 'ru', 'hu', 'no', 'vi'],
     'eleven_turbo_v2': ['en'],
-    'eleven_multilingual_sts_v2': ['en','ja','zh','de','hi','fr','ko','pt','it','es','id','nl','tr','fil','pl','sv','bg','ro','ar','cs','el','fi','hr','ms','sk','da','ta','uk','ru'],
-    'eleven_multilingual_ttv_v2': ['en','ja','zh','de','hi','fr','ko','pt','it','es','id','nl','tr','fil','pl','sv','bg','ro','ar','cs','el','fi','hr','ms','sk','da','ta','uk','ru'],
+    'eleven_multilingual_sts_v2': ['en', 'ja', 'zh', 'de', 'hi', 'fr', 'ko', 'pt', 'it', 'es', 'id', 'nl', 'tr', 'fil', 'pl', 'sv', 'bg', 'ro', 'ar', 'cs', 'el', 'fi', 'hr', 'ms', 'sk', 'da', 'ta', 'uk', 'ru'],
+    'eleven_multilingual_ttv_v2': ['en', 'ja', 'zh', 'de', 'hi', 'fr', 'ko', 'pt', 'it', 'es', 'id', 'nl', 'tr', 'fil', 'pl', 'sv', 'bg', 'ro', 'ar', 'cs', 'el', 'fi', 'hr', 'ms', 'sk', 'da', 'ta', 'uk', 'ru'],
     'eleven_english_sts_v2': ['en']
   };
 
@@ -565,39 +565,40 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
         console.log('Backend provider:', ttsConfig.provider, '-> UI provider:', provider);
         setSelectedVoiceProvider(provider);
 
-        // Set language (convert backend format to UI format)
-        if (ttsConfig.cartesian?.language) {
-          const backendLang = ttsConfig.cartesian.language;
-          const uiLang = cartesiaLanguageMapping[backendLang as keyof typeof cartesiaLanguageMapping] || 'English';
-          console.log('Backend language:', backendLang, '-> UI language:', uiLang);
-          setSelectedLanguage(uiLang);
-        }
+        // Load provider-specific configuration based on the actual provider
+        if (ttsConfig.provider === 'cartesian' && ttsConfig.cartesian) {
+          // Set language (convert backend format to UI format)
+          if (ttsConfig.cartesian.language) {
+            const backendLang = ttsConfig.cartesian.language;
+            const uiLang = cartesiaLanguageMapping[backendLang as keyof typeof cartesiaLanguageMapping] || 'English';
+            console.log('Backend language:', backendLang, '-> UI language:', uiLang);
+            setSelectedLanguage(uiLang);
+          }
 
-        // Set speed
-        if (ttsConfig.cartesian?.speed !== undefined) {
-          console.log('Backend speed:', ttsConfig.cartesian.speed);
-          setSpeedValue(ttsConfig.cartesian.speed);
-        }
+          // Set speed
+          if (ttsConfig.cartesian.speed !== undefined) {
+            console.log('Backend speed:', ttsConfig.cartesian.speed);
+            setSpeedValue(ttsConfig.cartesian.speed);
+          }
 
-        // Set voice ID
-        if (ttsConfig.cartesian?.voice_id) {
-          console.log('Backend voice ID:', ttsConfig.cartesian.voice_id);
-          setVoiceId(ttsConfig.cartesian.voice_id);
-        }
+          // Set voice ID
+          if (ttsConfig.cartesian.voice_id) {
+            console.log('Backend voice ID:', ttsConfig.cartesian.voice_id);
+            setVoiceId(ttsConfig.cartesian.voice_id);
+          }
 
-        // Set API key
-        if (ttsConfig.cartesian?.tts_api_key) {
-          console.log('Backend API key:', maskApiKey(ttsConfig.cartesian.tts_api_key));
-          setApiKey(ttsConfig.cartesian.tts_api_key);
-        }
+          // Set API key
+          if (ttsConfig.cartesian.tts_api_key) {
+            console.log('Backend API key:', maskApiKey(ttsConfig.cartesian.tts_api_key));
+            setApiKey(ttsConfig.cartesian.tts_api_key);
+          }
 
-        // Set voice model
-        if (ttsConfig.cartesian?.model) {
-          console.log('Backend voice model:', ttsConfig.cartesian.model);
-          setSelectedVoice(ttsConfig.cartesian.model);
+          // Set voice model
+          if (ttsConfig.cartesian.model) {
+            console.log('Backend voice model:', ttsConfig.cartesian.model);
+            setSelectedVoice(ttsConfig.cartesian.model);
 
-          // Update Cartesia voice options to include the backend model if it's not already there
-          if (ttsConfig.provider === 'cartesian' && ttsConfig.cartesian.model) {
+            // Update Cartesia voice options to include the backend model if it's not already there
             setVoiceProviders(prev => ({
               ...prev,
               'Cartesia': [...new Set([...prev.Cartesia, ttsConfig.cartesian.model])]
@@ -605,8 +606,8 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
           }
         }
 
-        // Handle OpenAI config if present
-        if (ttsConfig.openai) {
+        // Handle OpenAI config if present and provider is OpenAI
+        if (ttsConfig.provider === 'openai' && ttsConfig.openai) {
           if (ttsConfig.openai.model) {
             console.log('Backend OpenAI model:', ttsConfig.openai.model);
             setSelectedVoice(ttsConfig.openai.model);
@@ -635,8 +636,8 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
           }
         }
 
-        // Handle 11Labs config if present
-        if (ttsConfig.elevenlabs) {
+        // Handle 11Labs config if present and provider is 11Labs
+        if (ttsConfig.provider === 'elevenlabs' && ttsConfig.elevenlabs) {
           if (ttsConfig.elevenlabs.voice_id) {
             console.log('Backend 11Labs voice ID:', ttsConfig.elevenlabs.voice_id);
             setVoiceId(ttsConfig.elevenlabs.voice_id);
@@ -661,11 +662,20 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
 
         console.log('Final UI state after loading backend config:', {
           provider: ttsConfig.provider,
-          language: ttsConfig.cartesian?.language || ttsConfig.openai?.language || 'English',
-          speed: ttsConfig.cartesian?.speed || ttsConfig.openai?.speed || 1.0,
-          voiceId: ttsConfig.cartesian?.voice_id || ttsConfig.elevenlabs?.voice_id || '',
-          apiKey: maskApiKey(ttsConfig.cartesian?.tts_api_key || ttsConfig.openai?.api_key || ttsConfig.elevenlabs?.api_key || ''),
-          voice: ttsConfig.cartesian?.model || ttsConfig.openai?.voice || 'Alloy'
+          language: ttsConfig.provider === 'cartesian' ? ttsConfig.cartesian?.language :
+            ttsConfig.provider === 'openai' ? ttsConfig.openai?.language : 'English',
+          speed: ttsConfig.provider === 'cartesian' ? ttsConfig.cartesian?.speed :
+            ttsConfig.provider === 'openai' ? ttsConfig.openai?.speed :
+              ttsConfig.provider === 'elevenlabs' ? ttsConfig.elevenlabs?.speed : 1.0,
+          voiceId: ttsConfig.provider === 'cartesian' ? ttsConfig.cartesian?.voice_id :
+            ttsConfig.provider === 'elevenlabs' ? ttsConfig.elevenlabs?.voice_id : '',
+          apiKey: maskApiKey(
+            ttsConfig.provider === 'cartesian' ? ttsConfig.cartesian?.tts_api_key :
+              ttsConfig.provider === 'openai' ? ttsConfig.openai?.api_key :
+                ttsConfig.provider === 'elevenlabs' ? ttsConfig.elevenlabs?.api_key : ''
+          ),
+          voice: ttsConfig.provider === 'cartesian' ? ttsConfig.cartesian?.model :
+            ttsConfig.provider === 'openai' ? ttsConfig.openai?.voice : 'Alloy'
         });
       } else {
         // Otherwise load from localStorage
@@ -906,10 +916,10 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
     // Get the actual API key from environment variables if the state is empty
     const defaultApiKeys = agentConfigService.getFullApiKeys();
     const defaultVoiceIds = agentConfigService.getDefaultVoiceIds();
-    
+
     let actualApiKey = apiKey;
     let actualVoiceId = voiceId;
-    
+
     // Use environment variable API key if the state is empty
     if (!actualApiKey) {
       switch (selectedVoiceProvider) {
@@ -950,11 +960,11 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
         language: cartesiaReverseLanguageMapping[selectedLanguage as keyof typeof cartesiaReverseLanguageMapping] || 'en'
       } : null,
       openai: selectedVoiceProvider === 'OpenAI' ? {
-        model: selectedVoice,
+        model: selectedModel,
         speed: speedValue,
         api_key: actualApiKey,
-        voice: responseFormat,
-        response_format: selectedModel,
+        voice: selectedVoice,
+        response_format: responseFormat,
         language: openaiReverseLanguageMapping[selectedLanguage as keyof typeof openaiReverseLanguageMapping] || 'en'
       } : null,
       elevenlabs: selectedVoiceProvider === '11Labs' ? {
@@ -1169,20 +1179,20 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
       case 'OpenAI':
         return (
           <div className="space-y-4">
-          <div>
-            <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              API Key
-            </label>
-            <input
-              type="text"
-              value={getApiKeyDisplayValue(apiKey)}
-              readOnly
-              className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${isDarkMode
-                ? 'border-gray-600 bg-gray-700/50 text-gray-400'
-                : 'border-gray-200 bg-gray-100/50 text-gray-500'
-                }`}
-              placeholder="Default API key loaded"
-            />
+            <div>
+              <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                API Key
+              </label>
+              <input
+                type="text"
+                value={getApiKeyDisplayValue(apiKey)}
+                readOnly
+                className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${isDarkMode
+                  ? 'border-gray-600 bg-gray-700/50 text-gray-400'
+                  : 'border-gray-200 bg-gray-100/50 text-gray-500'
+                  }`}
+                placeholder="Default API key loaded"
+              />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -1795,16 +1805,17 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
           </div>
         </div>
 
-        {/* Additional Transcriber Settings */}
-        <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
-          <div className="flex items-center gap-3 mb-4">
-            <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-purple-900/50' : 'bg-purple-100'}`}>
-              <Settings className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+        {/* Additional Transcriber Settings - Only show for Deepgram */}
+        {selectedTranscriberProvider === 'Deepgram' && (
+          <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-purple-900/50' : 'bg-purple-100'}`}>
+                <Settings className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+              </div>
+              <div>
+                <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Additional Settings</h4>
+              </div>
             </div>
-            <div>
-              <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Additional Settings</h4>
-            </div>
-          </div>
 
           <div className="space-y-4">
             {/* Punctuate Toggle */}
@@ -1823,7 +1834,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                 <button
                   onClick={() => {
                     setPunctuateEnabled(!punctuateEnabled);
-                    saveTranscriberStateToLocalStorage({ punctuateEnabled: !punctuateEnabled });
                   }}
                   disabled={!isEditing}
                   className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
@@ -1854,7 +1864,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                 <button
                   onClick={() => {
                     setSmartFormatEnabled(!smartFormatEnabled);
-                    saveTranscriberStateToLocalStorage({ smartFormatEnabled: !smartFormatEnabled });
                   }}
                   disabled={!isEditing}
                   className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
@@ -1885,7 +1894,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                 <button
                   onClick={() => {
                     setInterimResultEnabled(!interimResultEnabled);
-                    saveTranscriberStateToLocalStorage({ interimResultEnabled: !interimResultEnabled });
                   }}
                   disabled={!isEditing}
                   className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
@@ -1901,6 +1909,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
             </div>
           </div>
         </div>
+        )}
 
         {/* Transcriber Configure Button */}
         <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>

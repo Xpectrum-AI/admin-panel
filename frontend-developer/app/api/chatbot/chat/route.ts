@@ -47,10 +47,13 @@ export async function POST(request: NextRequest) {
     // Use the provided Dify service URL (should already include /chat-messages endpoint)
     let difyServiceUrl = difyApiUrl;
     
-    // If the agent is using the old URL that doesn't work, use the new one
-    if (difyServiceUrl.includes('d22yt2oewbcglh.cloudfront.net')) {
-      console.log('🔄 Agent using old Dify URL, switching to new URL');
-      difyServiceUrl = 'https://dlb20rrk0t1tl.cloudfront.net/v1/chat-messages';
+    // Use environment variable for Dify service URL if available
+    const envDifyUrl = process.env.NEXT_PUBLIC_CHATBOT_API_URL || process.env.NEXT_PUBLIC_DIFY_BASE_URL + '/chat-messages';
+    
+    // If the agent is using an old URL, use the environment variable
+    if (difyServiceUrl.includes('d22yt2oewbcglh.cloudfront.net') || !difyServiceUrl.includes('/chat-messages')) {
+      console.log('🔄 Agent using old Dify URL, switching to environment URL');
+      difyServiceUrl = envDifyUrl;
     } else if (!difyServiceUrl.includes('/chat-messages')) {
       // Only append /chat-messages if it's not already in the URL
       difyServiceUrl = `${difyServiceUrl.replace(/\/$/, '')}/chat-messages`;
