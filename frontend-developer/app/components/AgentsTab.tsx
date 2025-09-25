@@ -106,6 +106,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const isFetchingRef = useRef<boolean>(false);
   const [generatedDifyApiKey, setGeneratedDifyApiKey] = useState<string>('');
   const [isRefreshingAgents, setIsRefreshingAgents] = useState(false);
+  const [isUpdatingAgent, setIsUpdatingAgent] = useState(false);
   const selectedAgentIdRef = useRef<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -901,6 +902,98 @@ Remember: You are the first point of contact for many patients. Your professiona
     window.open(chatbotUrl, '_blank');
   }, []);
 
+  // Handle update agent (save all changes from current UI state)
+  const handleUpdateAgent = useCallback(async () => {
+    if (!selectedAgent) return;
+
+    try {
+      setIsUpdatingAgent(true);
+
+      // Get current values from localStorage first (most recent user changes)
+      let currentToolsConfig = null;
+      let currentVoiceConfig = null;
+      let currentTranscriberConfig = null;
+      let currentModelConfig = null;
+
+      try {
+        const toolsRaw = localStorage.getItem('toolsConfigState');
+        if (toolsRaw) currentToolsConfig = JSON.parse(toolsRaw);
+
+        const voiceRaw = localStorage.getItem('voiceConfigState');
+        if (voiceRaw) currentVoiceConfig = JSON.parse(voiceRaw);
+
+        const transcriberRaw = localStorage.getItem('transcriberConfigState');
+        if (transcriberRaw) currentTranscriberConfig = JSON.parse(transcriberRaw);
+
+        const modelRaw = localStorage.getItem('modelConfigState');
+        if (modelRaw) currentModelConfig = JSON.parse(modelRaw);
+      } catch (error) {
+        console.warn('Failed to parse localStorage configs:', error);
+      }
+
+      // Fallback to current state if localStorage is empty
+      const tools = currentToolsConfig || toolsConfig || getAgentConfigData(selectedAgent).toolsConfig;
+      const voice = currentVoiceConfig || (voiceConfig ?? selectedAgent.tts_config ?? null);
+      const transcriber = currentTranscriberConfig || (transcriberConfig ?? selectedAgent.stt_config ?? null);
+      const model = currentModelConfig || modelConfig;
+
+      // Dify config priority: localStorage → ModelConfig → selectedAgent
+      let difyConfig: { chatbot_api?: string; chatbot_key?: string } = {};
+      try {
+        const raw = localStorage.getItem(`difyConfig_${selectedAgent.name}`);
+        if (raw) difyConfig = JSON.parse(raw);
+      } catch { }
+
+      const chatbot_api = difyConfig.chatbot_api
+        || model?.chatbot_api
+        || selectedAgent.chatbot_api;
+      const chatbot_key = difyConfig.chatbot_key
+        || model?.chatbot_key
+        || selectedAgent.chatbot_key;
+
+      // System prompt priority: ModelConfig (systemPrompt/firstMessage) → selectedAgent.systemPrompt → selectedAgent.initial_message
+      const system_prompt = (model?.systemPrompt || model?.firstMessage || selectedAgent.systemPrompt || selectedAgent.initial_message);
+
+      const completeConfig = {
+        organization_id: selectedAgent.organization_id || currentOrganizationId || organizationName,
+        initial_message: tools?.initialMessage || selectedAgent.initial_message || 'Hello! How can I help you today?',
+        nudge_text: tools?.nudgeText || selectedAgent.nudge_text || 'Hello, Are you still there?',
+        nudge_interval: tools?.nudgeInterval ?? selectedAgent.nudge_interval ?? 15,
+        max_nudges: tools?.maxNudges ?? selectedAgent.max_nudges ?? 3,
+        typing_volume: tools?.typingVolume ?? selectedAgent.typing_volume ?? 0.8,
+        max_call_duration: tools?.maxCallDuration ?? selectedAgent.max_call_duration ?? 300,
+        tts_config: voice || undefined,
+        stt_config: transcriber || undefined,
+        chatbot_api,
+        chatbot_key,
+        system_prompt
+      } as any;
+
+      console.log('💾 Updating agent with config:', completeConfig);
+      console.log('🔍 Tools config being used:', tools);
+      console.log('🔍 Voice config being used:', voice);
+      console.log('🔍 Transcriber config being used:', transcriber);
+      console.log('🔍 Model config being used:', model);
+
+      const result = await agentConfigService.configureAgent(selectedAgent.name, completeConfig);
+
+      if (result.success) {
+        console.log('✅ Agent updated successfully');
+        // Refresh list to reflect latest server state
+        await fetchAgents();
+        alert('Agent updated successfully');
+      } else {
+        console.error('❌ Failed to update agent:', result.message);
+        alert(`Failed to update agent: ${result.message}`);
+      }
+    } catch (err) {
+      console.error('❌ Error updating agent:', err);
+      alert('Error updating agent. Please try again.');
+    } finally {
+      setIsUpdatingAgent(false);
+    }
+  }, [selectedAgent, toolsConfig, voiceConfig, transcriberConfig, modelConfig, currentOrganizationId, organizationName, fetchAgents]);
+
   // Handle going back to agent cards view
   const handleBackToCards = useCallback(() => {
     setShowAgentCards(true);
@@ -1480,6 +1573,19 @@ Remember: You are the first point of contact for many patients. Your professiona
                       <Settings className="h-4 w-4" />
                       {isEditing ? 'Save' : 'Edit'}
                     </button>
+                    {selectedAgent && (
+                      <button
+                        onClick={handleUpdateAgent}
+                        disabled={isUpdatingAgent}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isUpdatingAgent
+                          ? 'opacity-50 cursor-not-allowed'
+                          : 'bg-purple-600 text-white hover:bg-purple-700'
+                          }`}
+                      >
+                        <CheckCircle className={`h-4 w-4 ${isUpdatingAgent ? 'animate-pulse' : ''}`} />
+                        {isUpdatingAgent ? 'Updating...' : 'Update Agent'}
+                      </button>
+                    )}
                     <button
                       onClick={refreshSelectedAgentConfig}
                       disabled={isRefreshingAgents}
