@@ -44,8 +44,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Make the request to Dify API through our server (avoiding CORS)
-    // Use the provided Dify service URL with chat-messages endpoint
-    const difyServiceUrl = `${difyApiUrl.replace(/\/$/, '')}/chat-messages`;
+    // Use the provided Dify service URL (should already include /chat-messages endpoint)
+    let difyServiceUrl = difyApiUrl;
+    
+    // If the agent is using the old URL that doesn't work, use the new one
+    if (difyServiceUrl.includes('d22yt2oewbcglh.cloudfront.net')) {
+      console.log('🔄 Agent using old Dify URL, switching to new URL');
+      difyServiceUrl = 'https://dlb20rrk0t1tl.cloudfront.net/v1/chat-messages';
+    } else if (!difyServiceUrl.includes('/chat-messages')) {
+      // Only append /chat-messages if it's not already in the URL
+      difyServiceUrl = `${difyServiceUrl.replace(/\/$/, '')}/chat-messages`;
+    }
     
     // Determine response mode based on useStreaming parameter
     const responseMode = useStreaming ? 'streaming' : 'blocking';

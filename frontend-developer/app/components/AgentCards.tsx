@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, MessageCircle, Edit, Settings, BarChart3, ExternalLink, Plus, RefreshCw, QrCode, Trash2, ChevronDown } from 'lucide-react';
+import { Bot, MessageCircle, Edit, BarChart3, ExternalLink, Plus, RefreshCw, QrCode, Trash2, ChevronDown } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
 // QR Code Content Component
@@ -132,7 +132,6 @@ export default function AgentCards({
   const [qrAgent, setQrAgent] = useState<Agent | null>(null);
 
   // Settings dropdown state
-  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
 
@@ -155,16 +154,10 @@ export default function AgentCards({
     }
   };
 
-  // Function to toggle settings dropdown
-  const toggleSettingsDropdown = (agentId: string) => {
-    setOpenDropdownId(openDropdownId === agentId ? null : agentId);
-  };
-
   // Function to show delete confirmation modal
   const showDeleteConfirmation = (agent: Agent) => {
     setAgentToDelete(agent);
     setShowDeleteModal(true);
-    setOpenDropdownId(null); // Close dropdown
   };
 
   // Function to handle agent deletion
@@ -186,17 +179,6 @@ export default function AgentCards({
     }
   };
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (openDropdownId) {
-        setOpenDropdownId(null);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [openDropdownId]);
 
   // Generate avatar color based on agent name
   const getAvatarColor = (name: string) => {
@@ -407,39 +389,16 @@ export default function AgentCards({
                     >
                       <QrCode className="w-4 h-4" />
                     </button>
-                    <div className="relative">
-                      <button
-                        onClick={() => toggleSettingsDropdown(agent.id)}
-                        className={`p-2.5 rounded-xl transition-colors flex items-center justify-center ${isDarkMode
-                          ? 'bg-indigo-900/30 hover:bg-indigo-800/30 text-indigo-300'
-                          : 'bg-indigo-100 hover:bg-indigo-200 text-indigo-700'
-                          }`}
-                        title="Agent settings"
-                      >
-                        <Settings className="w-4 h-4" />
-                      </button>
-
-                      {/* Settings Dropdown */}
-                      {openDropdownId === agent.id && (
-                        <div className={`absolute right-0 top-full mt-1 w-48 rounded-lg shadow-lg border z-10 ${isDarkMode
-                          ? 'bg-gray-800 border-gray-700'
-                          : 'bg-white border-gray-200'
-                          }`}>
-                          <div className="py-1">
-                            <button
-                              onClick={() => showDeleteConfirmation(agent)}
-                              className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-red-50 hover:text-red-700 ${isDarkMode
-                                ? 'text-gray-300 hover:bg-red-900/20 hover:text-red-400'
-                                : 'text-gray-700 hover:bg-red-50 hover:text-red-700'
-                                }`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              Delete Agent
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    <button
+                      onClick={() => showDeleteConfirmation(agent)}
+                      className={`p-2.5 rounded-xl transition-colors flex items-center justify-center ${isDarkMode
+                        ? 'bg-red-900/30 hover:bg-red-800/30 text-red-300'
+                        : 'bg-red-100 hover:bg-red-200 text-red-700'
+                        }`}
+                      title="Delete Agent"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
 
                   {/* Footer links */}
