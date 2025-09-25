@@ -13,6 +13,7 @@ import { agentConfigService } from '../../service/agentConfigService';
 import { difyAgentService } from '../../service/difyAgentService';
 import { useAuthInfo } from '@propelauth/react';
 import { useTheme } from '../contexts/ThemeContext';
+import { generateAgentUuid, extractAgentName, getDisplayName } from '../../lib/utils/agentUuid';
 
 interface Agent {
   id: string;
@@ -213,8 +214,8 @@ export default function AgentsTab({ }: AgentsTabProps) {
               max_call_duration: agent.max_call_duration
             });
               return {
-                id: agent.name || agent.id || `agent-${Date.now()}`,
-                name: agent.name || 'Unnamed Agent',
+              id: agent.name || agent.id || `agent-${Date.now()}`, // Keep the full UUID as ID
+              name: getDisplayName(agent.name || agent.id || 'Unnamed Agent'), // Display only the agent name
                 status: agent.status || 'draft',
                 model: agent.model || 'GPT-4o',
                 provider: agent.provider || 'OpenAI',
@@ -504,13 +505,17 @@ export default function AgentsTab({ }: AgentsTabProps) {
     // Start loading state
     setIsCreatingAgent(true);
 
+    // Generate UUID for the agent
+    const agentNameUuid = generateAgentUuid(agentPrefix.trim());
+    console.log('🆔 Generated agent UUID:', agentNameUuid);
+
     // Create Dify agent and get API key immediately
-    console.log('🚀 Creating Dify agent for new agent:', agentPrefix.trim());
+    console.log('🚀 Creating Dify agent for new agent:', agentNameUuid);
     let difyApiKey = '';
     
     try {
       const difyResult = await difyAgentService.createDifyAgent({
-        agentName: agentPrefix.trim(),
+        agentName: agentNameUuid, // Use the UUID format for Dify
         organizationId: currentOrganizationId || organizationName,
         modelProvider: 'langgenius/openai/openai',
         modelName: 'gpt-4o'
@@ -608,8 +613,8 @@ Remember: You are the first point of contact for many patients. Your professiona
         openai: {
           api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
           model: 'tts-1',
-          response_format: 'alloy',
-          voice: 'mp3',
+          response_format: 'mp3',
+          voice: 'alloy',
           language: 'en',
           speed: 1.0
         }
@@ -661,8 +666,8 @@ Remember: You are the first point of contact for many patients. Your professiona
     console.log('🔧 Creating agent with complete configuration:', completeAgentConfig);
 
     try {
-      // Create the agent with all default configurations
-      const result = await agentConfigService.configureAgent(agentPrefix.trim(), completeAgentConfig);
+      // Create the agent with all default configurations using UUID
+      const result = await agentConfigService.configureAgent(agentNameUuid, completeAgentConfig);
 
       if (result.success) {
         console.log('✅ Agent created successfully with default configurations');
@@ -740,8 +745,8 @@ Remember: You are the first point of contact for many patients. Your professiona
 
         // Create the agent object for UI
     const newAgent: Agent = {
-      id: agentPrefix.trim(),
-      name: agentPrefix.trim(),
+          id: agentNameUuid, // Use UUID as the ID
+          name: getDisplayName(agentNameUuid), // Display only the agent name
           status: 'active',
       avatar: '🤖',
           description: 'AI Agent - Ready to use',
@@ -902,6 +907,81 @@ Remember: You are the first point of contact for many patients. Your professiona
     window.open(chatbotUrl, '_blank');
   }, []);
 
+  // Helper function to convert UI voice config to backend format
+  const convertUIVoiceConfigToBackend = useCallback((uiConfig: any) => {
+    if (!uiConfig || !uiConfig.voiceProvider) return null;
+
+    const provider = uiConfig.voiceProvider;
+    const backendConfig = {
+      provider: provider === 'Cartesia' ? 'cartesian' :
+        provider === '11Labs' ? 'elevenlabs' : 'openai',
+      cartesian: null,
+      openai: null,
+      elevenlabs: null
+    };
+
+    if (provider === 'Cartesia') {
+      backendConfig.cartesian = {
+        voice_id: uiConfig.voiceId || '',
+        tts_api_key: uiConfig.apiKey || '',
+        model: uiConfig.voice || 'sonic-2.0',
+        speed: uiConfig.speed || 1.0,
+        language: uiConfig.language === 'English' ? 'en' : 'en' // Add proper language mapping if needed
+      };
+    } else if (provider === 'OpenAI') {
+      backendConfig.openai = {
+        model: uiConfig.voice || 'tts-1',
+        speed: uiConfig.speed || 1.0,
+        api_key: uiConfig.apiKey || '',
+        voice: uiConfig.responseFormat || 'alloy',
+        response_format: uiConfig.selectedModel || 'mp3',
+        language: uiConfig.language === 'English' ? 'en' : 'en' // Add proper language mapping if needed
+      };
+    } else if (provider === '11Labs') {
+      backendConfig.elevenlabs = {
+        voice_id: uiConfig.voiceId || 'pNInz6obpgDQGcFmaJgB',
+        api_key: uiConfig.apiKey || '',
+        model_id: 'eleven_monolingual_v1',
+        speed: uiConfig.speed || 1.0,
+        stability: uiConfig.stability || 0.5,
+        similarity_boost: uiConfig.similarityBoost || 0.5
+      };
+    }
+
+    return backendConfig;
+  }, []);
+
+  // Helper function to convert UI transcriber config to backend format
+  const convertUITranscriberConfigToBackend = useCallback((uiConfig: any) => {
+    if (!uiConfig || !uiConfig.selectedTranscriberProvider) return null;
+
+    const provider = uiConfig.selectedTranscriberProvider;
+    const backendConfig = {
+      provider: provider === 'Deepgram' ? 'deepgram' : 'openai',
+      deepgram: null,
+      openai: null
+    };
+
+    if (provider === 'Deepgram') {
+      backendConfig.deepgram = {
+        api_key: uiConfig.transcriberApiKey || '',
+        model: uiConfig.selectedTranscriberModel || 'nova-2',
+        language: uiConfig.selectedTranscriberLanguage || 'en-US',
+        punctuate: uiConfig.punctuateEnabled !== undefined ? uiConfig.punctuateEnabled : true,
+        smart_format: uiConfig.smartFormatEnabled !== undefined ? uiConfig.smartFormatEnabled : true,
+        interim_results: uiConfig.interimResultEnabled !== undefined ? uiConfig.interimResultEnabled : false
+      };
+    } else if (provider === 'OpenAI') {
+      backendConfig.openai = {
+        api_key: uiConfig.transcriberApiKey || '',
+        model: uiConfig.selectedTranscriberModel || 'tts-1',
+        language: uiConfig.selectedTranscriberLanguage === 'multi' ? null : (uiConfig.selectedTranscriberLanguage || 'en')
+      };
+    }
+
+    return backendConfig;
+  }, []);
+
   // Handle update agent (save all changes from current UI state)
   const handleUpdateAgent = useCallback(async () => {
     if (!selectedAgent) return;
@@ -933,8 +1013,26 @@ Remember: You are the first point of contact for many patients. Your professiona
 
       // Fallback to current state if localStorage is empty
       const tools = currentToolsConfig || toolsConfig || getAgentConfigData(selectedAgent).toolsConfig;
-      const voice = currentVoiceConfig || (voiceConfig ?? selectedAgent.tts_config ?? null);
-      const transcriber = currentTranscriberConfig || (transcriberConfig ?? selectedAgent.stt_config ?? null);
+
+      // Convert UI voice config to backend format if it exists
+      let voice = null;
+      if (currentVoiceConfig) {
+        voice = convertUIVoiceConfigToBackend(currentVoiceConfig);
+      } else if (voiceConfig) {
+        voice = voiceConfig; // Already in backend format
+      } else if (selectedAgent.tts_config) {
+        voice = selectedAgent.tts_config; // Already in backend format
+      }
+
+      // Convert UI transcriber config to backend format if it exists
+      let transcriber = null;
+      if (currentTranscriberConfig) {
+        transcriber = convertUITranscriberConfigToBackend(currentTranscriberConfig);
+      } else if (transcriberConfig) {
+        transcriber = transcriberConfig; // Already in backend format
+      } else if (selectedAgent.stt_config) {
+        transcriber = selectedAgent.stt_config; // Already in backend format
+      }
       const model = currentModelConfig || modelConfig;
 
       // Dify config priority: localStorage → ModelConfig → selectedAgent
@@ -975,7 +1073,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       console.log('🔍 Transcriber config being used:', transcriber);
       console.log('🔍 Model config being used:', model);
 
-      const result = await agentConfigService.configureAgent(selectedAgent.name, completeConfig);
+      const result = await agentConfigService.configureAgent(selectedAgent.id, completeConfig);
 
       if (result.success) {
         console.log('✅ Agent updated successfully');
@@ -992,7 +1090,7 @@ Remember: You are the first point of contact for many patients. Your professiona
     } finally {
       setIsUpdatingAgent(false);
     }
-  }, [selectedAgent, toolsConfig, voiceConfig, transcriberConfig, modelConfig, currentOrganizationId, organizationName, fetchAgents]);
+  }, [selectedAgent, toolsConfig, voiceConfig, transcriberConfig, modelConfig, currentOrganizationId, organizationName, fetchAgents, convertUIVoiceConfigToBackend, convertUITranscriberConfigToBackend]);
 
   // Handle going back to agent cards view
   const handleBackToCards = useCallback(() => {
@@ -1117,13 +1215,17 @@ Remember: You are the first point of contact for many patients. Your professiona
         chatbot_api: agent.chatbot_api || '', // Include chatbot_api for ModelConfig
         chatbot_key: agent.chatbot_key // Include chatbot_key for proper identification
       },
-      // Voice config data - pass the raw backend config directly
-      voiceConfig: agent.tts_config || null,
+      // Voice config data - only pass if it has actual configuration data
+      voiceConfig: agent.tts_config && (
+        (agent.tts_config.cartesian && Object.values(agent.tts_config.cartesian).some(v => v !== null && v !== undefined)) ||
+        (agent.tts_config.openai && Object.values(agent.tts_config.openai).some(v => v !== null && v !== undefined)) ||
+        (agent.tts_config.elevenlabs && Object.values(agent.tts_config.elevenlabs).some(v => v !== null && v !== undefined))
+      ) ? agent.tts_config : null,
       // Transcriber config data - pass the raw backend config directly
       transcriberConfig: agent.stt_config || null,
       // Widget config data
       widgetConfig: {
-        difyApiUrl: agent.chatbot_api ? agent.chatbot_api.replace('/chat-messages', '') : process.env.NEXT_PUBLIC_DIFY_BASE_URL || process.env.NEXT_PUBLIC_CHATBOT_API_URL || 'https://dlb20rrk0t1tl.cloudfront.net/v1',
+        difyApiUrl: agent.chatbot_api ? agent.chatbot_api.replace('/chat-messages', '') : process.env.NEXT_PUBLIC_DIFY_BASE_URL || process.env.NEXT_PUBLIC_CHATBOT_API_URL?.replace('/chat-messages', '') || 'https://dlb20rrk0t1tl.cloudfront.net/v1',
         difyApiKey: agent.chatbot_key || ''
       },
       // Tools config data
@@ -1216,10 +1318,10 @@ Remember: You are the first point of contact for many patients. Your professiona
     try {
       // First, try to delete the Dify agent if it has a chatbot_key
       if (agentToDelete.chatbot_key) {
-        console.log('🗑️ Deleting Dify agent for:', agentToDelete.name);
+        console.log('🗑️ Deleting Dify agent for:', agentToDelete.id);
         try {
           const difyResult = await difyAgentService.deleteDifyAgent({
-            agentName: agentToDelete.name,
+            agentName: agentToDelete.id, // Use UUID for Dify deletion
             organizationId: currentOrganizationId,
             // Note: We don't have the appId stored, but the script can still attempt cleanup
           });
@@ -1236,7 +1338,7 @@ Remember: You are the first point of contact for many patients. Your professiona
 
       // Delete the agent from the backend
       const orgName = organizationName || currentOrganizationId || 'Unknown Organization';
-      const result = await agentConfigService.deleteAgent(agentToDelete.name, orgName);
+      const result = await agentConfigService.deleteAgent(agentToDelete.id, orgName);
       if (result.success) {
         // Remove agent from local state
         setAgents(prev => prev.filter(a => a.id !== agentToDelete.id));
@@ -1436,7 +1538,6 @@ Remember: You are the first point of contact for many patients. Your professiona
             onOpenAgent={handleOpenAgent}
             onCreateAgent={handleCreateNewAgent}
             onRefreshAgents={handleRefreshAgents}
-            onDeleteAgent={handleDeleteAgent}
             isLoadingAgents={isLoadingAgents}
             isRefreshingAgents={isRefreshingAgents}
             agentsError={agentsError}
@@ -1729,7 +1830,6 @@ Remember: You are the first point of contact for many patients. Your professiona
                           modelConfig={modelConfig}
                           voiceConfig={voiceConfig}
                           transcriberConfig={transcriberConfig}
-                    onAgentCreated={handleAgentCreated}
                         />
                 )}
                   </div>

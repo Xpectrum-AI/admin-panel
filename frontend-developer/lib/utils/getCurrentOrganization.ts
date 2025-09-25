@@ -22,13 +22,13 @@ export function getCurrentOrganization(request: NextRequest): string | null {
       console.log('🔍 Authorization header found, but organization extraction not implemented yet');
     }
 
-    // For now, return a default organization name
+    // For now, return a default organization name from environment
     // In a real implementation, this should be extracted from the user's session/token
-    return 'Xpectrum_AI'; // Default organization name
+    return process.env.NEXT_PUBLIC_DEFAULT_ORG_NAME || 'Xpectrum_AI'; // Default organization name
     
   } catch (error) {
     console.error('Error extracting current organization:', error);
-    return 'Xpectrum_AI'; // Fallback organization
+    return process.env.NEXT_PUBLIC_DEFAULT_ORG_NAME || 'Xpectrum_AI'; // Fallback organization
   }
 }
 
@@ -53,5 +53,5 @@ export function getOrganizationFromRequest(request: NextRequest, body?: any): st
     return orgFromHeader;
   }
   
-  return getCurrentOrganization(request) || 'Xpectrum_AI';
+  return getCurrentOrganization(request) || process.env.NEXT_PUBLIC_DEFAULT_ORG_NAME || 'Xpectrum_AI';
 }
