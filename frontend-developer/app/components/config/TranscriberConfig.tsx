@@ -126,18 +126,9 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
           });
         }
       } else {
-        // Otherwise load from localStorage
-        const savedState = localStorage.getItem('transcriberConfigState');
-        if (savedState) {
-          const parsedState = JSON.parse(savedState);
-          setSelectedTranscriberProvider(parsedState.selectedTranscriberProvider || 'Deepgram');
-          setSelectedLanguage(parsedState.selectedLanguage || 'en-US');
-          setSelectedModel(parsedState.selectedModel || 'nova-2');
-          setApiKey(parsedState.apiKey || '');
-          setPunctuateEnabled(parsedState.punctuateEnabled !== undefined ? parsedState.punctuateEnabled : true);
-          setSmartFormatEnabled(parsedState.smartFormatEnabled !== undefined ? parsedState.smartFormatEnabled : true);
-          setInterimResultEnabled(parsedState.interimResultEnabled !== undefined ? parsedState.interimResultEnabled : false);
-        }
+        // Load from centralized state if available
+        // Note: TranscriberConfig should use centralized state through parent component
+        console.log('📂 TranscriberConfig: No existing config, using defaults');
       }
     } catch (error) {
       console.warn('Failed to load transcriber config state:', error);
@@ -153,24 +144,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
     };
   }, []);
 
-  // Save state to localStorage whenever it changes
-  const saveStateToLocalStorage = (updates: any) => {
-    try {
-      const currentState = {
-        selectedTranscriberProvider,
-        selectedLanguage,
-        selectedModel,
-        apiKey,
-        punctuateEnabled,
-        smartFormatEnabled,
-        interimResultEnabled,
-        ...updates
-      };
-      localStorage.setItem('transcriberConfigState', JSON.stringify(currentState));
-    } catch (error) {
-      console.warn('Failed to save transcriber config state to localStorage:', error);
-    }
-  };
+  // Note: Removed localStorage usage - now uses centralized state only
 
   // Load default values on component mount
   useEffect(() => {
@@ -221,7 +195,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
       smartFormat: smartFormatEnabled,
       interimResults: interimResultEnabled
     };
-    saveStateToLocalStorage(uiConfig);
+    // Note: Removed localStorage usage - now uses centralized state only
 
     const configString = JSON.stringify(backendConfig);
     if (onConfigChange && configString !== lastTranscriberConfigRef.current) {
@@ -247,7 +221,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
         interimResults: interimResultEnabled
       };
 
-      saveStateToLocalStorage(config);
+      // Note: Removed localStorage usage - now uses centralized state only
 
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -295,10 +269,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
     const providerData = transcriberProviders['Deepgram'];
     if (providerData && providerData.length > 0) {
       setSelectedModel(providerData[0]);
-      saveStateToLocalStorage({
-        selectedTranscriberProvider: provider,
-        selectedModel: providerData[0]
-      });
+      // Note: Removed localStorage usage - now uses centralized state only
     }
 
     console.log('✅ Transcriber provider changed to', provider, 'with reset model');
@@ -351,7 +322,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
                 value={selectedLanguage}
                 onChange={(e) => {
                   setSelectedLanguage(e.target.value);
-                  saveStateToLocalStorage({ selectedLanguage: e.target.value });
+                  // Note: Removed localStorage usage - now uses centralized state only
                 }}
                 disabled={!isEditing}
                 className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
@@ -394,7 +365,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
                 value={selectedModel}
                 onChange={(e) => {
                   setSelectedModel(e.target.value);
-                  saveStateToLocalStorage({ selectedModel: e.target.value });
+                  // Note: Removed localStorage usage - now uses centralized state only 
                 }}
                 className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base ${isDarkMode
                   ? 'bg-gray-700/50 border-gray-600 text-gray-200'
@@ -456,7 +427,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
                 <button
                   onClick={() => {
                     setPunctuateEnabled(!punctuateEnabled);
-                    saveStateToLocalStorage({ punctuateEnabled: !punctuateEnabled });
+                    // Note: Removed localStorage usage - now uses centralized state only
                   }}
                   disabled={!isEditing}
                   className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
@@ -487,7 +458,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
                 <button
                   onClick={() => {
                     setSmartFormatEnabled(!smartFormatEnabled);
-                    saveStateToLocalStorage({ smartFormatEnabled: !smartFormatEnabled });
+                    // Note: Removed localStorage usage - now uses centralized state only
                   }}
                   disabled={!isEditing}
                   className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
@@ -518,7 +489,7 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
                 <button
                   onClick={() => {
                     setInterimResultEnabled(!interimResultEnabled);
-                    saveStateToLocalStorage({ interimResultEnabled: !interimResultEnabled });
+                    // Note: Removed localStorage usage - now uses centralized state only       
                   }}
                   disabled={!isEditing}
                   className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
@@ -536,47 +507,6 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
         </div>
       )}
 
-      {/* Configure Button */}
-      <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
-        <div className="flex justify-end">
-          <button
-            onClick={handleConfigure}
-            disabled={isConfiguring || !isEditing}
-            className={`group relative px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-            {isConfiguring ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Settings className="h-5 w-5" />
-            )}
-            <span className="font-semibold">{isConfiguring ? 'Saving...' : 'Save Configuration'}</span>
-          </button>
-        </div>
-
-        {/* Status Messages */}
-        {configStatus === 'success' && (
-          <div className={`mt-4 p-3 rounded-xl border ${isDarkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200'}`}>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className={`text-sm ${isDarkMode ? 'text-green-300' : 'text-green-800'}`}>
-                Transcriber configuration saved successfully!
-              </span>
-            </div>
-          </div>
-        )}
-
-        {configStatus === 'error' && (
-          <div className={`mt-4 p-3 rounded-xl border ${isDarkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200'}`}>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-              <span className={`text-sm ${isDarkMode ? 'text-red-300' : 'text-red-800'}`}>
-                Failed to save transcriber configuration. Please try again.
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   );
 });

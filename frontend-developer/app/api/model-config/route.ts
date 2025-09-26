@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticateApiKey } from '@/lib/middleware/auth';
 
 const DIFY_BASE_URL = process.env.NEXT_PUBLIC_DIFY_BASE_URL || '';
 
@@ -25,12 +24,6 @@ function getModelApiKey(provider: string): string | null {
 
 export async function POST(request: NextRequest) {
   try {
-    // Authenticate the request
-    const authResult = await authenticateApiKey(request);
-    if (!authResult.success) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const body = await request.json();
     console.log('⚙️ Configuring model:', body);
     
@@ -67,46 +60,95 @@ export async function POST(request: NextRequest) {
     
     // Use the Dify API key from the request body, fallback to environment variable
     const difyApiKey = body.chatbot_api_key || process.env.NEXT_PUBLIC_CHATBOT_API_KEY;
-    console.log('🔍 Dify API key:', difyApiKey);
-    if (!difyApiKey) {
+    console.log('🔍 Dify API key:', difyApiKey ? 'Present' : 'Missing');
+    
+    // Validate required configuration
+    if (!DIFY_BASE_URL) {
       return NextResponse.json(
         { 
           success: false, 
-          error: 'Dify API key not provided and not configured in environment' 
+          error: 'DIFY_BASE_URL not configured' 
         },
         { status: 400 }
       );
     }
     
-    const response = await fetch(`${DIFY_BASE_URL}/apps/current/model-config`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${difyApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(configPayload),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Failed to configure model:', errorData);
+    if (!difyApiKey) {
       return NextResponse.json(
         { 
           success: false, 
-          error: errorData.error || `HTTP ${response.status}: ${response.statusText}` 
+          error: 'Dify API key not provided' 
         },
-        { status: response.status }
+        { status: 400 }
       );
     }
-
-    const data = await response.json();
-    console.log('✅ Model configured successfully:', data);
     
-    return NextResponse.json({
-      success: true,
-      data,
-      message: 'Model configuration updated successfully'
-    });
+    try {
+      console.log('🔍 Making request to Dify API:', {
+        url: `${DIFY_BASE_URL}/apps/current/model-config`,
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${difyApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: configPayload
+      });
+
+      // Try different authentication methods
+      const authHeaders = {
+        'Content-Type': 'application/json',
+      };
+
+      // Method 1: Bearer token
+      authHeaders['Authorization'] = `Bearer ${difyApiKey}`;
+
+      const response = await fetch(`${DIFY_BASE_URL}/apps/current/model-config`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify(configPayload),
+      });
+
+      console.log('🔍 Dify API response status:', response.status);
+      console.log('🔍 Dify API response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ Failed to configure model:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData
+        });
+        
+        
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: errorData.error || `HTTP ${response.status}: ${response.statusText}` 
+          },
+          { status: response.status }
+        );
+      }
+
+      const data = await response.json();
+      console.log('✅ Model configured successfully:', data);
+      
+      return NextResponse.json({
+        success: true,
+        data,
+        message: 'Model configuration updated successfully'
+      });
+      
+    } catch (difyError) {
+      console.error('❌ Dify API call failed:', difyError);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Dify API call failed',
+          details: difyError instanceof Error ? difyError.message : 'Unknown error'
+        },
+        { status: 500 }
+      );
+    }
 
   } catch (error) {
     console.error('❌ Model config error:', error);

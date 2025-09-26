@@ -1,9 +1,10 @@
 'use client';
 
-import React, { forwardRef, useState, useEffect, useRef } from 'react';
+import React, { forwardRef, useState, useEffect, useRef, useCallback } from 'react';
 import { Mic, Volume2, Settings, Loader2, RefreshCw, MessageSquare, Zap } from 'lucide-react';
 import { agentConfigService, maskApiKey } from '../../../service/agentConfigService';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useVoiceConfig, useTranscriberConfig } from '../../hooks/useAgentConfigSection';
 
 interface VoiceConfigProps {
   agentName?: string;
@@ -12,10 +13,22 @@ interface VoiceConfigProps {
   existingConfig?: any;
   existingTranscriberConfig?: any;
   isEditing?: boolean;
+  // Add these new props to receive centralized configuration
+  voiceConfiguration?: any;
+  transcriberConfiguration?: any;
 }
 
-const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 'default', onConfigChange, onTranscriberConfigChange, existingConfig, existingTranscriberConfig, isEditing = false }, ref) => {
+const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ 
+  agentName = 'default', 
+  onConfigChange, 
+  onTranscriberConfigChange, 
+  isEditing = false,
+  voiceConfiguration,    // Add this
+  transcriberConfiguration  // Add this
+}, ref) => {
   const { isDarkMode } = useTheme();
+  const { config: voiceConfig, updateConfig: updateVoiceConfig } = useVoiceConfig();
+  const { config: transcriberConfig, updateConfig: updateTranscriberConfig } = useTranscriberConfig();
   // Local state for UI updates
   const [selectedVoiceProvider, setSelectedVoiceProvider] = useState('OpenAI');
   const [selectedLanguage, setSelectedLanguage] = useState('English');
@@ -27,8 +40,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
   const [similarityBoost, setSimilarityBoost] = useState(0.5);
   const [selectedVoice, setSelectedVoice] = useState('alloy');
   const [responseFormat, setResponseFormat] = useState('mp3');
-  const [isConfiguring, setIsConfiguring] = useState(false);
-  const [configStatus, setConfigStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [isUserChangingProvider, setIsUserChangingProvider] = useState(false);
   const providerChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastConfigRef = useRef<string>('');
@@ -41,8 +52,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
   const [punctuateEnabled, setPunctuateEnabled] = useState(true);
   const [smartFormatEnabled, setSmartFormatEnabled] = useState(true);
   const [interimResultEnabled, setInterimResultEnabled] = useState(false);
-  const [isTranscriberConfiguring, setIsTranscriberConfiguring] = useState(false);
-  const [transcriberConfigStatus, setTranscriberConfigStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [isUserChangingTranscriberProvider, setIsUserChangingTranscriberProvider] = useState(false);
   const transcriberProviderChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -470,19 +479,38 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
     'shimmer': 'Shimmer'
   };
 
+  // Reset language when model changes for 11Labs
+  React.useEffect(() => {
+    if (selectedVoiceProvider === '11Labs') {
+      const languageMapping = getCurrentLanguageMapping();
+      const availableLanguages = Object.values(languageMapping);
+      
+      // If current selected language is not available for the new model, reset to first available
+      if (availableLanguages.length > 0 && !availableLanguages.includes(selectedLanguage)) {
+        console.log('🔄 Resetting language for 11Labs model change');
+        setSelectedLanguage(availableLanguages[0]);
+      }
+    }
+  }, [selectedModel, selectedVoiceProvider]);
+
   // Function to get current language mapping based on provider
   const getCurrentLanguageMapping = () => {
     if (selectedVoiceProvider === 'Cartesia') {
       return cartesiaLanguageMapping;
     } else if (selectedVoiceProvider === '11Labs') {
-      // Get supported languages for the selected model
-      const supportedLanguages = elevenLabsModelLanguages[selectedVoice as keyof typeof elevenLabsModelLanguages] || [];
+      // Get supported languages for the selected model (not voice)
+      const supportedLanguages = elevenLabsModelLanguages[selectedModel as keyof typeof elevenLabsModelLanguages] || [];
+      console.log('🔍 11Labs - Selected Model:', selectedModel);
+      console.log('🔍 11Labs - Supported Languages:', supportedLanguages);
+      
       const filteredMapping: { [key: string]: string } = {};
       supportedLanguages.forEach(langCode => {
         if (elevenLabsLanguageMapping[langCode as keyof typeof elevenLabsLanguageMapping]) {
           filteredMapping[langCode] = elevenLabsLanguageMapping[langCode as keyof typeof elevenLabsLanguageMapping];
         }
       });
+      
+      console.log('🔍 11Labs - Filtered Language Mapping:', filteredMapping);
       return filteredMapping;
     }
     return openaiLanguageMapping;
@@ -492,11 +520,18 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
     if (selectedVoiceProvider === 'Cartesia') {
       return cartesiaReverseLanguageMapping;
     } else if (selectedVoiceProvider === '11Labs') {
-      // Create reverse mapping for 11Labs
+      // Create reverse mapping for 11Labs based on supported languages
+      const supportedLanguages = elevenLabsModelLanguages[selectedModel as keyof typeof elevenLabsModelLanguages] || [];
       const reverseMapping: { [key: string]: string } = {};
-      Object.entries(elevenLabsLanguageMapping).forEach(([code, name]) => {
-        reverseMapping[name] = code;
+      
+      supportedLanguages.forEach(langCode => {
+        if (elevenLabsLanguageMapping[langCode as keyof typeof elevenLabsLanguageMapping]) {
+          const languageName = elevenLabsLanguageMapping[langCode as keyof typeof elevenLabsLanguageMapping];
+          reverseMapping[languageName] = langCode;
+        }
       });
+      
+      console.log('🔍 11Labs - Reverse Language Mapping:', reverseMapping);
       return reverseMapping;
     }
     return openaiReverseLanguageMapping;
@@ -533,257 +568,98 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
     };
   };
 
-  // Load state from localStorage on component mount
+  // Load state from centralized configuration when component mounts or when configuration changes
   useEffect(() => {
-    try {
-      // Don't override user selections if they're actively changing the provider
-      if (isUserChangingProvider) {
-        console.log('🚫 Skipping initial config load - user is changing provider');
-        return;
+    console.log('🔄 VoiceConfig useEffect triggered:', {
+      voiceConfiguration,
+      transcriberConfiguration,
+      isUserChangingProvider,
+      isUserChangingTranscriberProvider
+    });
+    
+    // Load from centralized configuration
+    if (voiceConfiguration && !isUserChangingProvider) {
+      console.log('🔄 Loading voice state from centralized configuration:', voiceConfiguration);
+      
+      if (voiceConfiguration.selectedVoiceProvider) {
+        console.log('🔄 Setting voice provider:', voiceConfiguration.selectedVoiceProvider);
+        setSelectedVoiceProvider(voiceConfiguration.selectedVoiceProvider);
       }
-
-      // Additional safety check - if we just changed the provider, don't override
-      if (providerChangeTimeoutRef.current) {
-        console.log('🚫 Skipping initial config load - provider change timeout still active');
-        return;
+      if (voiceConfiguration.selectedLanguage) {
+        console.log('🔄 Setting language:', voiceConfiguration.selectedLanguage);
+        setSelectedLanguage(voiceConfiguration.selectedLanguage);
       }
-
-      // If we have existing config from agent, use that
-      if (existingConfig) {
-        console.log('Loading existing config:', existingConfig);
-
-        // Handle TTS config from backend - existingConfig is already the TTS config
-        const ttsConfig = existingConfig;
-        console.log('TTS Config from backend:', ttsConfig);
-
-        // Set provider (convert backend format to UI format)
-        let provider = ttsConfig.provider;
-        if (provider === 'cartesian') provider = 'Cartesia';
-        if (provider === 'elevenlabs') provider = '11Labs';
-        if (provider === 'openai') provider = 'OpenAI';
-
-        console.log('Backend provider:', ttsConfig.provider, '-> UI provider:', provider);
-        setSelectedVoiceProvider(provider);
-
-        // Load provider-specific configuration based on the actual provider
-        if (ttsConfig.provider === 'cartesian' && ttsConfig.cartesian) {
-          // Set language (convert backend format to UI format)
-          if (ttsConfig.cartesian.language) {
-            const backendLang = ttsConfig.cartesian.language;
-            const uiLang = cartesiaLanguageMapping[backendLang as keyof typeof cartesiaLanguageMapping] || 'English';
-            console.log('Backend language:', backendLang, '-> UI language:', uiLang);
-            setSelectedLanguage(uiLang);
-          }
-
-          // Set speed
-          if (ttsConfig.cartesian.speed !== undefined) {
-            console.log('Backend speed:', ttsConfig.cartesian.speed);
-            setSpeedValue(ttsConfig.cartesian.speed);
-          }
-
-          // Set voice ID
-          if (ttsConfig.cartesian.voice_id) {
-            console.log('Backend voice ID:', ttsConfig.cartesian.voice_id);
-            setVoiceId(ttsConfig.cartesian.voice_id);
-          }
-
-          // Set API key
-          if (ttsConfig.cartesian.tts_api_key) {
-            console.log('Backend API key:', maskApiKey(ttsConfig.cartesian.tts_api_key));
-            setApiKey(ttsConfig.cartesian.tts_api_key);
-          }
-
-          // Set voice model
-          if (ttsConfig.cartesian.model) {
-            console.log('Backend voice model:', ttsConfig.cartesian.model);
-            setSelectedVoice(ttsConfig.cartesian.model);
-
-            // Update Cartesia voice options to include the backend model if it's not already there
-            setVoiceProviders(prev => ({
-              ...prev,
-              'Cartesia': [...new Set([...prev.Cartesia, ttsConfig.cartesian.model])]
-            }));
-          }
-        }
-
-        // Handle OpenAI config if present and provider is OpenAI
-        if (ttsConfig.provider === 'openai' && ttsConfig.openai) {
-          if (ttsConfig.openai.model) {
-            console.log('Backend OpenAI model:', ttsConfig.openai.model);
-            setSelectedVoice(ttsConfig.openai.model);
-          }
-          if (ttsConfig.openai.speed !== undefined) {
-            console.log('Backend OpenAI speed:', ttsConfig.openai.speed);
-            setSpeedValue(ttsConfig.openai.speed);
-          }
-          if (ttsConfig.openai.api_key) {
-            console.log('Backend OpenAI API key:', maskApiKey(ttsConfig.openai.api_key));
-            setApiKey(ttsConfig.openai.api_key);
-          }
-          if (ttsConfig.openai.voice) {
-            console.log('Backend OpenAI voice:', ttsConfig.openai.voice);
-            setResponseFormat(ttsConfig.openai.voice);
-          }
-          if (ttsConfig.openai.response_format) {
-            console.log('Backend OpenAI response format:', ttsConfig.openai.response_format);
-            setSelectedModel(ttsConfig.openai.response_format);
-          }
-          if (ttsConfig.openai.language) {
-            const backendLang = ttsConfig.openai.language;
-            const uiLang = openaiLanguageMapping[backendLang as keyof typeof openaiLanguageMapping] || 'English';
-            console.log('Backend OpenAI language:', backendLang, '-> UI language:', uiLang);
-            setSelectedLanguage(uiLang);
-          }
-        }
-
-        // Handle 11Labs config if present and provider is 11Labs
-        if (ttsConfig.provider === 'elevenlabs' && ttsConfig.elevenlabs) {
-          if (ttsConfig.elevenlabs.voice_id) {
-            console.log('Backend 11Labs voice ID:', ttsConfig.elevenlabs.voice_id);
-            setVoiceId(ttsConfig.elevenlabs.voice_id);
-          }
-          if (ttsConfig.elevenlabs.speed !== undefined) {
-            console.log('Backend 11Labs speed:', ttsConfig.elevenlabs.speed);
-            setSpeedValue(ttsConfig.elevenlabs.speed);
-          }
-          if (ttsConfig.elevenlabs.api_key) {
-            console.log('Backend 11Labs API key:', maskApiKey(ttsConfig.elevenlabs.api_key));
-            setApiKey(ttsConfig.elevenlabs.api_key);
-          }
-          if (ttsConfig.elevenlabs.stability !== undefined) {
-            console.log('Backend 11Labs stability:', ttsConfig.elevenlabs.stability);
-            setStability(ttsConfig.elevenlabs.stability);
-          }
-          if (ttsConfig.elevenlabs.similarity_boost !== undefined) {
-            console.log('Backend 11Labs similarity_boost:', ttsConfig.elevenlabs.similarity_boost);
-            setSimilarityBoost(ttsConfig.elevenlabs.similarity_boost);
-          }
-        }
-
-        console.log('Final UI state after loading backend config:', {
-          provider: ttsConfig.provider,
-          language: ttsConfig.provider === 'cartesian' ? ttsConfig.cartesian?.language :
-            ttsConfig.provider === 'openai' ? ttsConfig.openai?.language : 'English',
-          speed: ttsConfig.provider === 'cartesian' ? ttsConfig.cartesian?.speed :
-            ttsConfig.provider === 'openai' ? ttsConfig.openai?.speed :
-              ttsConfig.provider === 'elevenlabs' ? ttsConfig.elevenlabs?.speed : 1.0,
-          voiceId: ttsConfig.provider === 'cartesian' ? ttsConfig.cartesian?.voice_id :
-            ttsConfig.provider === 'elevenlabs' ? ttsConfig.elevenlabs?.voice_id : '',
-          apiKey: maskApiKey(
-            ttsConfig.provider === 'cartesian' ? ttsConfig.cartesian?.tts_api_key :
-              ttsConfig.provider === 'openai' ? ttsConfig.openai?.api_key :
-                ttsConfig.provider === 'elevenlabs' ? ttsConfig.elevenlabs?.api_key : ''
-          ),
-          voice: ttsConfig.provider === 'cartesian' ? ttsConfig.cartesian?.model :
-            ttsConfig.provider === 'openai' ? ttsConfig.openai?.voice : 'Alloy'
-        });
-      } else {
-        // Otherwise load from localStorage
-        const savedState = localStorage.getItem('voiceConfigState');
-        if (savedState) {
-          const parsedState = JSON.parse(savedState);
-          setSelectedVoiceProvider(parsedState.selectedVoiceProvider || 'OpenAI');
-          setSelectedLanguage(parsedState.selectedLanguage || 'English');
-          setSpeedValue(parsedState.speedValue || 0.0);
-          setApiKey(parsedState.apiKey || '');
-          setVoiceId(parsedState.voiceId || '');
-          setSelectedVoice(parsedState.selectedVoice || 'tts-1');
-          setStability(parsedState.stability || 0.5);
-          setSimilarityBoost(parsedState.similarityBoost || 0.5);
-          setResponseFormat(parsedState.responseFormat || 'alloy');
-          setSelectedModel(parsedState.selectedModel || 'mp3');
-        }
+      if (voiceConfiguration.speedValue !== undefined) {
+        console.log('🔄 Setting speed:', voiceConfiguration.speedValue);
+        setSpeedValue(voiceConfiguration.speedValue);
       }
-
-      // Load transcriber configuration
-      if (existingTranscriberConfig) {
-        console.log('Loading existing transcriber config:', existingTranscriberConfig);
-
-        // Handle STT config from backend
-        if (existingTranscriberConfig.provider) {
-          // Set provider (convert backend format to UI format)
-          let provider = existingTranscriberConfig.provider;
-          if (provider === 'deepgram') provider = 'Deepgram';
-          if (provider === 'openai') provider = 'OpenAI';
-
-          console.log('Backend transcriber provider:', existingTranscriberConfig.provider, '-> UI provider:', provider);
-          setSelectedTranscriberProvider(provider);
-
-          // Set language - check provider-specific object first, then fallback to root level
-          if (existingTranscriberConfig[provider.toLowerCase()]?.language) {
-            console.log('Backend language from provider object:', existingTranscriberConfig[provider.toLowerCase()].language);
-            setSelectedTranscriberLanguage(existingTranscriberConfig[provider.toLowerCase()].language);
-          } else if (existingTranscriberConfig.language) {
-            console.log('Backend language from root:', existingTranscriberConfig.language);
-            setSelectedTranscriberLanguage(existingTranscriberConfig.language);
-          }
-
-          // Set model - check provider-specific object first, then fallback to root level
-          if (existingTranscriberConfig[provider.toLowerCase()]?.model) {
-            console.log('Backend model from provider object:', existingTranscriberConfig[provider.toLowerCase()].model);
-            setSelectedTranscriberModel(existingTranscriberConfig[provider.toLowerCase()].model);
-          } else if (existingTranscriberConfig.model) {
-            console.log('Backend model from root:', existingTranscriberConfig.model);
-            setSelectedTranscriberModel(existingTranscriberConfig.model);
-          }
-
-          // Set API key - check provider-specific object first, then fallback to root level
-          if (existingTranscriberConfig[provider.toLowerCase()]?.api_key) {
-            console.log('Backend API key from provider object:', maskApiKey(existingTranscriberConfig[provider.toLowerCase()].api_key));
-            setTranscriberApiKey(existingTranscriberConfig[provider.toLowerCase()].api_key);
-          } else if (existingTranscriberConfig.api_key) {
-            console.log('Backend API key from root:', maskApiKey(existingTranscriberConfig.api_key));
-            setTranscriberApiKey(existingTranscriberConfig.api_key);
-          }
-
-          // Set punctuate - check provider-specific object first, then fallback to root level
-          if (existingTranscriberConfig[provider.toLowerCase()]?.punctuate !== undefined) {
-            console.log('Backend punctuate from provider object:', existingTranscriberConfig[provider.toLowerCase()].punctuate);
-            setPunctuateEnabled(existingTranscriberConfig[provider.toLowerCase()].punctuate);
-          } else if (existingTranscriberConfig.punctuate !== undefined) {
-            console.log('Backend punctuate from root:', existingTranscriberConfig.punctuate);
-            setPunctuateEnabled(existingTranscriberConfig.punctuate);
-          }
-
-          // Set smart format - check provider-specific object first, then fallback to root level
-          if (existingTranscriberConfig[provider.toLowerCase()]?.smart_format !== undefined) {
-            console.log('Backend smart_format from provider object:', existingTranscriberConfig[provider.toLowerCase()].smart_format);
-            setSmartFormatEnabled(existingTranscriberConfig[provider.toLowerCase()].smart_format);
-          } else if (existingTranscriberConfig.smart_format !== undefined) {
-            console.log('Backend smart_format from root:', existingTranscriberConfig.smart_format);
-            setSmartFormatEnabled(existingTranscriberConfig.smart_format);
-          }
-
-          // Set interim results - check provider-specific object first, then fallback to root level
-          if (existingTranscriberConfig[provider.toLowerCase()]?.interim_results !== undefined) {
-            console.log('Backend interim_results from provider object:', existingTranscriberConfig[provider.toLowerCase()].interim_results);
-            setInterimResultEnabled(existingTranscriberConfig[provider.toLowerCase()].interim_results);
-          } else if (existingTranscriberConfig.interim_results !== undefined) {
-            console.log('Backend interim_results from root:', existingTranscriberConfig.interim_results);
-            setInterimResultEnabled(existingTranscriberConfig.interim_results);
-          }
-        }
-      } else {
-        // Load transcriber config from localStorage
-        const savedTranscriberState = localStorage.getItem('transcriberConfigState');
-        if (savedTranscriberState) {
-          const parsedState = JSON.parse(savedTranscriberState);
-          setSelectedTranscriberProvider(parsedState.selectedTranscriberProvider || 'Deepgram');
-          setSelectedTranscriberLanguage(parsedState.selectedLanguage || 'en-US');
-          setSelectedTranscriberModel(parsedState.selectedModel || 'nova-2');
-          setTranscriberApiKey(parsedState.apiKey || '');
-          setPunctuateEnabled(parsedState.punctuateEnabled !== undefined ? parsedState.punctuateEnabled : true);
-          setSmartFormatEnabled(parsedState.smartFormatEnabled !== undefined ? parsedState.smartFormatEnabled : true);
-          setInterimResultEnabled(parsedState.interimResultEnabled !== undefined ? parsedState.interimResultEnabled : false);
-        }
+      if (voiceConfiguration.apiKey) {
+        console.log('🔄 Setting API key');
+        setApiKey(voiceConfiguration.apiKey);
       }
-    } catch (error) {
-      console.warn('Failed to load voice config state:', error);
+      if (voiceConfiguration.voiceId) {
+        console.log('🔄 Setting voice ID');
+        setVoiceId(voiceConfiguration.voiceId);
+      }
+      if (voiceConfiguration.selectedVoice) {
+        console.log('🔄 Setting selected voice:', voiceConfiguration.selectedVoice);
+        setSelectedVoice(voiceConfiguration.selectedVoice);
+      }
+      if (voiceConfiguration.stability !== undefined) {
+        console.log('🔄 Setting stability:', voiceConfiguration.stability);
+        setStability(voiceConfiguration.stability);
+      }
+      if (voiceConfiguration.similarityBoost !== undefined) {
+        console.log('🔄 Setting similarity boost:', voiceConfiguration.similarityBoost);
+        setSimilarityBoost(voiceConfiguration.similarityBoost);
+      }
+      if (voiceConfiguration.responseFormat) {
+        console.log('🔄 Setting response format:', voiceConfiguration.responseFormat);
+        setResponseFormat(voiceConfiguration.responseFormat);
+      }
+      if (voiceConfiguration.selectedModel) {
+        console.log('🔄 Setting selected model:', voiceConfiguration.selectedModel);
+        setSelectedModel(voiceConfiguration.selectedModel);
+      }
     }
-  }, [existingConfig, existingTranscriberConfig, isUserChangingProvider]);
+    
+    // Load transcriber configuration
+    if (transcriberConfiguration && !isUserChangingTranscriberProvider) {
+      console.log('🔄 Loading transcriber state from centralized configuration:', transcriberConfiguration);
+      
+      if (transcriberConfiguration.selectedTranscriberProvider) {
+        console.log('🔄 Setting transcriber provider:', transcriberConfiguration.selectedTranscriberProvider);
+        setSelectedTranscriberProvider(transcriberConfiguration.selectedTranscriberProvider);
+      }
+      if (transcriberConfiguration.selectedTranscriberLanguage) {
+        console.log('🔄 Setting transcriber language:', transcriberConfiguration.selectedTranscriberLanguage);
+        setSelectedTranscriberLanguage(transcriberConfiguration.selectedTranscriberLanguage);
+      }
+      if (transcriberConfiguration.selectedTranscriberModel) {
+        console.log('🔄 Setting transcriber model:', transcriberConfiguration.selectedTranscriberModel);
+        setSelectedTranscriberModel(transcriberConfiguration.selectedTranscriberModel);
+      }
+      if (transcriberConfiguration.transcriberApiKey) {
+        console.log('🔄 Setting transcriber API key');
+        setTranscriberApiKey(transcriberConfiguration.transcriberApiKey);
+      }
+      if (transcriberConfiguration.punctuateEnabled !== undefined) {
+        console.log('🔄 Setting punctuate enabled:', transcriberConfiguration.punctuateEnabled);
+        setPunctuateEnabled(transcriberConfiguration.punctuateEnabled);
+      }
+      if (transcriberConfiguration.smartFormatEnabled !== undefined) {
+        console.log('🔄 Setting smart format enabled:', transcriberConfiguration.smartFormatEnabled);
+        setSmartFormatEnabled(transcriberConfiguration.smartFormatEnabled);
+      }
+      if (transcriberConfiguration.interimResultEnabled !== undefined) {
+        console.log('🔄 Setting interim result enabled:', transcriberConfiguration.interimResultEnabled);
+        setInterimResultEnabled(transcriberConfiguration.interimResultEnabled);
+      }
+    }
+  }, [voiceConfiguration, transcriberConfiguration, isUserChangingProvider, isUserChangingTranscriberProvider]);
 
-  // Save state to localStorage whenever it changes
-  const saveStateToLocalStorage = (updates: any) => {
+  // Save state to centralized state whenever it changes
+  const saveStateToCentralized = useCallback((updates: any = {}) => {
     try {
       const currentState = {
         selectedVoiceProvider,
@@ -798,11 +674,17 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
         selectedModel,
         ...updates
       };
-      localStorage.setItem('voiceConfigState', JSON.stringify(currentState));
+      
+      console.log('📤 VoiceConfig: Saving state to centralized config:', currentState);
+      
+      // Call parent's onConfigChange
+      if (onConfigChange) {
+        onConfigChange(currentState);
+      }
     } catch (error) {
-      console.warn('Failed to save voice config state to localStorage:', error);
+      console.warn('Failed to save voice config state to centralized state:', error);
     }
-  };
+  }, [selectedVoiceProvider, selectedLanguage, speedValue, apiKey, voiceId, selectedVoice, stability, similarityBoost, responseFormat, selectedModel, onConfigChange]);
 
   // Load default values on component mount
   useEffect(() => {
@@ -825,8 +707,8 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
     }
   }, [selectedVoiceProvider]);
 
-  // Save transcriber state to localStorage whenever it changes
-  const saveTranscriberStateToLocalStorage = (updates: any) => {
+  // Save transcriber state to centralized state whenever it changes
+  const saveTranscriberStateToCentralized = useCallback((updates: any = {}) => {
     try {
       const currentState = {
         selectedTranscriberProvider,
@@ -838,11 +720,17 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
         interimResultEnabled,
         ...updates
       };
-      localStorage.setItem('transcriberConfigState', JSON.stringify(currentState));
+      
+      console.log('📤 TranscriberConfig: Saving state to centralized config:', currentState);
+      
+      // Call parent's onTranscriberConfigChange
+      if (onTranscriberConfigChange) {
+        onTranscriberConfigChange(currentState);
+      }
     } catch (error) {
-      console.warn('Failed to save transcriber config state to localStorage:', error);
+      console.warn('Failed to save transcriber config state to centralized state:', error);
     }
-  };
+  }, [selectedTranscriberProvider, selectedTranscriberLanguage, selectedTranscriberModel, transcriberApiKey, punctuateEnabled, smartFormatEnabled, interimResultEnabled, onTranscriberConfigChange]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -866,193 +754,16 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
     const numValue = typeof value === 'string' ? parseFloat(value) : value;
     if (!isNaN(numValue)) {
       setSpeedValue(numValue);
-      saveStateToLocalStorage({ speedValue: numValue });
+      saveStateToCentralized({ speedValue: numValue });
     }
   };
 
-  // Handle configure button click
-  const handleConfigure = async () => {
-    setIsConfiguring(true);
-    setConfigStatus('idle');
 
-    try {
-      // Save current state to localStorage
-      const config = {
-        voiceProvider: selectedVoiceProvider,
-        voice: selectedVoice,
-        language: selectedLanguage,
-        speed: speedValue,
-        apiKey,
-        voiceId,
-        stability,
-        similarityBoost,
-        responseFormat,
-        selectedModel
-      };
+  // Note: Removed problematic useEffect that was causing speed fluctuation
+  // Individual change handlers now handle all state updates and centralized state saving
 
-      saveStateToLocalStorage(config);
-
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      setConfigStatus('success');
-      console.log('Voice configuration saved to localStorage:', config);
-
-      // Clear success message after 3 seconds
-      setTimeout(() => setConfigStatus('idle'), 3000);
-    } catch (error) {
-      console.error('Failed to configure voice:', error);
-      setConfigStatus('error');
-
-      // Clear error message after 3 seconds
-      setTimeout(() => setConfigStatus('idle'), 3000);
-    } finally {
-      setIsConfiguring(false);
-    }
-  };
-
-  // Notify parent component of configuration changes and save to localStorage
-  React.useEffect(() => {
-    // Get the actual API key from environment variables if the state is empty
-    const defaultApiKeys = agentConfigService.getFullApiKeys();
-    const defaultVoiceIds = agentConfigService.getDefaultVoiceIds();
-
-    let actualApiKey = apiKey;
-    let actualVoiceId = voiceId;
-
-    // Use environment variable API key if the state is empty
-    if (!actualApiKey) {
-      switch (selectedVoiceProvider) {
-        case 'OpenAI':
-          actualApiKey = defaultApiKeys.openai || '';
-          break;
-        case '11Labs':
-          actualApiKey = defaultApiKeys.elevenlabs || '';
-          actualVoiceId = defaultVoiceIds.elevenlabs || '';
-          break;
-        case 'Cartesia':
-          actualApiKey = defaultApiKeys.cartesia || '';
-          actualVoiceId = defaultVoiceIds.cartesia || '';
-          break;
-      }
-    }
-
-    console.log('🔄 VoiceConfig: Configuration changed, updating parent:', {
-      provider: selectedVoiceProvider,
-      voice: selectedVoice,
-      language: selectedLanguage,
-      speed: speedValue,
-      apiKey: maskApiKey(actualApiKey),
-      voiceId: maskApiKey(actualVoiceId),
-      stability,
-      similarityBoost
-    });
-
-    // Convert UI format to backend format
-    const backendConfig = {
-      provider: selectedVoiceProvider === 'Cartesia' ? 'cartesian' :
-        selectedVoiceProvider === '11Labs' ? 'elevenlabs' : 'openai',
-      cartesian: selectedVoiceProvider === 'Cartesia' ? {
-        voice_id: actualVoiceId,
-        tts_api_key: actualApiKey,
-        model: selectedVoice,
-        speed: speedValue,
-        language: cartesiaReverseLanguageMapping[selectedLanguage as keyof typeof cartesiaReverseLanguageMapping] || 'en'
-      } : null,
-      openai: selectedVoiceProvider === 'OpenAI' ? {
-        model: selectedModel,
-        speed: speedValue,
-        api_key: actualApiKey,
-        voice: selectedVoice,
-        response_format: responseFormat,
-        language: openaiReverseLanguageMapping[selectedLanguage as keyof typeof openaiReverseLanguageMapping] || 'en'
-      } : null,
-      elevenlabs: selectedVoiceProvider === '11Labs' ? {
-        voice_id: actualVoiceId || 'pNInz6obpgDQGcFmaJgB',
-        api_key: actualApiKey,
-        model_id: 'eleven_monolingual_v1',
-        speed: speedValue,
-        stability,
-        similarity_boost: similarityBoost
-      } : null
-    };
-
-    // Save to localStorage in UI format
-    const uiConfig = {
-      voiceProvider: selectedVoiceProvider,
-      voice: selectedVoice,
-      language: selectedLanguage,
-      speed: speedValue,
-      apiKey,
-      voiceId,
-      stability,
-      similarityBoost,
-      responseFormat,
-      selectedModel
-    };
-    saveStateToLocalStorage(uiConfig);
-
-    // Only call onConfigChange if it exists and the configuration has actually changed
-    const configString = JSON.stringify(backendConfig);
-    if (onConfigChange && selectedVoiceProvider && configString !== lastConfigRef.current) {
-      lastConfigRef.current = configString;
-      onConfigChange(backendConfig);
-    }
-  }, [selectedVoiceProvider, selectedVoice, selectedLanguage, speedValue, apiKey, voiceId, stability, similarityBoost, responseFormat, selectedModel]);
-
-  // Notify parent component of transcriber configuration changes and save to localStorage
-  React.useEffect(() => {
-    // Get the actual API key from environment variables if the state is empty
-    const defaultApiKeys = agentConfigService.getFullApiKeys();
-
-    let actualTranscriberApiKey = transcriberApiKey;
-
-    // Use environment variable API key if the state is empty
-    if (!actualTranscriberApiKey) {
-      switch (selectedTranscriberProvider) {
-        case 'Deepgram':
-          actualTranscriberApiKey = defaultApiKeys.deepgram || '';
-          break;
-        case 'OpenAI':
-          actualTranscriberApiKey = defaultApiKeys.openai || '';
-          break;
-      }
-    }
-
-    // Convert UI format to backend format
-    const backendTranscriberConfig = {
-      provider: selectedTranscriberProvider === 'Deepgram' ? 'deepgram' : 'openai',
-      deepgram: selectedTranscriberProvider === 'Deepgram' ? {
-        api_key: actualTranscriberApiKey,
-        model: selectedTranscriberModel,
-        language: selectedTranscriberLanguage,
-        punctuate: punctuateEnabled,
-        smart_format: smartFormatEnabled,
-        interim_results: interimResultEnabled
-      } : null,
-      openai: selectedTranscriberProvider === 'OpenAI' ? {
-        api_key: actualTranscriberApiKey,
-        model: selectedTranscriberModel,
-        language: selectedTranscriberLanguage === 'multi' ? null : selectedTranscriberLanguage
-      } : null
-    };
-
-    // Save to localStorage in UI format
-    const uiTranscriberConfig = {
-      transcriberProvider: selectedTranscriberProvider,
-      model: selectedTranscriberModel,
-      language: selectedTranscriberLanguage,
-      apiKey: transcriberApiKey,
-      punctuate: punctuateEnabled,
-      smartFormat: smartFormatEnabled,
-      interimResults: interimResultEnabled
-    };
-    saveTranscriberStateToLocalStorage(uiTranscriberConfig);
-
-    if (onTranscriberConfigChange) {
-      onTranscriberConfigChange(backendTranscriberConfig);
-    }
-  }, [selectedTranscriberProvider, selectedTranscriberModel, selectedTranscriberLanguage, transcriberApiKey, punctuateEnabled, smartFormatEnabled, interimResultEnabled, onTranscriberConfigChange]);
+  // Note: Removed problematic transcriber useEffect that was causing fluctuation
+  // Individual change handlers now handle all state updates and centralized state saving
 
   // Handle provider changes with proper state management
   const handleProviderChange = (newProvider: string) => {
@@ -1066,27 +777,36 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
       clearTimeout(providerChangeTimeoutRef.current);
     }
 
-    // Reset related state when provider changes
-    let defaultVoice = 'tts-1';
+    // Reset model and voice when provider changes
+    let defaultModel = 'tts-1';
+    let defaultVoice = 'alloy';
+    
     if (newProvider === 'OpenAI') {
-      defaultVoice = 'tts-1';
+      defaultModel = 'tts-1';
+      defaultVoice = 'alloy';
     } else if (newProvider === 'Cartesia') {
+      defaultModel = 'cartesia-xtts-v2';
       defaultVoice = 'sonic-2.0';
     } else if (newProvider === '11Labs') {
-      defaultVoice = 'eleven_v3';
+      defaultModel = 'eleven_v3';
+      defaultVoice = 'alloy';
     }
 
-    // Update the provider and voice state
+    // Update the provider, model, and voice state
     setSelectedVoiceProvider(newProvider);
+    setSelectedModel(defaultModel);
     setSelectedVoice(defaultVoice);
 
-    // Save to localStorage
-    saveStateToLocalStorage({
+    console.log('🔄 Reset model to:', defaultModel, 'and voice to:', defaultVoice);
+
+    // Save to centralized state
+    saveStateToCentralized({
       selectedVoiceProvider: newProvider,
+      selectedModel: defaultModel,
       selectedVoice: defaultVoice
     });
 
-    console.log('✅ Provider changed to', newProvider, 'with reset state');
+    console.log('✅ Provider changed to', newProvider, 'with reset model and voice');
 
     // Reset the flag after a delay
     providerChangeTimeoutRef.current = setTimeout(() => {
@@ -1094,53 +814,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
     }, 300);
   };
 
-  // Manual refresh function
-  const handleRefreshConfig = () => {
-    console.log('🔄 Manually refreshing voice configuration from existingConfig');
-    if (existingConfig) {
-      // Force a refresh by temporarily clearing the flag
-      setIsUserChangingProvider(false);
-      // The existingConfig useEffect will now run and update the state
-    }
-  };
 
-  // Handle transcriber configure button click
-  const handleTranscriberConfigure = async () => {
-    setIsTranscriberConfiguring(true);
-    setTranscriberConfigStatus('idle');
-
-    try {
-      // Save current state to localStorage
-      const config = {
-        transcriberProvider: selectedTranscriberProvider,
-        model: selectedTranscriberModel,
-        language: selectedTranscriberLanguage,
-        apiKey: transcriberApiKey,
-        punctuate: punctuateEnabled,
-        smartFormat: smartFormatEnabled,
-        interimResults: interimResultEnabled
-      };
-
-      saveTranscriberStateToLocalStorage(config);
-
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      setTranscriberConfigStatus('success');
-      console.log('Transcriber configuration saved to localStorage:', config);
-
-      // Clear success message after 3 seconds
-      setTimeout(() => setTranscriberConfigStatus('idle'), 3000);
-    } catch (error) {
-      console.error('Failed to configure transcriber:', error);
-      setTranscriberConfigStatus('error');
-
-      // Clear error message after 3 seconds
-      setTimeout(() => setTranscriberConfigStatus('idle'), 3000);
-    } finally {
-      setIsTranscriberConfiguring(false);
-    }
-  };
 
   // Handle transcriber provider changes
   const handleTranscriberProviderChange = (provider: string) => {
@@ -1160,7 +834,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
     const providerData = transcriberProviders[provider as keyof typeof transcriberProviders];
     if (providerData && providerData.length > 0) {
       setSelectedTranscriberModel(providerData[0]);
-      saveTranscriberStateToLocalStorage({
+      saveTranscriberStateToCentralized({
         selectedTranscriberProvider: provider,
         selectedTranscriberModel: providerData[0]
       });
@@ -1203,7 +877,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                   value={responseFormat}
                   onChange={(e) => {
                     setResponseFormat(e.target.value);
-                    saveStateToLocalStorage({ responseFormat: e.target.value });
+                    saveStateToCentralized({ responseFormat: e.target.value });
                   }}
                   disabled={!isEditing}
                   className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
@@ -1228,7 +902,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                   value={selectedModel}
                   onChange={(e) => {
                     setSelectedModel(e.target.value);
-                    saveStateToLocalStorage({ selectedModel: e.target.value });
+                    saveStateToCentralized({ selectedModel: e.target.value });
                   }}
                   disabled={!isEditing}
                   className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
@@ -1309,7 +983,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                   value={stability}
                   onChange={(e) => {
                     setStability(parseFloat(e.target.value));
-                    saveStateToLocalStorage({ stability: parseFloat(e.target.value) });
+                    saveStateToCentralized({ stability: parseFloat(e.target.value) });
                   }}
                   disabled={!isEditing}
                   className={`w-full h-2 rounded-lg appearance-none ${!isEditing
@@ -1335,7 +1009,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                   value={similarityBoost}
                   onChange={(e) => {
                     setSimilarityBoost(parseFloat(e.target.value));
-                    saveStateToLocalStorage({ similarityBoost: parseFloat(e.target.value) });
+                    saveStateToCentralized({ similarityBoost: parseFloat(e.target.value) });
                   }}
                   disabled={!isEditing}
                   className={`w-full h-2 rounded-lg appearance-none ${!isEditing
@@ -1398,7 +1072,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                   value={speedValue}
                   onChange={(e) => {
                     handleSpeedChange(e.target.value);
-                    saveStateToLocalStorage({ speedValue: parseFloat(e.target.value) });
+                    saveStateToCentralized({ speedValue: parseFloat(e.target.value) });
                   }}
                   disabled={!isEditing}
                   className={`flex-1 h-2 rounded-lg appearance-none ${!isEditing
@@ -1414,7 +1088,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                   value={speedValue}
                   onChange={(e) => {
                     handleSpeedChange(e.target.value);
-                    saveStateToLocalStorage({ speedValue: parseFloat(e.target.value) });
+                    saveStateToCentralized({ speedValue: parseFloat(e.target.value) });
                   }}
                   disabled={!isEditing}
                   className={`w-16 p-2 rounded-lg border text-center text-sm ${!isEditing
@@ -1493,10 +1167,10 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                 Model
               </label>
               <select
-                value={selectedVoice}
+                value={selectedModel}
                 onChange={(e) => {
-                  setSelectedVoice(e.target.value);
-                  saveStateToLocalStorage({ selectedVoice: e.target.value });
+                  setSelectedModel(e.target.value);
+                  saveStateToCentralized({ selectedModel: e.target.value });
                 }}
                 disabled={!isEditing}
                 className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
@@ -1508,9 +1182,25 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                     : 'bg-gray-50 border-gray-200 text-gray-900'
                   }`}
               >
-                {voiceProviders[selectedVoiceProvider as keyof typeof voiceProviders]?.map((voice) => (
-                  <option key={voice} value={voice}>{voice}</option>
-                ))}
+                {(() => {
+                  // Get models based on provider
+                  let models: string[] = [];
+                  if (selectedVoiceProvider === '11Labs') {
+                    models = Object.keys(elevenLabsModelNames);
+                  } else if (selectedVoiceProvider === 'OpenAI') {
+                    models = Object.keys(openaiModels);
+                  } else if (selectedVoiceProvider === 'Cartesia') {
+                    models = ['cartesia-xtts-v2']; // Cartesia has only one model
+                  }
+                  
+                  console.log('🔍 Available models for', selectedVoiceProvider, ':', models);
+                  
+                  return models.map((model) => (
+                    <option key={model} value={model}>
+                      {selectedVoiceProvider === '11Labs' ? elevenLabsModelNames[model as keyof typeof elevenLabsModelNames] : model}
+                    </option>
+                  ));
+                })()}
               </select>
             </div>
           </div>
@@ -1536,7 +1226,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                 value={selectedLanguage}
                 onChange={(e) => {
                   setSelectedLanguage(e.target.value);
-                  saveStateToLocalStorage({ selectedLanguage: e.target.value });
+                  saveStateToCentralized({ selectedLanguage: e.target.value });
                 }}
                 disabled={!isEditing}
                 className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
@@ -1548,9 +1238,22 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                     : 'bg-gray-50 border-gray-200 text-gray-900'
                   }`}
               >
-                {Object.entries(getCurrentLanguageMapping()).map(([code, name]) => (
-                  <option key={code} value={name}>{name}</option>
-                ))}
+                {(() => {
+                  const languageMapping = getCurrentLanguageMapping();
+                  console.log('🔍 Language Mapping for dropdown:', languageMapping);
+                  console.log('🔍 Selected Language:', selectedLanguage);
+                  console.log('🔍 Selected Model:', selectedModel);
+                  console.log('🔍 Selected Voice Provider:', selectedVoiceProvider);
+                  
+                  if (Object.keys(languageMapping).length === 0) {
+                    console.warn('⚠️ No languages available for current model/provider combination');
+                    return <option value="">No languages available</option>;
+                  }
+                  
+                  return Object.entries(languageMapping).map(([code, name]) => (
+                    <option key={code} value={name}>{name}</option>
+                  ));
+                })()}
               </select>
             </div>
 
@@ -1567,7 +1270,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                   value={speedValue}
                   onChange={(e) => {
                     handleSpeedChange(e.target.value);
-                    saveStateToLocalStorage({ speedValue: parseFloat(e.target.value) });
+                    saveStateToCentralized({ speedValue: parseFloat(e.target.value) });
                   }}
                   disabled={!isEditing}
                   className={`flex-1 h-2 rounded-lg appearance-none ${!isEditing
@@ -1583,7 +1286,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                   value={speedValue}
                   onChange={(e) => {
                     handleSpeedChange(e.target.value);
-                    saveStateToLocalStorage({ speedValue: parseFloat(e.target.value) });
+                    saveStateToCentralized({ speedValue: parseFloat(e.target.value) });
                   }}
                   disabled={!isEditing}
                   className={`w-16 p-2 rounded-lg border text-center text-sm ${!isEditing
@@ -1622,55 +1325,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
         {renderProviderSpecificFields()}
       </div>
 
-      {/* Configure Button */}
-      <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              Save Configuration
-            </h4>
-          </div>
-        </div>
-
-        <div className="flex justify-end">
-          <button
-            onClick={handleConfigure}
-            disabled={isConfiguring || !isEditing}
-            className={`group relative px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-            {isConfiguring ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Settings className="h-5 w-5" />
-            )}
-            <span className="font-semibold">{isConfiguring ? 'Saving...' : 'Save Configuration'}</span>
-          </button>
-        </div>
-
-        {/* Status Messages */}
-        {configStatus === 'success' && (
-          <div className={`mt-4 p-3 rounded-xl border ${isDarkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200'}`}>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className={`text-sm ${isDarkMode ? 'text-green-300' : 'text-green-800'}`}>
-                Voice configuration saved successfully!
-              </span>
-            </div>
-          </div>
-        )}
-
-        {configStatus === 'error' && (
-          <div className={`mt-4 p-3 rounded-xl border ${isDarkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200'}`}>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-              <span className={`text-sm ${isDarkMode ? 'text-red-300' : 'text-red-800'}`}>
-                Failed to save voice configuration. Please try again.
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* Transcriber Configuration Section */}
       <div className="space-y-6">
@@ -1733,7 +1387,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                   value={selectedTranscriberLanguage}
                   onChange={(e) => {
                     setSelectedTranscriberLanguage(e.target.value);
-                    saveTranscriberStateToLocalStorage({ selectedTranscriberLanguage: e.target.value });
+                    saveTranscriberStateToCentralized({ selectedTranscriberLanguage: e.target.value });
                   }}
                   disabled={!isEditing}
                   className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
@@ -1773,7 +1427,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
                   value={selectedTranscriberModel}
                   onChange={(e) => {
                     setSelectedTranscriberModel(e.target.value);
-                    saveTranscriberStateToLocalStorage({ selectedTranscriberModel: e.target.value });
+                    saveTranscriberStateToCentralized({ selectedTranscriberModel: e.target.value });
                   }}
                   className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base ${isDarkMode
                     ? 'bg-gray-700/50 border-gray-600 text-gray-200'
@@ -1911,55 +1565,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ agentName = 
         </div>
         )}
 
-        {/* Transcriber Configure Button */}
-        <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                Save Transcriber Configuration
-              </h4>
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <button
-              onClick={handleTranscriberConfigure}
-              disabled={isTranscriberConfiguring || !isEditing}
-              className={`group relative px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl hover:from-orange-700 hover:to-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-400 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-              {isTranscriberConfiguring ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <MessageSquare className="h-5 w-5" />
-              )}
-              <span className="font-semibold">{isTranscriberConfiguring ? 'Saving...' : 'Save Transcriber Configuration'}</span>
-            </button>
-          </div>
-
-          {/* Transcriber Status Messages */}
-          {transcriberConfigStatus === 'success' && (
-            <div className={`mt-4 p-3 rounded-xl border ${isDarkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200'}`}>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className={`text-sm ${isDarkMode ? 'text-green-300' : 'text-green-800'}`}>
-                  Transcriber configuration saved successfully!
-                </span>
-              </div>
-            </div>
-          )}
-
-          {transcriberConfigStatus === 'error' && (
-            <div className={`mt-4 p-3 rounded-xl border ${isDarkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200'}`}>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                <span className={`text-sm ${isDarkMode ? 'text-red-300' : 'text-red-800'}`}>
-                  Failed to save transcriber configuration. Please try again.
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

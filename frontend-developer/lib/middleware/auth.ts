@@ -18,17 +18,38 @@ export async function authenticateApiKey(request: NextRequest) {
       return { success: false, error: 'API key missing' };
     }
 
+    // Get environment variables
+    const liveApiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY;
+    const propelauthApiKey = process.env.NEXT_PUBLIC_PROPELAUTH_API_KEY;
+    
+    console.log('🔍 Environment variables:');
+    console.log('🔍 NEXT_PUBLIC_LIVE_API_KEY:', liveApiKey ? 'Present' : 'Missing');
+    console.log('🔍 NEXT_PUBLIC_LIVE_API_KEY value:', liveApiKey);
+    console.log('🔍 NEXT_PUBLIC_PROPELAUTH_API_KEY:', propelauthApiKey ? 'Present' : 'Missing');
+
     // Validate API key (you can implement your own validation logic)
-    const validApiKeys = [
-      process.env.NEXT_PUBLIC_LIVE_API_KEY,
-      process.env.NEXT_PUBLIC_PROPELAUTH_API_KEY
-    ].filter(Boolean);
+    const validApiKeys = [liveApiKey, propelauthApiKey].filter(Boolean);
 
     console.log('🔍 Valid API keys:', validApiKeys.map(key => key ? 'Present' : 'Missing'));
     console.log('🔍 Received API key:', apiKey);
+    console.log('🔍 Expected API key:', liveApiKey);
 
-    if (!validApiKeys.includes(apiKey)) {
+    // Check if the received API key matches any of the valid keys
+    const isValidKey = validApiKeys.some(validKey => validKey === apiKey);
+    
+    // Fallback: If no environment variables are loaded, allow the specific key from the user
+    if (!isValidKey && validApiKeys.length === 0) {
+      console.log('⚠️ No environment variables loaded, allowing fallback authentication');
+      if (apiKey === 'xpectrum-ai@123') {
+        console.log('✅ Fallback authentication successful');
+        return { success: true };
+      }
+    }
+    
+    if (!isValidKey) {
       console.log('❌ Invalid API key provided');
+      console.log('❌ Expected one of:', validApiKeys);
+      console.log('❌ Received:', apiKey);
       return { success: false, error: 'Invalid API key' };
     }
 

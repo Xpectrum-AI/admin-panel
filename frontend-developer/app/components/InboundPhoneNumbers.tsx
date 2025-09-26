@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Phone, Search, User, AlertCircle, CheckCircle, XCircle, Loader2, Plus, MessageSquare, PhoneCall, Edit, Trash2 } from 'lucide-react';
 import { useAuthInfo } from '@propelauth/react';
 import { useTheme } from '../contexts/ThemeContext';
+import { getAgentDisplayName } from '../../lib/utils/agentNameUtils';
 import {
   assignPhoneNumberToAgent,
   unassignPhoneNumberFromAgent,
@@ -839,7 +840,7 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
                         <User className={`h-4 w-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                         <span className="text-sm">
                           {phoneNumber.agent_id && phoneNumber.agent_id !== 'unassigned' && phoneNumber.agent_id !== null
-                            ? (phoneNumber.agent_name || phoneNumber.agent_id)
+                            ? getAgentDisplayName({ name: phoneNumber.agent_name, id: phoneNumber.agent_id })
                             : 'Unassigned'
                           }
                         </span>
@@ -940,7 +941,7 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
                 >
                   <option value="">Select an agent</option>
                   {agents.map((agent, index) => (
-                    <option key={agent.id || agent.name || agent.agent_prefix || `agent-${index}`} value={agent.name || agent.agent_prefix}>
+                    <option key={agent.id || agent.name || agent.agent_prefix || `agent_${index}`} value={agent.name || agent.agent_prefix}>
                       {agent.name || agent.agent_prefix}
                     </option>
                   ))}
@@ -1063,7 +1064,7 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
                 >
                   <option value="None">None (Delete Agent)</option>
                   {agents.map((agent, index) => (
-                    <option key={agent.id || agent.name || agent.agent_prefix || `agent-${index}`} value={agent.name || agent.agent_prefix}>
+                    <option key={agent.id || agent.name || agent.agent_prefix || `agent_${index}`} value={agent.name || agent.agent_prefix}>
                       {agent.name || agent.agent_prefix}
                     </option>
                   ))}

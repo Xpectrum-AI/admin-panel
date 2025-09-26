@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Phone, RefreshCw, Search, Users, Bot, Edit, CheckCircle, XCircle, PhoneCall, MessageSquare, User, Trash2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { getAgentDisplayName } from '../../lib/utils/agentNameUtils';
 import { useAuthInfo } from '@propelauth/react';
 import { WhatsAppService } from '../../service/whatsappService';
 import { getAgentsByOrganization } from '../../service/phoneNumberService';
@@ -543,7 +544,7 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
                                                 <User className={`h-4 w-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                                                 <span className="text-sm">
                                                     {assignment.agent_id && assignment.agent_id !== 'unassigned' && assignment.agent_id !== null
-                                                        ? (assignment.agent_name || assignment.agent_id)
+                                                        ? getAgentDisplayName({ name: assignment.agent_name, id: assignment.agent_id })
                                                         : 'Unassigned'
                                                     }
                                                 </span>
