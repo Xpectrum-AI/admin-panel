@@ -12,9 +12,11 @@ interface ModelConfigProps {
   existingConfig?: any;
   isEditing?: boolean;
   onConfigUpdated?: () => void; // Add callback to refresh agent data
+  agentApiKey?: string;
+  agentApiUrl?: string;
 }
 
-const ModelConfig = forwardRef<HTMLDivElement, ModelConfigProps>(({ agentName = 'default', onConfigChange, existingConfig, isEditing = true, onConfigUpdated }, ref) => {
+const ModelConfig = forwardRef<HTMLDivElement, ModelConfigProps>(({ agentName = 'default', onConfigChange, existingConfig, isEditing = true, onConfigUpdated, agentApiKey, agentApiUrl }, ref) => {
   const { isDarkMode } = useTheme();
 
   // Helper function to get masked display value for API keys
@@ -26,8 +28,8 @@ const ModelConfig = forwardRef<HTMLDivElement, ModelConfigProps>(({ agentName = 
   const [selectedModel, setSelectedModel] = useState('GPT-4o');
   const [modelLiveUrl, setModelLiveUrl] = useState(process.env.NEXT_PUBLIC_DIFY_BASE_URL || '');
   const [modelApiKey, setModelApiKey] = useState(process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '');
-  const [agentUrl, setAgentUrl] = useState(process.env.NEXT_PUBLIC_CHATBOT_API_URL || '');
-  const [agentApiKey, setAgentApiKey] = useState('');
+  const [agentUrl, setAgentUrl] = useState(agentApiUrl || process.env.NEXT_PUBLIC_CHATBOT_API_URL || '');
+  const [localAgentApiKey, setLocalAgentApiKey] = useState(agentApiKey || '');
   const [copiedAgentApiKey, setCopiedAgentApiKey] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState(`# Appointment Scheduling Agent Prompt
 
@@ -192,10 +194,10 @@ Remember: You are the first point of contact for many patients. Your professiona
       }
       if (existingConfig.chatbot_key) {
         console.log('🔄 Setting agent API key from chatbot_key:', existingConfig.chatbot_key);
-        setAgentApiKey(existingConfig.chatbot_key);
+        setLocalAgentApiKey(existingConfig.chatbot_key);
       } else if (existingConfig.agentApiKey) {
         console.log('🔄 Setting agent API key from agentApiKey:', existingConfig.agentApiKey);
-        setAgentApiKey(existingConfig.agentApiKey);
+        setLocalAgentApiKey(existingConfig.agentApiKey);
       }
       if (existingConfig.systemPrompt) {
         console.log('🔄 Setting system prompt');
@@ -214,10 +216,25 @@ Remember: You are the first point of contact for many patients. Your professiona
     }
   }, [existingConfig, isUserChangingProvider, isUserChangingModel, loadFromStorage]);
 
+  // Update state when props change
+  useEffect(() => {
+    console.log('🔧 ModelConfig props changed:', { agentApiKey, agentApiUrl });
+    if (agentApiKey) {
+      console.log('🔧 Setting agentApiKey from props:', agentApiKey.substring(0, 10) + '...');
+      setLocalAgentApiKey(agentApiKey);
+    } else {
+      console.log('⚠️ No agentApiKey provided from props');
+    }
+    if (agentApiUrl) {
+      console.log('🔧 Setting agentUrl from props:', agentApiUrl);
+      setAgentUrl(agentApiUrl);
+    }
+  }, [agentApiKey, agentApiUrl]);
+
   // Debug: Watch for changes to agentApiKey
   useEffect(() => {
-    console.log('🔍 agentApiKey state changed to:', agentApiKey);
-  }, [agentApiKey]);
+    console.log('🔍 agentApiKey state changed to:', localAgentApiKey);
+  }, [localAgentApiKey]);
 
   // Debug: Watch for changes to agentUrl
   useEffect(() => {
@@ -272,7 +289,7 @@ Remember: You are the first point of contact for many patients. Your professiona
         clearTimeout(autoSaveTimeoutRef.current);
       }
     };
-  }, [selectedModelProvider, selectedModel, modelApiKey, modelLiveUrl, agentUrl, agentApiKey, systemPrompt, saveToStorage, onConfigChange]);
+  }, [selectedModelProvider, selectedModel, modelApiKey, modelLiveUrl, agentUrl, localAgentApiKey, systemPrompt, saveToStorage, onConfigChange]);
 
   // Auto-clear success and error messages with longer delays to prevent flickering
   useEffect(() => {
@@ -920,9 +937,9 @@ Remember: You are the first point of contact for many patients. Your professiona
             <div className="relative">
               <input
                 type="text"
-                value={agentApiKey}
+                value={localAgentApiKey}
                 onChange={(e) => {
-                  setAgentApiKey(e.target.value);
+                  setLocalAgentApiKey(e.target.value);
                   saveStateToCentralized({ 
                     agentApiKey: e.target.value,
                     chatbot_key: e.target.value 
@@ -936,6 +953,19 @@ Remember: You are the first point of contact for many patients. Your professiona
               />
               {/* Lock icon removed - field is now editable */}
             </div>
+            {!localAgentApiKey && (
+              <div className={`mt-2 p-3 rounded-lg border ${isDarkMode ? 'bg-red-900/20 border-red-700 text-red-300' : 'bg-red-50 border-red-200 text-red-800'
+                }`}>
+                <p className="text-sm">
+                  ⚠️ <strong>API Key Missing:</strong> No API key found for this agent. This might be due to:
+                  <ul className="mt-2 ml-4 list-disc">
+                    <li>Session timeout - try refreshing the page</li>
+                    <li>Agent not properly configured - check agent settings</li>
+                    <li>Backend issue - contact support</li>
+                  </ul>
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
