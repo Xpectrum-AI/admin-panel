@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Bot, Settings, Mic, Wrench, BarChart3, MessageSquare, Sparkles, Zap, Activity, Search, RefreshCw, Trash2, ChevronDown, Loader2, Code, CheckCircle } from 'lucide-react';
+import { Bot, Settings, Mic, Wrench, BarChart3, MessageSquare, Sparkles, Zap, Activity, Search, RefreshCw, Trash2, ChevronDown, Loader2, Code, CheckCircle, Phone, X, Send } from 'lucide-react';
 
 import ModelConfig from './config/ModelConfig';
 import VoiceConfig from './config/VoiceConfig';
 import ToolsConfig from './config/ToolsConfig';
 import WidgetConfig from './config/WidgetConfig';
 import AgentCards from './AgentCards';
+import LiveKitVoiceChat from './config/LiveKitVoiceChat';
 import AutoSaveIndicator from './AutoSaveIndicator';
 
 import { agentConfigService } from '../../service/agentConfigService';
@@ -114,6 +115,11 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const [generatedDifyApiKey, setGeneratedDifyApiKey] = useState<string>('');
   const [isRefreshingAgents, setIsRefreshingAgents] = useState(false);
   const [isUpdatingAgent, setIsUpdatingAgent] = useState(false);
+  const [showVoiceChat, setShowVoiceChat] = useState(false);
+  const [showChatSidebar, setShowChatSidebar] = useState(false);
+  const [chatMessages, setChatMessages] = useState<Array<{ id: string, type: 'user' | 'bot', message: string, timestamp: Date }>>([]);
+  const [currentMessage, setCurrentMessage] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
   const selectedAgentIdRef = useRef<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -771,6 +777,16 @@ Remember: You are the first point of contact for many patients. Your professiona
 
         // Configuration will be loaded automatically by the centralized state
 
+        // Refresh agents list to get the actual chatbot_key from backend
+        setTimeout(async () => {
+          try {
+            console.log('🔄 Refreshing agents list to get updated chatbot_key...');
+            await fetchAgents();
+          } catch (error) {
+            console.warn('⚠️ Failed to refresh agents after creation:', error);
+          }
+        }, 2000); // Wait 2 seconds for backend to process
+
         // Show success message
         setShowSuccessModal(true);
 
@@ -849,6 +865,80 @@ Remember: You are the first point of contact for many patients. Your professiona
     window.open(chatbotUrl, '_blank');
   }, []);
 
+  // Chat functions
+  const sendChatMessage = async () => {
+    if (!currentMessage.trim() || !selectedAgent || isChatLoading) return;
+
+    const messageToSend = currentMessage.trim();
+    const userMessage = {
+      id: Date.now().toString(),
+      type: 'user' as const,
+      message: messageToSend,
+      timestamp: new Date()
+    };
+
+    setChatMessages(prev => [...prev, userMessage]);
+    setCurrentMessage('');
+    setIsChatLoading(true);
+
+    try {
+      const response = await fetch('/api/chatbot/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          difyApiUrl: selectedAgent.chatbot_api || process.env.NEXT_PUBLIC_CHATBOT_API_URL || 'https://dlb20rrk0t1tl.cloudfront.net/v1/chat-messages',
+          difyApiKey: selectedAgent.chatbot_key,
+          message: messageToSend,
+          conversationId: '', // Start new conversation
+          useStreaming: true // Use streaming mode like the working chatbot
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.answer) {
+        const botMessage = {
+          id: (Date.now() + 1).toString(),
+          type: 'bot' as const,
+          message: data.answer,
+          timestamp: new Date()
+        };
+        setChatMessages(prev => [...prev, botMessage]);
+      } else {
+        const errorMessage = {
+          id: (Date.now() + 1).toString(),
+          type: 'bot' as const,
+          message: 'Sorry, I encountered an error. Please try again.',
+          timestamp: new Date()
+        };
+        setChatMessages(prev => [...prev, errorMessage]);
+      }
+    } catch (error) {
+      console.error('Chat error:', error);
+      const errorMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'bot' as const,
+        message: 'Sorry, I encountered an error. Please try again.',
+        timestamp: new Date()
+      };
+      setChatMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  const handleChatKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendChatMessage();
+    }
+  };
+
+  const clearChat = () => {
+    setChatMessages([]);
+  };
 
   // Helper function to convert UI voice config to backend format
   const convertUIVoiceConfigToBackend = useCallback((uiConfig: any) => {
@@ -1444,6 +1534,24 @@ Remember: You are the first point of contact for many patients. Your professiona
                   <div className="flex items-center gap-2 sm:gap-3">
                     {selectedAgent && (
                       <button
+                        onClick={() => setShowChatSidebar(true)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        Chat
+                      </button>
+                    )}
+                    {selectedAgent && (
+                      <button
+                        onClick={() => setShowVoiceChat(true)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-green-600 text-white hover:bg-green-700"
+                      >
+                        <Phone className="h-4 w-4" />
+                        Talk to Agent
+                      </button>
+                    )}
+                    {selectedAgent && (
+                      <button
                         onClick={handleUpdateAgent}
                         disabled={isUpdatingAgent}
                         className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isUpdatingAgent
@@ -1547,14 +1655,24 @@ Remember: You are the first point of contact for many patients. Your professiona
               {/* Configuration Content */}
               <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 lg:p-8">
                 {activeConfigTab === 'model' && (
-                  <ModelConfig
-                    ref={modelSectionRef}
-                    agentName={selectedAgent.name}
-                    onConfigChange={(config) => updateConfiguration('model', config)}
-                    existingConfig={configuration.model}
-                    isEditing={isEditing}
-                    onConfigUpdated={fetchAgents}
-                  />
+                  <>
+                    {console.log('🔧 Passing agent data to ModelConfig:', {
+                      agentId: selectedAgent.id,
+                      agentName: selectedAgent.name,
+                      chatbot_api: selectedAgent.chatbot_api,
+                      chatbot_key: selectedAgent.chatbot_key ? selectedAgent.chatbot_key.substring(0, 10) + '...' : 'NO KEY'
+                    })}
+                    <ModelConfig
+                      ref={modelSectionRef}
+                      agentName={selectedAgent.name}
+                      onConfigChange={(config) => updateConfiguration('model', config)}
+                      existingConfig={configuration.model}
+                      isEditing={isEditing}
+                      onConfigUpdated={fetchAgents}
+                      agentApiKey={selectedAgent.chatbot_key}
+                      agentApiUrl={selectedAgent.chatbot_api}
+                    />
+                  </>
                 )}
                 {activeConfigTab === 'voice' && (
                   <VoiceConfig
@@ -1569,13 +1687,23 @@ Remember: You are the first point of contact for many patients. Your professiona
                   />
                 )}
                 {activeConfigTab === 'widget' && (
-                  <WidgetConfig
-                    ref={widgetSectionRef}
-                    agentName={selectedAgent.name}
-                    onConfigChange={(config) => updateConfiguration('widget', config)}
-                    existingConfig={configuration.widget}
-                    isEditing={isEditing}
-                  />
+                  <>
+                    {console.log('🔧 Passing agent data to WidgetConfig:', {
+                      agentId: selectedAgent.id,
+                      chatbot_api: selectedAgent.chatbot_api,
+                      chatbot_key: selectedAgent.chatbot_key ? selectedAgent.chatbot_key.substring(0, 10) + '...' : 'NO KEY'
+                    })}
+                    <WidgetConfig
+                      ref={widgetSectionRef}
+                      agentName={selectedAgent.id}
+                      onConfigChange={(config) => updateConfiguration('widget', config)}
+                      existingConfig={configuration.widget}
+                      isEditing={isEditing}
+                      difyApiUrl={selectedAgent.chatbot_api}
+                      difyApiKey={selectedAgent.chatbot_key}
+                      onRefreshAgent={fetchAgents}
+                    />
+                  </>
                 )}
                 {activeConfigTab === 'tools' && (
                   <ToolsConfig
@@ -1686,6 +1814,161 @@ Remember: You are the first point of contact for many patients. Your professiona
               >
                 {successMessage.includes('Failed') ? 'Try Again' : 'Got it!'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Voice Chat Modal */}
+      {showVoiceChat && selectedAgent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className={`relative w-full max-w-md mx-4 rounded-lg ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
+            {/* Close Button */}
+            <button
+              onClick={() => setShowVoiceChat(false)}
+              className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            >
+              <X className="h-5 w-5 text-gray-500" />
+            </button>
+            
+            {/* Voice Chat Content */}
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-teal-600">
+                  <Phone className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Voice Chat
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Connect to {getAgentDisplayName(selectedAgent)}
+                  </p>
+                </div>
+              </div>
+              
+              {/* LiveKit Voice Chat Component */}
+              <LiveKitVoiceChat 
+                agentName={selectedAgent.id} 
+                isDarkMode={isDarkMode} 
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Chat Sidebar */}
+      {showChatSidebar && selectedAgent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-end z-50">
+          <div className={`relative w-full max-w-md h-full mx-4 rounded-lg ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
+            {/* Chat Header */}
+            <div className={`p-4 border-b ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-600">
+                    <Bot className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <h5 className="font-medium text-gray-900 dark:text-white">
+                      {getAgentDisplayName(selectedAgent)} Assistant
+                    </h5>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Powered by Agent
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={clearChat}
+                    className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    onClick={() => setShowChatSidebar(false)}
+                    className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <X className="h-4 w-4 text-gray-500" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Chat Messages */}
+            <div className="h-96 overflow-y-auto p-4 space-y-4">
+              {chatMessages.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Start a conversation to test your chatbot
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                chatMessages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.type === 'user'
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
+                        : isDarkMode
+                          ? 'bg-gray-800 text-gray-100'
+                          : 'bg-gray-100 text-gray-900'
+                        }`}
+                    >
+                      <p className="text-sm">{message.message}</p>
+                      <p className={`text-xs mt-1 ${message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
+                        }`}>
+                        {message.timestamp.toLocaleTimeString()}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+              {isChatLoading && (
+                <div className="flex justify-start">
+                  <div className={`max-w-xs px-4 py-2 rounded-lg ${isDarkMode ? 'bg-gray-800 text-gray-100' : 'bg-gray-100 text-gray-900'
+                    }`}>
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                      <span className="text-sm">Thinking...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Chat Input */}
+            <div className={`p-4 border-t ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={currentMessage}
+                  onChange={(e) => setCurrentMessage(e.target.value)}
+                  onKeyPress={handleChatKeyPress}
+                  placeholder="Type your message here..."
+                  disabled={isChatLoading}
+                  className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${isDarkMode
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                    }`}
+                />
+                <button
+                  onClick={sendChatMessage}
+                  disabled={!currentMessage.trim() || isChatLoading}
+                  className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${currentMessage.trim() && !isChatLoading
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700'
+                    : isDarkMode
+                      ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    }`}
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>

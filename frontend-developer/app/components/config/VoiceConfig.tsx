@@ -1188,9 +1188,9 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                   if (selectedVoiceProvider === '11Labs') {
                     models = Object.keys(elevenLabsModelNames);
                   } else if (selectedVoiceProvider === 'OpenAI') {
-                    models = Object.keys(openaiModels);
+                    models = voiceProviders['OpenAI'];
                   } else if (selectedVoiceProvider === 'Cartesia') {
-                    models = ['cartesia-xtts-v2']; // Cartesia has only one model
+                    models = voiceProviders['Cartesia'];
                   }
                   
                   console.log('🔍 Available models for', selectedVoiceProvider, ':', models);
