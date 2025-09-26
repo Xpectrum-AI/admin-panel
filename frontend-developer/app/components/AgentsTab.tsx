@@ -100,7 +100,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const [deletingAgentId, setDeletingAgentId] = useState<string | null>(null);
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-  
+
   // Success modal state
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -116,6 +116,8 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const [isRefreshingAgents, setIsRefreshingAgents] = useState(false);
   const [isUpdatingAgent, setIsUpdatingAgent] = useState(false);
   const [showVoiceChat, setShowVoiceChat] = useState(false);
+  const [startVoiceCall, setStartVoiceCall] = useState(false);
+  const [endVoiceCall, setEndVoiceCall] = useState(false);
   const [showChatSidebar, setShowChatSidebar] = useState(false);
   const [chatMessages, setChatMessages] = useState<Array<{ id: string, type: 'user' | 'bot', message: string, timestamp: Date }>>([]);
   const [currentMessage, setCurrentMessage] = useState('');
@@ -124,14 +126,14 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Use centralized configuration state
-  const { 
-    configuration, 
-    hasUnsavedChanges, 
-    autoSaveStatus, 
-    updateConfiguration, 
-    loadConfigurationFromAgent, 
+  const {
+    configuration,
+    hasUnsavedChanges,
+    autoSaveStatus,
+    updateConfiguration,
+    loadConfigurationFromAgent,
     saveConfiguration,
-    resetConfiguration 
+    resetConfiguration
   } = useAgentConfig();
 
   // Initialize organization ID from user context
@@ -568,7 +570,7 @@ Remember: You are the first point of contact for many patients. Your professiona
     } else {
       console.log('⚠️ modelSectionRef.current is null - ModelConfig component not mounted');
     }
-    
+
     console.log('🔍 Using current configuration for agent creation:');
     console.log('🔍 System Prompt:', currentSystemPrompt);
     console.log('🔍 Model Provider:', currentModelProvider);
@@ -813,15 +815,15 @@ Remember: You are the first point of contact for many patients. Your professiona
   // Handle selecting an agent (view mode)
   const handleSelectAgent = useCallback((agent: Agent) => {
     console.log('Selecting agent for viewing:', agent);
-    
+
     // Reset configuration context before loading new agent
     resetConfiguration();
-    
+
     setSelectedAgent(agent);
     setIsEditing(false);
     setIsCreating(false);
     setActiveConfigTab('model');
-    
+
     // Load configuration will happen automatically via useEffect
   }, [resetConfiguration]);
 
@@ -1209,7 +1211,7 @@ Remember: You are the first point of contact for many patients. Your professiona
         console.log('🗑️ Deleting Dify agent for:', agentToDelete.id);
         console.log('🔍 Agent chatbot_key:', agentToDelete.chatbot_key);
         console.log('🔍 Current organizationId:', currentOrganizationId);
-        
+
         try {
           const difyResult = await difyAgentService.deleteDifyAgent({
             agentName: agentToDelete.id, // Use UUID for Dify deletion
@@ -1531,7 +1533,7 @@ Remember: You are the first point of contact for many patients. Your professiona
                     <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>ID: {selectedAgent.id}</p>
                   </div>
                   {/* Action Buttons */}
-                  <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 relative">
                     {selectedAgent && (
                       <button
                         onClick={() => setShowChatSidebar(true)}
@@ -1543,12 +1545,36 @@ Remember: You are the first point of contact for many patients. Your professiona
                     )}
                     {selectedAgent && (
                       <button
-                        onClick={() => setShowVoiceChat(true)}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-green-600 text-white hover:bg-green-700"
+                        onClick={() => {
+                          if (showVoiceChat) {
+                            setEndVoiceCall(true);
+                            setShowVoiceChat(false);
+                            // Reset end call flag after a brief delay
+                            setTimeout(() => setEndVoiceCall(false), 100);
+                          } else {
+                            setShowVoiceChat(true);
+                            setStartVoiceCall(true);
+                            // Reset start call flag after a brief delay
+                            setTimeout(() => setStartVoiceCall(false), 100);
+                          }
+                        }}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${showVoiceChat
+                          ? 'bg-red-600 text-white hover:bg-red-700'
+                          : 'bg-green-600 text-white hover:bg-green-700'
+                          }`}
                       >
                         <Phone className="h-4 w-4" />
-                        Talk to Agent
+                        {showVoiceChat ? 'End Call' : 'Talk to Agent'}
                       </button>
+                    )}
+                    {/* Voice Chat Component - Hidden UI, only props */}
+                    {showVoiceChat && selectedAgent && (
+                      <LiveKitVoiceChat
+                        agentName={selectedAgent.id}
+                        isDarkMode={isDarkMode}
+                        startCall={startVoiceCall}
+                        endCall={endVoiceCall}
+                      />
                     )}
                     {selectedAgent && (
                       <button
@@ -1756,17 +1782,17 @@ Remember: You are the first point of contact for many patients. Your professiona
       {/* Success Modal */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className={`relative p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 transform transition-all duration-300 scale-100 ${isDarkMode 
-            ? 'bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50' 
+          <div className={`relative p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 transform transition-all duration-300 scale-100 ${isDarkMode
+            ? 'bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50'
             : 'bg-gradient-to-br from-white to-gray-50 border border-gray-200/50'
-          }`}>
+            }`}>
             {/* Close button */}
             <button
               onClick={() => setShowSuccessModal(false)}
               className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${isDarkMode
                 ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
                 : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
-              }`}
+                }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1775,11 +1801,10 @@ Remember: You are the first point of contact for many patients. Your professiona
 
             <div className="text-center">
               {/* Icon with animation */}
-              <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${
-                successMessage.includes('Failed') 
-                  ? 'bg-red-100 animate-pulse' 
-                  : 'bg-green-100 animate-bounce'
-              }`}>
+              <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${successMessage.includes('Failed')
+                ? 'bg-red-100 animate-pulse'
+                : 'bg-green-100 animate-bounce'
+                }`}>
                 {successMessage.includes('Failed') ? (
                   <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
@@ -1790,11 +1815,10 @@ Remember: You are the first point of contact for many patients. Your professiona
               </div>
 
               {/* Title with gradient text */}
-              <h3 className={`text-xl font-bold mb-3 ${
-                successMessage.includes('Failed') 
-                  ? 'text-red-600' 
-                  : 'bg-gradient-to-r from-green-600 to-green-500 bg-clip-text text-transparent'
-              }`}>
+              <h3 className={`text-xl font-bold mb-3 ${successMessage.includes('Failed')
+                ? 'text-red-600'
+                : 'bg-gradient-to-r from-green-600 to-green-500 bg-clip-text text-transparent'
+                }`}>
                 {successMessage.includes('Failed') ? 'Error' : 'Success!'}
               </h3>
 
@@ -1806,11 +1830,10 @@ Remember: You are the first point of contact for many patients. Your professiona
               {/* Action button */}
               <button
                 onClick={() => setShowSuccessModal(false)}
-                className={`w-full px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 ${
-                  successMessage.includes('Failed')
-                    ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-500/25'
-                    : 'bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-700 hover:to-green-600 shadow-lg shadow-green-500/25'
-                }`}
+                className={`w-full px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 ${successMessage.includes('Failed')
+                  ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-500/25'
+                  : 'bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-700 hover:to-green-600 shadow-lg shadow-green-500/25'
+                  }`}
               >
                 {successMessage.includes('Failed') ? 'Try Again' : 'Got it!'}
               </button>
@@ -1819,89 +1842,68 @@ Remember: You are the first point of contact for many patients. Your professiona
         </div>
       )}
 
-      {/* Voice Chat Modal */}
-      {showVoiceChat && selectedAgent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className={`relative w-full max-w-md mx-4 rounded-lg ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
-            {/* Close Button */}
-            <button
-              onClick={() => setShowVoiceChat(false)}
-              className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-            >
-              <X className="h-5 w-5 text-gray-500" />
-            </button>
-            
-            {/* Voice Chat Content */}
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-teal-600">
-                  <Phone className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Voice Chat
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Connect to {getAgentDisplayName(selectedAgent)}
-                  </p>
-                </div>
-              </div>
-              
-              {/* LiveKit Voice Chat Component */}
-              <LiveKitVoiceChat 
-                agentName={selectedAgent.id} 
-                isDarkMode={isDarkMode} 
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Voice Chat Modal removed; Voice chat now toggled inline from header */}
 
       {/* Chat Sidebar */}
       {showChatSidebar && selectedAgent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-end z-50">
-          <div className={`relative w-full max-w-md h-full mx-4 rounded-lg ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
+        <div className="fixed inset-0 z-50 flex justify-end">
+          {/* Backdrop with subtle blur effect */}
+          <div
+            className="absolute inset-0 bg-gray-900/20 backdrop-blur-sm"
+            onClick={() => setShowChatSidebar(false)}
+          />
+
+          {/* Chat Panel - Slides in from right */}
+          <div className={`relative w-full max-w-md h-full transform transition-transform duration-300 ease-in-out ${isDarkMode ? 'bg-gray-900' : 'bg-white'} shadow-2xl border-l ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
             {/* Chat Header */}
-            <div className={`p-4 border-b ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+            <div className={`p-6 border-b ${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gradient-to-r from-gray-50 to-white border-gray-200'} backdrop-blur-sm`}>
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-600">
-                    <Bot className="h-4 w-4 text-white" />
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-600 shadow-lg">
+                    <Bot className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <h5 className="font-medium text-gray-900 dark:text-white">
+                    <h5 className="font-semibold text-lg text-gray-900 dark:text-white">
                       {getAgentDisplayName(selectedAgent)} Assistant
                     </h5>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Powered by Agent
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Powered by Agent
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <button
                     onClick={clearChat}
-                    className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    className="px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all duration-200"
                   >
                     Clear
                   </button>
                   <button
                     onClick={() => setShowChatSidebar(false)}
-                    className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 group"
                   >
-                    <X className="h-4 w-4 text-gray-500" />
+                    <X className="h-5 w-5 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-200" />
                   </button>
                 </div>
               </div>
             </div>
 
             {/* Chat Messages */}
-            <div className="h-96 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 h-[calc(100vh-200px)] overflow-y-auto p-6 space-y-6">
               {chatMessages.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
-                    <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-500 dark:text-gray-400">
-                      Start a conversation to test your chatbot
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 mb-4 inline-block">
+                      <MessageSquare className="h-12 w-12 text-blue-500 dark:text-blue-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                      Start a conversation
+                    </h3>
+                    <p className="text-gray-500 dark:text-gray-400 max-w-xs">
+                      Test your chatbot by sending a message below
                     </p>
                   </div>
                 </div>
@@ -1909,18 +1911,18 @@ Remember: You are the first point of contact for many patients. Your professiona
                 chatMessages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} group`}
                   >
                     <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.type === 'user'
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
+                      className={`max-w-xs lg:max-w-md px-5 py-3 rounded-2xl shadow-sm transition-all duration-200 group-hover:shadow-md ${message.type === 'user'
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-br-md'
                         : isDarkMode
-                          ? 'bg-gray-800 text-gray-100'
-                          : 'bg-gray-100 text-gray-900'
+                          ? 'bg-gray-800 text-gray-100 rounded-bl-md border border-gray-700'
+                          : 'bg-gray-50 text-gray-900 rounded-bl-md border border-gray-200'
                         }`}
                     >
-                      <p className="text-sm">{message.message}</p>
-                      <p className={`text-xs mt-1 ${message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
+                      <p className="text-sm leading-relaxed">{message.message}</p>
+                      <p className={`text-xs mt-2 ${message.type === 'user' ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
                         }`}>
                         {message.timestamp.toLocaleTimeString()}
                       </p>
@@ -1930,11 +1932,15 @@ Remember: You are the first point of contact for many patients. Your professiona
               )}
               {isChatLoading && (
                 <div className="flex justify-start">
-                  <div className={`max-w-xs px-4 py-2 rounded-lg ${isDarkMode ? 'bg-gray-800 text-gray-100' : 'bg-gray-100 text-gray-900'
+                  <div className={`max-w-xs px-5 py-3 rounded-2xl ${isDarkMode ? 'bg-gray-800 text-gray-100 border border-gray-700' : 'bg-gray-50 text-gray-900 border border-gray-200'
                     }`}>
-                    <div className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
-                      <span className="text-sm">Thinking...</span>
+                    <div className="flex items-center gap-3">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      </div>
+                      <span className="text-sm font-medium">Thinking...</span>
                     </div>
                   </div>
                 </div>
@@ -1942,8 +1948,8 @@ Remember: You are the first point of contact for many patients. Your professiona
             </div>
 
             {/* Chat Input */}
-            <div className={`p-4 border-t ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
-              <div className="flex gap-2">
+            <div className={`p-6 border-t ${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gradient-to-r from-gray-50 to-white border-gray-200'} backdrop-blur-sm`}>
+              <div className="flex gap-3">
                 <input
                   type="text"
                   value={currentMessage}
@@ -1951,16 +1957,16 @@ Remember: You are the first point of contact for many patients. Your professiona
                   onKeyPress={handleChatKeyPress}
                   placeholder="Type your message here..."
                   disabled={isChatLoading}
-                  className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${isDarkMode
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                  className={`flex-1 px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${isDarkMode
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:bg-gray-600'
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:bg-white'
                     }`}
                 />
                 <button
                   onClick={sendChatMessage}
                   disabled={!currentMessage.trim() || isChatLoading}
-                  className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${currentMessage.trim() && !isChatLoading
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700'
+                  className={`px-5 py-3 rounded-xl transition-all duration-200 flex items-center gap-2 font-medium ${currentMessage.trim() && !isChatLoading
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transform hover:scale-105'
                     : isDarkMode
                       ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                       : 'bg-gray-200 text-gray-400 cursor-not-allowed'
