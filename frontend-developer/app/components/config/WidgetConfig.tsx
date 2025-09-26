@@ -4,6 +4,7 @@ import React, { forwardRef, useState, useEffect, useRef } from 'react';
 import { Code, Copy, Check, ExternalLink, Globe, MessageCircle, Send, Bot, Phone, PhoneOff, Mic, MicOff, Volume2 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { maskApiKey } from '../../../service/agentConfigService';
+import LiveKitVoiceChat from './LiveKitVoiceChat';
 
 interface WidgetConfigProps {
   agentName?: string;
@@ -41,11 +42,6 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
   const [showPreview, setShowPreview] = useState(false);
   const [conversationId, setConversationId] = useState('');
 
-  // Voice call preview state
-  const [showVoicePreview, setShowVoicePreview] = useState(false);
-  const [isCallActive, setIsCallActive] = useState(false);
-  const [callDuration, setCallDuration] = useState(0);
-  const [isMuted, setIsMuted] = useState(false);
 
   // Generate widget scripts based on current values
   useEffect(() => {
@@ -241,38 +237,6 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
     setConversationId(''); // Reset conversation ID when clearing chat
   };
 
-  // Voice call preview functions
-  const startCall = () => {
-    setIsCallActive(true);
-    setCallDuration(0);
-    // Simulate call duration timer
-    const timer = setInterval(() => {
-      setCallDuration(prev => prev + 1);
-    }, 1000);
-
-    // Store timer reference for cleanup
-    (window as any).voiceCallTimer = timer;
-  };
-
-  const endCall = () => {
-    setIsCallActive(false);
-    setCallDuration(0);
-    setIsMuted(false);
-    if ((window as any).voiceCallTimer) {
-      clearInterval((window as any).voiceCallTimer);
-      (window as any).voiceCallTimer = null;
-    }
-  };
-
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
-  };
-
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
 
   return (
     <div ref={ref} className="space-y-6">
@@ -453,100 +417,12 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
                 Live Voice Call Preview
               </h4>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Test your voice widget before embedding it on your website
+                Test your voice widget with real-time voice conversation
               </p>
             </div>
           </div>
 
-          <div className={`rounded-lg border overflow-hidden ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
-            }`}>
-            {/* Voice Call Header */}
-            <div className={`p-4 border-b ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
-              }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-full bg-gradient-to-r from-green-500 to-teal-600">
-                    <Phone className="h-4 w-4 text-white" />
-                  </div>
-                  <div>
-                    <h5 className="font-medium text-gray-900 dark:text-white">
-                      {agentName} Voice Assistant
-                    </h5>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Voice Widget Preview
-                    </p>
-                  </div>
-                </div>
-                {isCallActive && (
-                  <div className="text-sm text-gray-600 dark:text-gray-400 font-mono">
-                    {formatDuration(callDuration)}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Voice Call Interface */}
-            <div className="p-6">
-              <div className="text-center space-y-4">
-                {!isCallActive ? (
-                  <div>
-                    <h6 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                      Ready to Call
-                    </h6>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                      Click the call button to start a voice conversation with your agent
-                    </p>
-                  </div>
-                ) : (
-                  <div>
-                    <h6 className="text-lg font-medium text-gray-900 dark:text-white">
-                      Call Active
-                    </h6>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Duration: {formatDuration(callDuration)}
-                    </p>
-                  </div>
-                )}
-
-                {/* Single Call Button */}
-                <button
-                  onClick={isCallActive ? endCall : startCall}
-                  className={`px-6 py-3 rounded-full text-white transition-colors flex items-center gap-2 mx-auto ${isCallActive
-                    ? 'bg-red-500 hover:bg-red-600'
-                    : 'bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700'
-                    }`}
-                >
-                  {isCallActive ? (
-                    <>
-                      <PhoneOff className="h-5 w-5" />
-                      End Call
-                    </>
-                  ) : (
-                    <>
-                      <Phone className="h-5 w-5" />
-                      Start Call
-                    </>
-                  )}
-                </button>
-
-                {/* Mute Button - Only show when call is active */}
-                {isCallActive && (
-                  <button
-                    onClick={toggleMute}
-                    className={`px-4 py-2 rounded-lg transition-colors text-sm ${isMuted
-                      ? 'bg-red-500 hover:bg-red-600 text-white'
-                      : isDarkMode
-                        ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                        : 'bg-gray-200 hover:bg-gray-300 text-gray-600'
-                      }`}
-                  >
-                    {isMuted ? <MicOff className="h-4 w-4 inline mr-2" /> : <Mic className="h-4 w-4 inline mr-2" />}
-                    {isMuted ? 'Unmute' : 'Mute'}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+          <LiveKitVoiceChat agentName={agentName || 'newbot'} isDarkMode={isDarkMode} />
         </div>
 
         {/* Chatbot Preview - Right Side */}

@@ -332,7 +332,7 @@ export default function AgentsTab({ agents, totalAgents, pageNumber, pageSize, s
                       id="chatbotApi"
                       value={addForm.chatbot_api}
                       onChange={e => setAddForm({ ...addForm, chatbot_api: e.target.value })}
-                      placeholder="https://demo.xpectrum-ai.com/v1/chat-messages"
+                      placeholder="https://dlb20rrk0t1tl.cloudfront.net/v1/chat-messages"
                       required
                     />
                   </div>
