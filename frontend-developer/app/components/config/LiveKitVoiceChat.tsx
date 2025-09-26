@@ -105,12 +105,10 @@ export default function LiveKitVoiceChat({ agentName, isDarkMode }: LiveKitVoice
       console.log('🎤 API Base URL:', API_BASE_URL);
       console.log('🎤 API Key:', API_KEY ? '***' : 'NOT_SET');
       
-      // Ensure agent name is properly formatted
-      const formattedAgentName = agentName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-      const url = `${API_BASE_URL}/tokens/generate?agent_name=${formattedAgentName}`;
+      // Use the agent ID directly (should be the full UUID)
+      const url = `${API_BASE_URL}/tokens/generate?agent_name=${agentName}`;
       console.log('🎤 Request URL:', url);
-      console.log('🎤 Original agent name:', agentName);
-      console.log('🎤 Formatted agent name:', formattedAgentName);
+      console.log('🎤 Agent ID:', agentName);
       
       const response = await fetch(url, {
         method: 'POST',
