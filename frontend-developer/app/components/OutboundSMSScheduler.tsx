@@ -515,7 +515,7 @@ export default function OutboundSMSScheduler({ refreshTrigger }: OutboundSMSSche
                   >
                     <option value="">Select an agent</option>
                     {agents.map((agent, index) => (
-                      <option key={agent.id || agent.name || agent.agent_prefix || `agent-${index}`} value={agent.name || agent.agent_prefix}>
+                      <option key={agent.id || agent.name || agent.agent_prefix || `agent_${index}`} value={agent.name || agent.agent_prefix}>
                         {agent.name || agent.agent_prefix}
                       </option>
                     ))}
@@ -661,7 +661,7 @@ export default function OutboundSMSScheduler({ refreshTrigger }: OutboundSMSSche
                   >
                     <option value="">Select an agent</option>
                     {agents.map((agent, index) => (
-                      <option key={agent.id || agent.name || agent.agent_prefix || `agent-${index}`} value={agent.name || agent.agent_prefix}>
+                      <option key={agent.id || agent.name || agent.agent_prefix || `agent_${index}`} value={agent.name || agent.agent_prefix}>
                         {agent.name || agent.agent_prefix}
                       </option>
                     ))}

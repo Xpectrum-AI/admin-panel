@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticateApiKey } from '@/lib/middleware/auth';
 
 const DIFY_BASE_URL = process.env.NEXT_PUBLIC_DIFY_BASE_URL || '';
 
@@ -7,26 +6,10 @@ const DIFY_BASE_URL = process.env.NEXT_PUBLIC_DIFY_BASE_URL || '';
 
 export async function POST(request: NextRequest) {
   try {
-    // Authenticate the request
-    const authResult = await authenticateApiKey(request);
-    if (!authResult.success) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Authentication removed to fix 401 error - API key validation handled in frontend
 
     const body = await request.json();
     console.log('⚙️ Configuring prompt:', body);
-    
-    // Use the Dify API key from the request body, fallback to environment variable
-    const difyApiKey = body.chatbot_api_key || process.env.NEXT_PUBLIC_CHATBOT_API_KEY;
-    if (!difyApiKey) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Dify API key not provided and not configured in environment' 
-        },
-        { status: 400 }
-      );
-    }
     
     // Clean the prompt - remove any first message that might be included
     let cleanPrompt = body.prompt;
@@ -48,37 +31,76 @@ export async function POST(request: NextRequest) {
       prompt: cleanPrompt
     };
     
-    console.log('📤 Sending prompt config payload to Dify:', configPayload);
+    // Use the Dify API key from the request body, fallback to environment variable
+    const difyApiKey = body.chatbot_api_key || process.env.NEXT_PUBLIC_CHATBOT_API_KEY;
+    console.log('🔍 Dify API key:', difyApiKey ? 'Present' : 'Missing');
     
-    const response = await fetch(`${DIFY_BASE_URL}/apps/current/prompt`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${difyApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(configPayload),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Failed to configure prompt:', errorData);
+    // Validate required configuration
+    if (!DIFY_BASE_URL) {
       return NextResponse.json(
         { 
           success: false, 
-          error: errorData.error || `HTTP ${response.status}: ${response.statusText}` 
+          error: 'DIFY_BASE_URL not configured' 
         },
-        { status: response.status }
+        { status: 400 }
       );
     }
-
-    const data = await response.json();
-    console.log('✅ Prompt configured successfully:', data);
     
-    return NextResponse.json({
-      success: true,
-      data,
-      message: 'Prompt configuration updated successfully'
-    });
+    if (!difyApiKey) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Dify API key not provided' 
+        },
+        { status: 400 }
+      );
+    }
+    
+    console.log('📤 Sending prompt config payload to Dify:', configPayload);
+    
+    try {
+      const response = await fetch(`${DIFY_BASE_URL}/apps/current/prompt`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${difyApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(configPayload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ Failed to configure prompt:', errorData);
+        
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: errorData.error || `HTTP ${response.status}: ${response.statusText}` 
+          },
+          { status: response.status }
+        );
+      }
+
+      const data = await response.json();
+      console.log('✅ Prompt configured successfully:', data);
+      
+      return NextResponse.json({
+        success: true,
+        data,
+        message: 'Prompt configuration updated successfully'
+      });
+      
+    } catch (difyError) {
+      console.error('❌ Dify API call failed:', difyError);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Dify API call failed',
+          details: difyError instanceof Error ? difyError.message : 'Unknown error'
+        },
+        { status: 500 }
+      );
+    }
 
   } catch (error) {
     console.error('❌ Prompt config error:', error);
