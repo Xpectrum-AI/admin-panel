@@ -1,7 +1,7 @@
 'use client';
 
 import React, { forwardRef, useState, useEffect, useRef } from 'react';
-import { Code, Copy, Check, ExternalLink, Globe, MessageCircle, Send, Bot, Phone, PhoneOff, Mic, MicOff, Volume2 } from 'lucide-react';
+import { Code, Copy, Check, ExternalLink, Globe, RefreshCw } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { maskApiKey } from '../../../service/agentConfigService';
 import LiveKitVoiceChat from './LiveKitVoiceChat';
@@ -11,13 +11,19 @@ interface WidgetConfigProps {
   onConfigChange?: (config: any) => void;
   existingConfig?: any;
   isEditing?: boolean;
+  difyApiUrl?: string;
+  difyApiKey?: string;
+  onRefreshAgent?: () => void;
 }
 
 const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
   agentName = 'default',
   onConfigChange,
   existingConfig,
-  isEditing = true
+  isEditing = true,
+  difyApiUrl,
+  difyApiKey,
+  onRefreshAgent
 }, ref) => {
   const { isDarkMode } = useTheme();
 
@@ -26,8 +32,8 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
     if (!actualKey) return '••••••••••••••••••••••••••••••••';
     return maskApiKey(actualKey);
   };
-  const [difyApiUrl, setDifyApiUrl] = useState(process.env.NEXT_PUBLIC_CHATBOT_API_URL || process.env.NEXT_PUBLIC_DIFY_BASE_URL + '/chat-messages' || 'https://dlb20rrk0t1tl.cloudfront.net/v1/chat-messages');
-  const [difyApiKey, setDifyApiKey] = useState('');
+  const [localDifyApiUrl, setLocalDifyApiUrl] = useState(difyApiUrl || process.env.NEXT_PUBLIC_CHATBOT_API_URL || process.env.NEXT_PUBLIC_DIFY_BASE_URL + '/chat-messages' || 'https://dlb20rrk0t1tl.cloudfront.net/v1/chat-messages');
+  const [localDifyApiKey, setLocalDifyApiKey] = useState(difyApiKey || '');
   const [copiedScript, setCopiedScript] = useState(false);
   const [copiedVoiceScript, setCopiedVoiceScript] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
@@ -35,12 +41,7 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
   const [widgetScript, setWidgetScript] = useState('');
   const [voiceWidgetScript, setVoiceWidgetScript] = useState('');
 
-  // Chatbot preview state
-  const [chatMessages, setChatMessages] = useState<Array<{ id: string, type: 'user' | 'bot', message: string, timestamp: Date }>>([]);
-  const [currentMessage, setCurrentMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [conversationId, setConversationId] = useState('');
 
 
   // Generate widget scripts based on current values
@@ -48,8 +49,8 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
     // Chatbot widget script
     const chatbotScript = `<script 
   src="https://widgetbot.netlify.app/bidirectional-embed.js"
-  data-agent-api-url="${difyApiUrl}"
-  data-agent-api-key="${difyApiKey}"
+  data-agent-api-url="${localDifyApiUrl}"
+  data-agent-api-key="${localDifyApiKey}"
   data-position="bottom-right"
   data-primary-color="#667eea">
 </script>`;
@@ -58,14 +59,29 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
     // Voice widget script
     const voiceScript = `<script 
   src="https://voice-widget.netlify.app/voice-widget.js"
-  agent-api-url="${difyApiUrl.replace('/v1', '')}"
-  agent-api-key="${difyApiKey}"
+  agent-api-url="${localDifyApiUrl.replace('/v1', '')}"
+  agent-api-key="${localDifyApiKey}"
   data-agent="${agentName}"
   data-position="bottom-right"
   data-primary-color="#667eea">
 </script>`;
     setVoiceWidgetScript(voiceScript);
-  }, [difyApiKey, difyApiUrl, agentName]);
+  }, [localDifyApiKey, localDifyApiUrl, agentName]);
+
+  // Update state when props change
+  useEffect(() => {
+    console.log('🔧 WidgetConfig props changed:', { difyApiUrl, difyApiKey });
+    if (difyApiUrl) {
+      console.log('🔧 Setting difyApiUrl from props:', difyApiUrl);
+      setLocalDifyApiUrl(difyApiUrl);
+    }
+    if (difyApiKey) {
+      console.log('🔧 Setting difyApiKey from props:', difyApiKey.substring(0, 10) + '...');
+      setLocalDifyApiKey(difyApiKey);
+    } else {
+      console.log('⚠️ No difyApiKey provided from props');
+    }
+  }, [difyApiUrl, difyApiKey]);
 
   // Load existing configuration
   useEffect(() => {
@@ -74,26 +90,33 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
       if (existingConfig.difyApiUrl) {
         // Remove /chat-messages endpoint if present to get base URL
         const baseUrl = existingConfig.difyApiUrl.replace('/chat-messages', '');
-        setDifyApiUrl(baseUrl);
+        setLocalDifyApiUrl(baseUrl);
       }
       if (existingConfig.difyApiKey) {
-        console.log('🔧 WidgetConfig setting API key:', {
+        console.log('🔧 WidgetConfig setting API key from existingConfig:', {
           apiKey: existingConfig.difyApiKey,
           apiKeyLength: existingConfig.difyApiKey.length,
           startsWithApp: existingConfig.difyApiKey.startsWith('app-'),
           startsWithSk: existingConfig.difyApiKey.startsWith('sk-')
         });
-        setDifyApiKey(existingConfig.difyApiKey);
+        setLocalDifyApiKey(existingConfig.difyApiKey);
       }
     }
   }, [existingConfig]);
+
+  // Handle missing API key - show warning
+  useEffect(() => {
+    if (!localDifyApiKey && !difyApiKey) {
+      console.log('⚠️ WidgetConfig: No API key available from props or existingConfig');
+    }
+  }, [localDifyApiKey, difyApiKey]);
 
   // Notify parent component of configuration changes
   const lastWidgetConfigRef = useRef<string>('');
   useEffect(() => {
     const config = {
-      difyApiUrl,
-      difyApiKey,
+      difyApiUrl: localDifyApiUrl,
+      difyApiKey: localDifyApiKey,
       widgetScript,
       voiceWidgetScript
     };
@@ -103,7 +126,7 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
       lastWidgetConfigRef.current = configString;
       onConfigChange(config);
     }
-  }, [difyApiUrl, difyApiKey, widgetScript, voiceWidgetScript, onConfigChange]);
+  }, [localDifyApiUrl, localDifyApiKey, widgetScript, voiceWidgetScript, onConfigChange]);
 
   const handleCopyScript = async () => {
     try {
@@ -127,7 +150,7 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
 
   const handleCopyUrl = async () => {
     try {
-      await navigator.clipboard.writeText(difyApiUrl);
+      await navigator.clipboard.writeText(localDifyApiUrl);
       setCopiedUrl(true);
       setTimeout(() => setCopiedUrl(false), 2000);
     } catch (err) {
@@ -138,7 +161,7 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
   const handleCopyKey = async () => {
     try {
       // Copy the actual API key, not the masked version
-      const actualKey = difyApiKey || existingConfig?.chatbot_key || '';
+      const actualKey = localDifyApiKey || existingConfig?.chatbot_key || '';
       await navigator.clipboard.writeText(actualKey);
       setCopiedKey(true);
       setTimeout(() => setCopiedKey(false), 2000);
@@ -147,95 +170,6 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
     }
   };
 
-  // Chatbot preview functions
-  const sendMessage = async () => {
-    if (!currentMessage.trim() || !difyApiKey || isLoading) return;
-
-    const messageToSend = currentMessage.trim();
-    const userMessage = {
-      id: Date.now().toString(),
-      type: 'user' as const,
-      message: messageToSend,
-      timestamp: new Date()
-    };
-
-    setChatMessages(prev => [...prev, userMessage]);
-    setCurrentMessage('');
-    setIsLoading(true);
-
-    try {
-      console.log('🚀 Sending message to chatbot:', {
-        difyApiUrl,
-        difyApiKey: difyApiKey ? difyApiKey.substring(0, 10) + '...' : 'NO KEY',
-        message: messageToSend,
-        conversationId
-      });
-
-      const response = await fetch('/api/chatbot/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          difyApiUrl,
-          difyApiKey,
-          message: messageToSend,
-          conversationId: conversationId,
-          useStreaming: true // Use streaming mode since agent doesn't support blocking
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('🤖 Chatbot response data:', data);
-      console.log('🤖 Response answer field:', data.answer);
-      console.log('🤖 Response answer type:', typeof data.answer);
-      console.log('🤖 Response answer length:', data.answer ? data.answer.length : 0);
-
-      // Update conversation ID if provided
-      if (data.conversationId) {
-        setConversationId(data.conversationId);
-      }
-
-      const botMessage = {
-        id: (Date.now() + 1).toString(),
-        type: 'bot' as const,
-        message: data.answer || 'Sorry, I could not process your request.',
-        timestamp: new Date()
-      };
-
-      console.log('🤖 Bot message to display:', botMessage);
-      console.log('🤖 Bot message content:', botMessage.message);
-      setChatMessages(prev => [...prev, botMessage]);
-    } catch (error) {
-      console.error('Error sending message:', error);
-      const errorMessage = {
-        id: (Date.now() + 1).toString(),
-        type: 'bot' as const,
-        message: error instanceof Error ? error.message : 'Sorry, there was an error connecting to the chatbot. Please check your API configuration.',
-        timestamp: new Date()
-      };
-      setChatMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
-  const clearChat = () => {
-    setChatMessages([]);
-    setConversationId(''); // Reset conversation ID when clearing chat
-  };
 
 
   return (
@@ -265,7 +199,7 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
           <div className="flex gap-2">
             <input
               type="url"
-              value={difyApiUrl}
+              value={localDifyApiUrl}
               readOnly
               className={`flex-1 px-3 py-2 border rounded-lg transition-colors ${isDarkMode
                 ? 'bg-gray-800 border-gray-600 text-gray-400'
@@ -295,8 +229,8 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
           <div className="flex gap-2">
             <input
               type={!isEditing ? "text" : "password"}
-              value={!isEditing ? getApiKeyDisplayValue(difyApiKey) : difyApiKey}
-              onChange={(e) => setDifyApiKey(e.target.value)}
+              value={!isEditing ? getApiKeyDisplayValue(localDifyApiKey) : localDifyApiKey}
+              onChange={(e) => setLocalDifyApiKey(e.target.value)}
               placeholder="app-xxxxxxxxxxxxxxxx"
               className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${isDarkMode
                 ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400'
@@ -314,7 +248,36 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
               {copiedKey ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
             </button>
           </div>
-          {difyApiKey && !difyApiKey.startsWith('app-') && !difyApiKey.startsWith('sk-') && (
+          {!localDifyApiKey && (
+            <div className={`mt-2 p-3 rounded-lg border ${isDarkMode ? 'bg-red-900/20 border-red-700 text-red-300' : 'bg-red-50 border-red-200 text-red-800'
+              }`}>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-sm">
+                    ⚠️ <strong>API Key Missing:</strong> No API key found for this agent. This might be due to:
+                    <ul className="mt-2 ml-4 list-disc">
+                      <li>Session timeout - try refreshing the page</li>
+                      <li>Agent not properly configured - check agent settings</li>
+                      <li>Backend issue - contact support</li>
+                    </ul>
+                  </p>
+                </div>
+                {onRefreshAgent && (
+                  <button
+                    onClick={onRefreshAgent}
+                    className={`ml-4 px-3 py-1 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${isDarkMode
+                      ? 'bg-red-700 text-white hover:bg-red-600'
+                      : 'bg-red-600 text-white hover:bg-red-700'
+                      }`}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Refresh
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+          {localDifyApiKey && !localDifyApiKey.startsWith('app-') && !localDifyApiKey.startsWith('sk-') && (
             <div className={`mt-2 p-3 rounded-lg border ${isDarkMode ? 'bg-yellow-900/20 border-yellow-700 text-yellow-300' : 'bg-yellow-50 border-yellow-200 text-yellow-800'
               }`}>
               <p className="text-sm">
@@ -404,153 +367,6 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
       </div>
 
 
-      {/* Live Previews - Side by Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Voice Call Preview - Left Side */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-teal-600">
-              <Phone className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Live Voice Call Preview
-              </h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Test your voice widget with real-time voice conversation
-              </p>
-            </div>
-          </div>
-
-          <LiveKitVoiceChat agentName={agentName || 'newbot'} isDarkMode={isDarkMode} />
-        </div>
-
-        {/* Chatbot Preview - Right Side */}
-        {difyApiUrl && difyApiKey && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600">
-                <MessageCircle className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Live Chatbot Preview
-                </h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Test your chatbot before embedding it on your website
-                </p>
-              </div>
-            </div>
-
-            <div className={`rounded-lg border overflow-hidden ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
-              }`}>
-              {/* Chat Header */}
-              <div className={`p-4 border-b ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
-                }`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-600">
-                      <Bot className="h-4 w-4 text-white" />
-                    </div>
-                    <div>
-                      <h5 className="font-medium text-gray-900 dark:text-white">
-                        {agentName} Assistant
-                      </h5>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Powered by Agent
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={clearChat}
-                    className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                  >
-                    Clear Chat
-                  </button>
-                </div>
-              </div>
-
-              {/* Chat Messages */}
-              <div className="h-80 overflow-y-auto p-4 space-y-4">
-                {chatMessages.length === 0 ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400">
-                        Start a conversation to test your chatbot
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  chatMessages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.type === 'user'
-                          ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
-                          : isDarkMode
-                            ? 'bg-gray-800 text-gray-100'
-                            : 'bg-gray-100 text-gray-900'
-                          }`}
-                      >
-                        <p className="text-sm">{message.message}</p>
-                        <p className={`text-xs mt-1 ${message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
-                          }`}>
-                          {message.timestamp.toLocaleTimeString()}
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                )}
-                {isLoading && (
-                  <div className="flex justify-start">
-                    <div className={`max-w-xs px-4 py-2 rounded-lg ${isDarkMode ? 'bg-gray-800 text-gray-100' : 'bg-gray-100 text-gray-900'
-                      }`}>
-                      <div className="flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
-                        <span className="text-sm">Thinking...</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Chat Input */}
-              <div className={`p-4 border-t ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
-                }`}>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={currentMessage}
-                    onChange={(e) => setCurrentMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Type your message here..."
-                    disabled={isLoading}
-                    className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${isDarkMode
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                      }`}
-                  />
-                  <button
-                    onClick={sendMessage}
-                    disabled={!currentMessage.trim() || isLoading}
-                    className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${currentMessage.trim() && !isLoading
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700'
-                      : isDarkMode
-                        ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      }`}
-                  >
-                    <Send className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   );
 });
