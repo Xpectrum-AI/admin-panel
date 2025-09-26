@@ -141,7 +141,7 @@ export const mockGmailAccounts: GmailAccount[] = [
     email: 'support@company.com',
     name: 'Support Team',
     status: 'active',
-    assignedAgent: 'agent-1',
+    assignedAgent: 'agent_1',
     lastSync: '2024-01-15T10:30:00Z',
     messageCount: 45,
     unreadCount: 3
@@ -151,7 +151,7 @@ export const mockGmailAccounts: GmailAccount[] = [
     email: 'sales@company.com',
     name: 'Sales Team',
     status: 'active',
-    assignedAgent: 'agent-2',
+    assignedAgent: 'agent_2',
     lastSync: '2024-01-15T09:15:00Z',
     messageCount: 23,
     unreadCount: 1
@@ -210,7 +210,7 @@ export const mockAssignments: GmailAssignment[] = [
   {
     id: 'assign-1',
     emailId: 'msg-1',
-    agentId: 'agent-1',
+    agentId: 'agent_1',
     agentName: 'AI Support Agent',
     assignedAt: '2024-01-15T10:35:00Z',
     status: 'in_progress',
@@ -219,7 +219,7 @@ export const mockAssignments: GmailAssignment[] = [
   {
     id: 'assign-2',
     emailId: 'msg-2',
-    agentId: 'agent-2',
+    agentId: 'agent_2',
     agentName: 'AI Sales Agent',
     assignedAt: '2024-01-15T09:20:00Z',
     status: 'completed',
@@ -253,9 +253,9 @@ export class GmailService {
       console.error('Failed to fetch available agents:', error);
       // Fallback to mock agents for development
       return [
-        { id: 'agent-1', name: 'AI Support Agent', status: 'active' },
-        { id: 'agent-2', name: 'AI Sales Agent', status: 'active' },
-        { id: 'agent-3', name: 'AI General Agent', status: 'active' }
+        { id: 'agent_1', name: 'AI Support Agent', status: 'active' },
+        { id: 'agent_2', name: 'AI Sales Agent', status: 'active' },
+        { id: 'agent_3', name: 'AI General Agent', status: 'active' }
       ];
     }
   }

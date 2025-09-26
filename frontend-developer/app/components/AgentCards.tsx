@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, MessageCircle, Edit, BarChart3, ExternalLink, Plus, RefreshCw, QrCode, Trash2, ChevronDown } from 'lucide-react';
+import { Bot, MessageCircle, Edit, BarChart3, ExternalLink, Plus, RefreshCw, QrCode, Trash2, ChevronDown, CheckCircle } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { agentConfigService } from '../../service/agentConfigService';
+import { getAgentDisplayName } from '../../lib/utils/agentNameUtils';
 
 // QR Code Content Component
 const QrCodeContent: React.FC<{ agent: Agent }> = ({ agent }) => {
@@ -134,6 +135,10 @@ export default function AgentCards({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
   const [isDeletingAgent, setIsDeletingAgent] = useState(false);
+  
+  // Success modal state
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   // Function to show the QR code modal
   const showQrCodeModal = (agent: Agent) => {
@@ -166,20 +171,53 @@ export default function AgentCards({
 
     setIsDeletingAgent(true);
     try {
-      console.log('Deleting agent:', agentToDelete.name);
+      console.log('Deleting agent:', agentToDelete.id, 'Name:', agentToDelete.name);
 
-      // Use the deleteAgentByName service directly
-      const result = await agentConfigService.deleteAgentByName(agentToDelete.name);
+      // First, try to delete the Dify agent if it has a chatbot_key
+      if (agentToDelete.chatbot_key) {
+        console.log('🗑️ Deleting Dify agent for:', agentToDelete.id);
+        console.log('🔍 Agent chatbot_key:', agentToDelete.chatbot_key);
+        console.log('🔍 Agent organization_id:', agentToDelete.organization_id);
+        
+        try {
+          const { difyAgentService } = await import('../../service/difyAgentService');
+          const organizationId = agentToDelete.organization_id || agentToDelete.id.split('_')[0] || 'default';
+          console.log('🔍 Using organizationId for Dify deletion:', organizationId);
+          
+          const difyResult = await difyAgentService.deleteDifyAgent({
+            agentName: agentToDelete.id, // Use UUID for Dify deletion
+            organizationId: organizationId,
+            // Note: We don't have the appId stored, but the script can still attempt cleanup
+          });
+
+          console.log('🔍 Dify deletion result:', difyResult);
+          
+          if (difyResult.success) {
+            console.log('✅ Dify agent deleted successfully');
+          } else {
+            console.warn('⚠️ Dify agent deletion failed, continuing with backend deletion:', difyResult.error);
+          }
+        } catch (difyError) {
+          console.warn('⚠️ Dify agent deletion error, continuing with backend deletion:', difyError);
+        }
+      } else {
+        console.log('⚠️ No chatbot_key found, skipping Dify deletion');
+      }
+
+      // Delete the agent from the backend
+      const result = await agentConfigService.deleteAgentByName(agentToDelete.id);
 
       if (result.success) {
         console.log(`Agent "${agentToDelete.name}" deleted successfully`);
-        alert(`Agent "${agentToDelete.name}" deleted successfully`);
+        setSuccessMessage(`Agent "${agentToDelete.name}" deleted successfully`);
+        setShowSuccessModal(true);
 
         // Call the parent component's refresh function to update the agents list
         onRefreshAgents();
       } else {
         console.error('Failed to delete agent:', result.message);
-        alert(`Failed to delete agent: ${result.message}`);
+        setSuccessMessage(`Failed to delete agent: ${result.message}`);
+        setShowSuccessModal(true);
       }
 
       // Close the modal
@@ -187,7 +225,8 @@ export default function AgentCards({
       setAgentToDelete(null);
     } catch (error) {
       console.error('Error deleting agent:', error);
-      alert('Failed to delete agent. Please try again.');
+      setSuccessMessage('Failed to delete agent. Please try again.');
+      setShowSuccessModal(true);
     } finally {
       setIsDeletingAgent(false);
     }
@@ -342,7 +381,7 @@ export default function AgentCards({
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className={`text-xl font-semibold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {agent.name}
+                        {getAgentDisplayName(agent)}
                       </h3>
                       <div className="flex flex-wrap gap-2 mt-2">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(agent.status)}`}>
@@ -527,6 +566,72 @@ export default function AgentCards({
                     }`}
                 >
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success Modal */}
+        {showSuccessModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className={`relative p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 transform transition-all duration-300 scale-100 ${isDarkMode 
+              ? 'bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50' 
+              : 'bg-gradient-to-br from-white to-gray-50 border border-gray-200/50'
+            }`}>
+              {/* Close button */}
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${isDarkMode
+                  ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
+                  : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              <div className="text-center">
+                {/* Icon with animation */}
+                <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${
+                  successMessage.includes('Failed') 
+                    ? 'bg-red-100 animate-pulse' 
+                    : 'bg-green-100 animate-bounce'
+                }`}>
+                  {successMessage.includes('Failed') ? (
+                    <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  ) : (
+                    <CheckCircle className="w-10 h-10 text-green-600" />
+                  )}
+                </div>
+
+                {/* Title with gradient text */}
+                <h3 className={`text-xl font-bold mb-3 ${
+                  successMessage.includes('Failed') 
+                    ? 'text-red-600' 
+                    : 'bg-gradient-to-r from-green-600 to-green-500 bg-clip-text text-transparent'
+                }`}>
+                  {successMessage.includes('Failed') ? 'Error' : 'Success!'}
+                </h3>
+
+                {/* Message */}
+                <p className={`text-sm leading-relaxed mb-8 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  {successMessage}
+                </p>
+
+                {/* Action button */}
+                <button
+                  onClick={() => setShowSuccessModal(false)}
+                  className={`w-full px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 ${
+                    successMessage.includes('Failed')
+                      ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-500/25'
+                      : 'bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-700 hover:to-green-600 shadow-lg shadow-green-500/25'
+                  }`}
+                >
+                  {successMessage.includes('Failed') ? 'Try Again' : 'Got it!'}
                 </button>
               </div>
             </div>

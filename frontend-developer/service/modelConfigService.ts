@@ -41,13 +41,22 @@ export const modelConfigService = {
       }
 
       console.log('⚙️ Making API call to model configuration endpoint');
+      
+      // Debug API key loading
+      const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
+      console.log('🔑 API Key from env:', apiKey ? 'Present' : 'Missing');
+      console.log('🔑 API Key value:', apiKey);
+      
+      // Fallback API key if environment variable is not loaded
+      const finalApiKey = apiKey || 'xpectrum-ai@123';
+      console.log('🔑 Final API Key being used:', finalApiKey);
 
       // Use our new model-config API endpoint
       const response = await fetch('/api/model-config', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
+          'X-API-Key': finalApiKey,
         },
         body: JSON.stringify(config),
       });
@@ -84,13 +93,22 @@ export const modelConfigService = {
       }
 
       console.log('⚙️ Making API call to prompt configuration endpoint');
+      
+      // Debug API key loading
+      const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
+      console.log('🔑 API Key from env:', apiKey ? 'Present' : 'Missing');
+      console.log('🔑 API Key value:', apiKey);
+      
+      // Fallback API key if environment variable is not loaded
+      const finalApiKey = apiKey || 'xpectrum-ai@123';
+      console.log('🔑 Final API Key being used:', finalApiKey);
 
       // Use our new prompt-config API endpoint
       const response = await fetch('/api/prompt-config', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
+          'X-API-Key': finalApiKey,
         },
         body: JSON.stringify(config),
       });

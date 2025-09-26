@@ -52,7 +52,7 @@ export async function GET(
     // Fallback to mock data when backend is not available
     const mockAgents = [
       {
-        id: 'agent-1',
+        id: 'agent_1',
         name: 'karthk_keya',
         status: 'draft',
         model: 'GPT-4o',
@@ -71,7 +71,7 @@ export async function GET(
         updated_at: new Date().toISOString()
       },
       {
-        id: 'agent-2',
+        id: 'agent_2',
         name: 'karthik',
         status: 'draft',
         model: 'GPT-4o',
@@ -90,7 +90,7 @@ export async function GET(
         updated_at: new Date().toISOString()
       },
       {
-        id: 'agent-3',
+        id: 'agent_3',
         name: 'salesbot',
         status: 'draft',
         model: 'GPT-4o',
