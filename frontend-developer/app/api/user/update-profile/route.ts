@@ -3,7 +3,7 @@ import { initBaseAuth } from "@propelauth/node";
 
 const auth = initBaseAuth({
   authUrl: process.env.NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL!,
-  apiKey: process.env.NEXT_PUBLIC_DEVELOPEMNT_PROPELAUTH_API_KEY!,
+  apiKey: process.env.NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY!,
 });
 
 export async function POST(request: NextRequest) {

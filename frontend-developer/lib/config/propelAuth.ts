@@ -1,6 +1,6 @@
 export const PROPELAUTH_CONFIG = {
   API_KEY:
-    process.env.NEXT_PUBLIC_DEVELOPEMNT_PROPELAUTH_API_KEY ||
+    process.env.NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY ||
     process.env.PROPELAUTH_API_KEY ||
     "",
   AUTH_URL:
