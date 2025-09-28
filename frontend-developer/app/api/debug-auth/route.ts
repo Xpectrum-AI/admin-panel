@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
 
     const envVars = {
       NEXT_PUBLIC_LIVE_API_KEY: process.env.NEXT_PUBLIC_LIVE_API_KEY ? 'Present' : 'Missing',
-      NEXT_PUBLIC_DEVELOPEMNT_PROPELAUTH_API_KEY: process.env.NEXT_PUBLIC_DEVELOPEMNT_PROPELAUTH_API_KEY ? 'Present' : 'Missing',
+      NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY: process.env.NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY ? 'Present' : 'Missing',
       NEXT_PUBLIC_DIFY_BASE_URL: process.env.NEXT_PUBLIC_DIFY_BASE_URL ? 'Present' : 'Missing',
       NEXT_PUBLIC_CHATBOT_API_KEY: process.env.NEXT_PUBLIC_CHATBOT_API_KEY ? 'Present' : 'Missing'
     };
