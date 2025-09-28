@@ -20,12 +20,12 @@ export async function authenticateApiKey(request: NextRequest) {
 
     // Get environment variables
     const liveApiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY;
-    const propelauthApiKey = process.env.NEXT_PUBLIC_PROPELAUTH_API_KEY;
+    const propelauthApiKey = process.env.NEXT_PUBLIC_DEVELOPEMNT_PROPELAUTH_API_KEY;
     
     console.log('🔍 Environment variables:');
     console.log('🔍 NEXT_PUBLIC_LIVE_API_KEY:', liveApiKey ? 'Present' : 'Missing');
     console.log('🔍 NEXT_PUBLIC_LIVE_API_KEY value:', liveApiKey);
-    console.log('🔍 NEXT_PUBLIC_PROPELAUTH_API_KEY:', propelauthApiKey ? 'Present' : 'Missing');
+    console.log('🔍 NEXT_PUBLIC_DEVELOPEMNT_PROPELAUTH_API_KEY:', propelauthApiKey ? 'Present' : 'Missing');
 
     // Validate API key (you can implement your own validation logic)
     const validApiKeys = [liveApiKey, propelauthApiKey].filter(Boolean);
