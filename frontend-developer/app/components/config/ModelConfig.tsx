@@ -90,13 +90,13 @@ Remember: You are the first point of contact for many patients. Your professiona
 
   // Track if we've initialized the config to prevent overriding user changes
   const [hasInitializedConfig, setHasInitializedConfig] = React.useState(false);
-  
+
   // User change tracking flags to prevent state conflicts
   const [isUserChangingProvider, setIsUserChangingProvider] = useState(false);
   const [isUserChangingModel, setIsUserChangingModel] = useState(false);
   const providerChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const modelChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // Auto-save timeout refs
   const promptSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const modelSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -112,10 +112,10 @@ Remember: You are the first point of contact for many patients. Your professiona
     try {
       const configKey = getStorageKey('config');
       const promptKey = getStorageKey('prompt');
-      
+
       const savedConfig = localStorage.getItem(configKey);
       const savedPrompt = localStorage.getItem(promptKey);
-      
+
       if (savedConfig) {
         const config = JSON.parse(savedConfig);
         setSelectedModelProvider(config.selectedModelProvider || 'OpenAI');
@@ -125,7 +125,7 @@ Remember: You are the first point of contact for many patients. Your professiona
         // Don't load agentUrl and agentApiKey from localStorage - keep them from existingConfig only
         console.log('✅ Loaded model config from localStorage:', config);
       }
-      
+
       if (savedPrompt) {
         const promptData = JSON.parse(savedPrompt);
         setSystemPrompt(promptData.prompt || systemPrompt);
@@ -154,13 +154,13 @@ Remember: You are the first point of contact for many patients. Your professiona
       isUserChangingProvider,
       isUserChangingModel
     });
-    
+
     // Reset user change flags when existingConfig changes (tab switch)
     if (existingConfig) {
       setIsUserChangingProvider(false);
       setIsUserChangingModel(false);
     }
-    
+
     // Load from centralized configuration
     if (existingConfig && !isUserChangingProvider && !isUserChangingModel) {
       console.log('🔄 Loading model state from centralized configuration:', existingConfig);
@@ -168,7 +168,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       console.log('🔍 existingConfig.chatbot_key:', existingConfig.chatbot_key);
       console.log('🔍 existingConfig.agentUrl:', existingConfig.agentUrl);
       console.log('🔍 existingConfig.agentApiKey:', existingConfig.agentApiKey);
-      
+
       if (existingConfig.selectedModelProvider) {
         console.log('🔄 Setting model provider:', existingConfig.selectedModelProvider);
         setSelectedModelProvider(existingConfig.selectedModelProvider);
@@ -203,7 +203,7 @@ Remember: You are the first point of contact for many patients. Your professiona
         console.log('🔄 Setting system prompt');
         setSystemPrompt(existingConfig.systemPrompt);
       }
-      
+
       // Check if this agent is using a custom model API key
       const modelKey = existingConfig.modelApiKey || existingConfig.model_api_key;
       const hasModelApiKey = modelKey &&
@@ -252,7 +252,7 @@ Remember: You are the first point of contact for many patients. Your professiona
     if (autoSaveTimeoutRef.current) {
       clearTimeout(autoSaveTimeoutRef.current);
     }
-    
+
     // Set a new timeout for debounced save
     autoSaveTimeoutRef.current = setTimeout(() => {
       // Only save model-related config to localStorage, not agent URL/API key
@@ -263,9 +263,9 @@ Remember: You are the first point of contact for many patients. Your professiona
         modelLiveUrl,
         timestamp: new Date().toISOString()
       };
-      
+
       saveToStorage('config', modelConfig);
-      
+
       // Also notify parent component with all fields
       if (onConfigChange) {
         onConfigChange({
@@ -282,7 +282,7 @@ Remember: You are the first point of contact for many patients. Your professiona
         });
       }
     }, 1000); // Increased to 1 second to reduce conflicts with debouncedModelSave
-    
+
     // Cleanup timeout on unmount or dependency change
     return () => {
       if (autoSaveTimeoutRef.current) {
@@ -347,13 +347,13 @@ Remember: You are the first point of contact for many patients. Your professiona
         chatbot_key: agentApiKey,
         ...updates
       };
-      
+
       console.log('📤 ModelConfig: Saving state to centralized config:', currentState);
       console.log('🔍 agentUrl being saved:', agentUrl);
       console.log('🔍 agentApiKey being saved:', agentApiKey);
       console.log('🔍 chatbot_api being saved:', agentUrl);
       console.log('🔍 chatbot_key being saved:', agentApiKey);
-      
+
       if (onConfigChange) {
         onConfigChange(currentState);
       }
@@ -367,24 +367,24 @@ Remember: You are the first point of contact for many patients. Your professiona
     if (promptSaveTimeoutRef.current) {
       clearTimeout(promptSaveTimeoutRef.current);
     }
-    
+
     promptSaveTimeoutRef.current = setTimeout(async () => {
       // Prevent multiple simultaneous saves
       if (saveInProgress) {
         console.log('🔄 Prompt save already in progress, skipping...');
         return;
       }
-      
+
       try {
         setSaveInProgress(true);
         setIsSaving(true);
         setErrorMessage('');
-        
+
         // Save to localStorage first (always works)
         saveToStorage('prompt', { prompt: promptValue, timestamp: new Date().toISOString() });
-        
+
         const chatbotApiKey = agentApiKey || existingConfig?.chatbot_key || process.env.NEXT_PUBLIC_CHATBOT_API_KEY;
-        
+
         // Use the same API endpoint as the original function
         const response = await fetch('/api/prompt-config', {
           method: 'POST',
@@ -436,19 +436,19 @@ Remember: You are the first point of contact for many patients. Your professiona
     if (modelSaveTimeoutRef.current) {
       clearTimeout(modelSaveTimeoutRef.current);
     }
-    
+
     modelSaveTimeoutRef.current = setTimeout(async () => {
       // Prevent multiple simultaneous saves
       if (saveInProgress) {
         console.log('🔄 Save already in progress, skipping...');
         return;
       }
-      
+
       try {
         setSaveInProgress(true);
         setIsSaving(true);
         setErrorMessage('');
-        
+
         // Use current state if provided, otherwise fall back to component state
         const stateToUse = currentState || {
           selectedModelProvider,
@@ -457,9 +457,9 @@ Remember: You are the first point of contact for many patients. Your professiona
           modelLiveUrl,
           agentApiKey
         };
-        
+
         console.log('🔄 Starting model save with provider:', stateToUse.selectedModelProvider);
-        
+
         // Save to localStorage first (always works) - only model config, not agent URL/API key
         const modelConfig = {
           selectedModelProvider: stateToUse.selectedModelProvider,
@@ -469,18 +469,18 @@ Remember: You are the first point of contact for many patients. Your professiona
           timestamp: new Date().toISOString()
         };
         saveToStorage('config', modelConfig);
-        
+
         const provider = modelProviders[stateToUse.selectedModelProvider as keyof typeof modelProviders];
         const apiModel = modelApiMapping[stateToUse.selectedModel] || stateToUse.selectedModel.toLowerCase().replace(/\s+/g, '-');
         const chatbotApiKey = stateToUse.agentApiKey || existingConfig?.chatbot_key || process.env.NEXT_PUBLIC_CHATBOT_API_KEY;
-        
+
         console.log('🔍 Debug Model Save:');
         console.log('🔍 selectedModelProvider:', stateToUse.selectedModelProvider);
         console.log('🔍 provider object:', provider);
         console.log('🔍 provider.apiProvider:', provider?.apiProvider);
         console.log('🔍 selectedModel:', stateToUse.selectedModel);
         console.log('🔍 apiModel:', apiModel);
-        
+
         // Use the same API endpoint as the original function
         const response = await fetch('/api/model-config', {
           method: 'POST',
@@ -832,7 +832,7 @@ Remember: You are the first point of contact for many patients. Your professiona
                 const newModel = e.target.value;
                 setSelectedModel(newModel);
                 saveStateToCentralized({ selectedModel: newModel });
-                
+
                 // Create current state object to pass to debounced function
                 const currentState = {
                   selectedModelProvider,
@@ -841,7 +841,7 @@ Remember: You are the first point of contact for many patients. Your professiona
                   modelLiveUrl,
                   agentApiKey
                 };
-                
+
                 debouncedModelSave(currentState); // Pass current state to avoid stale closure
               }}
               disabled={!isEditing}
@@ -917,16 +917,16 @@ Remember: You are the first point of contact for many patients. Your professiona
               value={agentUrl}
               onChange={(e) => {
                 setAgentUrl(e.target.value);
-                saveStateToCentralized({ 
+                saveStateToCentralized({
                   agentUrl: e.target.value,
-                  chatbot_api: e.target.value 
+                  chatbot_api: e.target.value
                 });
               }}
               placeholder="https://your-agent-api-url.com/v1"
               className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all duration-300 text-sm sm:text-base ${isDarkMode
                 ? 'bg-gray-700/50 border-gray-600 text-gray-200 placeholder-gray-400'
                 : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-              }`}
+                }`}
             />
           </div>
 
@@ -940,16 +940,16 @@ Remember: You are the first point of contact for many patients. Your professiona
                 value={localAgentApiKey}
                 onChange={(e) => {
                   setLocalAgentApiKey(e.target.value);
-                  saveStateToCentralized({ 
+                  saveStateToCentralized({
                     agentApiKey: e.target.value,
-                    chatbot_key: e.target.value 
+                    chatbot_key: e.target.value
                   });
                 }}
                 placeholder="Enter your Agent chatbot API key"
                 className={`w-full p-3 pr-10 rounded-xl border focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all duration-300 text-sm sm:text-base ${isDarkMode
                   ? 'bg-gray-700/50 border-gray-600 text-gray-200 placeholder-gray-400'
                   : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-                }`}
+                  }`}
               />
               {/* Lock icon removed - field is now editable */}
             </div>

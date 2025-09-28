@@ -413,163 +413,161 @@ export default function ChatbotPage() {
           color: #6b7280 !important;
         }
       `}</style>
-      
+
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
         {/* Background Image */}
         <div className="fixed top-0 left-0 w-full h-full z-0 overflow-hidden">
-          <div 
+          <div
             className="w-full h-full object-cover"
-            style={{ 
+            style={{
               background: 'linear-gradient(0deg, #1E88E5 0%, #64B5F6 30%, #BBDEFB 60%, #FFFFFF 100%)',
               opacity: 0.9,
               pointerEvents: 'none',
             }}
           />
         </div>
-      
-      {/* Chat Interface */}
-      <div className="relative z-10">
-        <div 
-          className="bg-white rounded-[30px] shadow-2xl w-[460px] flex flex-col animate-fade-in-up"
-          style={{
-            background: 'linear-gradient(0deg, #1E88E5 0%, #64B5F6 30%, #BBDEFB 60%, #FFFFFF 100%)',
-            height: '720px',
-            animation: 'fadeInUp 0.3s ease-out forwards',
-          }}
-        >
-          {/* Header */}
-          <div className="text-white p-4 rounded-t-[30px] flex justify-between items-center"
-               style={{ backgroundColor: '#1E88E5' }}>
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-white bg-opacity-20 flex items-center justify-center text-white font-medium">
-                {agentConfig.avatar ? (
-                  <img src={agentConfig.avatar} alt={agentConfig.name || agentConfig.agent_prefix} className="w-full h-full object-cover rounded-full" />
-                ) : (
-                  (agentConfig.name || agentConfig.agent_prefix || 'A').charAt(0).toUpperCase()
-                )}
-              </div>
-              <div className="flex flex-col">
-                <h1 className="text-lg font-semibold text-white">{agentConfig.name || agentConfig.agent_prefix}</h1>
-                <p className="text-xs text-blue-100">AI Assistant</p>
-              </div>
-            </div>
-            <div className="relative">
-              <button
-                onClick={() => document.getElementById('menu-dropdown')?.classList.toggle('hidden')}
-                className="text-white hover:text-gray-200"
-              >
-                <MoreVertical className="h-6 w-6" />
-              </button>
-              <div 
-                id="menu-dropdown" 
-                className="hidden absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-lg z-50"
-              >
-                <div className="py-1">
-                  <button 
-                    onClick={() => {
-                      document.getElementById('menu-dropdown')?.classList.add('hidden');
-                      clearChat();
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                  >
-                    <RotateCcw className="h-5 w-5 mr-2" />
-                    Refresh Chat
-                  </button>
-                  <button 
-                    onClick={() => {
-                      document.getElementById('menu-dropdown')?.classList.add('hidden');
-                      window.close();
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                  >
-                    <X className="h-5 w-5 mr-2" />
-                    Close Chat
-                  </button>
+
+        {/* Chat Interface */}
+        <div className="relative z-10">
+          <div
+            className="bg-white rounded-[30px] shadow-2xl w-[460px] flex flex-col animate-fade-in-up"
+            style={{
+              background: 'linear-gradient(0deg, #1E88E5 0%, #64B5F6 30%, #BBDEFB 60%, #FFFFFF 100%)',
+              height: '720px',
+              animation: 'fadeInUp 0.3s ease-out forwards',
+            }}
+          >
+            {/* Header */}
+            <div className="text-white p-4 rounded-t-[30px] flex justify-between items-center"
+              style={{ backgroundColor: '#1E88E5' }}>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-white bg-opacity-20 flex items-center justify-center text-white font-medium">
+                  {agentConfig.avatar ? (
+                    <img src={agentConfig.avatar} alt={agentConfig.name || agentConfig.agent_prefix} className="w-full h-full object-cover rounded-full" />
+                  ) : (
+                    (agentConfig.name || agentConfig.agent_prefix || 'A').charAt(0).toUpperCase()
+                  )}
+                </div>
+                <div className="flex flex-col">
+                  <h1 className="text-lg font-semibold text-white">{agentConfig.name || agentConfig.agent_prefix}</h1>
+                  <p className="text-xs text-blue-100">AI Assistant</p>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Chat Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-2xl p-3 ${
-                    message.type === 'user'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-white bg-opacity-80 text-gray-800'
-                  }`}
+              <div className="relative">
+                <button
+                  onClick={() => document.getElementById('menu-dropdown')?.classList.toggle('hidden')}
+                  className="text-white hover:text-gray-200"
                 >
-                  <div className={`markdown-content text-sm ${message.type === 'user' ? 'text-white' : 'text-gray-800'}`}>
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {message.message}
-                    </ReactMarkdown>
+                  <MoreVertical className="h-6 w-6" />
+                </button>
+                <div
+                  id="menu-dropdown"
+                  className="hidden absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-lg z-50"
+                >
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        document.getElementById('menu-dropdown')?.classList.add('hidden');
+                        clearChat();
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                    >
+                      <RotateCcw className="h-5 w-5 mr-2" />
+                      Refresh Chat
+                    </button>
+                    <button
+                      onClick={() => {
+                        document.getElementById('menu-dropdown')?.classList.add('hidden');
+                        window.close();
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                    >
+                      <X className="h-5 w-5 mr-2" />
+                      Close Chat
+                    </button>
                   </div>
                 </div>
               </div>
-            ))}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="max-w-[80%] rounded-2xl p-3 bg-white bg-opacity-80">
-                  <div className="typing-dots">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+            </div>
 
-          {/* Chat Input */}
-          <div className="p-4">
-            <div className="flex gap-2 items-center">
-              <textarea
-                value={currentMessage}
-                onChange={(e) => {
-                  setCurrentMessage(e.target.value);
-                  // Auto-resize textarea
-                  e.target.style.height = 'auto';
-                  const newHeight = Math.min(e.target.scrollHeight, 150);
-                  e.target.style.height = `${newHeight}px`;
-                }}
-                className="flex-1 border border-gray-300 rounded-2xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none overflow-y-auto bg-white text-gray-900 placeholder-gray-500"
-                placeholder="Type your message..."
-                disabled={isLoading}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    if (!isLoading) sendMessage();
-                  }
-                }}
-                rows={2}
-                style={{ minHeight: '80px', maxHeight: '150px' }}
-              />
-              <button
-                onClick={sendMessage}
-                disabled={isLoading}
-                className={`px-4 py-2 rounded-2xl text-white ${
-                  isLoading
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-blue-500 hover:bg-blue-600"
-                } transition-colors duration-200`}
-              >
-                {isLoading ? (
-                  <Loader2 className="animate-spin h-5 w-5" />
-                ) : (
-                  <Send className="h-5 w-5" style={{ transform: 'rotate(45deg)' }} />
-                )}
-              </button>
+            {/* Chat Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[80%] rounded-2xl p-3 ${message.type === 'user'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-white bg-opacity-80 text-gray-800'
+                      }`}
+                  >
+                    <div className={`markdown-content text-sm ${message.type === 'user' ? 'text-white' : 'text-gray-800'}`}>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {message.message}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="max-w-[80%] rounded-2xl p-3 bg-white bg-opacity-80">
+                    <div className="typing-dots">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Chat Input */}
+            <div className="p-4">
+              <div className="flex gap-2 items-center">
+                <textarea
+                  value={currentMessage}
+                  onChange={(e) => {
+                    setCurrentMessage(e.target.value);
+                    // Auto-resize textarea
+                    e.target.style.height = 'auto';
+                    const newHeight = Math.min(e.target.scrollHeight, 150);
+                    e.target.style.height = `${newHeight}px`;
+                  }}
+                  className="flex-1 border border-gray-300 rounded-2xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none overflow-y-auto bg-white text-gray-900 placeholder-gray-500"
+                  placeholder="Type your message..."
+                  disabled={isLoading}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      if (!isLoading) sendMessage();
+                    }
+                  }}
+                  rows={2}
+                  style={{ minHeight: '80px', maxHeight: '150px' }}
+                />
+                <button
+                  onClick={sendMessage}
+                  disabled={isLoading}
+                  className={`px-4 py-2 rounded-2xl text-white ${isLoading
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-blue-500 hover:bg-blue-600"
+                    } transition-colors duration-200`}
+                >
+                  {isLoading ? (
+                    <Loader2 className="animate-spin h-5 w-5" />
+                  ) : (
+                    <Send className="h-5 w-5" style={{ transform: 'rotate(45deg)' }} />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
     </>
   );
 }

@@ -11,7 +11,7 @@ export function AuthProviderWrapper({ children }: { children: React.ReactNode })
     setIsClient(true);
   }, []);
 
-  const AUTH_URL = process.env.NEXT_PUBLIC_PROPELAUTH_URL;
+  const AUTH_URL = process.env.NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL;
 
   // Prevent hydration mismatch by not rendering until client-side
   if (!isClient) {
@@ -23,7 +23,7 @@ export function AuthProviderWrapper({ children }: { children: React.ReactNode })
   }
 
   if (!AUTH_URL) {
-    console.error('NEXT_PUBLIC_PROPELAUTH_URL is not set');
+    console.error('NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL is not set');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-red-600">Authentication configuration error</div>

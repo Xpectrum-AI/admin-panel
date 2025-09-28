@@ -15,7 +15,7 @@ import { AuthProviderWrapper } from '@/app/auth/AuthProviderWrapper';
 // describe('AuthProviderWrapper', () => {
 //   beforeEach(() => {
 //     // Reset environment variables
-//     delete process.env.NEXT_PUBLIC_PROPELAUTH_URL;
+//     delete process.env.NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL;
 //   });
 
 //   afterEach(() => {
@@ -23,7 +23,7 @@ import { AuthProviderWrapper } from '@/app/auth/AuthProviderWrapper';
 //   });
 
 //   describe('Rendering', () => {
-//     it('shows error when NEXT_PUBLIC_PROPELAUTH_URL is not set', async () => {
+//     it('shows error when NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL is not set', async () => {
 //       render(<AuthProviderWrapper>Test Content</AuthProviderWrapper>);
 
 //       // Should show error message when environment variable is not set
@@ -33,7 +33,7 @@ import { AuthProviderWrapper } from '@/app/auth/AuthProviderWrapper';
 //     });
 
 //     it('renders AuthProvider with children when environment variable is set', async () => {
-//       process.env.NEXT_PUBLIC_PROPELAUTH_URL = 'https://test.auth.example.com';
+//       process.env.NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL = 'https://test.auth.example.com';
 
 //       render(<AuthProviderWrapper>Test Content</AuthProviderWrapper>);
 
@@ -47,8 +47,8 @@ import { AuthProviderWrapper } from '@/app/auth/AuthProviderWrapper';
 //   });
 
 //   describe('Environment Variables', () => {
-//     it('uses NEXT_PUBLIC_PROPELAUTH_URL from environment', async () => {
-//       process.env.NEXT_PUBLIC_PROPELAUTH_URL = 'https://test.auth.example.com';
+//     it('uses NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL from environment', async () => {
+//       process.env.NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL = 'https://test.auth.example.com';
 
 //       render(<AuthProviderWrapper>Test Content</AuthProviderWrapper>);
 
@@ -59,7 +59,7 @@ import { AuthProviderWrapper } from '@/app/auth/AuthProviderWrapper';
 //       });
 //     });
 
-//     it('shows error when NEXT_PUBLIC_PROPELAUTH_URL is not set', async () => {
+//     it('shows error when NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL is not set', async () => {
 //       render(<AuthProviderWrapper>Test Content</AuthProviderWrapper>);
 
 //       // Wait for client-side hydration to complete
@@ -68,8 +68,8 @@ import { AuthProviderWrapper } from '@/app/auth/AuthProviderWrapper';
 //       });
 //     });
 
-//     it('shows error when NEXT_PUBLIC_PROPELAUTH_URL is empty', async () => {
-//       process.env.NEXT_PUBLIC_PROPELAUTH_URL = '';
+//     it('shows error when NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL is empty', async () => {
+//       process.env.NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL = '';
 
 //       render(<AuthProviderWrapper>Test Content</AuthProviderWrapper>);
 
@@ -82,7 +82,7 @@ import { AuthProviderWrapper } from '@/app/auth/AuthProviderWrapper';
 
 //   describe('Client-side Hydration', () => {
 //     it('handles client-side hydration correctly when environment variable is set', async () => {
-//       process.env.NEXT_PUBLIC_PROPELAUTH_URL = 'https://test.auth.example.com';
+//       process.env.NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL = 'https://test.auth.example.com';
 
 //       render(<AuthProviderWrapper>Test Content</AuthProviderWrapper>);
 
@@ -104,7 +104,7 @@ import { AuthProviderWrapper } from '@/app/auth/AuthProviderWrapper';
 
 //   describe('Props Handling', () => {
 //     it('passes children to AuthProvider when environment variable is set', async () => {
-//       process.env.NEXT_PUBLIC_PROPELAUTH_URL = 'https://test.auth.example.com';
+//       process.env.NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL = 'https://test.auth.example.com';
 
 //       const testContent = (
 //         <div>
@@ -123,7 +123,7 @@ import { AuthProviderWrapper } from '@/app/auth/AuthProviderWrapper';
 //     });
 
 //     it('handles multiple children when environment variable is set', async () => {
-//       process.env.NEXT_PUBLIC_PROPELAUTH_URL = 'https://test.auth.example.com';
+//       process.env.NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL = 'https://test.auth.example.com';
 
 //       render(
 //         <AuthProviderWrapper>
@@ -144,7 +144,7 @@ import { AuthProviderWrapper } from '@/app/auth/AuthProviderWrapper';
 
 //   describe('Error Handling', () => {
 //     it('handles null children when environment variable is set', async () => {
-//       process.env.NEXT_PUBLIC_PROPELAUTH_URL = 'https://test.auth.example.com';
+//       process.env.NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL = 'https://test.auth.example.com';
 
 //       render(<AuthProviderWrapper>{null}</AuthProviderWrapper>);
 
