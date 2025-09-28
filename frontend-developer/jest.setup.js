@@ -1,7 +1,8 @@
 import "@testing-library/jest-dom";
 
 // Set up environment variables for tests
-process.env.NEXT_PUBLIC_PROPELAUTH_URL = "https://test.propelauth.com";
+process.env.NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL =
+  "https://test.propelauth.com";
 process.env.NEXT_PUBLIC_LIVE_API_KEY = "test-api-key";
 
 // Suppress console errors during tests
