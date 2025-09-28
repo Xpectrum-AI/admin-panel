@@ -7,7 +7,7 @@ To fix the 401 UNAUTHORIZED error in model configuration, you need to create a `
 ```bash
 # API Authentication Keys
 NEXT_PUBLIC_LIVE_API_KEY=your_live_api_key_here
-NEXT_PUBLIC_PROPELAUTH_API_KEY=your_propelauth_api_key_here
+NEXT_PUBLIC_DEVELOPEMNT_PROPELAUTH_API_KEY=your_propelauth_api_key_here
 
 # Dify Integration
 NEXT_PUBLIC_DIFY_BASE_URL=https://api.dify.ai/v1
@@ -41,7 +41,7 @@ NODE_ENV=development
 ## Key Variables for Model Configuration
 
 - `NEXT_PUBLIC_LIVE_API_KEY`: Required for API authentication (main cause of 401 error)
-- `NEXT_PUBLIC_PROPELAUTH_API_KEY`: Backup authentication key
+- `NEXT_PUBLIC_DEVELOPEMNT_PROPELAUTH_API_KEY`: Backup authentication key
 - `NEXT_PUBLIC_CHATBOT_API_KEY`: Required for Dify API calls
 - `NEXT_PUBLIC_DIFY_BASE_URL`: Dify API base URL
 - Model provider keys: For specific AI model integrations
@@ -53,7 +53,7 @@ The error occurs in this flow:
 1. `ModelConfig.tsx` calls `modelConfigService.configureModel()`
 2. Service makes request to `/api/model-config` with `X-API-Key` header
 3. API route uses `authenticateApiKey()` middleware
-4. Middleware checks for `NEXT_PUBLIC_LIVE_API_KEY` or `NEXT_PUBLIC_PROPELAUTH_API_KEY`
+4. Middleware checks for `NEXT_PUBLIC_LIVE_API_KEY` or `NEXT_PUBLIC_DEVELOPEMNT_PROPELAUTH_API_KEY`
 5. If neither is set, returns 401 UNAUTHORIZED
 
 ## Testing

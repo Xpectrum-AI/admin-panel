@@ -11,288 +11,288 @@ jobs:
   deploy-production:
     runs-on: ubuntu-latest
     environment: production
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_PROD_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_PROD_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_PROD_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_PROD_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v2
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Pull and retag Frontend images from Release
-      run: |
-        # Set ECR repository URI
-        REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
-        
-        # Pull the latest release images
-        docker pull $REPO:frontend-release-latest
-        docker pull $REPO:frontend-developer-release-latest
-        
-        # Retag as production latest and push
-        docker tag $REPO:frontend-release-latest $REPO:frontend-latest
-        docker tag $REPO:frontend-developer-release-latest $REPO:frontend-developer-latest
-        docker push $REPO:frontend-latest
-        docker push $REPO:frontend-developer-latest
+      - name: Pull and retag Frontend images from Release
+        run: |
+          # Set ECR repository URI
+          REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
 
-    - name: Setup Python for CDK
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
+          # Pull the latest release images
+          docker pull $REPO:frontend-release-latest
+          docker pull $REPO:frontend-developer-release-latest
 
-    - name: Install CDK dependencies
-      run: |
-        cd python-cdk-v2
-        pip install -r requirements.txt
+          # Retag as production latest and push
+          docker tag $REPO:frontend-release-latest $REPO:frontend-latest
+          docker tag $REPO:frontend-developer-release-latest $REPO:frontend-developer-latest
+          docker push $REPO:frontend-latest
+          docker push $REPO:frontend-developer-latest
 
-    - name: Install AWS CDK
-      run: |
-        npm install -g aws-cdk
+      - name: Setup Python for CDK
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
 
-    - name: Log Environment Variables (Production)
-      run: |
-        echo "=== PRODUCTION ENVIRONMENT VARIABLES ==="
-        echo "Note: Secrets are now handled at runtime by CDK deployment"
-        echo "✅ Environment variables will be set during container startup"
-        echo "========================================"
+      - name: Install CDK dependencies
+        run: |
+          cd python-cdk-v2
+          pip install -r requirements.txt
 
-    - name: Deploy CDK stack (production)
-      env:
-        # Backend API
-        PRODUCTION_LIVE_API_URL: ${{ vars.PRODUCTION_LIVE_API_URL }}
-        PRODUCTION_LIVE_API_KEY: ${{ secrets.PRODUCTION_LIVE_API_KEY }}
-        # PropelAuth
-        PRODUCTION_PROPELAUTH_URL: ${{ vars.PRODUCTION_PROPELAUTH_URL }}
-        PRODUCTION_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_PROPELAUTH_API_KEY }}
-        PRODUCTION_DEVELOPER_PROPELAUTH_URL: ${{ vars.PRODUCTION_DEVELOPER_PROPELAUTH_URL }}
-        PRODUCTION_DEVELOPER_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_DEVELOPER_PROPELAUTH_API_KEY }}
-        # Model Configuration API
-        PRODUCTION_MODEL_API_BASE_URL: ${{ vars.PRODUCTION_MODEL_API_BASE_URL }}
-        PRODUCTION_MODEL_API_KEY: ${{ secrets.PRODUCTION_MODEL_API_KEY }}
-        # Chatbot API
-        PRODUCTION_CHATBOT_API_URL: ${{ vars.PRODUCTION_CHATBOT_API_URL }}
-        PRODUCTION_CHATBOT_API_KEY: ${{ secrets.PRODUCTION_CHATBOT_API_KEY }}
-        # Voice Provider API Keys
-        PRODUCTION_ELEVEN_LABS_API_KEY: ${{ secrets.PRODUCTION_ELEVEN_LABS_API_KEY }}
-        PRODUCTION_OPEN_AI_API_KEY: ${{ secrets.PRODUCTION_OPEN_AI_API_KEY }}
-        PRODUCTION_WHISPER_API_KEY: ${{ secrets.PRODUCTION_WHISPER_API_KEY }}
-        PRODUCTION_DEEPGRAM_API_KEY: ${{ secrets.PRODUCTION_DEEPGRAM_API_KEY }}
-        PRODUCTION_CARTESIA_API_KEY: ${{ secrets.PRODUCTION_CARTESIA_API_KEY }}
-        # Model Provider API Keys
-        PRODUCTION_MODEL_OPEN_AI_API_KEY: ${{ secrets.PRODUCTION_MODEL_OPEN_AI_API_KEY }}
-        PRODUCTION_MODEL_GROQ_API_KEY: ${{ secrets.PRODUCTION_MODEL_GROQ_API_KEY }}
-        PRODUCTION_MODEL_ANTHROPIC_API_KEY: ${{ secrets.PRODUCTION_MODEL_ANTHROPIC_API_KEY }}
-        PRODUCTION_DIFY_BASE_URL: ${{ vars.PRODUCTION_DIFY_BASE_URL }}
-        # Voice Provider Voice IDs
-        PRODUCTION_CARTESIA_VOICE_ID: ${{ vars.PRODUCTION_CARTESIA_VOICE_ID }}
-        PRODUCTION_ELEVEN_LABS_VOICE_ID: ${{ vars.PRODUCTION_ELEVEN_LABS_VOICE_ID }}
-        # Dify Configuration
-        PRODUCTION_DIFY_CONSOLE_ORIGIN: ${{ vars.PRODUCTION_DIFY_CONSOLE_ORIGIN }}
-        PRODUCTION_DIFY_ADMIN_EMAIL: ${{ vars.PRODUCTION_DIFY_ADMIN_EMAIL }}
-        PRODUCTION_DIFY_ADMIN_PASSWORD: ${{ secrets.PRODUCTION_DIFY_ADMIN_PASSWORD }}
-        PRODUCTION_DIFY_WORKSPACE_ID: ${{ vars.PRODUCTION_DIFY_WORKSPACE_ID }}
-      run: |
-        cd python-cdk-v2
-        # Deploy to production environment
-        timeout 30m cdk deploy AdminPanelProductionStack --require-approval never --context environment=production || {
-          echo "CDK deployment timed out or failed"
-          echo "Checking ECS service status..."
-          
-          # Get the actual cluster and service names
-          CLUSTER_NAME="admin-panel-production"
-          
-          SERVICE_NAME="admin-panel-service-production"
-          
-          aws ecs describe-services \
-            --cluster $CLUSTER_NAME \
-            --services $SERVICE_NAME \
-            --region ${{ env.AWS_REGION }} || echo "Could not check ECS status"
-          exit 1
-        }
+      - name: Install AWS CDK
+        run: |
+          npm install -g aws-cdk
 
-    - name: Wait for deployment to complete
-      run: |
-        # Check if stack exists first
-        if aws cloudformation describe-stacks --stack-name AdminPanelProductionStack --region ${{ env.AWS_REGION }} 2>/dev/null; then
-          # Get the actual cluster and service names from CloudFormation outputs
-          CLUSTER_NAME="admin-panel-production"
-          
-          SERVICE_NAME="admin-panel-service-production"
-          
-          echo "Using cluster: $CLUSTER_NAME"
-          echo "Using service: $SERVICE_NAME"
-          
-          # Wait for ECS services to be stable
-          aws ecs wait services-stable \
-            --cluster $CLUSTER_NAME \
-            --services $SERVICE_NAME \
-            --region ${{ env.AWS_REGION }} || echo "Services not stable yet"
-        else
-          echo "Stack does not exist yet, skipping wait"
-        fi
+      - name: Log Environment Variables (Production)
+        run: |
+          echo "=== PRODUCTION ENVIRONMENT VARIABLES ==="
+          echo "Note: Secrets are now handled at runtime by CDK deployment"
+          echo "✅ Environment variables will be set during container startup"
+          echo "========================================"
 
-    - name: Get ALB DNS names
-      id: alb-dns
-      run: |
-        # Try to get DoctorServiceURL and DeveloperServiceURL
-        DOCTOR_DNS=$(aws cloudformation describe-stacks \
-          --stack-name AdminPanelProductionStack \
-          --region ${{ env.AWS_REGION }} \
-          --query 'Stacks[0].Outputs[?OutputKey==`DoctorServiceURL`].OutputValue' \
-          --output text)
-        
-        DEVELOPER_DNS=$(aws cloudformation describe-stacks \
-          --stack-name AdminPanelProductionStack \
-          --region ${{ env.AWS_REGION }} \
-          --query 'Stacks[0].Outputs[?OutputKey==`DeveloperServiceURL`].OutputValue' \
-          --output text)
-        
-        # If URLs are not available, use LoadBalancerDNS and construct HTTPS URLs
-        if [ -z "$DOCTOR_DNS" ] || [ "$DOCTOR_DNS" = "None" ]; then
-          echo "DoctorServiceURL not found, using DoctorLoadBalancerDNS..."
-          DOCTOR_LB_DNS=$(aws cloudformation describe-stacks \
+      - name: Deploy CDK stack (production)
+        env:
+          # Backend API
+          PRODUCTION_LIVE_API_URL: ${{ vars.PRODUCTION_LIVE_API_URL }}
+          PRODUCTION_LIVE_API_KEY: ${{ secrets.PRODUCTION_LIVE_API_KEY }}
+          # PropelAuth
+          PRODUCTION_PROPELAUTH_URL: ${{ vars.PRODUCTION_PROPELAUTH_URL }}
+          PRODUCTION_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_PROPELAUTH_API_KEY }}
+          PRODUCTION_DEVELOPMENT_PROPELAUTH_URL: ${{ vars.PRODUCTION_DEVELOPMENT_PROPELAUTH_URL }}
+          PRODUCTION_DEVELOPMENT_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_DEVELOPMENT_PROPELAUTH_API_KEY }}
+          # Model Configuration API
+          PRODUCTION_MODEL_API_BASE_URL: ${{ vars.PRODUCTION_MODEL_API_BASE_URL }}
+          PRODUCTION_MODEL_API_KEY: ${{ secrets.PRODUCTION_MODEL_API_KEY }}
+          # Chatbot API
+          PRODUCTION_CHATBOT_API_URL: ${{ vars.PRODUCTION_CHATBOT_API_URL }}
+          PRODUCTION_CHATBOT_API_KEY: ${{ secrets.PRODUCTION_CHATBOT_API_KEY }}
+          # Voice Provider API Keys
+          PRODUCTION_ELEVEN_LABS_API_KEY: ${{ secrets.PRODUCTION_ELEVEN_LABS_API_KEY }}
+          PRODUCTION_OPEN_AI_API_KEY: ${{ secrets.PRODUCTION_OPEN_AI_API_KEY }}
+          PRODUCTION_WHISPER_API_KEY: ${{ secrets.PRODUCTION_WHISPER_API_KEY }}
+          PRODUCTION_DEEPGRAM_API_KEY: ${{ secrets.PRODUCTION_DEEPGRAM_API_KEY }}
+          PRODUCTION_CARTESIA_API_KEY: ${{ secrets.PRODUCTION_CARTESIA_API_KEY }}
+          # Model Provider API Keys
+          PRODUCTION_MODEL_OPEN_AI_API_KEY: ${{ secrets.PRODUCTION_MODEL_OPEN_AI_API_KEY }}
+          PRODUCTION_MODEL_GROQ_API_KEY: ${{ secrets.PRODUCTION_MODEL_GROQ_API_KEY }}
+          PRODUCTION_MODEL_ANTHROPIC_API_KEY: ${{ secrets.PRODUCTION_MODEL_ANTHROPIC_API_KEY }}
+          PRODUCTION_DIFY_BASE_URL: ${{ vars.PRODUCTION_DIFY_BASE_URL }}
+          # Voice Provider Voice IDs
+          PRODUCTION_CARTESIA_VOICE_ID: ${{ vars.PRODUCTION_CARTESIA_VOICE_ID }}
+          PRODUCTION_ELEVEN_LABS_VOICE_ID: ${{ vars.PRODUCTION_ELEVEN_LABS_VOICE_ID }}
+          # Dify Configuration
+          PRODUCTION_DIFY_CONSOLE_ORIGIN: ${{ vars.PRODUCTION_DIFY_CONSOLE_ORIGIN }}
+          PRODUCTION_DIFY_ADMIN_EMAIL: ${{ vars.PRODUCTION_DIFY_ADMIN_EMAIL }}
+          PRODUCTION_DIFY_ADMIN_PASSWORD: ${{ secrets.PRODUCTION_DIFY_ADMIN_PASSWORD }}
+          PRODUCTION_DIFY_WORKSPACE_ID: ${{ vars.PRODUCTION_DIFY_WORKSPACE_ID }}
+        run: |
+          cd python-cdk-v2
+          # Deploy to production environment
+          timeout 30m cdk deploy AdminPanelProductionStack --require-approval never --context environment=production || {
+            echo "CDK deployment timed out or failed"
+            echo "Checking ECS service status..."
+            
+            # Get the actual cluster and service names
+            CLUSTER_NAME="admin-panel-production"
+            
+            SERVICE_NAME="admin-panel-service-production"
+            
+            aws ecs describe-services \
+              --cluster $CLUSTER_NAME \
+              --services $SERVICE_NAME \
+              --region ${{ env.AWS_REGION }} || echo "Could not check ECS status"
+            exit 1
+          }
+
+      - name: Wait for deployment to complete
+        run: |
+          # Check if stack exists first
+          if aws cloudformation describe-stacks --stack-name AdminPanelProductionStack --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            # Get the actual cluster and service names from CloudFormation outputs
+            CLUSTER_NAME="admin-panel-production"
+            
+            SERVICE_NAME="admin-panel-service-production"
+            
+            echo "Using cluster: $CLUSTER_NAME"
+            echo "Using service: $SERVICE_NAME"
+            
+            # Wait for ECS services to be stable
+            aws ecs wait services-stable \
+              --cluster $CLUSTER_NAME \
+              --services $SERVICE_NAME \
+              --region ${{ env.AWS_REGION }} || echo "Services not stable yet"
+          else
+            echo "Stack does not exist yet, skipping wait"
+          fi
+
+      - name: Get ALB DNS names
+        id: alb-dns
+        run: |
+          # Try to get DoctorServiceURL and DeveloperServiceURL
+          DOCTOR_DNS=$(aws cloudformation describe-stacks \
             --stack-name AdminPanelProductionStack \
             --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`DoctorLoadBalancerDNS`].OutputValue' \
+            --query 'Stacks[0].Outputs[?OutputKey==`DoctorServiceURL`].OutputValue' \
             --output text)
-          
-          if [ -z "$DOCTOR_LB_DNS" ] || [ "$DOCTOR_LB_DNS" = "None" ]; then
-            echo "Error: Could not get DoctorLoadBalancerDNS from CloudFormation stack"
-            echo "Available outputs:"
-            aws cloudformation describe-stacks \
-              --stack-name AdminPanelProductionStack \
-              --region ${{ env.AWS_REGION }} \
-              --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
-              --output table
-            exit 1
-          fi
-          
-          DOCTOR_DNS="https://$DOCTOR_LB_DNS"
-          echo "Constructed Doctor URL: $DOCTOR_DNS"
-        fi
-        
-        if [ -z "$DEVELOPER_DNS" ] || [ "$DEVELOPER_DNS" = "None" ]; then
-          echo "DeveloperServiceURL not found, using DeveloperLoadBalancerDNS..."
-          DEVELOPER_LB_DNS=$(aws cloudformation describe-stacks \
-            --stack-name AdminPanelProductionStack \
-            --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`DeveloperLoadBalancerDNS`].OutputValue' \
-            --output text)
-          
-          if [ -z "$DEVELOPER_LB_DNS" ] || [ "$DEVELOPER_LB_DNS" = "None" ]; then
-            echo "Error: Could not get DeveloperLoadBalancerDNS from CloudFormation stack"
-            echo "Available outputs:"
-            aws cloudformation describe-stacks \
-              --stack-name AdminPanelProductionStack \
-              --region ${{ env.AWS_REGION }} \
-              --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
-              --output table
-            exit 1
-          fi
-          
-          DEVELOPER_DNS="https://$DEVELOPER_LB_DNS"
-          echo "Constructed Developer URL: $DEVELOPER_DNS"
-        fi
-        
-        echo "doctor-dns=$DOCTOR_DNS" >> $GITHUB_OUTPUT
-        echo "developer-dns=$DEVELOPER_DNS" >> $GITHUB_OUTPUT
 
-    - name: Health check
-      run: |
-        # Wait for services to be fully ready
-        sleep 60
-        
-        # Get ALB DNS names for both services
-        DOCTOR_DNS=$(aws cloudformation describe-stacks \
-          --stack-name AdminPanelProductionStack \
-          --region ${{ env.AWS_REGION }} \
-          --query 'Stacks[0].Outputs[?OutputKey==`DoctorServiceURL`].OutputValue' \
-          --output text)
-        
-        DEVELOPER_DNS=$(aws cloudformation describe-stacks \
-          --stack-name AdminPanelProductionStack \
-          --region ${{ env.AWS_REGION }} \
-          --query 'Stacks[0].Outputs[?OutputKey==`DeveloperServiceURL`].OutputValue' \
-          --output text)
-        
-        # If URLs are not available, use LoadBalancerDNS and construct HTTPS URLs
-        if [ -z "$DOCTOR_DNS" ] || [ "$DOCTOR_DNS" = "None" ]; then
-          echo "DoctorServiceURL not found, using DoctorLoadBalancerDNS..."
-          DOCTOR_LB_DNS=$(aws cloudformation describe-stacks \
+          DEVELOPER_DNS=$(aws cloudformation describe-stacks \
             --stack-name AdminPanelProductionStack \
             --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`DoctorLoadBalancerDNS`].OutputValue' \
+            --query 'Stacks[0].Outputs[?OutputKey==`DeveloperServiceURL`].OutputValue' \
             --output text)
-          
-          if [ -z "$DOCTOR_LB_DNS" ] || [ "$DOCTOR_LB_DNS" = "None" ]; then
-            echo "Error: Could not get DoctorLoadBalancerDNS from CloudFormation stack"
-            echo "Available outputs:"
-            aws cloudformation describe-stacks \
-              --stack-name AdminPanelProductionStack \
-              --region ${{ env.AWS_REGION }} \
-              --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
-              --output table
-            exit 1
-          fi
-          
-          DOCTOR_DNS="https://$DOCTOR_LB_DNS"
-          echo "Constructed Doctor URL: $DOCTOR_DNS"
-        fi
-        
-        if [ -z "$DEVELOPER_DNS" ] || [ "$DEVELOPER_DNS" = "None" ]; then
-          echo "DeveloperServiceURL not found, using DeveloperLoadBalancerDNS..."
-          DEVELOPER_LB_DNS=$(aws cloudformation describe-stacks \
-            --stack-name AdminPanelProductionStack \
-            --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`DeveloperLoadBalancerDNS`].OutputValue' \
-            --output text)
-          
-          if [ -z "$DEVELOPER_LB_DNS" ] || [ "$DEVELOPER_LB_DNS" = "None" ]; then
-            echo "Error: Could not get DeveloperLoadBalancerDNS from CloudFormation stack"
-            echo "Available outputs:"
-            aws cloudformation describe-stacks \
-              --stack-name AdminPanelProductionStack \
-              --region ${{ env.AWS_REGION }} \
-              --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
-              --output table
-            exit 1
-          fi
-          
-          DEVELOPER_DNS="https://$DEVELOPER_LB_DNS"
-          echo "Constructed Developer URL: $DEVELOPER_DNS"
-        fi
-        
-        echo "Testing Doctor service health endpoints on: $DOCTOR_DNS"
-        echo "Testing Developer service health endpoints on: $DEVELOPER_DNS"
-        
-        # Health checks for Doctor service (main frontend)
-        curl -f -k "$DOCTOR_DNS/" || exit 1
-        curl -f -k "$DOCTOR_DNS/api/health" || exit 1
-        
-        # Health checks for Developer service (separate domain)
-        curl -f -k "$DEVELOPER_DNS/" || exit 1
-        curl -f -k "$DEVELOPER_DNS/api/health" || exit 1
 
-    - name: Force restart ECS services
-      run: |
-        aws ecs update-service \
-          --cluster "admin-panel-production" \
-          --service "admin-panel-service-production" \
-          --force-new-deployment \
-          --region "$AWS_REGION"
-        
-        aws ecs update-service \
-          --cluster "admin-panel-production" \
-          --service "admin-panel-developer-service-production" \
-          --force-new-deployment \
-          --region "$AWS_REGION"
+          # If URLs are not available, use LoadBalancerDNS and construct HTTPS URLs
+          if [ -z "$DOCTOR_DNS" ] || [ "$DOCTOR_DNS" = "None" ]; then
+            echo "DoctorServiceURL not found, using DoctorLoadBalancerDNS..."
+            DOCTOR_LB_DNS=$(aws cloudformation describe-stacks \
+              --stack-name AdminPanelProductionStack \
+              --region ${{ env.AWS_REGION }} \
+              --query 'Stacks[0].Outputs[?OutputKey==`DoctorLoadBalancerDNS`].OutputValue' \
+              --output text)
+            
+            if [ -z "$DOCTOR_LB_DNS" ] || [ "$DOCTOR_LB_DNS" = "None" ]; then
+              echo "Error: Could not get DoctorLoadBalancerDNS from CloudFormation stack"
+              echo "Available outputs:"
+              aws cloudformation describe-stacks \
+                --stack-name AdminPanelProductionStack \
+                --region ${{ env.AWS_REGION }} \
+                --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
+                --output table
+              exit 1
+            fi
+            
+            DOCTOR_DNS="https://$DOCTOR_LB_DNS"
+            echo "Constructed Doctor URL: $DOCTOR_DNS"
+          fi
+
+          if [ -z "$DEVELOPER_DNS" ] || [ "$DEVELOPER_DNS" = "None" ]; then
+            echo "DeveloperServiceURL not found, using DeveloperLoadBalancerDNS..."
+            DEVELOPER_LB_DNS=$(aws cloudformation describe-stacks \
+              --stack-name AdminPanelProductionStack \
+              --region ${{ env.AWS_REGION }} \
+              --query 'Stacks[0].Outputs[?OutputKey==`DeveloperLoadBalancerDNS`].OutputValue' \
+              --output text)
+            
+            if [ -z "$DEVELOPER_LB_DNS" ] || [ "$DEVELOPER_LB_DNS" = "None" ]; then
+              echo "Error: Could not get DeveloperLoadBalancerDNS from CloudFormation stack"
+              echo "Available outputs:"
+              aws cloudformation describe-stacks \
+                --stack-name AdminPanelProductionStack \
+                --region ${{ env.AWS_REGION }} \
+                --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
+                --output table
+              exit 1
+            fi
+            
+            DEVELOPER_DNS="https://$DEVELOPER_LB_DNS"
+            echo "Constructed Developer URL: $DEVELOPER_DNS"
+          fi
+
+          echo "doctor-dns=$DOCTOR_DNS" >> $GITHUB_OUTPUT
+          echo "developer-dns=$DEVELOPER_DNS" >> $GITHUB_OUTPUT
+
+      - name: Health check
+        run: |
+          # Wait for services to be fully ready
+          sleep 60
+
+          # Get ALB DNS names for both services
+          DOCTOR_DNS=$(aws cloudformation describe-stacks \
+            --stack-name AdminPanelProductionStack \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`DoctorServiceURL`].OutputValue' \
+            --output text)
+
+          DEVELOPER_DNS=$(aws cloudformation describe-stacks \
+            --stack-name AdminPanelProductionStack \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`DeveloperServiceURL`].OutputValue' \
+            --output text)
+
+          # If URLs are not available, use LoadBalancerDNS and construct HTTPS URLs
+          if [ -z "$DOCTOR_DNS" ] || [ "$DOCTOR_DNS" = "None" ]; then
+            echo "DoctorServiceURL not found, using DoctorLoadBalancerDNS..."
+            DOCTOR_LB_DNS=$(aws cloudformation describe-stacks \
+              --stack-name AdminPanelProductionStack \
+              --region ${{ env.AWS_REGION }} \
+              --query 'Stacks[0].Outputs[?OutputKey==`DoctorLoadBalancerDNS`].OutputValue' \
+              --output text)
+            
+            if [ -z "$DOCTOR_LB_DNS" ] || [ "$DOCTOR_LB_DNS" = "None" ]; then
+              echo "Error: Could not get DoctorLoadBalancerDNS from CloudFormation stack"
+              echo "Available outputs:"
+              aws cloudformation describe-stacks \
+                --stack-name AdminPanelProductionStack \
+                --region ${{ env.AWS_REGION }} \
+                --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
+                --output table
+              exit 1
+            fi
+            
+            DOCTOR_DNS="https://$DOCTOR_LB_DNS"
+            echo "Constructed Doctor URL: $DOCTOR_DNS"
+          fi
+
+          if [ -z "$DEVELOPER_DNS" ] || [ "$DEVELOPER_DNS" = "None" ]; then
+            echo "DeveloperServiceURL not found, using DeveloperLoadBalancerDNS..."
+            DEVELOPER_LB_DNS=$(aws cloudformation describe-stacks \
+              --stack-name AdminPanelProductionStack \
+              --region ${{ env.AWS_REGION }} \
+              --query 'Stacks[0].Outputs[?OutputKey==`DeveloperLoadBalancerDNS`].OutputValue' \
+              --output text)
+            
+            if [ -z "$DEVELOPER_LB_DNS" ] || [ "$DEVELOPER_LB_DNS" = "None" ]; then
+              echo "Error: Could not get DeveloperLoadBalancerDNS from CloudFormation stack"
+              echo "Available outputs:"
+              aws cloudformation describe-stacks \
+                --stack-name AdminPanelProductionStack \
+                --region ${{ env.AWS_REGION }} \
+                --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
+                --output table
+              exit 1
+            fi
+            
+            DEVELOPER_DNS="https://$DEVELOPER_LB_DNS"
+            echo "Constructed Developer URL: $DEVELOPER_DNS"
+          fi
+
+          echo "Testing Doctor service health endpoints on: $DOCTOR_DNS"
+          echo "Testing Developer service health endpoints on: $DEVELOPER_DNS"
+
+          # Health checks for Doctor service (main frontend)
+          curl -f -k "$DOCTOR_DNS/" || exit 1
+          curl -f -k "$DOCTOR_DNS/api/health" || exit 1
+
+          # Health checks for Developer service (separate domain)
+          curl -f -k "$DEVELOPER_DNS/" || exit 1
+          curl -f -k "$DEVELOPER_DNS/api/health" || exit 1
+
+      - name: Force restart ECS services
+        run: |
+          aws ecs update-service \
+            --cluster "admin-panel-production" \
+            --service "admin-panel-service-production" \
+            --force-new-deployment \
+            --region "$AWS_REGION"
+
+          aws ecs update-service \
+            --cluster "admin-panel-production" \
+            --service "admin-panel-developer-service-production" \
+            --force-new-deployment \
+            --region "$AWS_REGION"
 
     # GitHub release creation removed due to permissions issue
     # You can manually create releases from GitHub UI if needed
