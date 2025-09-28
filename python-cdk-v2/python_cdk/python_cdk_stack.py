@@ -180,8 +180,8 @@ class AdminPanelDeploymentStack(Stack):
                 "NODE_ENV": environment,
                 "PORT": config['frontend_developer_port'],
                 "HOST": "0.0.0.0",
-                "NEXT_PUBLIC_PROPELAUTH_URL": os.environ.get('PRODUCTION_DEVELOPER_PROPELAUTH_URL' if environment == 'production' else 'DEV_DEVELOPER_PROPELAUTH_URL', ''),
-                "NEXT_PUBLIC_PROPELAUTH_API_KEY": os.environ.get('PRODUCTION_DEVELOPER_PROPELAUTH_API_KEY' if environment == 'production' else 'DEV_DEVELOPER_PROPELAUTH_API_KEY', ''),
+                "NEXT_PUBLIC_PROPELAUTH_URL": os.environ.get('PRODUCTION_DEVELOPMENT_PROPELAUTH_URL' if environment == 'production' else 'DEV_DEVELOPER_PROPELAUTH_URL', ''),
+                "NEXT_PUBLIC_PROPELAUTH_API_KEY": os.environ.get('PRODUCTION_DEVELOPMENT_PROPELAUTH_API_KEY' if environment == 'production' else 'DEV_DEVELOPER_PROPELAUTH_API_KEY', ''),
                 # Dify Configuration
                 "NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN": os.environ.get('PRODUCTION_DIFY_CONSOLE_ORIGIN' if environment == 'production' else 'DEV_DIFY_CONSOLE_ORIGIN', ''),
                 "NEXT_PUBLIC_DIFY_ADMIN_EMAIL": os.environ.get('PRODUCTION_DIFY_ADMIN_EMAIL' if environment == 'production' else 'DEV_DIFY_ADMIN_EMAIL', ''),
