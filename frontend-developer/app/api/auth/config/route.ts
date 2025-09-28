@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 export async function GET() {
   try {
     const authUrl = process.env.NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL;
-    const apiKey = process.env.NEXT_PUBLIC_DEVELOPEMNT_PROPELAUTH_API_KEY;
+    const apiKey = process.env.NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY;
     const enableEmailVerification =
       process.env.NEXT_PUBLIC_ENABLE_EMAIL_VERIFICATION;
 
