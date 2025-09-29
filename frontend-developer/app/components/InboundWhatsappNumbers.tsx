@@ -240,16 +240,16 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
                 const isAssigned = !!mapping;
 
                 return {
-                id: orgPhone.phone_id || orgPhone._id || `phone_${index}`,
+                    id: orgPhone.phone_id || orgPhone._id || `phone_${index}`,
                     phone_number: phoneNumber,
                     friendly_name: getFriendlyName(phoneNumber),
                     agent_name: isAssigned ? 'WhatsApp Agent' : '',
                     agent_prefix: isAssigned ? 'whatsapp_agent' : '',
                     assigned_at: isAssigned ? (mapping.last_activity || new Date().toISOString()) : '',
                     status: isAssigned ? 'assigned' as const : 'unassigned' as const,
-                voice_enabled: orgPhone.voice_enabled || false,
-                sms_enabled: orgPhone.sms_enabled || false,
-                whatsapp_enabled: orgPhone.whatsapp_enabled || true, // WhatsApp numbers are WhatsApp enabled by default
+                    voice_enabled: orgPhone.voice_enabled || false,
+                    sms_enabled: orgPhone.sms_enabled || false,
+                    whatsapp_enabled: orgPhone.whatsapp_enabled || true, // WhatsApp numbers are WhatsApp enabled by default
                     agent_id: isAssigned ? 'whatsapp_agent' : null,
                     mapping_data: mapping || null
                 };
@@ -461,7 +461,7 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
                                         className={`border-b transition-colors duration-200 ${isDarkMode
                                             ? 'border-gray-700 hover:bg-gray-800/50'
                                             : 'border-gray-200 hover:bg-gray-50'
-                                        } ${index % 2 === 0 ? (isDarkMode ? 'bg-gray-900/30' : 'bg-white') : (isDarkMode ? 'bg-gray-800/30' : 'bg-gray-50/50')}`}
+                                            } ${index % 2 === 0 ? (isDarkMode ? 'bg-gray-900/30' : 'bg-white') : (isDarkMode ? 'bg-gray-800/30' : 'bg-gray-50/50')}`}
                                     >
                                         {/* Number Column */}
                                         <td className="py-4 px-6">
@@ -494,12 +494,12 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
                                                         className={`h-4 w-4 ${assignment.voice_enabled
                                                             ? (isDarkMode ? 'text-green-400' : 'text-green-600')
                                                             : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                                                        }`}
+                                                            }`}
                                                     />
                                                     <span className={`text-xs font-medium ${assignment.voice_enabled
                                                         ? (isDarkMode ? 'text-green-400' : 'text-green-600')
                                                         : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                                                    }`}>
+                                                        }`}>
                                                         Voice
                                                     </span>
                                                 </div>
@@ -510,12 +510,12 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
                                                         className={`h-4 w-4 ${assignment.sms_enabled
                                                             ? (isDarkMode ? 'text-blue-400' : 'text-blue-600')
                                                             : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                                                        }`}
+                                                            }`}
                                                     />
                                                     <span className={`text-xs font-medium ${assignment.sms_enabled
                                                         ? (isDarkMode ? 'text-blue-400' : 'text-blue-600')
                                                         : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                                                    }`}>
+                                                        }`}>
                                                         SMS
                                                     </span>
                                                 </div>
@@ -526,12 +526,12 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
                                                         className={`h-4 w-4 ${assignment.whatsapp_enabled
                                                             ? (isDarkMode ? 'text-green-400' : 'text-green-600')
                                                             : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                                                        }`}
+                                                            }`}
                                                     />
                                                     <span className={`text-xs font-medium ${assignment.whatsapp_enabled
                                                         ? (isDarkMode ? 'text-green-400' : 'text-green-600')
                                                         : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
-                                                    }`}>
+                                                        }`}>
                                                         WhatsApp
                                                     </span>
                                                 </div>
@@ -554,24 +554,24 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
                                                     <XCircle className={`h-4 w-4 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
                                                 )}
                                                 {assignment.status === 'assigned' && (
-                                                <button
+                                                    <button
                                                         onClick={() => handleUnassignAgent(assignment.id)}
-                                                    disabled={isUnassigning === assignment.id}
+                                                        disabled={isUnassigning === assignment.id}
                                                         className={`p-1 rounded-lg transition-all duration-200 hover:scale-105 ${isDarkMode
                                                             ? 'hover:bg-red-900/30 text-red-400 hover:text-red-300'
                                                             : 'hover:bg-red-50 text-red-500 hover:text-red-600'
                                                             }`}
                                                         title="Unassign agent"
-                                                >
-                                                    {isUnassigning === assignment.id ? (
-                                                        <RefreshCw className="h-4 w-4 animate-spin" />
-                                                    ) : (
+                                                    >
+                                                        {isUnassigning === assignment.id ? (
+                                                            <RefreshCw className="h-4 w-4 animate-spin" />
+                                                        ) : (
                                                             <Trash2 className="h-4 w-4" />
-                                                    )}
-                                                </button>
+                                                        )}
+                                                    </button>
                                                 )}
                                             </div>
-                                            </td>
+                                        </td>
 
                                     </tr>
                                 ))}

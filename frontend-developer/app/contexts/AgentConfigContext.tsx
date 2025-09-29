@@ -90,17 +90,17 @@ export interface AgentConfigContextType {
   hasUnsavedChanges: boolean;
   autoSaveStatus: AutoSaveStatus;
   currentAgentId: string | null;
-  
+
   // Actions
   updateConfiguration: (section: keyof AgentConfiguration, data: Partial<any>) => void;
   resetConfiguration: () => void;
   loadConfigurationFromAgent: (agent: any) => void;
   saveConfiguration: () => Promise<boolean>;
-  
+
   // Auto-save
   enableAutoSave: boolean;
   setEnableAutoSave: (enabled: boolean) => void;
-  
+
   // Debug
   getConfigurationSnapshot: () => AgentConfiguration;
 }
@@ -143,7 +143,7 @@ export const AgentConfigProvider: React.FC<AgentConfigProviderProps> = ({ childr
   // Auto-save functionality with backend-first strategy and current state capture
   const performAutoSave = useCallback(async (currentConfig?: AgentConfiguration) => {
     const configToSave = currentConfig || configuration;
-    
+
     if (!enableAutoSave || !hasUnsavedChanges || !currentAgentId) return;
 
     setAutoSaveStatus({ status: 'saving' });
@@ -164,26 +164,26 @@ export const AgentConfigProvider: React.FC<AgentConfigProviderProps> = ({ childr
       if (currentAgentId) {
         sessionStorage.setItem(`agentConfiguration_${currentAgentId}`, JSON.stringify(configToSave));
       }
-      
+
       // Tertiary: Save to localStorage as fallback (agent-specific)
       if (currentAgentId) {
         localStorage.setItem(`agentConfiguration_${currentAgentId}`, JSON.stringify(configToSave));
       }
-      
-      setAutoSaveStatus({ 
-        status: 'saved', 
-        lastSaved: new Date() 
+
+      setAutoSaveStatus({
+        status: 'saved',
+        lastSaved: new Date()
       });
-      
+
       setHasUnsavedChanges(false);
       lastSavedRef.current = configToSave;
-      
+
       console.log('✅ Auto-save completed:', configToSave);
     } catch (error) {
       console.error('❌ Auto-save failed:', error);
-      setAutoSaveStatus({ 
-        status: 'error', 
-        error: error instanceof Error ? error.message : 'Auto-save failed' 
+      setAutoSaveStatus({
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Auto-save failed'
       });
     }
   }, [configuration, enableAutoSave, hasUnsavedChanges, currentAgentId]);
@@ -251,21 +251,21 @@ export const AgentConfigProvider: React.FC<AgentConfigProviderProps> = ({ childr
           ...data
         }
       };
-      
+
       console.log('🔄 New configuration:', newConfig);
       console.log('🔄 Voice config updated:', newConfig.voice);
-      
+
       // Check if configuration has actually changed
       const hasChanged = JSON.stringify(newConfig) !== JSON.stringify(lastSavedRef.current);
       setHasUnsavedChanges(hasChanged);
-      
+
       // Trigger auto-save with current state to avoid stale closure
       if (hasChanged && enableAutoSave) {
         setTimeout(() => {
           performAutoSave(newConfig);
         }, 100); // Small delay to ensure state is updated
       }
-      
+
       return newConfig;
     });
   }, [enableAutoSave, performAutoSave]);
@@ -282,7 +282,7 @@ export const AgentConfigProvider: React.FC<AgentConfigProviderProps> = ({ childr
     setHasUnsavedChanges(false);
     setAutoSaveStatus({ status: 'idle' });
     lastSavedRef.current = null;
-    
+
     // Clear agent-specific sessionStorage
     if (currentAgentId) {
       sessionStorage.removeItem(`agentConfiguration_${currentAgentId}`);
@@ -293,23 +293,23 @@ export const AgentConfigProvider: React.FC<AgentConfigProviderProps> = ({ childr
   // Helper function to convert backend voice config to UI format
   const convertBackendVoiceConfigToUI = useCallback((backendConfig: any) => {
     console.log('🔄 Converting backend voice config to UI format:', backendConfig);
-    
+
     if (!backendConfig || !backendConfig.provider) return null;
-    
+
     const provider = backendConfig.provider;
     const providerConfig = backendConfig[provider];
-    
+
     if (!providerConfig) return null;
-    
+
     // Map backend provider names to UI provider names
     const providerMapping: { [key: string]: string } = {
       'openai': 'OpenAI',
       'elevenlabs': '11Labs',
       'cartesian': 'Cartesia'
     };
-    
+
     const uiProvider = providerMapping[provider] || provider;
-    
+
     // Map language codes to display names
     const languageMapping: { [key: string]: string } = {
       'en': 'English',
@@ -335,10 +335,10 @@ export const AgentConfigProvider: React.FC<AgentConfigProviderProps> = ({ childr
       'th': 'Thai',
       'vi': 'Vietnamese'
     };
-    
+
     const languageCode = providerConfig.language || 'en';
     const displayLanguage = languageMapping[languageCode] || 'English';
-    
+
     return {
       selectedVoiceProvider: uiProvider,
       selectedLanguage: displayLanguage,
@@ -356,22 +356,22 @@ export const AgentConfigProvider: React.FC<AgentConfigProviderProps> = ({ childr
   // Helper function to convert backend transcriber config to UI format
   const convertBackendTranscriberConfigToUI = useCallback((backendConfig: any) => {
     console.log('🔄 Converting backend transcriber config to UI format:', backendConfig);
-    
+
     if (!backendConfig || !backendConfig.provider) return null;
-    
+
     const provider = backendConfig.provider;
     const providerConfig = backendConfig[provider];
-    
+
     if (!providerConfig) return null;
-    
+
     // Map backend provider names to UI provider names
     const providerMapping: { [key: string]: string } = {
       'deepgram': 'Deepgram',
       'openai': 'OpenAI'
     };
-    
+
     const uiProvider = providerMapping[provider] || provider;
-    
+
     return {
       selectedTranscriberProvider: uiProvider,
       selectedTranscriberLanguage: providerConfig.language || 'en-US',
@@ -388,18 +388,18 @@ export const AgentConfigProvider: React.FC<AgentConfigProviderProps> = ({ childr
     console.log('🔄 loadConfigurationFromAgent called with agent:', agent);
     console.log('🔍 Agent systemPrompt:', agent.systemPrompt);
     console.log('🔍 Agent initial_message:', agent.initial_message);
-    
+
     // Set current agent ID for agent-specific storage
     setCurrentAgentId(agent.id);
-    
+
     // Clear any existing configuration first
     resetConfiguration();
-    
+
     // Load agent-specific configuration
     setConfiguration(prev => {
       const systemPromptValue = agent.systemPrompt || agent.initial_message;
       console.log('🔍 Final systemPrompt value:', systemPromptValue);
-      
+
       const newConfig = {
         model: agent.modelApiKey ? {
           provider: agent.provider,
@@ -409,10 +409,10 @@ export const AgentConfigProvider: React.FC<AgentConfigProviderProps> = ({ childr
           chatbot_key: agent.chatbot_key,
           systemPrompt: systemPromptValue
         } : null,
-        
+
         voice: agent.tts_config ? convertBackendVoiceConfigToUI(agent.tts_config) : null,
         transcriber: agent.stt_config ? convertBackendTranscriberConfigToUI(agent.stt_config) : null,
-        
+
         tools: {
           initialMessage: agent.initial_message,
           nudgeText: agent.nudge_text,
@@ -421,14 +421,14 @@ export const AgentConfigProvider: React.FC<AgentConfigProviderProps> = ({ childr
           typingVolume: agent.typing_volume,
           maxCallDuration: agent.max_call_duration
         },
-        
+
         widget: null
       };
 
       setHasUnsavedChanges(false);
       setAutoSaveStatus({ status: 'idle' });
       lastSavedRef.current = newConfig;
-      
+
       return newConfig;
     });
   }, [convertBackendVoiceConfigToUI, convertBackendTranscriberConfigToUI, resetConfiguration]);
@@ -449,22 +449,22 @@ export const AgentConfigProvider: React.FC<AgentConfigProviderProps> = ({ childr
 
       // Here you would call your backend API
       // const result = await agentConfigService.saveConfiguration(backendConfig);
-      
-      setAutoSaveStatus({ 
-        status: 'saved', 
-        lastSaved: new Date() 
+
+      setAutoSaveStatus({
+        status: 'saved',
+        lastSaved: new Date()
       });
-      
+
       setHasUnsavedChanges(false);
       lastSavedRef.current = configuration;
-      
+
       console.log('💾 Configuration saved to backend:', backendConfig);
       return true;
     } catch (error) {
       console.error('❌ Failed to save configuration:', error);
-      setAutoSaveStatus({ 
-        status: 'error', 
-        error: error instanceof Error ? error.message : 'Save failed' 
+      setAutoSaveStatus({
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Save failed'
       });
       return false;
     }

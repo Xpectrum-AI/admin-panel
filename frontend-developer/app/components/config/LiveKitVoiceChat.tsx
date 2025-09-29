@@ -95,7 +95,7 @@ export default function LiveKitVoiceChat({ agentName, isDarkMode, startCall, end
   const [error, setError] = useState<string | null>(null);
 
   // Configuration - Use the same API as the working voice chat
-  const API_BASE_URL = 'https://d2ref4sfj4q82j.cloudfront.net';
+  const API_BASE_URL = 'https://d3sgivh2kmd3c8.cloudfront.net';
   const API_KEY = 'xpectrum-ai@123';
 
   const connectToAgent = async () => {
