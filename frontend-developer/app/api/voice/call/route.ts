@@ -11,11 +11,11 @@ export async function POST(request: NextRequest) {
     console.log('🎤 Voice call request:', { message: message.substring(0, 50) + '...', agentName, voiceProvider });
 
     // Use the new API credentials from environment variables
-    const apiBaseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL || 'https://d2ref4sfj4q82j.cloudfront.net';
+    const apiBaseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL || 'https://d3sgivh2kmd3c8.cloudfront.net';
     const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || 'xpectrum-ai@123';
     
     // Override with the correct values provided by user
-    const finalApiBaseUrl = 'https://d2ref4sfj4q82j.cloudfront.net';
+    const finalApiBaseUrl = 'https://d3sgivh2kmd3c8.cloudfront.net';
     const finalApiKey = 'xpectrum-ai@123';
     
     console.log('🎤 Using API credentials:', { apiBaseUrl, apiKey: apiKey ? '***' : 'NOT_SET' });

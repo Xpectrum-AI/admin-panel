@@ -18,10 +18,10 @@ interface VoiceConfigProps {
   transcriberConfiguration?: any;
 }
 
-const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({ 
-  agentName = 'default', 
-  onConfigChange, 
-  onTranscriberConfigChange, 
+const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
+  agentName = 'default',
+  onConfigChange,
+  onTranscriberConfigChange,
   isEditing = false,
   voiceConfiguration,    // Add this
   transcriberConfiguration  // Add this
@@ -484,7 +484,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     if (selectedVoiceProvider === '11Labs') {
       const languageMapping = getCurrentLanguageMapping();
       const availableLanguages = Object.values(languageMapping);
-      
+
       // If current selected language is not available for the new model, reset to first available
       if (availableLanguages.length > 0 && !availableLanguages.includes(selectedLanguage)) {
         console.log('🔄 Resetting language for 11Labs model change');
@@ -502,14 +502,14 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       const supportedLanguages = elevenLabsModelLanguages[selectedModel as keyof typeof elevenLabsModelLanguages] || [];
       console.log('🔍 11Labs - Selected Model:', selectedModel);
       console.log('🔍 11Labs - Supported Languages:', supportedLanguages);
-      
+
       const filteredMapping: { [key: string]: string } = {};
       supportedLanguages.forEach(langCode => {
         if (elevenLabsLanguageMapping[langCode as keyof typeof elevenLabsLanguageMapping]) {
           filteredMapping[langCode] = elevenLabsLanguageMapping[langCode as keyof typeof elevenLabsLanguageMapping];
         }
       });
-      
+
       console.log('🔍 11Labs - Filtered Language Mapping:', filteredMapping);
       return filteredMapping;
     }
@@ -523,14 +523,14 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       // Create reverse mapping for 11Labs based on supported languages
       const supportedLanguages = elevenLabsModelLanguages[selectedModel as keyof typeof elevenLabsModelLanguages] || [];
       const reverseMapping: { [key: string]: string } = {};
-      
+
       supportedLanguages.forEach(langCode => {
         if (elevenLabsLanguageMapping[langCode as keyof typeof elevenLabsLanguageMapping]) {
           const languageName = elevenLabsLanguageMapping[langCode as keyof typeof elevenLabsLanguageMapping];
           reverseMapping[languageName] = langCode;
         }
       });
-      
+
       console.log('🔍 11Labs - Reverse Language Mapping:', reverseMapping);
       return reverseMapping;
     }
@@ -576,11 +576,11 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       isUserChangingProvider,
       isUserChangingTranscriberProvider
     });
-    
+
     // Load from centralized configuration
     if (voiceConfiguration && !isUserChangingProvider) {
       console.log('🔄 Loading voice state from centralized configuration:', voiceConfiguration);
-      
+
       if (voiceConfiguration.selectedVoiceProvider) {
         console.log('🔄 Setting voice provider:', voiceConfiguration.selectedVoiceProvider);
         setSelectedVoiceProvider(voiceConfiguration.selectedVoiceProvider);
@@ -622,11 +622,11 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
         setSelectedModel(voiceConfiguration.selectedModel);
       }
     }
-    
+
     // Load transcriber configuration
     if (transcriberConfiguration && !isUserChangingTranscriberProvider) {
       console.log('🔄 Loading transcriber state from centralized configuration:', transcriberConfiguration);
-      
+
       if (transcriberConfiguration.selectedTranscriberProvider) {
         console.log('🔄 Setting transcriber provider:', transcriberConfiguration.selectedTranscriberProvider);
         setSelectedTranscriberProvider(transcriberConfiguration.selectedTranscriberProvider);
@@ -674,9 +674,9 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
         selectedModel,
         ...updates
       };
-      
+
       console.log('📤 VoiceConfig: Saving state to centralized config:', currentState);
-      
+
       // Call parent's onConfigChange
       if (onConfigChange) {
         onConfigChange(currentState);
@@ -720,9 +720,9 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
         interimResultEnabled,
         ...updates
       };
-      
+
       console.log('📤 TranscriberConfig: Saving state to centralized config:', currentState);
-      
+
       // Call parent's onTranscriberConfigChange
       if (onTranscriberConfigChange) {
         onTranscriberConfigChange(currentState);
@@ -780,7 +780,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     // Reset model and voice when provider changes
     let defaultModel = 'tts-1';
     let defaultVoice = 'alloy';
-    
+
     if (newProvider === 'OpenAI') {
       defaultModel = 'tts-1';
       defaultVoice = 'alloy';
@@ -792,21 +792,46 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       defaultVoice = 'alloy';
     }
 
-    // Update the provider, model, and voice state
+    // Load the correct API key and voice ID for the new provider
+    const defaultApiKeys = agentConfigService.getFullApiKeys();
+    const defaultVoiceIds = agentConfigService.getDefaultVoiceIds();
+
+    let newApiKey = '';
+    let newVoiceId = '';
+
+    switch (newProvider) {
+      case 'OpenAI':
+        newApiKey = defaultApiKeys.openai || '';
+        break;
+      case '11Labs':
+        newApiKey = defaultApiKeys.elevenlabs || '';
+        newVoiceId = defaultVoiceIds.elevenlabs || '';
+        break;
+      case 'Cartesia':
+        newApiKey = defaultApiKeys.cartesia || '';
+        newVoiceId = defaultVoiceIds.cartesia || '';
+        break;
+    }
+
+    // Update the provider, model, voice, API key, and voice ID state
     setSelectedVoiceProvider(newProvider);
     setSelectedModel(defaultModel);
     setSelectedVoice(defaultVoice);
+    setApiKey(newApiKey);
+    setVoiceId(newVoiceId);
 
-    console.log('🔄 Reset model to:', defaultModel, 'and voice to:', defaultVoice);
+    console.log('🔄 Reset model to:', defaultModel, 'voice to:', defaultVoice, 'API key updated');
 
-    // Save to centralized state
+    // Save to centralized state with correct API key
     saveStateToCentralized({
       selectedVoiceProvider: newProvider,
       selectedModel: defaultModel,
-      selectedVoice: defaultVoice
+      selectedVoice: defaultVoice,
+      apiKey: newApiKey,
+      voiceId: newVoiceId
     });
 
-    console.log('✅ Provider changed to', newProvider, 'with reset model and voice');
+    console.log('✅ Provider changed to', newProvider, 'with correct API key');
 
     // Reset the flag after a delay
     providerChangeTimeoutRef.current = setTimeout(() => {
@@ -1192,9 +1217,9 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                   } else if (selectedVoiceProvider === 'Cartesia') {
                     models = voiceProviders['Cartesia'];
                   }
-                  
+
                   console.log('🔍 Available models for', selectedVoiceProvider, ':', models);
-                  
+
                   return models.map((model) => (
                     <option key={model} value={model}>
                       {selectedVoiceProvider === '11Labs' ? elevenLabsModelNames[model as keyof typeof elevenLabsModelNames] : model}
@@ -1244,12 +1269,12 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                   console.log('🔍 Selected Language:', selectedLanguage);
                   console.log('🔍 Selected Model:', selectedModel);
                   console.log('🔍 Selected Voice Provider:', selectedVoiceProvider);
-                  
+
                   if (Object.keys(languageMapping).length === 0) {
                     console.warn('⚠️ No languages available for current model/provider combination');
                     return <option value="">No languages available</option>;
                   }
-                  
+
                   return Object.entries(languageMapping).map(([code, name]) => (
                     <option key={code} value={name}>{name}</option>
                   ));
@@ -1471,98 +1496,98 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
               </div>
             </div>
 
-          <div className="space-y-4">
-            {/* Punctuate Toggle */}
-            <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-                    </svg>
+            <div className="space-y-4">
+              {/* Punctuate Toggle */}
+              <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h5 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Punctuate</h5>
+                    </div>
                   </div>
-                  <div>
-                    <h5 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Punctuate</h5>
-                  </div>
+                  <button
+                    onClick={() => {
+                      setPunctuateEnabled(!punctuateEnabled);
+                    }}
+                    disabled={!isEditing}
+                    className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
+                      ? 'opacity-50 cursor-not-allowed'
+                      : punctuateEnabled
+                        ? (isDarkMode ? 'bg-green-600' : 'bg-green-500')
+                        : (isDarkMode ? 'bg-gray-600' : 'bg-gray-300')
+                      }`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out ${punctuateEnabled ? 'right-1' : 'left-1'}`}></div>
+                  </button>
                 </div>
-                <button
-                  onClick={() => {
-                    setPunctuateEnabled(!punctuateEnabled);
-                  }}
-                  disabled={!isEditing}
-                  className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
-                    ? 'opacity-50 cursor-not-allowed'
-                    : punctuateEnabled
-                      ? (isDarkMode ? 'bg-green-600' : 'bg-green-500')
-                      : (isDarkMode ? 'bg-gray-600' : 'bg-gray-300')
-                    }`}
-                >
-                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out ${punctuateEnabled ? 'right-1' : 'left-1'}`}></div>
-                </button>
               </div>
-            </div>
 
-            {/* Smart Format Toggle */}
-            <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+              {/* Smart Format Toggle */}
+              <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h5 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Smart Format</h5>
+                    </div>
                   </div>
-                  <div>
-                    <h5 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Smart Format</h5>
-                  </div>
+                  <button
+                    onClick={() => {
+                      setSmartFormatEnabled(!smartFormatEnabled);
+                    }}
+                    disabled={!isEditing}
+                    className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
+                      ? 'opacity-50 cursor-not-allowed'
+                      : smartFormatEnabled
+                        ? (isDarkMode ? 'bg-green-600' : 'bg-green-500')
+                        : (isDarkMode ? 'bg-gray-600' : 'bg-gray-300')
+                      }`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out ${smartFormatEnabled ? 'right-1' : 'left-1'}`}></div>
+                  </button>
                 </div>
-                <button
-                  onClick={() => {
-                    setSmartFormatEnabled(!smartFormatEnabled);
-                  }}
-                  disabled={!isEditing}
-                  className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
-                    ? 'opacity-50 cursor-not-allowed'
-                    : smartFormatEnabled
-                      ? (isDarkMode ? 'bg-green-600' : 'bg-green-500')
-                      : (isDarkMode ? 'bg-gray-600' : 'bg-gray-300')
-                    }`}
-                >
-                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out ${smartFormatEnabled ? 'right-1' : 'left-1'}`}></div>
-                </button>
               </div>
-            </div>
 
-            {/* Interim Result Toggle */}
-            <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
+              {/* Interim Result Toggle */}
+              <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h5 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Interim Results</h5>
+                    </div>
                   </div>
-                  <div>
-                    <h5 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Interim Results</h5>
-                  </div>
+                  <button
+                    onClick={() => {
+                      setInterimResultEnabled(!interimResultEnabled);
+                    }}
+                    disabled={!isEditing}
+                    className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
+                      ? 'opacity-50 cursor-not-allowed'
+                      : interimResultEnabled
+                        ? (isDarkMode ? 'bg-green-600' : 'bg-green-500')
+                        : (isDarkMode ? 'bg-gray-600' : 'bg-gray-300')
+                      }`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out ${interimResultEnabled ? 'right-1' : 'left-1'}`}></div>
+                  </button>
                 </div>
-                <button
-                  onClick={() => {
-                    setInterimResultEnabled(!interimResultEnabled);
-                  }}
-                  disabled={!isEditing}
-                  className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
-                    ? 'opacity-50 cursor-not-allowed'
-                    : interimResultEnabled
-                      ? (isDarkMode ? 'bg-green-600' : 'bg-green-500')
-                      : (isDarkMode ? 'bg-gray-600' : 'bg-gray-300')
-                    }`}
-                >
-                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out ${interimResultEnabled ? 'right-1' : 'left-1'}`}></div>
-                </button>
               </div>
             </div>
           </div>
-        </div>
         )}
 
       </div>

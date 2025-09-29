@@ -233,7 +233,8 @@ export class WhatsAppService {
     const formData = {
       receiving_number: receivingNumber,
       agent_url: process.env.NEXT_PUBLIC_CHATBOT_API_URL,
-      agent_api_key: agentApiKey
+      agent_api_key: agentApiKey,
+      phone_number_id: phoneNumberId
     };
 
     try {
