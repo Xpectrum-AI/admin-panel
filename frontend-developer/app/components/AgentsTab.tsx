@@ -1551,10 +1551,10 @@ Remember: You are the first point of contact for many patients. Your professiona
                     {selectedAgent && (
                       <button
                         onClick={handleUpdateAgent}
-                        disabled={isUpdatingAgent || !hasUnsavedChanges}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isUpdatingAgent || !hasUnsavedChanges
+                        disabled={isUpdatingAgent}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isUpdatingAgent
                           ? 'bg-gray-400 text-white opacity-60 cursor-not-allowed'
-                          : `bg-purple-600 text-white hover:bg-purple-700 ${hasUnsavedChanges ? 'ring-2 ring-purple-400/50 shadow-lg shadow-purple-500/30' : ''}`
+                          : 'bg-purple-600 text-white hover:bg-purple-700'
                           }`}
                       >
                         {isUpdatingAgent ? 'Publishing...' : 'Publish Agent'}
