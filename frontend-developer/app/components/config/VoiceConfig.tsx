@@ -41,6 +41,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
   const [selectedVoice, setSelectedVoice] = useState('alloy');
   const [responseFormat, setResponseFormat] = useState('mp3');
   const [isUserChangingProvider, setIsUserChangingProvider] = useState(false);
+  const [isUserChangingVoiceField, setIsUserChangingVoiceField] = useState(false);
   const providerChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastConfigRef = useRef<string>('');
 
@@ -58,12 +59,12 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
   const [voiceProviders, setVoiceProviders] = useState({
     'OpenAI': ['tts-1', 'tts-1-hd', 'gpt-4o-mini-tts'],
     '11Labs': ['eleven_v3', 'eleven_ttv_v3', 'scribe_v1', 'scribe_v1_experimental', 'eleven_multilingual_v2', 'eleven_flash_v2_5', 'eleven_flash_v2', 'eleven_turbo_v2_5', 'eleven_turbo_v2', 'eleven_multilingual_sts_v2', 'eleven_multilingual_ttv_v2', 'eleven_english_sts_v2'],
-    'Cartesia': ['sonic-2.0', 'sonic-turbo', 'sonic']
+    'Cartesia': ['sonic-2', 'sonic-turbo', 'sonic']
   });
 
   const transcriberProviders = {
     'Deepgram': ['nova-2', 'nova-3'],
-    'OpenAI': ['tts-1', 'tts-1-hd', 'gpt-4o-mini-tts', 'gpt-4o-mini-transcribe']
+    'OpenAI': ['whisper-1', 'gpt-4o-mini-transcribe']
   };
 
   // OpenAI TTS Language Mapping (67 languages)
@@ -458,15 +459,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
   };
 
   const openaiModels = {
-    'mp3': 'MP3',
-    'opus': 'Opus',
-    'aac': 'AAC',
-    'flac': 'FLAC',
-    'wav': 'WAV',
-    'pcm': 'PCM'
-  };
-
-  const responseFormats = {
     'alloy': 'Alloy',
     'ash': 'Ash',
     'ballad': 'Ballad',
@@ -477,6 +469,15 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     'onyx': 'Onyx',
     'sage': 'Sage',
     'shimmer': 'Shimmer'
+  };
+
+  const responseFormats = {
+    'mp3': 'MP3',
+    'opus': 'Opus',
+    'aac': 'AAC',
+    'flac': 'FLAC',
+    'wav': 'WAV',
+    'pcm': 'PCM'
   };
 
   // Reset language when model changes for 11Labs
@@ -550,8 +551,22 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       });
       return filteredMapping;
     } else if (selectedTranscriberProvider === 'OpenAI') {
-      // For OpenAI STT, use the same language mapping as TTS
-      return openaiLanguageMapping;
+      // For OpenAI STT, prioritize English first, then other languages
+      const prioritizedMapping: { [key: string]: string } = {};
+
+      // Add English first
+      if (openaiLanguageMapping['en']) {
+        prioritizedMapping['en'] = openaiLanguageMapping['en'];
+      }
+
+      // Add all other languages except English
+      Object.entries(openaiLanguageMapping).forEach(([code, name]) => {
+        if (code !== 'en') {
+          prioritizedMapping[code] = name;
+        }
+      });
+
+      return prioritizedMapping;
     }
     // Fallback
     return {
@@ -574,11 +589,12 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       voiceConfiguration,
       transcriberConfiguration,
       isUserChangingProvider,
-      isUserChangingTranscriberProvider
+      isUserChangingTranscriberProvider,
+      isUserChangingVoiceField
     });
 
     // Load from centralized configuration
-    if (voiceConfiguration && !isUserChangingProvider) {
+    if (voiceConfiguration && !isUserChangingProvider && !isUserChangingVoiceField) {
       console.log('🔄 Loading voice state from centralized configuration:', voiceConfiguration);
 
       if (voiceConfiguration.selectedVoiceProvider) {
@@ -640,8 +656,21 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
         setSelectedTranscriberModel(transcriberConfiguration.selectedTranscriberModel);
       }
       if (transcriberConfiguration.transcriberApiKey) {
-        console.log('🔄 Setting transcriber API key');
+        console.log('🔄 Setting transcriber API key from configuration');
         setTranscriberApiKey(transcriberConfiguration.transcriberApiKey);
+      } else {
+        // If no API key in config, load from service based on provider
+        console.log('🔄 No transcriber API key in config, loading from service for provider:', transcriberConfiguration.selectedTranscriberProvider);
+        const defaultApiKeys = agentConfigService.getFullApiKeys();
+
+        switch (transcriberConfiguration.selectedTranscriberProvider) {
+          case 'Deepgram':
+            setTranscriberApiKey(defaultApiKeys.deepgram || '');
+            break;
+          case 'OpenAI':
+            setTranscriberApiKey(defaultApiKeys.openai || '');
+            break;
+        }
       }
       if (transcriberConfiguration.punctuateEnabled !== undefined) {
         console.log('🔄 Setting punctuate enabled:', transcriberConfiguration.punctuateEnabled);
@@ -706,6 +735,33 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
         break;
     }
   }, [selectedVoiceProvider]);
+
+  // Load default transcriber API key when transcriber provider changes
+  useEffect(() => {
+    const defaultApiKeys = agentConfigService.getFullApiKeys();
+
+    // Set default API key based on selected transcriber provider
+    switch (selectedTranscriberProvider) {
+      case 'Deepgram':
+        setTranscriberApiKey(defaultApiKeys.deepgram || '');
+        break;
+      case 'OpenAI':
+        setTranscriberApiKey(defaultApiKeys.openai || '');
+        break;
+    }
+  }, [selectedTranscriberProvider, transcriberConfiguration]);
+
+  // Reset language when transcriber model changes
+  React.useEffect(() => {
+    const languageMapping = getCurrentTranscriberLanguageMapping();
+    const availableLanguages = Object.keys(languageMapping);
+
+    // If current selected language is not available for the new model, reset to first available
+    if (availableLanguages.length > 0 && !availableLanguages.includes(selectedTranscriberLanguage)) {
+      console.log('🔄 Resetting transcriber language for model change');
+      setSelectedTranscriberLanguage(availableLanguages[0]);
+    }
+  }, [selectedTranscriberModel, selectedTranscriberProvider, selectedTranscriberLanguage]);
 
   // Save transcriber state to centralized state whenever it changes
   const saveTranscriberStateToCentralized = useCallback((updates: any = {}) => {
@@ -777,18 +833,18 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       clearTimeout(providerChangeTimeoutRef.current);
     }
 
-    // Reset model and voice when provider changes
-    let defaultModel = 'tts-1';
-    let defaultVoice = 'alloy';
+    // Reset model and voice when provider changes - use dynamic defaults
+    let defaultModel = '';
+    let defaultVoice = '';
 
     if (newProvider === 'OpenAI') {
-      defaultModel = 'tts-1';
+      defaultModel = voiceProviders['OpenAI'][0]; // 'tts-1'
       defaultVoice = 'alloy';
     } else if (newProvider === 'Cartesia') {
-      defaultModel = 'cartesia-xtts-v2';
-      defaultVoice = 'sonic-2.0';
+      defaultModel = voiceProviders['Cartesia'][0]; // 'sonic-2'
+      defaultVoice = voiceProviders['Cartesia'][0]; // 'sonic-2'
     } else if (newProvider === '11Labs') {
-      defaultModel = 'eleven_v3';
+      defaultModel = Object.keys(elevenLabsModelNames)[0]; // 'eleven_v3'
       defaultVoice = 'alloy';
     }
 
@@ -853,19 +909,53 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       clearTimeout(transcriberProviderChangeTimeoutRef.current);
     }
 
-    setSelectedTranscriberProvider(provider);
+    // Load the correct API key for the new transcriber provider
+    const defaultApiKeys = agentConfigService.getFullApiKeys();
+    let newTranscriberApiKey = '';
+
+    switch (provider) {
+      case 'Deepgram':
+        newTranscriberApiKey = defaultApiKeys.deepgram || '';
+        break;
+      case 'OpenAI':
+        newTranscriberApiKey = defaultApiKeys.openai || '';
+        break;
+      default:
+        newTranscriberApiKey = '';
+    }
 
     // Reset model to first available model for the new provider
     const providerData = transcriberProviders[provider as keyof typeof transcriberProviders];
+    let defaultModel = '';
     if (providerData && providerData.length > 0) {
-      setSelectedTranscriberModel(providerData[0]);
-      saveTranscriberStateToCentralized({
-        selectedTranscriberProvider: provider,
-        selectedTranscriberModel: providerData[0]
-      });
+      defaultModel = providerData[0];
     }
 
-    console.log('✅ Transcriber provider changed to', provider, 'with reset model');
+    // Reset language to first available language for the new provider
+    const languageMapping = getCurrentTranscriberLanguageMapping();
+    const availableLanguages = Object.keys(languageMapping);
+    // For OpenAI, prefer 'en' (English), otherwise use first available
+    const defaultLanguage = availableLanguages.length > 0
+      ? (availableLanguages.includes('en') ? 'en' : availableLanguages[0])
+      : 'en-US';
+
+    // Update all state
+    setSelectedTranscriberProvider(provider);
+    setSelectedTranscriberModel(defaultModel);
+    setTranscriberApiKey(newTranscriberApiKey);
+    setSelectedTranscriberLanguage(defaultLanguage);
+
+    console.log('🔄 Reset transcriber model to:', defaultModel, 'language to:', defaultLanguage, 'API key updated');
+
+    // Save to centralized state with correct API key
+    saveTranscriberStateToCentralized({
+      selectedTranscriberProvider: provider,
+      selectedTranscriberModel: defaultModel,
+      selectedTranscriberLanguage: defaultLanguage,
+      transcriberApiKey: newTranscriberApiKey
+    });
+
+    console.log('✅ Transcriber provider changed to', provider, 'with correct API key');
 
     // Reset the flag after a delay
     transcriberProviderChangeTimeoutRef.current = setTimeout(() => {
@@ -899,35 +989,10 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                   Voice
                 </label>
                 <select
-                  value={responseFormat}
+                  value={selectedVoice}
                   onChange={(e) => {
-                    setResponseFormat(e.target.value);
-                    saveStateToCentralized({ responseFormat: e.target.value });
-                  }}
-                  disabled={!isEditing}
-                  className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
-                    ? isDarkMode
-                      ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
-                      : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
-                    : isDarkMode
-                      ? 'bg-gray-700/50 border-gray-600 text-gray-200'
-                      : 'bg-gray-50 border-gray-200 text-gray-900'
-                    }`}
-                >
-                  {Object.entries(responseFormats).map(([key, value]) => (
-                    <option key={key} value={key}>{value}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Response Format
-                </label>
-                <select
-                  value={selectedModel}
-                  onChange={(e) => {
-                    setSelectedModel(e.target.value);
-                    saveStateToCentralized({ selectedModel: e.target.value });
+                    setSelectedVoice(e.target.value);
+                    saveStateToCentralized({ selectedVoice: e.target.value });
                   }}
                   disabled={!isEditing}
                   className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
@@ -940,6 +1005,34 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                     }`}
                 >
                   {Object.entries(openaiModels).map(([key, value]) => (
+                    <option key={key} value={key}>{value}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Response Format
+                </label>
+                <select
+                  value={responseFormat}
+                  onChange={(e) => {
+                    setIsUserChangingVoiceField(true);
+                    setResponseFormat(e.target.value);
+                    saveStateToCentralized({ responseFormat: e.target.value });
+                    // allow central state to settle, then release the guard
+                    setTimeout(() => setIsUserChangingVoiceField(false), 0);
+                  }}
+                  disabled={!isEditing}
+                  className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
+                    ? isDarkMode
+                      ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                    : isDarkMode
+                      ? 'bg-gray-700/50 border-gray-600 text-gray-200'
+                      : 'bg-gray-50 border-gray-200 text-gray-900'
+                    }`}
+                >
+                  {Object.entries(responseFormats).map(([key, value]) => (
                     <option key={key} value={key}>{value}</option>
                   ))}
                 </select>
@@ -982,18 +1075,30 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
             </div>
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Model ID
+                Model
               </label>
-              <input
-                type="text"
-                value="eleven_monolingual_v1"
-                readOnly
-                className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${isDarkMode
-                  ? 'border-gray-600 bg-gray-700/50 text-gray-400'
-                  : 'border-gray-200 bg-gray-100/50 text-gray-500'
+              <select
+                value={selectedModel}
+                onChange={(e) => {
+                  setSelectedModel(e.target.value);
+                  saveStateToCentralized({ selectedModel: e.target.value });
+                }}
+                disabled={!isEditing}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
+                  ? isDarkMode
+                    ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'bg-gray-700/50 border-gray-600 text-gray-200'
+                    : 'bg-gray-50 border-gray-200 text-gray-900'
                   }`}
-                placeholder="Default model ID (free tier)"
-              />
+              >
+                {Object.keys(elevenLabsModelNames).map((model) => (
+                  <option key={model} value={model}>
+                    {elevenLabsModelNames[model as keyof typeof elevenLabsModelNames]}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -1083,6 +1188,31 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                   }`}
                 placeholder="Default voice ID loaded"
               />
+            </div>
+            <div>
+              <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Model
+              </label>
+              <select
+                value={selectedModel}
+                onChange={(e) => {
+                  setSelectedModel(e.target.value);
+                  saveStateToCentralized({ selectedModel: e.target.value });
+                }}
+                disabled={!isEditing}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
+                  ? isDarkMode
+                    ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'bg-gray-700/50 border-gray-600 text-gray-200'
+                    : 'bg-gray-50 border-gray-200 text-gray-900'
+                  }`}
+              >
+                {voiceProviders['Cartesia'].map((model) => (
+                  <option key={model} value={model}>{model}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -1250,11 +1380,14 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
               <select
                 value={selectedLanguage}
                 onChange={(e) => {
+                  if (selectedVoiceProvider === 'OpenAI' || selectedVoiceProvider === '11Labs') {
+                    return; // languages fixed for OpenAI and 11Labs voices
+                  }
                   setSelectedLanguage(e.target.value);
                   saveStateToCentralized({ selectedLanguage: e.target.value });
                 }}
-                disabled={!isEditing}
-                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
+                disabled={!isEditing || selectedVoiceProvider === 'OpenAI' || selectedVoiceProvider === '11Labs'}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base ${!isEditing || selectedVoiceProvider === 'OpenAI' || selectedVoiceProvider === '11Labs'
                   ? isDarkMode
                     ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
                     : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
@@ -1512,7 +1645,9 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                   </div>
                   <button
                     onClick={() => {
-                      setPunctuateEnabled(!punctuateEnabled);
+                      const newValue = !punctuateEnabled;
+                      setPunctuateEnabled(newValue);
+                      saveTranscriberStateToCentralized({ punctuateEnabled: newValue });
                     }}
                     disabled={!isEditing}
                     className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
@@ -1542,7 +1677,9 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                   </div>
                   <button
                     onClick={() => {
-                      setSmartFormatEnabled(!smartFormatEnabled);
+                      const newValue = !smartFormatEnabled;
+                      setSmartFormatEnabled(newValue);
+                      saveTranscriberStateToCentralized({ smartFormatEnabled: newValue });
                     }}
                     disabled={!isEditing}
                     className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing
@@ -1572,7 +1709,9 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                   </div>
                   <button
                     onClick={() => {
-                      setInterimResultEnabled(!interimResultEnabled);
+                      const newValue = !interimResultEnabled;
+                      setInterimResultEnabled(newValue);
+                      saveTranscriberStateToCentralized({ interimResultEnabled: newValue });
                     }}
                     disabled={!isEditing}
                     className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full ${!isEditing

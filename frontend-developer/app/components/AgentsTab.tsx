@@ -101,9 +101,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
-  // Success modal state
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  // Success modal state - removed
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
   const [agentsError, setAgentsError] = useState('');
   const [currentOrganizationId, setCurrentOrganizationId] = useState<string>('');
@@ -118,6 +116,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const [showVoiceChat, setShowVoiceChat] = useState(false);
   const [startVoiceCall, setStartVoiceCall] = useState(false);
   const [endVoiceCall, setEndVoiceCall] = useState(false);
+  const [isConnectingToAgent, setIsConnectingToAgent] = useState(false);
   const [showChatSidebar, setShowChatSidebar] = useState(false);
   const [chatMessages, setChatMessages] = useState<Array<{ id: string, type: 'user' | 'bot', message: string, timestamp: Date }>>([]);
   const [currentMessage, setCurrentMessage] = useState('');
@@ -592,7 +591,7 @@ Remember: You are the first point of contact for many patients. Your professiona
         provider: 'openai' as const,
         openai: {
           api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
-          model: 'tts-1',
+          model: 'tts-1', // Default OpenAI model
           response_format: 'mp3',
           voice: 'alloy',
           language: 'en',
@@ -789,8 +788,7 @@ Remember: You are the first point of contact for many patients. Your professiona
           }
         }, 2000); // Wait 2 seconds for backend to process
 
-        // Show success message
-        setShowSuccessModal(true);
+        // Success - modal removed
 
         // Close modal and reset states
         setShowAgentPrefixModal(false);
@@ -959,7 +957,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       backendConfig.cartesian = {
         voice_id: uiConfig.voiceId || '',
         tts_api_key: uiConfig.apiKey || '',
-        model: uiConfig.selectedVoice || 'sonic-2.0',
+        model: uiConfig.selectedModel || 'sonic-2', // Use selectedModel instead of selectedVoice
         speed: uiConfig.speedValue || 1.0,
         language: uiConfig.selectedLanguage === 'English' ? 'en' : 'en' // Add proper language mapping if needed
       };
@@ -976,7 +974,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       backendConfig.elevenlabs = {
         voice_id: uiConfig.voiceId || 'pNInz6obpgDQGcFmaJgB',
         api_key: uiConfig.apiKey || '',
-        model_id: 'eleven_monolingual_v1',
+        model_id: uiConfig.selectedModel || 'eleven_v3', // Use selectedModel instead of hardcoded value
         speed: uiConfig.speedValue || 1.0,
         stability: uiConfig.stability || 0.5,
         similarity_boost: uiConfig.similarityBoost || 0.5
@@ -1009,7 +1007,7 @@ Remember: You are the first point of contact for many patients. Your professiona
     } else if (provider === 'OpenAI') {
       backendConfig.openai = {
         api_key: uiConfig.transcriberApiKey || '',
-        model: uiConfig.selectedTranscriberModel || 'tts-1',
+        model: uiConfig.selectedTranscriberModel || 'whisper-1', // Use whisper-1 for OpenAI STT
         language: uiConfig.selectedTranscriberLanguage === 'multi' ? null : (uiConfig.selectedTranscriberLanguage || 'en')
       };
     }
@@ -1060,14 +1058,12 @@ Remember: You are the first point of contact for many patients. Your professiona
         await saveConfiguration();
         // Refresh list to reflect latest server state
         await fetchAgents();
-        alert('Agent updated successfully');
+        console.log('✅ Agent updated successfully');
       } else {
         console.error('❌ Failed to update agent:', result.message);
-        alert(`Failed to update agent: ${result.message}`);
       }
     } catch (err) {
       console.error('❌ Error updating agent:', err);
-      alert('Error updating agent. Please try again.');
     } finally {
       setIsUpdatingAgent(false);
     }
@@ -1242,17 +1238,11 @@ Remember: You are the first point of contact for many patients. Your professiona
           setSelectedAgent(null);
         }
         console.log(`Agent "${agentToDelete.name}" deleted successfully`);
-        setSuccessMessage(`Agent "${agentToDelete.name}" deleted successfully`);
-        setShowSuccessModal(true);
       } else {
         console.error('Failed to delete agent:', result.message);
-        setSuccessMessage(`Failed to delete agent: ${result.message}`);
-        setShowSuccessModal(true);
       }
     } catch (error) {
       console.error('Error deleting agent:', error);
-      setSuccessMessage('Error deleting agent. Please try again.');
-      setShowSuccessModal(true);
     } finally {
       setDeletingAgentId(null);
       setAgentToDelete(null);
@@ -1467,33 +1457,7 @@ Remember: You are the first point of contact for many patients. Your professiona
           </div>
         )}
 
-        {/* Success Modal */}
-        {showSuccessModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className={`p-6 rounded-xl shadow-xl max-w-md w-full mx-4 ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
-              }`}>
-              <div className="text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Agent Created Successfully!
-                </h3>
-                <p className={`text-sm mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  Your new agent has been created and is ready for configuration.
-                </p>
-                <button
-                  onClick={() => setShowSuccessModal(false)}
-                  className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  Continue
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Success Modal - removed */}
       </div>
     );
   }
@@ -1549,22 +1513,30 @@ Remember: You are the first point of contact for many patients. Your professiona
                           if (showVoiceChat) {
                             setEndVoiceCall(true);
                             setShowVoiceChat(false);
+                            setIsConnectingToAgent(false);
                             // Reset end call flag after a brief delay
                             setTimeout(() => setEndVoiceCall(false), 100);
                           } else {
+                            // Start voice chat immediately
                             setShowVoiceChat(true);
                             setStartVoiceCall(true);
                             // Reset start call flag after a brief delay
                             setTimeout(() => setStartVoiceCall(false), 100);
+
+                            // Show connecting for 3 seconds while call is active
+                            setIsConnectingToAgent(true);
+                            setTimeout(() => setIsConnectingToAgent(false), 3000);
                           }
                         }}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${showVoiceChat
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${showVoiceChat && !isConnectingToAgent
                           ? 'bg-red-600 text-white hover:bg-red-700'
-                          : 'bg-green-600 text-white hover:bg-green-700'
+                          : isConnectingToAgent
+                            ? 'bg-yellow-600 text-white cursor-wait'
+                            : 'bg-green-600 text-white hover:bg-green-700'
                           }`}
                       >
                         <Phone className="h-4 w-4" />
-                        {showVoiceChat ? 'End Call' : 'Talk to Agent'}
+                        {isConnectingToAgent ? 'Connecting...' : (showVoiceChat ? 'End Call' : 'Talk to Agent')}
                       </button>
                     )}
                     {/* Voice Chat Component - Hidden UI, only props */}
@@ -1579,10 +1551,10 @@ Remember: You are the first point of contact for many patients. Your professiona
                     {selectedAgent && (
                       <button
                         onClick={handleUpdateAgent}
-                        disabled={isUpdatingAgent}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isUpdatingAgent
-                          ? 'opacity-50 cursor-not-allowed'
-                          : 'bg-purple-600 text-white hover:bg-purple-700'
+                        disabled={isUpdatingAgent || !hasUnsavedChanges}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isUpdatingAgent || !hasUnsavedChanges
+                          ? 'bg-gray-400 text-white opacity-60 cursor-not-allowed'
+                          : `bg-purple-600 text-white hover:bg-purple-700 ${hasUnsavedChanges ? 'ring-2 ring-purple-400/50 shadow-lg shadow-purple-500/30' : ''}`
                           }`}
                       >
                         {isUpdatingAgent ? 'Publishing...' : 'Publish Agent'}
@@ -1779,68 +1751,7 @@ Remember: You are the first point of contact for many patients. Your professiona
         </div>
       </div>
 
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className={`relative p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 transform transition-all duration-300 scale-100 ${isDarkMode
-            ? 'bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50'
-            : 'bg-gradient-to-br from-white to-gray-50 border border-gray-200/50'
-            }`}>
-            {/* Close button */}
-            <button
-              onClick={() => setShowSuccessModal(false)}
-              className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${isDarkMode
-                ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
-                : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
-                }`}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-
-            <div className="text-center">
-              {/* Icon with animation */}
-              <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${successMessage.includes('Failed')
-                ? 'bg-red-100 animate-pulse'
-                : 'bg-green-100 animate-bounce'
-                }`}>
-                {successMessage.includes('Failed') ? (
-                  <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
-                ) : (
-                  <CheckCircle className="w-10 h-10 text-green-600" />
-                )}
-              </div>
-
-              {/* Title with gradient text */}
-              <h3 className={`text-xl font-bold mb-3 ${successMessage.includes('Failed')
-                ? 'text-red-600'
-                : 'bg-gradient-to-r from-green-600 to-green-500 bg-clip-text text-transparent'
-                }`}>
-                {successMessage.includes('Failed') ? 'Error' : 'Success!'}
-              </h3>
-
-              {/* Message */}
-              <p className={`text-sm leading-relaxed mb-8 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                {successMessage}
-              </p>
-
-              {/* Action button */}
-              <button
-                onClick={() => setShowSuccessModal(false)}
-                className={`w-full px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 ${successMessage.includes('Failed')
-                  ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-500/25'
-                  : 'bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-700 hover:to-green-600 shadow-lg shadow-green-500/25'
-                  }`}
-              >
-                {successMessage.includes('Failed') ? 'Try Again' : 'Got it!'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Success Modal - removed */}
 
       {/* Voice Chat Modal removed; Voice chat now toggled inline from header */}
 

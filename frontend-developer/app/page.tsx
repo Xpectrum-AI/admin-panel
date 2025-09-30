@@ -53,7 +53,7 @@ const navigationItems = [
   { name: 'Phone Numbers', icon: Phone, color: 'from-blue-500 to-cyan-600' },
   { name: 'SMS', icon: MessageSquare, color: 'from-green-500 to-teal-600' },
   { name: 'WhatsApp', icon: Globe, color: 'from-green-600 to-emerald-700' },
-  { name: 'Gmail', icon: Mail, color: 'from-red-500 to-pink-600' },
+  { name: 'Email', icon: Mail, color: 'from-red-500 to-pink-600' },
 ];
 
 export default function DeveloperDashboard() {
@@ -138,17 +138,17 @@ export default function DeveloperDashboard() {
         if (orgs.length > 0) {
           const currentOrg = orgs[0]; // Get the first organization
           console.log('🔍 Current organization:', currentOrg);
-          
+
           const organizationInfo: OrganizationInfo = {
             orgId: currentOrg.orgId,
             orgName: (currentOrg as any).orgName || (currentOrg as any).name
           };
-          
+
           setStatsLoading(true);
           try {
             // First run debug to see what's happening
             await DashboardService.debugDashboardStats(organizationInfo);
-            
+
             // Then get the actual stats
             const result = await DashboardService.getDashboardStats(organizationInfo);
             if (result.success && result.data) {
@@ -304,33 +304,33 @@ export default function DeveloperDashboard() {
                   Quick Actions
                 </h3>
                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                  <button 
+                  <button
                     onClick={() => handleNavItemClick('Agents')}
                     className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-green-500/20 to-emerald-600/20 border-green-500/30 hover:border-green-400/50' : 'bg-green-50 border-green-200 hover:border-green-300 hover:bg-green-100'}`}
                   >
                     <Bot className={`h-5 w-5 sm:h-6 sm:w-6 mb-2 ${isDarkMode ? 'text-green-400 group-hover:text-green-300' : 'text-green-600 group-hover:text-green-700'}`} />
                     <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-green-300' : 'text-green-700'}`}>Create Agent</p>
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleNavItemClick('Phone Numbers')}
                     className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-blue-500/20 to-indigo-600/20 border-blue-500/30 hover:border-blue-400/50' : 'bg-blue-50 border-blue-200 hover:border-blue-300 hover:bg-blue-100'}`}
                   >
                     <Phone className={`h-5 w-5 sm:h-6 sm:w-6 mb-2 ${isDarkMode ? 'text-blue-400 group-hover:text-blue-300' : 'text-blue-600 group-hover:text-blue-700'}`} />
                     <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>Add Phone</p>
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleNavItemClick('WhatsApp')}
                     className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-purple-500/20 to-pink-600/20 border-purple-500/30 hover:border-purple-400/50' : 'bg-purple-50 border-purple-200 hover:border-purple-300 hover:bg-purple-100'}`}
                   >
                     <Globe className={`h-5 w-5 sm:h-6 sm:w-6 mb-2 ${isDarkMode ? 'text-purple-400 group-hover:text-purple-300' : 'text-purple-600 group-hover:text-purple-700'}`} />
                     <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-purple-300' : 'text-purple-700'}`}>WhatsApp</p>
                   </button>
-                  <button 
-                    onClick={() => handleNavItemClick('Gmail')}
+                  <button
+                    onClick={() => handleNavItemClick('Email')}
                     className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 group ${isDarkMode ? 'bg-gradient-to-r from-orange-500/20 to-red-600/20 border-orange-500/30 hover:border-orange-400/50' : 'bg-orange-50 border-orange-200 hover:border-orange-300 hover:bg-orange-100'}`}
                   >
                     <Mail className={`h-5 w-5 sm:h-6 sm:w-6 mb-2 ${isDarkMode ? 'text-orange-400 group-hover:text-orange-300' : 'text-orange-600 group-hover:text-orange-700'}`} />
-                    <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-orange-300' : 'text-orange-700'}`}>Gmail</p>
+                    <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-orange-300' : 'text-orange-700'}`}>Email</p>
                   </button>
                 </div>
               </div>
@@ -380,7 +380,7 @@ export default function DeveloperDashboard() {
       case 'WhatsApp':
         return <WhatsAppTab />;
 
-      case 'Gmail':
+      case 'Email':
         return <GmailTab />;
 
       default:
@@ -451,20 +451,20 @@ export default function DeveloperDashboard() {
           onToggleSidebar={() => { }}
           navigationItems={navigationItems}
           onLogout={async () => {
-                            try {
-                              setLoggingOut(true);
-                              // Clear chat history before logout
-                              localStorage.removeItem('chatMessages');
-                              await logout(true);
-                              // Redirect to login page
-                              window.location.href = '/login';
-                            } catch (error) {
-                              console.error('Logout error:', error);
-                              setLoggingOut(false);
-                              // Force redirect even if logout fails
-                              window.location.href = '/login';
-                            }
-                          }}
+            try {
+              setLoggingOut(true);
+              // Clear chat history before logout
+              localStorage.removeItem('chatMessages');
+              await logout(true);
+              // Redirect to login page
+              window.location.href = '/login';
+            } catch (error) {
+              console.error('Logout error:', error);
+              setLoggingOut(false);
+              // Force redirect even if logout fails
+              window.location.href = '/login';
+            }
+          }}
         />
 
         {/* Main Content Area */}

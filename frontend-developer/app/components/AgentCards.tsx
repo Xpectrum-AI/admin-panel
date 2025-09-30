@@ -135,10 +135,10 @@ export default function AgentCards({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
   const [isDeletingAgent, setIsDeletingAgent] = useState(false);
-  
+
   // Success modal state
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  // const [showSuccessModal, setShowSuccessModal] = useState(false);
+  // const [successMessage, setSuccessMessage] = useState('');
 
   // Function to show the QR code modal
   const showQrCodeModal = (agent: Agent) => {
@@ -173,60 +173,59 @@ export default function AgentCards({
     try {
       console.log('Deleting agent:', agentToDelete.id, 'Name:', agentToDelete.name);
 
-      // First, try to delete the Dify agent if it has a chatbot_key
-      if (agentToDelete.chatbot_key) {
-        console.log('🗑️ Deleting Dify agent for:', agentToDelete.id);
-        console.log('🔍 Agent chatbot_key:', agentToDelete.chatbot_key);
-        console.log('🔍 Agent organization_id:', agentToDelete.organization_id);
-        
+      // Optimistic UI: close the modal immediately
+      setShowDeleteModal(false);
+      const deletedAgentName = agentToDelete.name;
+      const agentId = agentToDelete.id;
+      setAgentToDelete(null);
+
+      // Helper: fire-and-forget Dify deletion with timeout, do not block UX
+      const difyCleanup = (async () => {
+        if (!agentToDelete.chatbot_key) {
+          console.log('⚠️ No chatbot_key found, skipping Dify deletion');
+          return { success: true } as { success: boolean; error?: unknown };
+        }
+        console.log('🗑️ Deleting Dify agent for:', agentId);
         try {
           const { difyAgentService } = await import('../../service/difyAgentService');
-          const organizationId = agentToDelete.organization_id || agentToDelete.id.split('_')[0] || 'default';
-          console.log('🔍 Using organizationId for Dify deletion:', organizationId);
-          
-          const difyResult = await difyAgentService.deleteDifyAgent({
-            agentName: agentToDelete.id, // Use UUID for Dify deletion
-            organizationId: organizationId,
-            // Note: We don't have the appId stored, but the script can still attempt cleanup
+          const organizationId = agentToDelete.organization_id || agentId.split('_')[0] || 'default';
+
+          // 5s timeout wrapper to avoid long hangs
+          const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T> => new Promise<T>((resolve, reject) => {
+            const t = setTimeout(() => reject(new Error('Dify cleanup timeout')), ms);
+            p
+              .then((v) => { clearTimeout(t); resolve(v); })
+              .catch((e) => { clearTimeout(t); reject(e); });
           });
 
-          console.log('🔍 Dify deletion result:', difyResult);
-          
-          if (difyResult.success) {
-            console.log('✅ Dify agent deleted successfully');
-          } else {
-            console.warn('⚠️ Dify agent deletion failed, continuing with backend deletion:', difyResult.error);
-          }
-        } catch (difyError) {
-          console.warn('⚠️ Dify agent deletion error, continuing with backend deletion:', difyError);
+          const res = await withTimeout(
+            difyAgentService.deleteDifyAgent({ agentName: agentId, organizationId }),
+            5000
+          );
+          console.log('🔍 Dify deletion result:', res);
+          return res as { success: boolean; error?: unknown };
+        } catch (e) {
+          console.warn('⚠️ Dify agent deletion error (non-blocking):', e);
+          return { success: false, error: e } as { success: boolean; error?: unknown };
         }
-      } else {
-        console.log('⚠️ No chatbot_key found, skipping Dify deletion');
-      }
+      })();
 
-      // Delete the agent from the backend
-      const result = await agentConfigService.deleteAgentByName(agentToDelete.id);
+      // Backend deletion (authoritative) — run in parallel
+      const backendDeletion = agentConfigService.deleteAgentByName(agentId);
 
-      if (result.success) {
-        console.log(`Agent "${agentToDelete.name}" deleted successfully`);
-        setSuccessMessage(`Agent "${agentToDelete.name}" deleted successfully`);
-        setShowSuccessModal(true);
+      const [backendResult] = await Promise.allSettled([backendDeletion, difyCleanup]);
 
-        // Call the parent component's refresh function to update the agents list
+      if (backendResult.status === 'fulfilled' && backendResult.value?.success) {
+        console.log(`Agent "${deletedAgentName}" deleted successfully`);
         onRefreshAgents();
       } else {
-        console.error('Failed to delete agent:', result.message);
-        setSuccessMessage(`Failed to delete agent: ${result.message}`);
-        setShowSuccessModal(true);
+        const message = backendResult.status === 'fulfilled'
+          ? backendResult.value?.message || 'Unknown error'
+          : (backendResult.reason as Error)?.message || 'Unknown error';
+        console.error('Failed to delete agent:', message);
       }
-
-      // Close the modal
-      setShowDeleteModal(false);
-      setAgentToDelete(null);
     } catch (error) {
       console.error('Error deleting agent:', error);
-      setSuccessMessage('Failed to delete agent. Please try again.');
-      setShowSuccessModal(true);
     } finally {
       setIsDeletingAgent(false);
     }
@@ -494,28 +493,62 @@ export default function AgentCards({
 
         {/* Delete Confirmation Modal */}
         {showDeleteModal && agentToDelete && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className={`p-6 rounded-xl shadow-xl max-w-md w-full mx-4 ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+            <div className={`relative p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all duration-300 scale-100 ${isDarkMode
+              ? 'bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50'
+              : 'bg-gradient-to-br from-white to-gray-50 border border-gray-200/50'
               }`}>
+              {/* Close button */}
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setAgentToDelete(null);
+                }}
+                className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${isDarkMode
+                  ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
+                  : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
+                  }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
               <div className="text-center">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Trash2 className="w-8 h-8 text-red-600" />
+                {/* Warning icon with animation */}
+                <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+                  <Trash2 className="w-10 h-10 text-red-600 dark:text-red-400" />
                 </div>
-                <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+
+                {/* Title with gradient text */}
+                <h3 className="text-2xl font-bold mb-3 bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">
                   Delete Agent
                 </h3>
-                <p className={`text-sm mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  Are you sure you want to delete <strong>"{agentToDelete.name}"</strong>? This action cannot be undone.
-                </p>
+
+                {/* Warning message */}
+                <div className={`p-4 rounded-xl mb-6 ${isDarkMode
+                  ? 'bg-red-900/20 border border-red-800/50'
+                  : 'bg-red-50 border border-red-200'
+                  }`}>
+                  <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-red-200' : 'text-red-800'}`}>
+                    Are you sure you want to delete <strong className="font-semibold">"{agentToDelete.name}"</strong>?
+                  </p>
+                  <p className={`text-xs mt-2 ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>
+                    This action cannot be undone and will permanently remove the agent and all its data.
+                  </p>
+                </div>
+
+                {/* Action buttons */}
                 <div className="flex gap-3">
                   <button
                     onClick={() => {
                       setShowDeleteModal(false);
                       setAgentToDelete(null);
                     }}
-                    className={`flex-1 px-4 py-2 rounded-lg transition-colors ${isDarkMode
-                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    disabled={isDeletingAgent}
+                    className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 ${isDarkMode
+                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50'
                       }`}
                   >
                     Cancel
@@ -523,9 +556,9 @@ export default function AgentCards({
                   <button
                     onClick={handleDeleteAgent}
                     disabled={isDeletingAgent}
-                    className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 ${isDeletingAgent
+                    className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 ${isDeletingAgent
                       ? 'bg-red-400 text-white cursor-not-allowed'
-                      : 'bg-red-600 text-white hover:bg-red-700'
+                      : 'bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-700 hover:to-red-600 shadow-lg shadow-red-500/25'
                       }`}
                   >
                     {isDeletingAgent ? (
@@ -534,7 +567,10 @@ export default function AgentCards({
                         Deleting...
                       </>
                     ) : (
-                      'Delete Agent'
+                      <>
+                        <Trash2 className="w-4 h-4" />
+                        Delete Agent
+                      </>
                     )}
                   </button>
                 </div>
@@ -572,71 +608,7 @@ export default function AgentCards({
           </div>
         )}
 
-        {/* Success Modal */}
-        {showSuccessModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className={`relative p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 transform transition-all duration-300 scale-100 ${isDarkMode 
-              ? 'bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50' 
-              : 'bg-gradient-to-br from-white to-gray-50 border border-gray-200/50'
-            }`}>
-              {/* Close button */}
-              <button
-                onClick={() => setShowSuccessModal(false)}
-                className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${isDarkMode
-                  ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
-                  : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-
-              <div className="text-center">
-                {/* Icon with animation */}
-                <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${
-                  successMessage.includes('Failed') 
-                    ? 'bg-red-100 animate-pulse' 
-                    : 'bg-green-100 animate-bounce'
-                }`}>
-                  {successMessage.includes('Failed') ? (
-                    <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
-                  ) : (
-                    <CheckCircle className="w-10 h-10 text-green-600" />
-                  )}
-                </div>
-
-                {/* Title with gradient text */}
-                <h3 className={`text-xl font-bold mb-3 ${
-                  successMessage.includes('Failed') 
-                    ? 'text-red-600' 
-                    : 'bg-gradient-to-r from-green-600 to-green-500 bg-clip-text text-transparent'
-                }`}>
-                  {successMessage.includes('Failed') ? 'Error' : 'Success!'}
-                </h3>
-
-                {/* Message */}
-                <p className={`text-sm leading-relaxed mb-8 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  {successMessage}
-                </p>
-
-                {/* Action button */}
-                <button
-                  onClick={() => setShowSuccessModal(false)}
-                  className={`w-full px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 ${
-                    successMessage.includes('Failed')
-                      ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-500/25'
-                      : 'bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-700 hover:to-green-600 shadow-lg shadow-green-500/25'
-                  }`}
-                >
-                  {successMessage.includes('Failed') ? 'Try Again' : 'Got it!'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Success modal removed */}
       </div>
     </div>
   );
