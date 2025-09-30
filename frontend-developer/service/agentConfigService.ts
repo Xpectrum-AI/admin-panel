@@ -99,7 +99,7 @@ export const agentConfigService = {
           provider: 'openai',
           openai: {
             api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
-            model: 'tts-1',
+            model: 'tts-1', // Default OpenAI model
             response_format: 'mp3',
             voice: 'alloy',
             language: 'en',
@@ -224,7 +224,7 @@ Remember: You are the first point of contact for many patients. Your professiona
           provider: 'openai',
           openai: {
             api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
-            model: 'tts-1',
+            model: 'tts-1', // Default OpenAI model
             response_format: 'mp3',
             voice: 'alloy',
             language: 'en',
