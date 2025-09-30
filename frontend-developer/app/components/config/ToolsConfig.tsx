@@ -127,9 +127,9 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
   // SINGLE CONSOLIDATED EFFECT: Load configuration from the highest priority source
   useEffect(() => {
     // Check if any field is being actively edited - if so, don't update anything
-    const isAnyFieldBeingEdited = isEditingInitialMessage || isEditingNudgeText || 
-                                  isEditingNudgeInterval || isEditingMaxNudges;
-    
+    const isAnyFieldBeingEdited = isEditingInitialMessage || isEditingNudgeText ||
+      isEditingNudgeInterval || isEditingMaxNudges;
+
     if (isAnyFieldBeingEdited) {
       console.log('🔄 Fields being edited, skipping configuration load');
       return;
@@ -177,7 +177,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
 
     if (configToLoad) {
       console.log(`🔄 Loading configuration from ${source}:`, configToLoad);
-      
+
       // Update all fields at once to prevent flickering
       setInitialMessage(configToLoad.initialMessage || 'Hello! How can I help you today?');
       setNudgeText(configToLoad.nudgeText || 'Hello, Are you still there?');
@@ -197,29 +197,29 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
-    
+
     // Debounce the save operation
     saveTimeoutRef.current = setTimeout(() => {
-    try {
-      const currentState = {
-      initialMessage,
-      nudgeText,
-      nudgeInterval,
-      maxNudges,
-      typingVolume,
-        maxCallDuration,
-        ...updates
-      };
-      
-      console.log('📤 ToolsConfig: Saving state to centralized config:', currentState);
-      
-      // Call parent's onConfigChange
-      if (onConfigChange) {
-        onConfigChange(currentState);
+      try {
+        const currentState = {
+          initialMessage,
+          nudgeText,
+          nudgeInterval,
+          maxNudges,
+          typingVolume,
+          maxCallDuration,
+          ...updates
+        };
+
+        console.log('📤 ToolsConfig: Saving state to centralized config:', currentState);
+
+        // Call parent's onConfigChange
+        if (onConfigChange) {
+          onConfigChange(currentState);
+        }
+      } catch (error) {
+        console.warn('Failed to save tools config state to centralized state:', error);
       }
-    } catch (error) {
-      console.warn('Failed to save tools config state to centralized state:', error);
-    }
     }, 100); // 100ms debounce
   }, [initialMessage, nudgeText, nudgeInterval, maxNudges, typingVolume, maxCallDuration, onConfigChange]);
 
@@ -336,7 +336,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
     try {
       // Note: Removed localStorage usage - now uses centralized state only
       console.log('📂 ToolsConfig: Using centralized state only');
-      
+
       // Load voice and model configs using the same comprehensive approach
       refreshConfigurations();
     } catch (error) {
