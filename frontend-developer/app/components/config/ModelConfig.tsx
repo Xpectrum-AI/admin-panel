@@ -274,11 +274,11 @@ Remember: You are the first point of contact for many patients. Your professiona
           modelApiKey,
           modelLiveUrl,
           agentUrl,
-          agentApiKey,
+          agentApiKey: localAgentApiKey,
           systemPrompt,
           // Include the field names that AgentsTab expects
           chatbot_api: agentUrl,
-          chatbot_key: agentApiKey
+          chatbot_key: localAgentApiKey
         });
       }
     }, 1000); // Increased to 1 second to reduce conflicts with debouncedModelSave
@@ -340,19 +340,19 @@ Remember: You are the first point of contact for many patients. Your professiona
         modelLiveUrl,
         modelApiKey,
         agentUrl,
-        agentApiKey,
+        agentApiKey: localAgentApiKey,
         systemPrompt,
         // Include the field names that AgentsTab expects
         chatbot_api: agentUrl,
-        chatbot_key: agentApiKey,
+        chatbot_key: localAgentApiKey,
         ...updates
       };
 
       console.log('📤 ModelConfig: Saving state to centralized config:', currentState);
       console.log('🔍 agentUrl being saved:', agentUrl);
-      console.log('🔍 agentApiKey being saved:', agentApiKey);
+      console.log('🔍 agentApiKey being saved:', localAgentApiKey);
       console.log('🔍 chatbot_api being saved:', agentUrl);
-      console.log('🔍 chatbot_key being saved:', agentApiKey);
+      console.log('🔍 chatbot_key being saved:', localAgentApiKey);
 
       if (onConfigChange) {
         onConfigChange(currentState);
@@ -360,7 +360,7 @@ Remember: You are the first point of contact for many patients. Your professiona
     } catch (error) {
       console.error('❌ Error saving state to centralized config:', error);
     }
-  }, [selectedModelProvider, selectedModel, modelLiveUrl, modelApiKey, agentUrl, agentApiKey, systemPrompt, onConfigChange]);
+  }, [selectedModelProvider, selectedModel, modelLiveUrl, modelApiKey, agentUrl, localAgentApiKey, systemPrompt, onConfigChange]);
 
   // Debounced prompt save function
   const debouncedPromptSave = useCallback((promptValue: string) => {
@@ -455,7 +455,7 @@ Remember: You are the first point of contact for many patients. Your professiona
           selectedModel,
           modelApiKey,
           modelLiveUrl,
-          agentApiKey
+          agentApiKey: localAgentApiKey
         };
 
         console.log('🔄 Starting model save with provider:', stateToUse.selectedModelProvider);
@@ -530,7 +530,7 @@ Remember: You are the first point of contact for many patients. Your professiona
         setSaveInProgress(false);
       }
     }, 2000); // 2 second delay
-  }, [selectedModelProvider, selectedModel, modelApiKey, modelLiveUrl, agentUrl, agentApiKey, existingConfig, saveToStorage, saveInProgress]);
+  }, [selectedModelProvider, selectedModel, modelApiKey, modelLiveUrl, agentUrl, localAgentApiKey, existingConfig, saveToStorage, saveInProgress]);
 
   // fetchCurrentPrompt function removed - no longer needed with auto-save functionality
 
@@ -550,7 +550,18 @@ Remember: You are the first point of contact for many patients. Your professiona
       apiProvider: 'langgenius/openai/openai'
     },
     'Anthropic': {
-      models: ['Claude 3.5 Sonnet', 'Claude 3.5 Haiku', 'Claude 3 Opus', 'Claude 3 Sonnet', 'Claude 3 Haiku'],
+      models: [
+        'claude-opus-4-20250514',
+        'claude-sonnet-4-20250514',
+        'claude-3-5-haiku-20241022',
+        'claude-3-5-sonnet-20241022',
+        'claude-3-5-sonnet-20240620',
+        'claude-3-7-sonnet-20250219',
+        'claude-3-haiku-20240307',
+        'claude-3-opus-20240229',
+        'claude-3-sonnet-20240229',
+        'claude-opus-4-1-20250805'
+      ],
       apiProvider: 'langgenius/anthropic/anthropic'
     },
     'DeepSeek': {
@@ -671,7 +682,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       selectedModel: defaultModel,
       modelApiKey: newApiKey,
       modelLiveUrl,
-      agentApiKey
+      agentApiKey: localAgentApiKey
     };
 
     // Save to centralized state
@@ -839,7 +850,7 @@ Remember: You are the first point of contact for many patients. Your professiona
                   selectedModel: newModel,
                   modelApiKey,
                   modelLiveUrl,
-                  agentApiKey
+                  agentApiKey: localAgentApiKey
                 };
 
                 debouncedModelSave(currentState); // Pass current state to avoid stale closure
@@ -956,14 +967,16 @@ Remember: You are the first point of contact for many patients. Your professiona
             {!localAgentApiKey && (
               <div className={`mt-2 p-3 rounded-lg border ${isDarkMode ? 'bg-red-900/20 border-red-700 text-red-300' : 'bg-red-50 border-red-200 text-red-800'
                 }`}>
-                <p className="text-sm">
-                  ⚠️ <strong>API Key Missing:</strong> No API key found for this agent. This might be due to:
+                <div className="text-sm">
+                  <p className="mb-2">
+                    ⚠️ <strong>API Key Missing:</strong> No API key found for this agent. This might be due to:
+                  </p>
                   <ul className="mt-2 ml-4 list-disc">
                     <li>Session timeout - try refreshing the page</li>
                     <li>Agent not properly configured - check agent settings</li>
                     <li>Backend issue - contact support</li>
                   </ul>
-                </p>
+                </div>
               </div>
             )}
           </div>
