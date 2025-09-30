@@ -46,7 +46,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
     const [showEditCampaignModal, setShowEditCampaignModal] = useState(false);
     const [editingCampaign, setEditingCampaign] = useState<GmailCampaign | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    
+
     // Campaign form state
     const [campaignForm, setCampaignForm] = useState({
         name: '',
@@ -56,11 +56,11 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
         scheduled_time: '',
         agent_id: ''
     });
-    
+
     const [saving, setSaving] = useState(false);
     const [campaignError, setCampaignError] = useState<string | null>(null);
     const [campaignSuccess, setCampaignSuccess] = useState<string | null>(null);
-    
+
     // Agents state
     const [agents, setAgents] = useState<Agent[]>([]);
     const [loadingAgents, setLoadingAgents] = useState(false);
@@ -127,20 +127,20 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
         setLoadingAgents(true);
         try {
             const orgId = getOrganizationId();
-            
+
             if (!orgId) {
                 setAgents([]);
                 return;
             }
-            
+
             console.log('🚀 Loading agents for org:', orgId);
             const response = await getAgentsByOrganization(orgId);
             console.log('🚀 Agents API response:', response);
-            
+
             if (response.success && response.data) {
                 // Ensure the data is an array
                 let agentsData = response.data;
-                
+
                 // Handle different response formats
                 if (!Array.isArray(agentsData)) {
                     if (agentsData.agents && Array.isArray(agentsData.agents)) {
@@ -152,7 +152,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                         agentsData = [];
                     }
                 }
-                
+
                 console.log('✅ Agents loaded:', agentsData);
                 setAgents(agentsData);
             } else {
@@ -205,7 +205,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
 
     const handleCreateCampaign = async () => {
         setCampaignError(null);
-        
+
         if (!campaignForm.name || !campaignForm.subject || !campaignForm.content || !campaignForm.agent_id) {
             setCampaignError('Please fill in all required fields.');
             return;
@@ -218,7 +218,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
         try {
             // TODO: Implement Gmail campaign creation API call
             setCampaignSuccess('Gmail campaign created successfully!');
-            
+
             // Reset form
             setCampaignForm({
                 name: '',
@@ -228,7 +228,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                 scheduled_time: '',
                 agent_id: ''
             });
-            
+
             setShowCreateCampaignModal(false);
             await loadCampaigns();
         } catch (err: unknown) {
@@ -241,14 +241,14 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
 
     const handleUpdateCampaign = async () => {
         if (!editingCampaign) return;
-        
+
         setSaving(true);
         setCampaignError(null);
-        
+
         try {
             // TODO: Implement Gmail campaign update API call
             setCampaignSuccess('Gmail campaign updated successfully!');
-            
+
             setShowEditCampaignModal(false);
             setEditingCampaign(null);
             await loadCampaigns();
@@ -288,27 +288,26 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                     <div className="flex items-center justify-between mb-3">
                         <div>
                             <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                Gmail Campaigns
+                                Email Campaigns
                             </h3>
                             <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                                 {searchTerm ? `${filteredCampaigns.length} of ${campaigns.length} campaigns` : `${campaigns.length} campaigns`}
                             </p>
                         </div>
-                        
+
                         {/* Create Campaign Button */}
                         <button
                             onClick={() => setShowCreateCampaignModal(true)}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all duration-300 ${
-                                isDarkMode
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all duration-300 ${isDarkMode
                                     ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl'
                                     : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-lg hover:shadow-xl'
-                            }`}
+                                }`}
                         >
                             <Plus className="h-4 w-4" />
                             <span className="text-sm font-semibold">Create Campaign</span>
                         </button>
                     </div>
-                    
+
                     <div className="relative group">
                         <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 transition-colors ${isDarkMode ? 'text-gray-500 group-focus-within:text-blue-400' : 'text-gray-400 group-focus-within:text-blue-500'}`} />
                         <input
@@ -321,7 +320,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                         />
                     </div>
                 </div>
-                
+
                 <div className="flex-1 overflow-y-auto p-4">
                     {loadingCampaigns ? (
                         <div className="flex items-center justify-center py-8">
@@ -343,29 +342,27 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                                 <div
                                     key={campaign.id}
                                     onClick={() => handleSelectCampaign(campaign)}
-                                    className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                                        selectedCampaign?.id === campaign.id
+                                    className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${selectedCampaign?.id === campaign.id
                                             ? isDarkMode
                                                 ? 'bg-blue-600/20 border border-blue-500/50'
                                                 : 'bg-blue-50 border border-blue-200'
                                             : isDarkMode
                                                 ? 'bg-gray-700/50 hover:bg-gray-700'
                                                 : 'bg-gray-50 hover:bg-gray-100'
-                                    }`}
+                                        }`}
                                 >
                                     <div className="flex items-center justify-between mb-2">
                                         <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                                             {campaign.name}
                                         </span>
-                                        <span className={`px-2 py-1 rounded-full text-xs ${
-                                            campaign.status === 'sent' 
+                                        <span className={`px-2 py-1 rounded-full text-xs ${campaign.status === 'sent'
                                                 ? 'bg-green-100 text-green-800'
                                                 : campaign.status === 'scheduled'
-                                                ? 'bg-blue-100 text-blue-800'
-                                                : campaign.status === 'draft'
-                                                ? 'bg-yellow-100 text-yellow-800'
-                                                : 'bg-red-100 text-red-800'
-                                        }`}>
+                                                    ? 'bg-blue-100 text-blue-800'
+                                                    : campaign.status === 'draft'
+                                                        ? 'bg-yellow-100 text-yellow-800'
+                                                        : 'bg-red-100 text-red-800'
+                                            }`}>
                                             {campaign.status}
                                         </span>
                                     </div>
@@ -396,11 +393,11 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                                     {selectedCampaign.name}
                                 </h2>
                                 <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                    Gmail Campaign Details
+                                    Email Campaign Details
                                 </p>
                             </div>
                         </div>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
                                 <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -410,7 +407,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                                     {selectedCampaign.subject}
                                 </p>
                             </div>
-                            
+
                             <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
                                 <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                                     Agent
@@ -419,7 +416,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                                     {selectedCampaign.agent_name}
                                 </p>
                             </div>
-                            
+
                             <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
                                 <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                                     Scheduled Time
@@ -428,24 +425,23 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                                     {new Date(selectedCampaign.scheduled_time).toLocaleString()}
                                 </p>
                             </div>
-                            
+
                             <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
                                 <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                                     Status
                                 </label>
-                                <span className={`px-2 py-1 rounded-full text-xs ${
-                                    selectedCampaign.status === 'sent' 
+                                <span className={`px-2 py-1 rounded-full text-xs ${selectedCampaign.status === 'sent'
                                         ? 'bg-green-100 text-green-800'
                                         : selectedCampaign.status === 'scheduled'
-                                        ? 'bg-blue-100 text-blue-800'
-                                        : selectedCampaign.status === 'draft'
-                                        ? 'bg-yellow-100 text-yellow-800'
-                                        : 'bg-red-100 text-red-800'
-                                }`}>
+                                            ? 'bg-blue-100 text-blue-800'
+                                            : selectedCampaign.status === 'draft'
+                                                ? 'bg-yellow-100 text-yellow-800'
+                                                : 'bg-red-100 text-red-800'
+                                    }`}>
                                     {selectedCampaign.status}
                                 </span>
                             </div>
-                            
+
                             <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
                                 <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                                     Recipients
@@ -455,7 +451,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                                 </p>
                             </div>
                         </div>
-                        
+
                         <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
                             <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                                 Content
@@ -464,7 +460,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                                 {selectedCampaign.content}
                             </p>
                         </div>
-                        
+
                         <div className="flex gap-2">
                             <button
                                 onClick={() => handleEditCampaign(selectedCampaign)}
@@ -485,7 +481,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                         <div className="text-center">
                             <Mail className={`h-16 w-16 mx-auto mb-4 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`} />
                             <h3 className={`text-xl font-medium mb-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                Select a Gmail Campaign
+                                Select an Email Campaign
                             </h3>
                             <p className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
                                 Choose a campaign from the sidebar to view its details
@@ -500,9 +496,9 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4" onClick={() => setShowCreateCampaignModal(false)}>
                     <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 max-w-4xl w-full shadow-2xl max-h-[90vh] overflow-y-auto ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-md' : 'bg-white/95 backdrop-blur-md'}`} onClick={(e) => e.stopPropagation()}>
                         <h3 className={`text-lg sm:text-xl lg:text-2xl font-bold mb-4 sm:mb-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-                            Create Gmail Campaign
+                            Create Email Campaign
                         </h3>
-                        
+
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
@@ -513,7 +509,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                                     <input
                                         type="text"
                                         value={campaignForm.name}
-                                        onChange={(e) => setCampaignForm({...campaignForm, name: e.target.value})}
+                                        onChange={(e) => setCampaignForm({ ...campaignForm, name: e.target.value })}
                                         className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
                                     />
                                 </div>
@@ -525,7 +521,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                                     </label>
                                     <select
                                         value={campaignForm.agent_id}
-                                        onChange={(e) => setCampaignForm({...campaignForm, agent_id: e.target.value})}
+                                        onChange={(e) => setCampaignForm({ ...campaignForm, agent_id: e.target.value })}
                                         className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
                                     >
                                         <option value="">Select an agent</option>
@@ -546,7 +542,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                                 <input
                                     type="text"
                                     value={campaignForm.subject}
-                                    onChange={(e) => setCampaignForm({...campaignForm, subject: e.target.value})}
+                                    onChange={(e) => setCampaignForm({ ...campaignForm, subject: e.target.value })}
                                     className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
                                 />
                             </div>
@@ -559,7 +555,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                                 <input
                                     type="text"
                                     value={campaignForm.recipient_emails}
-                                    onChange={(e) => setCampaignForm({...campaignForm, recipient_emails: e.target.value})}
+                                    onChange={(e) => setCampaignForm({ ...campaignForm, recipient_emails: e.target.value })}
                                     placeholder="email1@example.com, email2@example.com"
                                     className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-400'}`}
                                 />
@@ -573,7 +569,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                                 <input
                                     type="datetime-local"
                                     value={campaignForm.scheduled_time}
-                                    onChange={(e) => setCampaignForm({...campaignForm, scheduled_time: e.target.value})}
+                                    onChange={(e) => setCampaignForm({ ...campaignForm, scheduled_time: e.target.value })}
                                     className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
                                 />
                             </div>
@@ -585,7 +581,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                                 </label>
                                 <textarea
                                     value={campaignForm.content}
-                                    onChange={(e) => setCampaignForm({...campaignForm, content: e.target.value})}
+                                    onChange={(e) => setCampaignForm({ ...campaignForm, content: e.target.value })}
                                     rows={6}
                                     className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
                                 />
@@ -633,9 +629,9 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4" onClick={() => setShowEditCampaignModal(false)}>
                     <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 max-w-4xl w-full shadow-2xl max-h-[90vh] overflow-y-auto ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-md' : 'bg-white/95 backdrop-blur-md'}`} onClick={(e) => e.stopPropagation()}>
                         <h3 className={`text-lg sm:text-xl lg:text-2xl font-bold mb-4 sm:mb-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-                            Edit Gmail Campaign
+                            Edit Email Campaign
                         </h3>
-                        
+
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
@@ -646,7 +642,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                                     <input
                                         type="text"
                                         value={campaignForm.name}
-                                        onChange={(e) => setCampaignForm({...campaignForm, name: e.target.value})}
+                                        onChange={(e) => setCampaignForm({ ...campaignForm, name: e.target.value })}
                                         className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
                                     />
                                 </div>
@@ -658,7 +654,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                                     </label>
                                     <select
                                         value={campaignForm.agent_id}
-                                        onChange={(e) => setCampaignForm({...campaignForm, agent_id: e.target.value})}
+                                        onChange={(e) => setCampaignForm({ ...campaignForm, agent_id: e.target.value })}
                                         className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
                                     >
                                         <option value="">Select an agent</option>
@@ -679,7 +675,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                                 <input
                                     type="text"
                                     value={campaignForm.subject}
-                                    onChange={(e) => setCampaignForm({...campaignForm, subject: e.target.value})}
+                                    onChange={(e) => setCampaignForm({ ...campaignForm, subject: e.target.value })}
                                     className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
                                 />
                             </div>
@@ -692,7 +688,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                                 <input
                                     type="text"
                                     value={campaignForm.recipient_emails}
-                                    onChange={(e) => setCampaignForm({...campaignForm, recipient_emails: e.target.value})}
+                                    onChange={(e) => setCampaignForm({ ...campaignForm, recipient_emails: e.target.value })}
                                     placeholder="email1@example.com, email2@example.com"
                                     className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-400'}`}
                                 />
@@ -706,7 +702,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                                 <input
                                     type="datetime-local"
                                     value={campaignForm.scheduled_time}
-                                    onChange={(e) => setCampaignForm({...campaignForm, scheduled_time: e.target.value})}
+                                    onChange={(e) => setCampaignForm({ ...campaignForm, scheduled_time: e.target.value })}
                                     className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
                                 />
                             </div>
@@ -718,7 +714,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                                 </label>
                                 <textarea
                                     value={campaignForm.content}
-                                    onChange={(e) => setCampaignForm({...campaignForm, content: e.target.value})}
+                                    onChange={(e) => setCampaignForm({ ...campaignForm, content: e.target.value })}
                                     rows={6}
                                     className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
                                 />

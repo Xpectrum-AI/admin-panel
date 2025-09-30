@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
         requestBody = {
           text: message,
           voice_id: voiceId,
-          model: 'cartesia-tts-1',
+          model: 'cartesia-tts-1', // Default Cartesia model
           output_format: 'mp3',
           speed: 1.0
         };

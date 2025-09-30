@@ -339,6 +339,13 @@ export const AgentConfigProvider: React.FC<AgentConfigProviderProps> = ({ childr
     const languageCode = providerConfig.language || 'en';
     const displayLanguage = languageMapping[languageCode] || 'English';
 
+    const selectedModel = providerConfig.model || providerConfig.model_id || 'tts-1';
+    console.log('🔄 Converting voice config - Provider:', uiProvider, 'Model fields:', {
+      model: providerConfig.model,
+      model_id: providerConfig.model_id,
+      selectedModel
+    });
+
     return {
       selectedVoiceProvider: uiProvider,
       selectedLanguage: displayLanguage,
@@ -349,7 +356,7 @@ export const AgentConfigProvider: React.FC<AgentConfigProviderProps> = ({ childr
       stability: providerConfig.stability || 0.5,
       similarityBoost: providerConfig.similarity_boost || 0.5,
       responseFormat: providerConfig.response_format || 'mp3',
-      selectedModel: providerConfig.model || 'tts-1'
+      selectedModel: selectedModel // Support both model and model_id fields
     };
   }, []);
 
