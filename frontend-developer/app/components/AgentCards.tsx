@@ -313,34 +313,51 @@ export default function AgentCards({
             {/* Create New Agent Card */}
             <div
               onClick={onCreateAgent}
-              className={`rounded-2xl shadow-md hover:shadow-xl border overflow-hidden transition-all duration-300 transform hover:-translate-y-1 cursor-pointer ${isDarkMode
-                ? 'bg-gray-800 border-gray-700 hover:border-gray-600'
-                : 'bg-white border-gray-200 hover:border-gray-300'
+              className={`group rounded-2xl shadow-lg hover:shadow-2xl border overflow-hidden transition-all duration-300 transform hover:-translate-y-2 cursor-pointer ${isDarkMode
+                ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700 hover:border-blue-500/50'
+                : 'bg-gradient-to-br from-white to-gray-50 border-gray-200 hover:border-blue-300'
                 }`}
             >
-              {/* Header with plus icon */}
-              <div className={`p-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+              {/* Header with professional icon */}
+              <div className={`p-8 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-medium shadow-md bg-gradient-to-r from-green-500 to-emerald-600">
-                    <Plus className="h-8 w-8" />
+                  <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-lg bg-gradient-to-br from-blue-600 to-blue-700 group-hover:from-blue-700 group-hover:to-blue-800 transition-all duration-300">
+                    <Plus className="h-10 w-10" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className={`text-xl font-semibold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    <h3 className={`text-2xl font-bold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                       Create New Agent
                     </h3>
-                    <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      Start building your AI assistant
+                    <p className={`text-base mt-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      Deploy intelligent AI assistants
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Content */}
-              <div className={`p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
-                  <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                    Click here to create a new AI agent with custom configurations, voice settings, and chatbot capabilities.
-                  </p>
+              <div className={`p-8 ${isDarkMode ? 'bg-gray-800/50' : 'bg-white/50'}`}>
+                <div className={`p-6 rounded-xl ${isDarkMode ? 'bg-gray-700/30 border border-gray-600/50' : 'bg-gray-50 border border-gray-200'}`}>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-2 h-2 rounded-full ${isDarkMode ? 'bg-blue-400' : 'bg-blue-600'}`}></div>
+                      <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                        Choose from Knowledge or Action agents
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-2 h-2 rounded-full ${isDarkMode ? 'bg-green-400' : 'bg-green-600'}`}></div>
+                      <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                        Configure advanced AI capabilities
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-2 h-2 rounded-full ${isDarkMode ? 'bg-purple-400' : 'bg-purple-600'}`}></div>
+                      <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                        Deploy with enterprise-grade security
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 

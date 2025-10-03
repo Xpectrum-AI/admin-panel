@@ -3,8 +3,15 @@ set -euo pipefail
 
 # Get parameters
 AGENT_NAME="$1"
-MODEL_PROVIDER="${2:-langgenius/openai/openai}"
-MODEL_NAME="${3:-gpt-4o}"
+AGENT_TYPE="$2"  # "Knowledge Agent (RAG)" or "Action Agent (AI Employee)"
+MODEL_PROVIDER="${3:-langgenius/openai/openai}"
+MODEL_NAME="${4:-gpt-4o}"
+
+# Validate agent type
+if [[ "$AGENT_TYPE" != "Knowledge Agent (RAG)" && "$AGENT_TYPE" != "Action Agent (AI Employee)" ]]; then
+    echo "Error: Invalid agent type. Must be 'Knowledge Agent (RAG)' or 'Action Agent (AI Employee)'"
+    exit 1
+fi
 
 CONSOLE_ORIGIN="${NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN}"
 ADMIN_EMAIL="${NEXT_PUBLIC_DIFY_ADMIN_EMAIL}"
@@ -43,22 +50,56 @@ AUTH=(-H "Authorization: Bearer $TOKEN")
 WS_HDR=(-H "X-Workspace-Id: $WS_ID")
 say "logged in, workspace=$WS_ID"
 
-DSL_A="$(cat <<YAML
+# Create DSL based on agent type
+if [[ "$AGENT_TYPE" == "Knowledge Agent (RAG)" ]]; then
+    DSL_A="$(cat <<YAML
 version: "0.3.0"
 kind: "app"
 app:
   mode: "chat"
   name: "$APP_NAME"
-  description: "Created via CLI on Dify 1.4"
+  description: "Knowledge Agent (RAG) created via CLI on Dify 1.4"
 model_config:
   model:
     provider: "$MODEL_PROVIDER_FQN"
     name: "$MODEL_NAME"
-  pre_prompt: "You are a helpful assistant."
+  pre_prompt: "You are a knowledgeable assistant that can help users find information and answer questions based on available knowledge. You excel at retrieving and synthesizing information from various sources to provide accurate and helpful responses."
   parameters:
     temperature: 0.3
+  prompt_type: "simple"
+  more_like_this:
+    enabled: true
+  suggested_questions_after_answer:
+    enabled: true
 YAML
 )"
+else
+    # Action Agent (AI Employee)
+    DSL_A="$(cat <<YAML
+version: "0.3.0"
+kind: "app"
+app:
+  mode: "agent-chat"
+  name: "$APP_NAME"
+  description: "Action Agent (AI Employee) created via CLI on Dify 1.4"
+model_config:
+  model:
+    provider: "$MODEL_PROVIDER_FQN"
+    name: "$MODEL_NAME"
+  pre_prompt: "You are an intelligent AI agent. You can help users with various tasks, analyze information, and use tools when needed. Always think step by step and provide helpful, accurate responses."
+  parameters:
+    temperature: 0.3
+  agent_mode:
+    enabled: true
+    strategy: "function_call"
+    tools: []
+  prompt_type: "simple"
+  completion_params:
+    temperature: 0.3
+    stop: []
+YAML
+)"
+fi
 BODY=$(jq -n --arg mode "yaml-content" --arg yaml "$DSL_A" '{mode:$mode,yaml_content:$yaml}')
 say "import app"
 RESP=$(curl -sS -X POST "$CONSOLE_ORIGIN/console/api/apps/imports" \
@@ -107,25 +148,76 @@ _try_post_json() {
 publish_app() {
   say "publish app (auto for Dify 1.4)"
 
-  say "POST /console/api/apps/$APP_ID/model-config (ensure completion_params)"
-  _try_post_json "/console/api/apps/$APP_ID/model-config" \
-    "$(jq -n \
-        --arg pfqn "$MODEL_PROVIDER_FQN" \
-        --arg mname "$MODEL_NAME" \
-        --arg pre 'You are a helpful assistant.' \
-        '{model:{provider:$pfqn, name:$mname, completion_params:{temperature:0.3}}, pre_prompt:$pre}')"
+  if [[ "$AGENT_TYPE" == "Knowledge Agent (RAG)" ]]; then
+    say "POST /console/api/apps/$APP_ID/model-config (configure Knowledge Agent)"
+    _try_post_json "/console/api/apps/$APP_ID/model-config" \
+      "$(jq -n \
+          --arg pfqn "$MODEL_PROVIDER_FQN" \
+          --arg mname "$MODEL_NAME" \
+          --arg pre 'You are a knowledgeable assistant that can help users find information and answer questions based on available knowledge. You excel at retrieving and synthesizing information from various sources to provide accurate and helpful responses.' \
+          '{
+            model: {
+              provider: $pfqn, 
+              name: $mname, 
+              completion_params: {
+                temperature: 0.3
+              }
+            }, 
+            pre_prompt: $pre,
+            prompt_type: "simple",
+            more_like_this: {
+              enabled: true
+            },
+            suggested_questions_after_answer: {
+              enabled: true
+            }
+          }')"
 
-  say "PUT /console/api/apps/$APP_ID (switch to advanced-chat)"
-  H=$(mktemp); B=$(mktemp)
-  curl -sS -D "$H" -o "$B" -X PUT "$CONSOLE_ORIGIN/console/api/apps/$APP_ID" \
-    "${AUTH[@]}" "${WS_HDR[@]}" -H "Content-Type: application/json" \
-    -d "$(jq -n \
-          --arg name "$APP_NAME" \
-          --arg desc "Created via CLI on Dify 1.4" \
-          '{app:{mode:"advanced-chat", name:$name, description:$desc}}')" || true
-  echo "status=$(hdr_code <"$H") ct=$(hdr_ct <"$H")"
-  (cat "$B" | jq '.') 2>/dev/null || { head -c 400 "$B"; echo; }
-  rm -f "$H" "$B"
+    say "PUT /console/api/apps/$APP_ID (switch to advanced-chat for Knowledge Agent)"
+    H=$(mktemp); B=$(mktemp)
+    curl -sS -D "$H" -o "$B" -X PUT "$CONSOLE_ORIGIN/console/api/apps/$APP_ID" \
+      "${AUTH[@]}" "${WS_HDR[@]}" -H "Content-Type: application/json" \
+      -d "$(jq -n \
+            --arg name "$APP_NAME" \
+            --arg desc "Knowledge Agent (RAG) created via CLI on Dify 1.4" \
+            '{app:{mode:"advanced-chat", name:$name, description:$desc}}')" || true
+    echo "status=$(hdr_code <"$H") ct=$(hdr_ct <"$H")"
+    (cat "$B" | jq '.') 2>/dev/null || { head -c 400 "$B"; echo; }
+    rm -f "$H" "$B"
+  else
+    # Action Agent (AI Employee)
+    say "POST /console/api/apps/$APP_ID/model-config (configure Action Agent)"
+    _try_post_json "/console/api/apps/$APP_ID/model-config" \
+      "$(jq -n \
+          --arg pfqn "$MODEL_PROVIDER_FQN" \
+          --arg mname "$MODEL_NAME" \
+          --arg pre 'You are an intelligent AI agent. You can help users with various tasks, analyze information, and use tools when needed. Always think step by step and provide helpful, accurate responses.' \
+          '{
+            model: {
+              provider: $pfqn, 
+              name: $mname, 
+              completion_params: {
+                temperature: 0.3,
+                stop: []
+              }
+            }, 
+            pre_prompt: $pre,
+            agent_mode: {
+              enabled: true,
+              strategy: "function_call",
+              tools: []
+            },
+            prompt_type: "simple",
+            more_like_this: {
+              enabled: true
+            },
+            suggested_questions_after_answer: {
+              enabled: true
+            }
+          }')"
+
+    say "Action Agent configured in agent-chat mode"
+  fi
 
   sleep 1
 
@@ -138,16 +230,36 @@ publish_app
 
 if [ -n "$SERVICE_ORIGIN" ]; then
   CHATS_URL="$SERVICE_ORIGIN/v1/chat-messages"
-  say "POST $CHATS_URL"
-  TEST_BODY='{"inputs": {},"query": "hello","response_mode": "blocking","user": "cli-test"}'
-  TEST_RESP=$(curl -sS -X POST "$CHATS_URL" \
-    -H "Authorization: Bearer '"$APP_KEY"'" \
-    -H "Content-Type: application/json" \
-    -d "$TEST_BODY" || true)
-  echo "$TEST_RESP" | jq '.' || echo "$TEST_RESP"
+  say "Testing $AGENT_TYPE"
+  
+  if [[ "$AGENT_TYPE" == "Knowledge Agent (RAG)" ]]; then
+    # Test Knowledge Agent with blocking mode
+    say "Testing Knowledge Agent with blocking mode"
+    TEST_BODY='{"inputs": {},"query": "Hello! Can you help me find information about renewable energy?","response_mode": "blocking","user": "cli-test"}'
+    TEST_RESP=$(curl -sS -X POST "$CHATS_URL" \
+      -H "Authorization: Bearer '"$APP_KEY"'" \
+      -H "Content-Type: application/json" \
+      -d "$TEST_BODY" || true)
+    echo "$TEST_RESP" | jq '.' || echo "$TEST_RESP"
+  else
+    # Test Action Agent with streaming mode
+    say "Testing Action Agent with streaming mode"
+    TEST_BODY='{"inputs": {},"query": "Hello! Can you help me analyze the pros and cons of renewable energy? Please think through this systematically.","response_mode": "streaming","user": "cli-test"}'
+    TEST_RESP=$(curl -sS -X POST "$CHATS_URL" \
+      -H "Authorization: Bearer '"$APP_KEY"'" \
+      -H "Content-Type: application/json" \
+      -d "$TEST_BODY" || true)
+    echo "$TEST_RESP" | jq '.' || echo "$TEST_RESP"
+  fi
 else
   say "skip runtime test: SERVICE_ORIGIN empty"
 fi
 
 # Output the results in JSON format for easy parsing
-echo "{\"success\": true, \"app_id\": \"$APP_ID\", \"app_key\": \"$APP_KEY\", \"app_name\": \"$APP_NAME\", \"service_origin\": \"$SERVICE_ORIGIN\"}"
+if [[ "$AGENT_TYPE" == "Knowledge Agent (RAG)" ]]; then
+  RESPONSE_MODE="blocking"
+else
+  RESPONSE_MODE="streaming"
+fi
+
+echo "{\"success\": true, \"app_id\": \"$APP_ID\", \"app_key\": \"$APP_KEY\", \"app_name\": \"$APP_NAME\", \"agent_type\": \"$AGENT_TYPE\", \"service_origin\": \"$SERVICE_ORIGIN\", \"response_mode\": \"$RESPONSE_MODE\"}"
