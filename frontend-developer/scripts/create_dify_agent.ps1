@@ -3,8 +3,11 @@ param(
     [Parameter(Mandatory=$true)]
     [string]$AgentName,
     [Parameter(Mandatory=$true)]
+    [ValidateSet("Knowledge Agent (RAG)", "Action Agent (AI Employee)")]
+    [string]$AgentType,
+    [Parameter(Mandatory=$false)]
     [string]$ModelProvider = "langgenius/openai/openai",
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory=$false)]
     [string]$ModelName = "gpt-4o"
 )
 
@@ -70,22 +73,54 @@ try {
     exit 1
 }
 
-# Create YAML content
-$yamlContent = @"
+# Create YAML content based on agent type
+if ($AgentType -eq "Knowledge Agent (RAG)") {
+    $yamlContent = @"
 version: "0.3.0"
 kind: "app"
 app:
   mode: "chat"
   name: "$APP_NAME"
-  description: "Created via CLI on Dify 1.4"
+  description: "Knowledge Agent (RAG) created via CLI on Dify 1.4"
 model_config:
   model:
     provider: "$MODEL_PROVIDER_FQN"
     name: "$MODEL_NAME"
-  pre_prompt: "You are a helpful assistant."
+  pre_prompt: "You are a knowledgeable assistant that can help users find information and answer questions based on available knowledge. You excel at retrieving and synthesizing information from various sources to provide accurate and helpful responses."
   parameters:
     temperature: 0.3
+  prompt_type: "simple"
+  more_like_this:
+    enabled: true
+  suggested_questions_after_answer:
+    enabled: true
 "@
+} else {
+    # Action Agent (AI Employee)
+    $yamlContent = @"
+version: "0.3.0"
+kind: "app"
+app:
+  mode: "agent-chat"
+  name: "$APP_NAME"
+  description: "Action Agent (AI Employee) created via CLI on Dify 1.4"
+model_config:
+  model:
+    provider: "$MODEL_PROVIDER_FQN"
+    name: "$MODEL_NAME"
+  pre_prompt: "You are an intelligent AI agent. You can help users with various tasks, analyze information, and use tools when needed. Always think step by step and provide helpful, accurate responses."
+  parameters:
+    temperature: 0.3
+  agent_mode:
+    enabled: true
+    strategy: "function_call"
+    tools: []
+  prompt_type: "simple"
+  completion_params:
+    temperature: 0.3
+    stop: []
+"@
+}
 
 $importBody = @{
     mode = "yaml-content"
@@ -168,37 +203,81 @@ try {
 function Publish-App {
     Write-Log "publish app (auto for Dify 1.4)"
     
-    Write-Log "POST /console/api/apps/$APP_ID/model-config (ensure completion_params)"
-    $modelConfigBody = @{
-        model = @{
-            provider = $MODEL_PROVIDER_FQN
-            name = $MODEL_NAME
-            completion_params = @{
-                temperature = 0.3
+    if ($AgentType -eq "Knowledge Agent (RAG)") {
+        Write-Log "POST /console/api/apps/$APP_ID/model-config (configure Knowledge Agent)"
+        $modelConfigBody = @{
+            model = @{
+                provider = $MODEL_PROVIDER_FQN
+                name = $MODEL_NAME
+                completion_params = @{
+                    temperature = 0.3
+                }
             }
+            pre_prompt = "You are a knowledgeable assistant that can help users find information and answer questions based on available knowledge. You excel at retrieving and synthesizing information from various sources to provide accurate and helpful responses."
+            prompt_type = "simple"
+            more_like_this = @{
+                enabled = $true
+            }
+            suggested_questions_after_answer = @{
+                enabled = $true
+            }
+        } | ConvertTo-Json -Depth 10
+        
+        try {
+            Invoke-RestMethod -Uri "$CONSOLE_ORIGIN/console/api/apps/$APP_ID/model-config" -Method POST -Body $modelConfigBody -Headers $headers -UseBasicParsing
+        } catch {
+            Write-Log "WARN: model-config update failed: $_"
         }
-        pre_prompt = "You are a helpful assistant."
-    } | ConvertTo-Json -Depth 10
-    
-    try {
-        Invoke-RestMethod -Uri "$CONSOLE_ORIGIN/console/api/apps/$APP_ID/model-config" -Method POST -Body $modelConfigBody -Headers $headers -UseBasicParsing
-    } catch {
-        Write-Log "WARN: model-config update failed: $_"
-    }
-    
-    Write-Log "PUT /console/api/apps/$APP_ID (switch to advanced-chat)"
-    $updateAppBody = @{
-        app = @{
-            mode = "advanced-chat"
-            name = $APP_NAME
-            description = "Created via CLI on Dify 1.4"
+        
+        Write-Log "PUT /console/api/apps/$APP_ID (switch to advanced-chat for Knowledge Agent)"
+        $updateAppBody = @{
+            app = @{
+                mode = "advanced-chat"
+                name = $APP_NAME
+                description = "Knowledge Agent (RAG) created via CLI on Dify 1.4"
+            }
+        } | ConvertTo-Json -Depth 10
+        
+        try {
+            Invoke-RestMethod -Uri "$CONSOLE_ORIGIN/console/api/apps/$APP_ID" -Method PUT -Body $updateAppBody -Headers $headers -UseBasicParsing
+        } catch {
+            Write-Log "WARN: app update failed: $_"
         }
-    } | ConvertTo-Json -Depth 10
-    
-    try {
-        Invoke-RestMethod -Uri "$CONSOLE_ORIGIN/console/api/apps/$APP_ID" -Method PUT -Body $updateAppBody -Headers $headers -UseBasicParsing
-    } catch {
-        Write-Log "WARN: app update failed: $_"
+    } else {
+        # Action Agent (AI Employee)
+        Write-Log "POST /console/api/apps/$APP_ID/model-config (configure Action Agent)"
+        $modelConfigBody = @{
+            model = @{
+                provider = $MODEL_PROVIDER_FQN
+                name = $MODEL_NAME
+                completion_params = @{
+                    temperature = 0.3
+                    stop = @()
+                }
+            }
+            pre_prompt = "You are an intelligent AI agent. You can help users with various tasks, analyze information, and use tools when needed. Always think step by step and provide helpful, accurate responses."
+            agent_mode = @{
+                enabled = $true
+                strategy = "function_call"
+                tools = @()
+            }
+            prompt_type = "simple"
+            more_like_this = @{
+                enabled = $true
+            }
+            suggested_questions_after_answer = @{
+                enabled = $true
+            }
+        } | ConvertTo-Json -Depth 10
+        
+        try {
+            Invoke-RestMethod -Uri "$CONSOLE_ORIGIN/console/api/apps/$APP_ID/model-config" -Method POST -Body $modelConfigBody -Headers $headers -UseBasicParsing
+        } catch {
+            Write-Log "WARN: model-config update failed: $_"
+        }
+        
+        # Action agents stay in agent-chat mode, no need to switch
+        Write-Log "Action Agent configured in agent-chat mode"
     }
     
     Start-Sleep -Seconds 1
@@ -220,23 +299,46 @@ Publish-App
 
 if ($SERVICE_ORIGIN) {
     $CHATS_URL = "$SERVICE_ORIGIN/v1/chat-messages"
-    Write-Log "POST $CHATS_URL"
-    $testBody = @{
-        inputs = @{}
-        query = "hello"
-        response_mode = "blocking"
-        user = "cli-test"
-    } | ConvertTo-Json
+    Write-Log "Testing $AgentType"
     
-    try {
-        $testHeaders = @{
-            "Authorization" = "Bearer $APP_KEY"
-            "Content-Type" = "application/json"
+    if ($AgentType -eq "Knowledge Agent (RAG)") {
+        # Test Knowledge Agent with blocking mode
+        $testBody = @{
+            inputs = @{}
+            query = "Hello! Can you help me find information about renewable energy?"
+            response_mode = "blocking"
+            user = "cli-test"
+        } | ConvertTo-Json
+        
+        try {
+            $testHeaders = @{
+                "Authorization" = "Bearer $APP_KEY"
+                "Content-Type" = "application/json"
+            }
+            $testResponse = Invoke-RestMethod -Uri $CHATS_URL -Method POST -Body $testBody -Headers $testHeaders -UseBasicParsing
+            Write-Log "Knowledge Agent test response: $($testResponse | ConvertTo-Json -Compress)"
+        } catch {
+            Write-Log "WARN: Knowledge Agent test request failed: $_"
         }
-        $testResponse = Invoke-RestMethod -Uri $CHATS_URL -Method POST -Body $testBody -Headers $testHeaders -UseBasicParsing
-        Write-Log "Test response: $($testResponse | ConvertTo-Json -Compress)"
-    } catch {
-        Write-Log "WARN: test request failed: $_"
+    } else {
+        # Test Action Agent with streaming mode
+        $testBody = @{
+            inputs = @{}
+            query = "Hello! Can you help me analyze the pros and cons of renewable energy? Please think through this systematically."
+            response_mode = "streaming"
+            user = "cli-test"
+        } | ConvertTo-Json
+        
+        try {
+            $testHeaders = @{
+                "Authorization" = "Bearer $APP_KEY"
+                "Content-Type" = "application/json"
+            }
+            $testResponse = Invoke-RestMethod -Uri $CHATS_URL -Method POST -Body $testBody -Headers $testHeaders -UseBasicParsing
+            Write-Log "Action Agent test response: $($testResponse | ConvertTo-Json -Compress)"
+        } catch {
+            Write-Log "WARN: Action Agent test request failed: $_"
+        }
     }
 } else {
     Write-Log "skip runtime test: SERVICE_ORIGIN empty"
@@ -248,7 +350,9 @@ $result = @{
     app_id = $APP_ID
     app_key = $APP_KEY
     app_name = $APP_NAME
+    agent_type = $AgentType
     service_origin = $SERVICE_ORIGIN
+    response_mode = if ($AgentType -eq "Knowledge Agent (RAG)") { "blocking" } else { "streaming" }
 } | ConvertTo-Json -Compress
 
 Write-Output $result
