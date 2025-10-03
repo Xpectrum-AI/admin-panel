@@ -104,7 +104,6 @@ async function testDifyLogin() {
       process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL || "ghosh.ishw@gmail.com";
     const adminPassword =
       process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD || "Ghosh1@*123";
-
     if (!consoleOrigin || !adminEmail || !adminPassword) {
       console.log("❌ Missing Dify credentials in environment variables");
       return false;

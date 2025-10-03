@@ -24,12 +24,13 @@ import {
   Database,
   Sun,
   Moon,
-  Mail
+  Mail,
+  BookOpen
 } from 'lucide-react';
 import { useAuthInfo, useLogoutFunction } from '@propelauth/react';
 import { SyncLoader } from 'react-spinners';
 import { useRouter } from 'next/navigation';
-import { AgentsTab, PhoneNumbersTab, SMSTab, WhatsAppTab, GmailTab, OrgSetup } from './components';
+import { AgentsTab, PhoneNumbersTab, SMSTab, WhatsAppTab, GmailTab, KnowledgeBaseTab, OrgSetup } from './components';
 import Navbar from './components/Navbar';
 import ChatSidebar from './components/ChatSidebar';
 import { useTheme } from './contexts/ThemeContext';
@@ -54,6 +55,7 @@ const navigationItems = [
   { name: 'SMS', icon: MessageSquare, color: 'from-green-500 to-teal-600' },
   { name: 'WhatsApp', icon: Globe, color: 'from-green-600 to-emerald-700' },
   { name: 'Email', icon: Mail, color: 'from-red-500 to-pink-600' },
+  { name: 'Knowledge Base', icon: BookOpen, color: 'from-purple-500 to-indigo-600' },
 ];
 
 export default function DeveloperDashboard() {
@@ -382,6 +384,9 @@ export default function DeveloperDashboard() {
 
       case 'Email':
         return <GmailTab />;
+
+      case 'Knowledge Base':
+        return <KnowledgeBaseTab />;
 
       default:
         return (
