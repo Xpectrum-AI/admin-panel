@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Configuration - same as your scripts
-const CONSOLE_ORIGIN = "https://demos.xpectrum-ai.com";
-const SERVICE_ORIGIN = "https://demos.xpectrum-ai.com";
-const ADMIN_EMAIL = "ghosh.ishw@gmail.com";
-const ADMIN_PASSWORD = "Ghosh1@*123";
-const WS_ID = "661d95ae-77ee-4cfd-88e3-e6f3ef8d638b";
+// Configuration from environment variables
+const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN || "https://demos.xpectrum-ai.com";
+const SERVICE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN || "https://demos.xpectrum-ai.com";
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL || "ghosh.ishw@gmail.com";
+const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD || "Ghosh1@*123";
+const WS_ID = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID || "661d95ae-77ee-4cfd-88e3-e6f3ef8d638b";
 
 // Helper function to get auth token
 async function getAuthToken() {
