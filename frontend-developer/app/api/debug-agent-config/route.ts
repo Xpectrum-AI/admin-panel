@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const DIFY_BASE_URL = process.env.NEXT_PUBLIC_DIFY_BASE_URL || '';
-const ADMIN_EMAIL = "ghosh.ishw@gmail.com";
-const ADMIN_PASSWORD = "Ghosh1@*123";
-const WS_ID = "661d95ae-77ee-4cfd-88e3-e6f3ef8d638b";
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL || "ghosh.ishw@gmail.com";
+const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD || "Ghosh1@*123";
+const WS_ID = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID || "661d95ae-77ee-4cfd-88e3-e6f3ef8d638b";
 
 async function getAuthToken() {
   const loginResponse = await fetch(`${DIFY_BASE_URL.replace('/v1', '')}/console/api/login`, {
