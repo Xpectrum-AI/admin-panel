@@ -1,10 +1,20 @@
 'use client';
 
 import React, { forwardRef, useState, useRef, useEffect, useCallback } from 'react';
-import { Sparkles, CheckCircle, AlertCircle, Loader2, Copy, Check } from 'lucide-react';
+import { Sparkles, CheckCircle, AlertCircle, Loader2, Copy, Check, BookOpen, Plus, X, Search, Trash2 } from 'lucide-react';
 import { modelConfigService } from '../../../service/modelConfigService';
 import { useTheme } from '../../contexts/ThemeContext';
 import { maskApiKey } from '../../../service/agentConfigService';
+import { KnowledgeBase } from '../knowledge-base/types';
+
+// Simple debounce function
+function debounce<T extends (...args: any[]) => any>(func: T, wait: number): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
 
 interface ModelConfigProps {
   agentName?: string;
@@ -31,6 +41,18 @@ const ModelConfig = forwardRef<HTMLDivElement, ModelConfigProps>(({ agentName = 
   const [agentUrl, setAgentUrl] = useState(agentApiUrl || process.env.NEXT_PUBLIC_CHATBOT_API_URL || '');
   const [localAgentApiKey, setLocalAgentApiKey] = useState(agentApiKey || '');
   const [copiedAgentApiKey, setCopiedAgentApiKey] = useState(false);
+
+  // Knowledge Base State
+  const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
+  const [selectedKnowledgeBases, setSelectedKnowledgeBases] = useState<string[]>([]);
+  const [loadingKnowledgeBases, setLoadingKnowledgeBases] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showKnowledgeModal, setShowKnowledgeModal] = useState(false);
+  const [publishingAgent, setPublishingAgent] = useState(false);
+
+  // Helper function to get localStorage key for agent
+  const getAgentStorageKey = (agentId: string) => `agent_knowledge_bases_${agentId}`;
+
   const [systemPrompt, setSystemPrompt] = useState(`# Appointment Scheduling Agent Prompt
 
 ## Identity & Purpose
@@ -714,6 +736,189 @@ Remember: You are the first point of contact for many patients. Your professiona
   // Note: Removed problematic useEffect that was causing state conflicts
   // State changes are now handled by saveStateToCentralized function called from user interactions
 
+  // Fetch knowledge bases
+  const fetchKnowledgeBases = useCallback(async () => {
+    setLoadingKnowledgeBases(true);
+    try {
+      const response = await fetch('/api/knowledge-bases');
+      if (response.ok) {
+        const data = await response.json();
+        setKnowledgeBases(data || []);
+      } else {
+        console.error('Failed to fetch knowledge bases:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching knowledge bases:', error);
+    } finally {
+      setLoadingKnowledgeBases(false);
+    }
+  }, []);
+
+  // Load knowledge bases when modal is opened
+  useEffect(() => {
+    if (showKnowledgeModal) {
+      fetchKnowledgeBases();
+    }
+  }, [showKnowledgeModal, fetchKnowledgeBases]);
+
+  // Load knowledge bases on component mount to validate selections
+  useEffect(() => {
+    fetchKnowledgeBases();
+  }, [fetchKnowledgeBases]);
+
+  // Validate and clean up invalid knowledge base selections
+  useEffect(() => {
+    if (knowledgeBases.length > 0 && selectedKnowledgeBases.length > 0) {
+      const validKnowledgeBaseIds = knowledgeBases.map(kb => kb.id);
+      const invalidSelections = selectedKnowledgeBases.filter(id => !validKnowledgeBaseIds.includes(id));
+      
+      if (invalidSelections.length > 0) {
+        console.log('🧹 Removing invalid knowledge base selections:', invalidSelections);
+        const validSelections = selectedKnowledgeBases.filter(id => validKnowledgeBaseIds.includes(id));
+        setSelectedKnowledgeBases(validSelections);
+        saveStateToCentralized({ selectedKnowledgeBases: validSelections });
+        
+        // Update localStorage with cleaned selections
+        if (typeof window !== 'undefined' && localAgentApiKey) {
+          const storageKey = getAgentStorageKey(localAgentApiKey);
+          localStorage.setItem(storageKey, JSON.stringify(validSelections));
+        }
+        
+        // Save cleaned configuration to Dify if we have valid selections or if clearing all
+        if (validSelections.length >= 0) {
+          debouncedKnowledgeBaseSave(validSelections);
+        }
+      }
+    }
+  }, [knowledgeBases, selectedKnowledgeBases, localAgentApiKey]);
+
+  // Load current agent configuration from centralized config to restore knowledge base selections
+  const loadAgentConfig = useCallback(() => {
+    // Load knowledge base selections from existing config if available
+    if (existingConfig && existingConfig.selectedKnowledgeBases) {
+      console.log('📚 Restoring knowledge base selections from existing config:', existingConfig.selectedKnowledgeBases);
+      setSelectedKnowledgeBases(existingConfig.selectedKnowledgeBases);
+    } else {
+      // Fallback: load from localStorage using agent API key as ID
+      if (localAgentApiKey && typeof window !== 'undefined') {
+        const storageKey = getAgentStorageKey(localAgentApiKey);
+        try {
+          const savedKnowledgeBases = localStorage.getItem(storageKey);
+          if (savedKnowledgeBases) {
+            const knowledgeBaseIds = JSON.parse(savedKnowledgeBases);
+            console.log('📚 Restoring knowledge base selections from localStorage:', knowledgeBaseIds);
+            setSelectedKnowledgeBases(knowledgeBaseIds);
+            saveStateToCentralized({ selectedKnowledgeBases: knowledgeBaseIds });
+          }
+        } catch (error) {
+          console.error('❌ Failed to parse saved knowledge bases from localStorage:', error);
+        }
+      }
+    }
+  }, [existingConfig, localAgentApiKey]);
+
+  // Load agent configuration when component mounts or relevant data changes
+  useEffect(() => {
+    if ((existingConfig || localAgentApiKey) && !selectedKnowledgeBases.length) {
+      loadAgentConfig();
+    }
+  }, [existingConfig, localAgentApiKey, selectedKnowledgeBases.length, loadAgentConfig]);
+
+  // Save knowledge base configuration to Dify via model-config API
+  const saveKnowledgeBaseConfig = useCallback(async (knowledgeBaseIds: string[]) => {
+    try {
+      // Get the correct API provider string
+      const apiProvider = modelProviders[selectedModelProvider as keyof typeof modelProviders]?.apiProvider || 'langgenius/openai/openai';
+      
+      // Get the correct model API name
+      const apiModel = modelApiMapping[selectedModel] || 'gpt-4o';
+      
+      console.log('💾 Saving knowledge base configuration:', {
+        provider: apiProvider,
+        model: apiModel,
+        knowledgeBaseCount: knowledgeBaseIds.length,
+        knowledgeBaseIds
+      });
+      
+      // Get the app ID from localStorage
+      const appId = localStorage.getItem(`dify_app_id_${localAgentApiKey}`);
+      
+      console.log('🔍 Debug - Looking for app ID:', {
+        localAgentApiKey,
+        storageKey: `dify_app_id_${localAgentApiKey}`,
+        appId,
+        allLocalStorageKeys: Object.keys(localStorage).filter(k => k.includes('dify_app_id'))
+      });
+      
+      if (!appId) {
+        console.error('❌ No app ID found for this agent');
+        alert('⚠️ App ID not found in storage. This agent might have been created before the app ID tracking was implemented. Please create a new agent to test the knowledge base feature.');
+        return false;
+      }
+      
+      const response = await fetch('/api/model-config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          provider: apiProvider,
+          model: apiModel,
+          api_key: modelApiKey,
+          chatbot_api_key: localAgentApiKey,
+          app_id: appId, // Pass the app ID
+          dataset_configs: {
+            retrieval_model: "single",
+            datasets: {
+              datasets: knowledgeBaseIds.map(datasetId => ({ 
+                dataset: {
+                  enabled: true,
+                  id: datasetId
+                }
+              }))
+            },
+            top_k: 4,
+            reranking_enable: false
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Failed to save knowledge base configuration:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorText
+        });
+        alert(`Failed to save: ${response.status} ${response.statusText}\n${errorText.substring(0, 200)}`);
+        return false;
+      }
+
+      const data = await response.json();
+      console.log('✅ Knowledge base configuration saved:', data);
+      
+      // Also save to localStorage for persistence across refreshes
+      if (typeof window !== 'undefined' && localAgentApiKey) {
+        const storageKey = getAgentStorageKey(localAgentApiKey);
+        localStorage.setItem(storageKey, JSON.stringify(knowledgeBaseIds));
+        console.log('💾 Knowledge base selection saved to localStorage');
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('❌ Error saving knowledge base configuration:', error);
+      return false;
+    }
+  }, [selectedModelProvider, selectedModel, modelApiKey, localAgentApiKey]);
+
+  // Debounced save function for knowledge base changes
+  const debouncedKnowledgeBaseSave = useCallback(
+    debounce(async (knowledgeBaseIds: string[]) => {
+      await saveKnowledgeBaseConfig(knowledgeBaseIds);
+    }, 500),
+    [saveKnowledgeBaseConfig]
+  );
+
   return (
     <div ref={ref} className="space-y-6 p-6">
 
@@ -787,6 +992,117 @@ Remember: You are the first point of contact for many patients. Your professiona
                   : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
                 }`}
             />
+          </div>
+        </div>
+      </div>
+
+      {/* Knowledge Base Container */}
+      <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-purple-900/50' : 'bg-purple-100'}`}>
+              <BookOpen className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+            </div>
+            <div>
+              <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Agent Knowledge Base</h4>
+              <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                Select knowledge bases to provide context to your agent
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {selectedKnowledgeBases.length > 0 ? (
+            <div className="space-y-2">
+              <label className={`block text-xs sm:text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Selected Knowledge Bases ({selectedKnowledgeBases.length})
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {selectedKnowledgeBases.map(kbId => {
+                  const kb = knowledgeBases.find(k => k.id === kbId);
+                  return (
+                    <div key={kbId} className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${isDarkMode 
+                      ? 'bg-purple-900/30 border-purple-700 text-purple-300' 
+                      : 'bg-purple-50 border-purple-200 text-purple-700'
+                    }`}>
+                      <BookOpen className="h-4 w-4" />
+                      <span className="text-sm">{kb?.name || 'Unknown (deleted)'}</span>
+                      {kb ? (
+                        <span className={`text-xs px-2 py-1 rounded-full ${kb.indexingTechnique === 'high_quality' 
+                          ? 'bg-green-100 text-green-600' 
+                          : 'bg-blue-100 text-blue-600'
+                        }`}>
+                          {kb.indexingTechnique === 'high_quality' ? 'HQ • VECTOR' : 'ECONOMY'}
+                        </span>
+                      ) : (
+                        <span className={`text-xs px-2 py-1 rounded-full ${isDarkMode 
+                          ? 'bg-orange-900/30 border-orange-700 text-orange-300' 
+                          : 'bg-orange-100 border-orange-200 text-orange-700'
+                        }`}>
+                          DELETED
+                        </span>
+                      )}
+                      <button
+                        onClick={() => {
+                          const newSelected = selectedKnowledgeBases.filter(id => id !== kbId);
+                          setSelectedKnowledgeBases(newSelected);
+                          saveStateToCentralized({ selectedKnowledgeBases: newSelected });
+                          // Save to backend
+                          debouncedKnowledgeBaseSave(newSelected);
+                        }}
+                        className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors ${
+                          isDarkMode 
+                            ? 'bg-red-900/30 text-red-300 hover:bg-red-900/50' 
+                            : 'bg-red-100 text-red-700 hover:bg-red-200'
+                        }`}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        Delete
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700/30 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+              <div className="flex items-center gap-3 text-sm text-gray-500">
+                <BookOpen className="h-4 w-4" />
+                <span>No knowledge bases selected yet</span>
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowKnowledgeModal(true)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all duration-200 ${isDarkMode 
+                ? 'bg-purple-900/20 border-purple-700 text-purple-300 hover:bg-purple-800/30' 
+                : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
+              }`}
+            >
+              <Plus className="h-4 w-4" />
+              <span className="text-sm font-medium">Add Knowledge Base</span>
+            </button>
+            
+            {selectedKnowledgeBases.some(id => !knowledgeBases.find(kb => kb.id === id)) && (
+              <button
+                onClick={() => {
+                  const validSelections = selectedKnowledgeBases.filter(id => knowledgeBases.find(kb => kb.id === id));
+                  setSelectedKnowledgeBases(validSelections);
+                  saveStateToCentralized({ selectedKnowledgeBases: validSelections });
+                  debouncedKnowledgeBaseSave(validSelections);
+                }}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-200 ${isDarkMode 
+                  ? 'bg-orange-900/20 border-orange-700 text-orange-300 hover:bg-orange-800/30' 
+                  : 'bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100'
+                }`}
+              >
+                <X className="h-4 w-4" />
+                <span className="text-sm font-medium">Clear Invalid</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -984,6 +1300,206 @@ Remember: You are the first point of contact for many patients. Your professiona
 
         {/* Note: Save Config Button removed - changes are now saved automatically via saveStateToCentralized */}
       </div>
+
+      {/* Knowledge Base Selection Modal */}
+      {showKnowledgeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-2xl max-h-[80vh] rounded-2xl border overflow-hidden ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+            {/* Modal Header */}
+            <div className={`p-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <BookOpen className={`h-6 w-6 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+                  <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    Select Reference Knowledge
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowKnowledgeModal(false)}
+                  className={`p-2 rounded-full hover:bg-gray-100 ${isDarkMode ? 'hover:bg-gray-700' : ''}`}
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              {/* Search */}
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search knowledge bases..."
+                  className={`w-full pl-10 pr-4 py-2 rounded-lg border ${isDarkMode 
+                    ? 'bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-400' 
+                    : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                  }`}
+                />
+              </div>
+
+              {/* Knowledge Bases List */}
+              <div className="max-h-64 overflow-y-auto space-y-2 mb-6">
+                {loadingKnowledgeBases ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                    <span className={`ml-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Loading...</span>
+                  </div>
+                ) : knowledgeBases.filter(kb => 
+                  kb.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  kb.description.toLowerCase().includes(searchTerm.toLowerCase())
+                ).length === 0 ? (
+                  <div className={`text-center py-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No knowledge bases found</p>
+                  </div>
+                ) : (
+                  knowledgeBases.filter(kb => 
+                    kb.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    kb.description.toLowerCase().includes(searchTerm.toLowerCase())
+                  ).map(kb => (
+                    <div
+                      key={kb.id}
+                      onClick={() => {
+                        const isSelected = selectedKnowledgeBases.includes(kb.id);
+                        if (isSelected) {
+                          const newSelected = selectedKnowledgeBases.filter(id => id !== kb.id);
+                          setSelectedKnowledgeBases(newSelected);
+                          saveStateToCentralized({ selectedKnowledgeBases: newSelected });
+                          // Save to backend
+                          debouncedKnowledgeBaseSave(newSelected);
+                        } else {
+                          const newSelected = [...selectedKnowledgeBases, kb.id];
+                          setSelectedKnowledgeBases(newSelected);
+                          saveStateToCentralized({ selectedKnowledgeBases: newSelected });
+                          // Save to backend
+                          debouncedKnowledgeBaseSave(newSelected);
+                        }
+                      }}
+                      className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                        selectedKnowledgeBases.includes(kb.id)
+                          ? isDarkMode 
+                            ? 'bg-purple-900/30 border-purple-700' 
+                            : 'bg-purple-50 border-purple-200'
+                          : isDarkMode 
+                            ? 'bg-gray-700/50 border-gray-600 hover:bg-gray-600/50' 
+                            : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <BookOpen className={`h-4 w-4 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+                          <div>
+                            <h4 className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{kb.name}</h4>
+                            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                              {kb.documentCount} documents
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            kb.indexingTechnique === 'high_quality' 
+                              ? 'bg-green-100 text-green-600' 
+                              : 'bg-blue-100 text-blue-600'
+                          }`}>
+                            {kb.indexingTechnique === 'high_quality' ? 'HQ • VECTOR' : 'ECONOMY'}
+                          </span>
+                          {selectedKnowledgeBases.includes(kb.id) && (
+                            <CheckCircle className="h-4 w-4 text-purple-600" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {selectedKnowledgeBases.length} Knowledge selected
+                </span>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowKnowledgeModal(false)}
+                    className={`px-4 py-2 rounded-lg border ${isDarkMode 
+                      ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                      : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (publishingAgent) return; // Prevent multiple clicks
+                      
+                      setShowKnowledgeModal(false);
+                      setPublishingAgent(true);
+                      
+                      // Trigger publish after knowledge base configuration is saved
+                      if (localAgentApiKey) {
+                        try {
+                          // Get the app ID from localStorage
+                          const appId = localStorage.getItem(`dify_app_id_${localAgentApiKey}`);
+                          console.log('🔍 Retrieved app ID for publishing:', appId);
+                          
+                          if (!appId) {
+                            alert('⚠️ Could not find app ID. The configuration has been saved but may require manual publish in Dify Studio.');
+                            setPublishingAgent(false);
+                            return;
+                          }
+                          
+                          const response = await fetch('/api/publish-agent', {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                              chatbot_api_key: localAgentApiKey,
+                              app_id: appId
+                            })
+                          });
+                          
+                          if (response.ok) {
+                            const result = await response.json();
+                            console.log('✅ Agent published successfully:', result);
+                          } else {
+                            const error = await response.json();
+                            console.error('❌ Failed to publish agent:', error);
+                            alert('❌ Failed to publish agent: ' + (error.error || error.message || 'Unknown error'));
+                          }
+                        } catch (error) {
+                          console.error('❌ Error publishing agent:', error);
+                          alert('❌ Error publishing agent: ' + (error instanceof Error ? error.message : 'Unknown error'));
+                        }
+                      }
+                      
+                      setPublishingAgent(false);
+                    }}
+                    disabled={publishingAgent}
+                    className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                      publishingAgent
+                        ? 'bg-purple-400 cursor-not-allowed text-white'
+                        : 'bg-purple-600 text-white hover:bg-purple-700'
+                    }`}
+                  >
+                    {publishingAgent ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Publishing...
+                      </>
+                    ) : (
+                      'Add & Publish'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 });

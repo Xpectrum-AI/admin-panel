@@ -138,6 +138,9 @@ export default function AgentsTab({ }: AgentsTabProps) {
   // Initialize organization ID from user context
   useEffect(() => {
     console.log('🔍 Setting organization ID from user context:', { user, userClass });
+    console.log('🔍 Full user object:', JSON.stringify(user, null, 2));
+    console.log('🔍 User orgIdToOrgMemberInfo:', (user as any)?.orgIdToOrgMemberInfo);
+    console.log('🔍 UserClass object:', JSON.stringify(userClass, null, 2));
 
     const orgId = (user as any)?.orgIdToOrgMemberInfo ?
       Object.keys((user as any).orgIdToOrgMemberInfo)[0] :
@@ -150,13 +153,25 @@ export default function AgentsTab({ }: AgentsTabProps) {
       // Fallback: get organization ID from userClass
       const orgs = userClass.getOrgs?.() || [];
       console.log('🔍 Available organizations from userClass:', orgs);
-      if (orgs.length > 0) {
+      console.log('🔍 Organization details:', orgs.map((org: any) => ({ orgId: org.orgId, id: org.id, name: org.name })));
+      if ( orgs.length > 0) {
         const org = orgs[0] as any;
         const orgIdFromClass = org.orgId || org.id || '';
+        console.log('🔍 First org details:', org);
+        console.log('🔍 Extracted orgIdFromClass:', orgIdFromClass);
         if (orgIdFromClass && orgIdFromClass !== currentOrganizationId) {
           console.log('✅ Setting organization ID from userClass:', orgIdFromClass);
           setCurrentOrganizationId(orgIdFromClass);
         }
+      }
+    } else {
+      console.log('❌ No organization ID found! OrgId:', orgId, 'UserClass:', userClass?.getOrgs?.());
+      // Temporary workaround: use userId as organizationId for users without organizations
+      if (user && (user as any).userId && !currentOrganizationId) {
+        const userIdAsOrgId = (user as any).userId;
+        console.log('🔧 Temporary workaround: using userId as organizationId:', userIdAsOrgId);
+        setCurrentOrganizationId(userIdAsOrgId);
+        setOrganizationName('Single User Workspace');
       }
     }
   }, [user, userClass, currentOrganizationId]);
@@ -451,15 +466,26 @@ export default function AgentsTab({ }: AgentsTabProps) {
     // Generate UUID for the agent
     const agentNameUuid = generateAgentUuid(agentPrefix.trim());
     console.log('🆔 Generated agent UUID:', agentNameUuid);
+    console.log('🔍 Debug - currentOrganizationId:', currentOrganizationId);
+    console.log('🔍 Debug - organizationName:', organizationName);
 
     // Create Dify agent and get API key immediately
     console.log('🚀 Creating Dify agent for new agent:', agentNameUuid);
     let difyApiKey = '';
 
+    const orgId = currentOrganizationId || organizationName;
+    console.log('🔍 Final organizationId being used:', orgId);
+
+    if (!orgId) {
+      alert('Organization ID is not available. Please refresh the page and try again.');
+      setIsCreatingAgent(false);
+      return;
+    }
+
     try {
       const difyResult = await difyAgentService.createDifyAgent({
         agentName: agentNameUuid, // Use the UUID format for Dify
-        organizationId: currentOrganizationId || organizationName,
+        organizationId: orgId,
         modelProvider: 'langgenius/openai/openai',
         modelName: 'gpt-4o'
       });
@@ -468,8 +494,16 @@ export default function AgentsTab({ }: AgentsTabProps) {
 
       if (difyResult.success && difyResult.data?.appKey) {
         difyApiKey = difyResult.data.appKey;
+        const difyAppId = difyResult.data.appId; // Extract app ID
         setGeneratedDifyApiKey(difyApiKey);
         console.log('✅ Dify agent created successfully with API key:', difyApiKey.substring(0, 10) + '...');
+        console.log('✅ Dify app ID:', difyAppId);
+        
+        // Store the app ID mapping in localStorage for later use
+        if (difyAppId && difyApiKey) {
+          localStorage.setItem(`dify_app_id_${difyApiKey}`, difyAppId);
+          console.log('💾 Stored app ID mapping:', { apiKey: difyApiKey.substring(0, 10) + '...', appId: difyAppId });
+        }
       } else {
         console.warn('⚠️ Dify agent creation failed, continuing with fallback:', difyResult.error);
       }
