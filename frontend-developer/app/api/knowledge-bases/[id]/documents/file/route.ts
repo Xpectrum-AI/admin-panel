@@ -1,0 +1,145 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+// Configuration - same as your scripts
+const CONSOLE_ORIGIN = "https://demos.xpectrum-ai.com";
+const SERVICE_ORIGIN = "https://demos.xpectrum-ai.com";
+const ADMIN_EMAIL = "ghosh.ishw@gmail.com";
+const ADMIN_PASSWORD = "Ghosh1@*123";
+const WS_ID = "661d95ae-77ee-4cfd-88e3-e6f3ef8d638b";
+
+// Helper function to get dataset API key
+async function getDatasetApiKey(datasetId: string) {
+  const loginResponse = await fetch(`${CONSOLE_ORIGIN}/console/api/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email: ADMIN_EMAIL,
+      password: ADMIN_PASSWORD
+    })
+  });
+
+  if (!loginResponse.ok) {
+    throw new Error('Failed to authenticate');
+  }
+
+  const loginData = await loginResponse.json();
+  const token = loginData.data?.access_token || loginData.access_token || loginData.data?.token;
+
+  // Get existing API keys for this dataset
+  const apiKeysResponse = await fetch(`${CONSOLE_ORIGIN}/console/api/datasets/api-keys`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'X-Workspace-Id': WS_ID,
+    }
+  });
+
+  if (apiKeysResponse.ok) {
+    const apiKeysData = await apiKeysResponse.json();
+    if (apiKeysData.data && apiKeysData.data.length > 0) {
+      return apiKeysData.data[0].token;
+    }
+  }
+
+  // If no API keys exist, try to create one
+  const createKeyResponse = await fetch(`${CONSOLE_ORIGIN}/console/api/datasets/api-keys`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'X-Workspace-Id': WS_ID,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ name: `API Key for Dataset ${datasetId}` }),
+  });
+
+  if (!createKeyResponse.ok) {
+    throw new Error('No API keys available and cannot create new ones (limit reached)');
+  }
+
+  const keyData = await createKeyResponse.json();
+  return keyData.token;
+}
+
+// POST - Upload a file to a knowledge base
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const formData = await request.formData();
+    
+    const file = formData.get('file') as File;
+    const name = formData.get('name') as string;
+    const indexingTechnique = formData.get('indexingTechnique') as string;
+
+    if (!file) {
+      return NextResponse.json(
+        { error: 'File is required' },
+        { status: 400 }
+      );
+    }
+
+    // Get dataset API key for service API
+    const apiKey = await getDatasetApiKey(id);
+    
+    // Create FormData for the service API request
+    const apiFormData = new FormData();
+    apiFormData.append('file', file);
+    apiFormData.append('data', JSON.stringify({
+      name: name || file.name,
+      indexing_technique: indexingTechnique || 'high_quality',
+      process_rule: {
+        mode: 'automatic',
+        rules: {
+          pre_processing_rules: [
+            { id: 'remove_extra_spaces', enabled: true },
+            { id: 'remove_urls_emails', enabled: true }
+          ],
+          segmentation: {
+            separator: '\n',
+            max_tokens: 500
+          }
+        }
+      },
+      doc_form: 'text_model',
+      doc_language: 'English'
+    }));
+
+    const uploadResponse = await fetch(`${SERVICE_ORIGIN}/v1/datasets/${id}/document/create_by_file`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: apiFormData
+    });
+
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      console.error('File upload error response:', errorText);
+      throw new Error(`Failed to upload file: ${uploadResponse.status} ${uploadResponse.statusText}`);
+    }
+
+    const data = await uploadResponse.json();
+    
+    // Transform the response
+    const document = {
+      id: data.document?.id || data.document_id,
+      name: data.document?.name || name || file.name,
+      status: data.document?.indexing_status === 'completed' ? 'completed' : 
+              data.document?.indexing_status === 'error' ? 'error' : 'indexing',
+      wordCount: data.document?.word_count || 0,
+      createdAt: new Date(data.document?.created_at * 1000 || Date.now()).toISOString(),
+      batch: data.batch || ''
+    };
+
+    return NextResponse.json(document, { status: 201 });
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    return NextResponse.json(
+      { error: 'Failed to upload file' },
+      { status: 500 }
+    );
+  }
+}
