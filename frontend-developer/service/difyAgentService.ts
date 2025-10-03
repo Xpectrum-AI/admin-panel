@@ -5,6 +5,7 @@ export interface DifyAgentRequest {
   organizationId: string;
   modelProvider?: string;
   modelName?: string;
+  agentType?: 'Knowledge Agent (RAG)' | 'Action Agent (AI Employee)';
 }
 
 export interface DifyAgentResponse {

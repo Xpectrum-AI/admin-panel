@@ -12,6 +12,7 @@ interface CreateDifyAgentRequest {
   organizationId: string;
   modelProvider?: string;
   modelName?: string;
+  agentType?: 'Knowledge Agent (RAG)' | 'Action Agent (AI Employee)';
 }
 
 // Fallback function to create Dify agent using direct API calls
@@ -19,7 +20,8 @@ async function createDifyAgentDirectly(
   agentName: string, 
   organizationId: string, 
   modelProvider: string, 
-  modelName: string
+  modelName: string,
+  agentType: string = 'Knowledge Agent (RAG)'
 ): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
     console.log('🔄 Creating Dify agent using direct API calls...');
@@ -185,7 +187,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body: CreateDifyAgentRequest = await request.json();
-    const { agentName, organizationId, modelProvider = 'langgenius/openai/openai', modelName = 'gpt-4o' } = body;
+    const { agentName, organizationId, modelProvider = 'langgenius/openai/openai', modelName = 'gpt-4o', agentType = 'Knowledge Agent (RAG)' } = body;
 
     if (!agentName || !organizationId) {
       return NextResponse.json({ 
@@ -193,7 +195,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('🚀 Creating Dify agent:', { agentName, organizationId, modelProvider, modelName });
+    console.log('🚀 Creating Dify agent:', { agentName, organizationId, modelProvider, modelName, agentType });
 
     // Determine the correct script path based on the operating system
     const isWindows = process.platform === 'win32';
@@ -257,8 +259,8 @@ export async function POST(request: NextRequest) {
       
       // Determine the correct command based on the operating system
       const command = isWindows 
-        ? `powershell -ExecutionPolicy Bypass -File "${scriptPath}" -AgentName "${agentName}" -ModelProvider "${modelProvider}" -ModelName "${modelName}"`
-        : `bash "${scriptPath}" "${agentName}" "${modelProvider}" "${modelName}"`;
+        ? `powershell -ExecutionPolicy Bypass -File "${scriptPath}" -AgentName "${agentName}" -AgentType "${agentType}" -ModelProvider "${modelProvider}" -ModelName "${modelName}"`
+        : `bash "${scriptPath}" "${agentName}" "${agentType}" "${modelProvider}" "${modelName}"`;
       
       console.log('🔧 Executing command:', command);
       console.log('🔧 Platform:', process.platform);
@@ -364,7 +366,7 @@ export async function POST(request: NextRequest) {
       // Try fallback method using direct API calls
       console.log('🔄 Attempting fallback method using direct API calls...');
       try {
-        const fallbackResult = await createDifyAgentDirectly(agentName, organizationId, modelProvider, modelName);
+        const fallbackResult = await createDifyAgentDirectly(agentName, organizationId, modelProvider, modelName, agentType);
         if (fallbackResult.success) {
           console.log('✅ Fallback method succeeded');
           return NextResponse.json({
