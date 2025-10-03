@@ -96,6 +96,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [showAgentPrefixModal, setShowAgentPrefixModal] = useState(false);
   const [agentPrefix, setAgentPrefix] = useState('');
+  const [agentType, setAgentType] = useState<'Knowledge Agent (RAG)' | 'Action Agent (AI Employee)'>('Knowledge Agent (RAG)');
   const [isCreatingAgent, setIsCreatingAgent] = useState(false);
   const [deletingAgentId, setDeletingAgentId] = useState<string | null>(null);
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
@@ -154,7 +155,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
       const orgs = userClass.getOrgs?.() || [];
       console.log('🔍 Available organizations from userClass:', orgs);
       console.log('🔍 Organization details:', orgs.map((org: any) => ({ orgId: org.orgId, id: org.id, name: org.name })));
-      if ( orgs.length > 0) {
+      if (orgs.length > 0) {
         const org = orgs[0] as any;
         const orgIdFromClass = org.orgId || org.id || '';
         console.log('🔍 First org details:', org);
@@ -487,7 +488,8 @@ export default function AgentsTab({ }: AgentsTabProps) {
         agentName: agentNameUuid, // Use the UUID format for Dify
         organizationId: orgId,
         modelProvider: 'langgenius/openai/openai',
-        modelName: 'gpt-4o'
+        modelName: 'gpt-4o',
+        agentType: agentType
       });
 
       console.log('📋 Dify creation result:', difyResult);
@@ -498,7 +500,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
         setGeneratedDifyApiKey(difyApiKey);
         console.log('✅ Dify agent created successfully with API key:', difyApiKey.substring(0, 10) + '...');
         console.log('✅ Dify app ID:', difyAppId);
-        
+
         // Store the app ID mapping in localStorage for later use
         if (difyAppId && difyApiKey) {
           localStorage.setItem(`dify_app_id_${difyApiKey}`, difyAppId);
@@ -1443,38 +1445,186 @@ Remember: You are the first point of contact for many patients. Your professiona
         {/* Agent Prefix Modal */}
         {showAgentPrefixModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className={`p-6 rounded-xl shadow-xl max-w-md w-full mx-4 ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+            <div className={`p-8 rounded-2xl shadow-2xl max-w-2xl w-full mx-4 ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
               }`}>
-              <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                Create New Agent
-              </h3>
-              <p className={`text-sm mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                Enter a unique prefix for your new agent. This will be used as the agent identifier.
-              </p>
-              <input
-                type="text"
-                value={agentPrefix}
-                onChange={(e) => setAgentPrefix(e.target.value)}
-                placeholder="e.g., customer-support, sales-bot"
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${isDarkMode
-                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                  }`}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    handleAgentPrefixSubmit();
-                  }
-                }}
-              />
-              <div className="flex gap-3 mt-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
+                  <svg className={`w-6 h-6 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    Create New Agent
+                  </h3>
+                  <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Configure your AI agent for optimal performance
+                  </p>
+                </div>
+              </div>
+
+              {/* Agent Type Selection */}
+              <div className="mb-6">
+                <label className={`block text-sm font-semibold mb-3 ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                  Agent Configuration
+                </label>
+                <div className="space-y-3">
+                  <div className={`p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${agentType === 'Knowledge Agent (RAG)'
+                    ? isDarkMode
+                      ? 'border-blue-500 bg-blue-900/20'
+                      : 'border-blue-500 bg-blue-50'
+                    : isDarkMode
+                      ? 'border-gray-600 bg-gray-700/50 hover:border-gray-500'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`} onClick={() => setAgentType('Knowledge Agent (RAG)')}>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${agentType === 'Knowledge Agent (RAG)'
+                        ? 'border-blue-500 bg-blue-500'
+                        : isDarkMode ? 'border-gray-500' : 'border-gray-300'
+                        }`}>
+                        {agentType === 'Knowledge Agent (RAG)' && (
+                          <div className="w-2 h-2 rounded-full bg-white"></div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                            Knowledge Agent
+                          </h4>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${isDarkMode ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-100 text-blue-700'
+                            }`}>
+                            RAG
+                          </span>
+                        </div>
+                        <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                          Specialized for information retrieval, document analysis, and knowledge-based Q&A with advanced search capabilities
+                        </p>
+                        <div className="flex items-center gap-4 mt-2 text-xs">
+                          <span className={`flex items-center gap-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                            Document Search
+                          </span>
+                          <span className={`flex items-center gap-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                            Q&A Engine
+                          </span>
+                          <span className={`flex items-center gap-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                            Blocking Mode
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={`p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${agentType === 'Action Agent (AI Employee)'
+                    ? isDarkMode
+                      ? 'border-green-500 bg-green-900/20'
+                      : 'border-green-500 bg-green-50'
+                    : isDarkMode
+                      ? 'border-gray-600 bg-gray-700/50 hover:border-gray-500'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`} onClick={() => setAgentType('Action Agent (AI Employee)')}>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${agentType === 'Action Agent (AI Employee)'
+                        ? 'border-green-500 bg-green-500'
+                        : isDarkMode ? 'border-gray-500' : 'border-gray-300'
+                        }`}>
+                        {agentType === 'Action Agent (AI Employee)' && (
+                          <div className="w-2 h-2 rounded-full bg-white"></div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                            Action Agent
+                          </h4>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${isDarkMode ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700'
+                            }`}>
+                            AI Employee
+                          </span>
+                        </div>
+                        <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                          Intelligent assistant capable of task execution, tool integration, and complex workflow automation
+                        </p>
+                        <div className="flex items-center gap-4 mt-2 text-xs">
+                          <span className={`flex items-center gap-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                            Function Calling
+                          </span>
+                          <span className={`flex items-center gap-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                            Tool Integration
+                          </span>
+                          <span className={`flex items-center gap-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                            Streaming Mode
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Agent Identifier Input */}
+              <div className="mb-6">
+                <label className={`block text-sm font-semibold mb-3 ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                  Agent Identifier
+                </label>
+                <div className="relative">
+                  <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none`}>
+                    <svg className={`w-5 h-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    value={agentPrefix}
+                    onChange={(e) => setAgentPrefix(e.target.value)}
+                    placeholder="e.g., customer-support, sales-automation"
+                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${isDarkMode
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:bg-gray-600'
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:bg-gray-50'
+                      }`}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleAgentPrefixSubmit();
+                      }
+                    }}
+                  />
+                </div>
+                <div className="mt-2 flex items-start gap-2">
+                  <svg className={`w-4 h-4 mt-0.5 ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`} fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <p className={`text-xs ${isDarkMode ? 'text-amber-200' : 'text-amber-700'}`}>
+                    <span className="font-medium">Requirements:</span> 3-50 characters, lowercase letters, numbers, and underscores only. This will be used as your agent's unique identifier.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button
                   onClick={() => {
                     setShowAgentPrefixModal(false);
                     setAgentPrefix('');
+                    setAgentType('Knowledge Agent (RAG)');
                   }}
-                  className={`flex-1 px-4 py-2 rounded-lg transition-colors ${isDarkMode
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all duration-200 ${isDarkMode
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-gray-900'
                     }`}
                 >
                   Cancel
@@ -1482,9 +1632,27 @@ Remember: You are the first point of contact for many patients. Your professiona
                 <button
                   onClick={handleAgentPrefixSubmit}
                   disabled={!agentPrefix.trim() || isCreatingAgent}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${isCreatingAgent
+                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                    }`}
                 >
-                  {isCreatingAgent ? 'Creating...' : 'Create Agent'}
+                  {isCreatingAgent ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Creating Agent...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      Create Agent
+                    </>
+                  )}
                 </button>
               </div>
             </div>
