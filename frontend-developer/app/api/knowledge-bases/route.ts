@@ -1,13 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Configuration - same as your scripts
-const CONSOLE_ORIGIN = "https://demos.xpectrum-ai.com";
-const ADMIN_EMAIL = "ghosh.ishw@gmail.com";
-const ADMIN_PASSWORD = "Ghosh1@*123";
-const WS_ID = "661d95ae-77ee-4cfd-88e3-e6f3ef8d638b";
+// Configuration from environment variables with fallback values
+const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN || "https://demos.xpectrum-ai.com";
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL || "ghosh.ishw@gmail.com";
+const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD || "Ghosh1@*123";
+const WS_ID = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID || "661d95ae-77ee-4cfd-88e3-e6f3ef8d638b";
+
+// Debug logging to help identify environment variable issues
+console.log('🔍 Environment variables check:');
+console.log('🔍 CONSOLE_ORIGIN:', CONSOLE_ORIGIN);
+console.log('🔍 ADMIN_EMAIL:', ADMIN_EMAIL ? 'Present' : 'Missing');
+console.log('🔍 ADMIN_PASSWORD:', ADMIN_PASSWORD ? 'Present' : 'Missing');
+console.log('🔍 WS_ID:', WS_ID ? 'Present' : 'Missing');
 
 // Helper function to get auth token
 async function getAuthToken() {
+  console.log('🔐 Attempting authentication with:', {
+    url: `${CONSOLE_ORIGIN}/console/api/login`,
+    email: ADMIN_EMAIL,
+    password: ADMIN_PASSWORD ? 'Present' : 'Missing'
+  });
+
   const loginResponse = await fetch(`${CONSOLE_ORIGIN}/console/api/login`, {
     method: 'POST',
     headers: {
@@ -19,11 +32,16 @@ async function getAuthToken() {
     })
   });
 
+  console.log('🔐 Login response status:', loginResponse.status);
+
   if (!loginResponse.ok) {
-    throw new Error('Failed to authenticate');
+    const errorText = await loginResponse.text();
+    console.error('❌ Authentication failed:', errorText);
+    throw new Error(`Failed to authenticate: ${loginResponse.status} - ${errorText}`);
   }
 
   const loginData = await loginResponse.json();
+  console.log('✅ Authentication successful');
   return loginData.data?.access_token || loginData.access_token || loginData.data?.token;
 }
 
