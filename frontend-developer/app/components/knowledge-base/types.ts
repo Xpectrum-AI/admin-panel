@@ -39,18 +39,32 @@ export interface DocumentSegment {
   updatedAt: string;
 }
 
+export interface ChunkSettings {
+  mode: 'automatic' | 'custom' | 'hierarchical' | 'structure';
+  chunkSize?: number;
+  chunkOverlap?: number;
+  minSectionSize?: number;
+  maxSectionSize?: number;
+  headingPriority?: number;
+  replaceExtraSpaces?: boolean;
+  removeUrlsEmails?: boolean;
+}
+
 export interface CreateForm {
   name: string;
   description: string;
   indexingTechnique: 'high_quality' | 'economy';
   permission: 'only_me' | 'all_team_members' | 'partial_members';
+  chunkSettings?: ChunkSettings;
 }
 
 export interface UploadForm {
   name: string;
   content: string;
+  url?: string;
   indexingTechnique: 'high_quality' | 'economy';
+  chunkSettings?: ChunkSettings;
 }
 
 export type ActiveSection = 'list' | 'create' | 'documents' | 'api-keys';
-export type UploadMethod = 'text' | 'file';
+export type UploadMethod = 'text' | 'file' | 'url';

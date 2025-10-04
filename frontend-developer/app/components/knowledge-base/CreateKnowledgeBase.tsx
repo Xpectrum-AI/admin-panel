@@ -119,6 +119,13 @@ export default function CreateKnowledgeBase({
             </select>
           </div>
 
+          {/* Info box about chunk settings */}
+          <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-blue-900/20 border border-blue-700' : 'bg-blue-50 border border-blue-200'}`}>
+            <p className={`text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+              💡 <strong>Tip:</strong> You can configure chunk settings for each document when uploading them to this knowledge base.
+            </p>
+          </div>
+
           <div className="flex justify-end gap-3 pt-4">
             <button
               onClick={onBack}
