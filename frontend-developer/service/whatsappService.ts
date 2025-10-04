@@ -2,7 +2,7 @@
 
 // Shared API utility functions
 const getApiBaseUrl = (): string => {
-  return process.env.NEXT_PUBLIC_LIVE_API_URL || 'https://d2ref4sfj4q82j.cloudfront.net';
+  return process.env.NEXT_PUBLIC_LIVE_API_URL ;
 };
 
 // Generic API request function
@@ -64,7 +64,7 @@ const makeWhatsAppApiRequest = async (
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'x-api-key': apiKey,
+        'X-API-Key': apiKey,
       },
       body: params.toString(),
     });
@@ -377,6 +377,48 @@ export class WhatsAppService {
     } catch (error: any) {
       console.error('❌ Error fetching WhatsApp receiving number agent mappings:', error);
       return { success: false, message: error.message };
+    }
+  }
+
+  /**
+   * Send WhatsApp message using the new API format
+   * POST /whatsapp/send-message
+   */
+  static async sendMessage(
+    toNumber: string,
+    messageText: string,
+    messageType: string = 'text',
+    context?: string,
+    receivingNumber?: string
+  ): Promise<{ success: boolean; message: string; data?: any }> {
+    console.log('🚀 Sending WhatsApp message:', {
+      toNumber,
+      messageText: messageText.substring(0, 50) + '...',
+      messageType,
+      context,
+      receivingNumber
+    });
+
+    const formData = {
+      to_number: toNumber,
+      message_text: messageText,
+      message_type: messageType,
+      ...(context && { context }),
+      ...(receivingNumber && { receiving_number: receivingNumber })
+    };
+
+    try {
+      const result = await makeWhatsAppApiRequest('/whatsapp/send-message', formData);
+      
+      console.log('✅ WhatsApp message sent successfully:', result);
+      return {
+        success: true,
+        message: result.message || 'WhatsApp message sent successfully!',
+        data: result.data
+      };
+    } catch (error) {
+      console.error('❌ Failed to send WhatsApp message:', error);
+      throw error;
     }
   }
 }
