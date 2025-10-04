@@ -1,761 +1,303 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock, Mail, User, Send, Loader2, AlertCircle, CheckCircle, XCircle, Search, Plus, Edit, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Mail, User, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuthInfo } from '@propelauth/react';
 import { useTheme } from '../contexts/ThemeContext';
 import { GmailService } from '../../service/gmailService';
-import { getAgentsByOrganization } from '../../service/phoneNumberService';
+import { 
+  SchedulerFormData, 
+  FormErrors
+} from './types/phoneNumbers';
 import { useOrganizationId } from './utils/phoneNumberUtils';
 
-interface Agent {
-    id: string;
-    name: string;
-    chatbot_key?: string;
-    agent_prefix: string;
-}
-
-interface GmailCampaign {
-    id: string;
-    name: string;
-    subject: string;
-    content: string;
-    recipient_emails: string[];
-    scheduled_time: string;
-    status: 'draft' | 'scheduled' | 'sent' | 'failed';
-    agent_id: string;
-    agent_name: string;
-    created_at: string;
-    updated_at: string;
-}
+// Custom Gmail icon component
+const GmailIcon = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+  >
+    <path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-.904.732-1.636 1.636-1.636h3.819v6.545L12 4.91l6.545 5.456V3.82h3.819A1.636 1.636 0 0 1 24 5.457z"/>
+  </svg>
+);
 
 interface OutboundGmailProps {
-    refreshTrigger?: number;
+  refreshTrigger?: number;
 }
 
 export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
-    const { isDarkMode } = useTheme();
-    const { user, userClass } = useAuthInfo();
-    const getOrganizationId = useOrganizationId();
+  const { isDarkMode } = useTheme();
+  const { user, userClass } = useAuthInfo();
+  const getOrganizationId = useOrganizationId();
+  
+  // State for Gmail message
+  const [showCreateSchedulerModal, setShowCreateSchedulerModal] = useState(false);
+  
+  // Gmail message form state
+  const [schedulerForm, setSchedulerForm] = useState<SchedulerFormData>({
+    organization_id: '',
+    agent_prefix: '',
+    recipient_phone: '', // Will be used for to_email
+    scheduled_time: '',
+    flexible_time_minutes: 0,
+    max_retries: 3,
+    message_text: '', // Will be used for message
+    message_type: 'text',
+    context: '',
+    receiving_number: '' // Will be used for from_email
+  });
+  const [sending, setSending] = useState(false);
+  const [schedulerError, setSchedulerError] = useState<string | null>(null);
+  const [schedulerSuccess, setSchedulerSuccess] = useState<string | null>(null);
 
-    // State management
-    const [campaigns, setCampaigns] = useState<GmailCampaign[]>([]);
-    const [selectedCampaign, setSelectedCampaign] = useState<GmailCampaign | null>(null);
-    const [loadingCampaigns, setLoadingCampaigns] = useState(false);
-    const [showCreateCampaignModal, setShowCreateCampaignModal] = useState(false);
-    const [showEditCampaignModal, setShowEditCampaignModal] = useState(false);
-    const [editingCampaign, setEditingCampaign] = useState<GmailCampaign | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
+  // Load data on component mount
+  useEffect(() => {
+    const orgId = getOrganizationId();
+    setSchedulerForm(prev => ({ ...prev, organization_id: orgId }));
+  }, [getOrganizationId]);
 
-    // Campaign form state
-    const [campaignForm, setCampaignForm] = useState({
-        name: '',
-        subject: '',
-        content: '',
-        recipient_emails: '',
-        scheduled_time: '',
-        agent_id: ''
-    });
+  // Form validation function
+  const validateForm = (): boolean => {
+    const errors: FormErrors = {};
+    
+    // From email validation
+    if (!schedulerForm.receiving_number.trim()) {
+      errors.receiving_number = 'From email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(schedulerForm.receiving_number)) {
+      errors.receiving_number = 'Please enter a valid email address';
+    }
+    
+    // To email validation
+    if (!schedulerForm.recipient_phone.trim()) {
+      errors.recipient_phone = 'To email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(schedulerForm.recipient_phone)) {
+      errors.recipient_phone = 'Please enter a valid email address';
+    }
+    
+    // Subject validation (using context field for subject)
+    if (!schedulerForm.context?.trim()) {
+      errors.context = 'Subject is required';
+    }
+    
+    // Message text validation
+    if (!schedulerForm.message_text?.trim()) {
+      errors.message_text = 'Message text is required';
+    }
+    
+    return Object.keys(errors).length === 0;
+  };
 
-    const [saving, setSaving] = useState(false);
-    const [campaignError, setCampaignError] = useState<string | null>(null);
-    const [campaignSuccess, setCampaignSuccess] = useState<string | null>(null);
+  // Send Gmail message function
+  const handleSendGmailMessage = async () => {
+    setSchedulerError(null);
+    
+    // Validate form
+    if (!validateForm()) {
+      setSchedulerError('Please fix the validation errors below.');
+      return;
+    }
 
-    // Agents state
-    const [agents, setAgents] = useState<Agent[]>([]);
-    const [loadingAgents, setLoadingAgents] = useState(false);
+    setSending(true);
+    setSchedulerError(null);
+    setSchedulerSuccess(null);
 
-    // Load data on component mount
-    useEffect(() => {
-        loadCampaigns();
-        loadAgents();
-    }, []);
+    try {
+      // Send Gmail message using the API format
+      const result = await GmailService.sendTestEmail(
+        schedulerForm.recipient_phone, // to_email
+        schedulerForm.context, // subject
+        schedulerForm.message_text, // message
+        schedulerForm.receiving_number // from_email
+      );
 
-    // Reload data when refreshTrigger changes
-    useEffect(() => {
-        if (refreshTrigger && refreshTrigger > 0) {
-            loadCampaigns();
-            loadAgents();
-        }
-    }, [refreshTrigger]);
-
-    const loadCampaigns = useCallback(async () => {
-        setLoadingCampaigns(true);
-        try {
-            console.log('🚀 Loading Gmail campaigns...');
-            // TODO: Implement Gmail campaigns API call
-            // For now, using sample data
-            const sampleCampaigns: GmailCampaign[] = [
-                {
-                    id: '1',
-                    name: 'Welcome Email Campaign',
-                    subject: 'Welcome to our service!',
-                    content: 'Thank you for joining us...',
-                    recipient_emails: ['user1@example.com', 'user2@example.com'],
-                    scheduled_time: '2024-01-20T10:00:00Z',
-                    status: 'scheduled',
-                    agent_id: 'agent_001',
-                    agent_name: 'Riley',
-                    created_at: '2024-01-15T10:00:00Z',
-                    updated_at: '2024-01-15T10:00:00Z'
-                },
-                {
-                    id: '2',
-                    name: 'Newsletter Campaign',
-                    subject: 'Monthly Newsletter',
-                    content: 'Here are the latest updates...',
-                    recipient_emails: ['user3@example.com'],
-                    scheduled_time: '2024-01-25T14:00:00Z',
-                    status: 'draft',
-                    agent_id: 'agent_002',
-                    agent_name: 'Elliot',
-                    created_at: '2024-01-16T09:00:00Z',
-                    updated_at: '2024-01-16T09:00:00Z'
-                }
-            ];
-            setCampaigns(sampleCampaigns);
-        } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-            console.error('Error loading Gmail campaigns:', errorMessage);
-            setCampaigns([]);
-        } finally {
-            setLoadingCampaigns(false);
-        }
-    }, []);
-
-    const loadAgents = useCallback(async () => {
-        setLoadingAgents(true);
-        try {
-            const orgId = getOrganizationId();
-
-            if (!orgId) {
-                setAgents([]);
-                return;
-            }
-
-            console.log('🚀 Loading agents for org:', orgId);
-            const response = await getAgentsByOrganization(orgId);
-            console.log('🚀 Agents API response:', response);
-
-            if (response.success && response.data) {
-                // Ensure the data is an array
-                let agentsData = response.data;
-
-                // Handle different response formats
-                if (!Array.isArray(agentsData)) {
-                    if (agentsData.agents && Array.isArray(agentsData.agents)) {
-                        agentsData = agentsData.agents;
-                    } else if (agentsData.data && Array.isArray(agentsData.data)) {
-                        agentsData = agentsData.data;
-                    } else {
-                        console.log('❌ Agents data is not in expected array format:', agentsData);
-                        agentsData = [];
-                    }
-                }
-
-                console.log('✅ Agents loaded:', agentsData);
-                setAgents(agentsData);
-            } else {
-                console.log('❌ Agents API response failed:', response);
-                setAgents([]);
-            }
-        } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-            console.error('❌ Error loading agents:', errorMessage);
-            setAgents([]);
-        } finally {
-            setLoadingAgents(false);
-        }
-    }, [getOrganizationId]);
-
-    const handleSelectCampaign = (campaign: GmailCampaign) => {
-        setSelectedCampaign(campaign);
-    };
-
-    const handleEditCampaign = (campaign: GmailCampaign) => {
-        setEditingCampaign(campaign);
-        setCampaignForm({
-            name: campaign.name,
-            subject: campaign.subject,
-            content: campaign.content,
-            recipient_emails: campaign.recipient_emails.join(', '),
-            scheduled_time: campaign.scheduled_time,
-            agent_id: campaign.agent_id
+      if (result.success) {
+        setSchedulerSuccess('Gmail message sent successfully!');
+        
+        // Reset form
+        const orgId = getOrganizationId();
+        setSchedulerForm({
+          organization_id: orgId,
+          agent_prefix: '',
+          recipient_phone: '',
+          scheduled_time: '',
+          flexible_time_minutes: 0,
+          max_retries: 3,
+          message_text: '',
+          message_type: 'text',
+          context: '',
+          receiving_number: ''
         });
-        setShowEditCampaignModal(true);
-    };
+        
+        // Close modal
+        setShowCreateSchedulerModal(false);
+      } else {
+        setSchedulerError(result.message || 'Failed to send Gmail message');
+      }
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setSchedulerError('Failed to send Gmail message: ' + errorMessage);
+      console.error('Error sending Gmail message:', err);
+    } finally {
+      setSending(false);
+    }
+  };
 
-    const handleDeleteCampaign = async (campaignId: string) => {
-        if (!confirm('Are you sure you want to delete this Gmail campaign?')) {
-            return;
-        }
+  const clearMessages = () => {
+    setSchedulerError(null);
+    setSchedulerSuccess(null);
+  };
 
-        try {
-            // TODO: Implement Gmail campaign deletion API call
-            setCampaignSuccess('Gmail campaign deleted successfully!');
-            await loadCampaigns();
-            if (selectedCampaign?.id === campaignId) {
-                setSelectedCampaign(null);
-            }
-        } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-            setCampaignError('Failed to delete Gmail campaign: ' + errorMessage);
-        }
-    };
+  useEffect(() => {
+    if (schedulerError || schedulerSuccess) {
+      const timer = setTimeout(clearMessages, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [schedulerError, schedulerSuccess]);
 
-    const handleCreateCampaign = async () => {
-        setCampaignError(null);
+  return (
+    <div className="flex h-full">
+      {/* Main Content */}
+      <div className="flex-1 p-2 flex items-center justify-center min-h-[400px]">
+        <div className="max-w-2xl mx-auto text-center">
+          {/* Header */}
+          <div className="mb-4">
+            <h1 className={`text-2xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              Gmail Send Message
+            </h1>
+            <p className={`text-base ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              Send Gmail messages
+            </p>
+          </div>
 
-        if (!campaignForm.name || !campaignForm.subject || !campaignForm.content || !campaignForm.agent_id) {
-            setCampaignError('Please fill in all required fields.');
-            return;
-        }
-
-        setSaving(true);
-        setCampaignError(null);
-        setCampaignSuccess(null);
-
-        try {
-            // TODO: Implement Gmail campaign creation API call
-            setCampaignSuccess('Gmail campaign created successfully!');
-
-            // Reset form
-            setCampaignForm({
-                name: '',
-                subject: '',
-                content: '',
-                recipient_emails: '',
-                scheduled_time: '',
-                agent_id: ''
-            });
-
-            setShowCreateCampaignModal(false);
-            await loadCampaigns();
-        } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-            setCampaignError('Failed to create Gmail campaign: ' + errorMessage);
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const handleUpdateCampaign = async () => {
-        if (!editingCampaign) return;
-
-        setSaving(true);
-        setCampaignError(null);
-
-        try {
-            // TODO: Implement Gmail campaign update API call
-            setCampaignSuccess('Gmail campaign updated successfully!');
-
-            setShowEditCampaignModal(false);
-            setEditingCampaign(null);
-            await loadCampaigns();
-        } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-            setCampaignError('Failed to update Gmail campaign: ' + errorMessage);
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const clearMessages = () => {
-        setCampaignError(null);
-        setCampaignSuccess(null);
-    };
-
-    useEffect(() => {
-        if (campaignError || campaignSuccess) {
-            const timer = setTimeout(clearMessages, 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [campaignError, campaignSuccess]);
-
-    // Filter campaigns based on search term
-    const filteredCampaigns = campaigns.filter(campaign =>
-        campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        campaign.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        campaign.agent_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        campaign.status.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    return (
-        <div className="flex h-full">
-            {/* Left Sidebar - Campaigns List */}
-            <div className="w-80 border-r border-gray-200/50 flex flex-col">
-                <div className="p-4 border-b border-gray-200/50">
-                    <div className="flex items-center justify-between mb-3">
-                        <div>
-                            <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                Email Campaigns
-                            </h3>
-                            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                {searchTerm ? `${filteredCampaigns.length} of ${campaigns.length} campaigns` : `${campaigns.length} campaigns`}
-                            </p>
-                        </div>
-
-                        {/* Create Campaign Button */}
-                        <button
-                            onClick={() => setShowCreateCampaignModal(true)}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all duration-300 ${isDarkMode
-                                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl'
-                                    : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-lg hover:shadow-xl'
-                                }`}
-                        >
-                            <Plus className="h-4 w-4" />
-                            <span className="text-sm font-semibold">Create Campaign</span>
-                        </button>
-                    </div>
-
-                    <div className="relative group">
-                        <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 transition-colors ${isDarkMode ? 'text-gray-500 group-focus-within:text-blue-400' : 'text-gray-400 group-focus-within:text-blue-500'}`} />
-                        <input
-                            type="text"
-                            placeholder="Search campaigns..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            aria-label="Search campaigns"
-                            className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 text-sm ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'}`}
-                        />
-                    </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-4">
-                    {loadingCampaigns ? (
-                        <div className="flex items-center justify-center py-8">
-                            <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-                            <span className={`ml-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                Loading campaigns...
-                            </span>
-                        </div>
-                    ) : filteredCampaigns.length === 0 ? (
-                        <div className="text-center py-8">
-                            <Mail className={`h-8 w-8 mx-auto mb-3 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`} />
-                            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                {searchTerm ? 'No campaigns match your search' : 'No campaigns found'}
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="space-y-2">
-                            {filteredCampaigns.map((campaign) => (
-                                <div
-                                    key={campaign.id}
-                                    onClick={() => handleSelectCampaign(campaign)}
-                                    className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${selectedCampaign?.id === campaign.id
-                                            ? isDarkMode
-                                                ? 'bg-blue-600/20 border border-blue-500/50'
-                                                : 'bg-blue-50 border border-blue-200'
-                                            : isDarkMode
-                                                ? 'bg-gray-700/50 hover:bg-gray-700'
-                                                : 'bg-gray-50 hover:bg-gray-100'
-                                        }`}
-                                >
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                            {campaign.name}
-                                        </span>
-                                        <span className={`px-2 py-1 rounded-full text-xs ${campaign.status === 'sent'
-                                                ? 'bg-green-100 text-green-800'
-                                                : campaign.status === 'scheduled'
-                                                    ? 'bg-blue-100 text-blue-800'
-                                                    : campaign.status === 'draft'
-                                                        ? 'bg-yellow-100 text-yellow-800'
-                                                        : 'bg-red-100 text-red-800'
-                                            }`}>
-                                            {campaign.status}
-                                        </span>
-                                    </div>
-                                    <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                        {campaign.subject}
-                                    </p>
-                                    <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                                        {campaign.agent_name} • {new Date(campaign.scheduled_time).toLocaleDateString()}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Right Side - Campaign Details */}
-            <div className="flex-1 p-6">
-                {selectedCampaign ? (
-                    <div className="space-y-6">
-                        {/* Header */}
-                        <div className="flex items-center gap-4">
-                            <div className={`p-3 rounded-xl ${isDarkMode ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
-                                <Mail className={`h-8 w-8 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-                            </div>
-                            <div>
-                                <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                    {selectedCampaign.name}
-                                </h2>
-                                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                    Email Campaign Details
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
-                                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                    Subject
-                                </label>
-                                <p className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                    {selectedCampaign.subject}
-                                </p>
-                            </div>
-
-                            <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
-                                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                    Agent
-                                </label>
-                                <p className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                    {selectedCampaign.agent_name}
-                                </p>
-                            </div>
-
-                            <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
-                                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                    Scheduled Time
-                                </label>
-                                <p className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                    {new Date(selectedCampaign.scheduled_time).toLocaleString()}
-                                </p>
-                            </div>
-
-                            <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
-                                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                    Status
-                                </label>
-                                <span className={`px-2 py-1 rounded-full text-xs ${selectedCampaign.status === 'sent'
-                                        ? 'bg-green-100 text-green-800'
-                                        : selectedCampaign.status === 'scheduled'
-                                            ? 'bg-blue-100 text-blue-800'
-                                            : selectedCampaign.status === 'draft'
-                                                ? 'bg-yellow-100 text-yellow-800'
-                                                : 'bg-red-100 text-red-800'
-                                    }`}>
-                                    {selectedCampaign.status}
-                                </span>
-                            </div>
-
-                            <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
-                                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                    Recipients
-                                </label>
-                                <p className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                    {selectedCampaign.recipient_emails.length} recipients
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
-                            <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                Content
-                            </label>
-                            <p className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                {selectedCampaign.content}
-                            </p>
-                        </div>
-
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => handleEditCampaign(selectedCampaign)}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                            >
-                                Edit
-                            </button>
-                            <button
-                                onClick={() => handleDeleteCampaign(selectedCampaign.id)}
-                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                            >
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="flex items-center justify-center h-full">
-                        <div className="text-center">
-                            <Mail className={`h-16 w-16 mx-auto mb-4 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`} />
-                            <h3 className={`text-xl font-medium mb-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                Select an Email Campaign
-                            </h3>
-                            <p className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                                Choose a campaign from the sidebar to view its details
-                            </p>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Create Campaign Modal */}
-            {showCreateCampaignModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4" onClick={() => setShowCreateCampaignModal(false)}>
-                    <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 max-w-4xl w-full shadow-2xl max-h-[90vh] overflow-y-auto ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-md' : 'bg-white/95 backdrop-blur-md'}`} onClick={(e) => e.stopPropagation()}>
-                        <h3 className={`text-lg sm:text-xl lg:text-2xl font-bold mb-4 sm:mb-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-                            Create Email Campaign
-                        </h3>
-
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className={`flex items-center gap-2 text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                        <Mail className="h-4 w-4" />
-                                        Campaign Name *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={campaignForm.name}
-                                        onChange={(e) => setCampaignForm({ ...campaignForm, name: e.target.value })}
-                                        className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className={`flex items-center gap-2 text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                        <User className="h-4 w-4" />
-                                        Agent *
-                                    </label>
-                                    <select
-                                        value={campaignForm.agent_id}
-                                        onChange={(e) => setCampaignForm({ ...campaignForm, agent_id: e.target.value })}
-                                        className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
-                                    >
-                                        <option value="">Select an agent</option>
-                                        {Array.isArray(agents) && agents.map((agent) => (
-                                            <option key={agent.id} value={agent.id}>
-                                                {agent.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className={`flex items-center gap-2 text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                    <Mail className="h-4 w-4" />
-                                    Subject *
-                                </label>
-                                <input
-                                    type="text"
-                                    value={campaignForm.subject}
-                                    onChange={(e) => setCampaignForm({ ...campaignForm, subject: e.target.value })}
-                                    className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className={`flex items-center gap-2 text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                    <Mail className="h-4 w-4" />
-                                    Recipient Emails (comma-separated)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={campaignForm.recipient_emails}
-                                    onChange={(e) => setCampaignForm({ ...campaignForm, recipient_emails: e.target.value })}
-                                    placeholder="email1@example.com, email2@example.com"
-                                    className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-400'}`}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className={`flex items-center gap-2 text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                    <Calendar className="h-4 w-4" />
-                                    Scheduled Time
-                                </label>
-                                <input
-                                    type="datetime-local"
-                                    value={campaignForm.scheduled_time}
-                                    onChange={(e) => setCampaignForm({ ...campaignForm, scheduled_time: e.target.value })}
-                                    className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className={`flex items-center gap-2 text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                    <Mail className="h-4 w-4" />
-                                    Content *
-                                </label>
-                                <textarea
-                                    value={campaignForm.content}
-                                    onChange={(e) => setCampaignForm({ ...campaignForm, content: e.target.value })}
-                                    rows={6}
-                                    className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Error/Success Messages */}
-                        {campaignError && (
-                            <div className="p-2 sm:p-3 mb-3 sm:mb-4 rounded-lg bg-red-500/20 text-red-200 flex items-center gap-2 text-xs sm:text-sm">
-                                <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                                <p>{campaignError}</p>
-                            </div>
-                        )}
-
-                        {campaignSuccess && (
-                            <div className="p-2 sm:p-3 mb-3 sm:mb-4 rounded-lg bg-green-500/20 text-green-200 flex items-center gap-2 text-xs sm:text-sm">
-                                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                                <p>{campaignSuccess}</p>
-                            </div>
-                        )}
-
-                        {/* Submit Button */}
-                        <div className="mt-6 sm:mt-8 flex justify-center sticky bottom-0 bg-inherit pt-4">
-                            <button
-                                onClick={handleCreateCampaign}
-                                disabled={saving || !campaignForm.name || !campaignForm.subject || !campaignForm.content || !campaignForm.agent_id}
-                                className="group relative px-6 sm:px-8 lg:px-10 py-3 sm:py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg sm:rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 sm:gap-3"
-                            >
-                                {saving ? (
-                                    <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
-                                ) : (
-                                    <Mail className="h-4 w-4 sm:h-5 sm:w-5" />
-                                )}
-                                <span className="text-sm sm:text-base font-semibold">
-                                    {saving ? 'Creating...' : 'Create Campaign'}
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Edit Campaign Modal */}
-            {showEditCampaignModal && editingCampaign && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4" onClick={() => setShowEditCampaignModal(false)}>
-                    <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 max-w-4xl w-full shadow-2xl max-h-[90vh] overflow-y-auto ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-md' : 'bg-white/95 backdrop-blur-md'}`} onClick={(e) => e.stopPropagation()}>
-                        <h3 className={`text-lg sm:text-xl lg:text-2xl font-bold mb-4 sm:mb-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-                            Edit Email Campaign
-                        </h3>
-
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className={`flex items-center gap-2 text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                        <Mail className="h-4 w-4" />
-                                        Campaign Name *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={campaignForm.name}
-                                        onChange={(e) => setCampaignForm({ ...campaignForm, name: e.target.value })}
-                                        className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className={`flex items-center gap-2 text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                        <User className="h-4 w-4" />
-                                        Agent *
-                                    </label>
-                                    <select
-                                        value={campaignForm.agent_id}
-                                        onChange={(e) => setCampaignForm({ ...campaignForm, agent_id: e.target.value })}
-                                        className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
-                                    >
-                                        <option value="">Select an agent</option>
-                                        {Array.isArray(agents) && agents.map((agent) => (
-                                            <option key={agent.id} value={agent.id}>
-                                                {agent.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className={`flex items-center gap-2 text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                    <Mail className="h-4 w-4" />
-                                    Subject *
-                                </label>
-                                <input
-                                    type="text"
-                                    value={campaignForm.subject}
-                                    onChange={(e) => setCampaignForm({ ...campaignForm, subject: e.target.value })}
-                                    className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className={`flex items-center gap-2 text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                    <Mail className="h-4 w-4" />
-                                    Recipient Emails (comma-separated)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={campaignForm.recipient_emails}
-                                    onChange={(e) => setCampaignForm({ ...campaignForm, recipient_emails: e.target.value })}
-                                    placeholder="email1@example.com, email2@example.com"
-                                    className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-400'}`}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className={`flex items-center gap-2 text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                    <Calendar className="h-4 w-4" />
-                                    Scheduled Time
-                                </label>
-                                <input
-                                    type="datetime-local"
-                                    value={campaignForm.scheduled_time}
-                                    onChange={(e) => setCampaignForm({ ...campaignForm, scheduled_time: e.target.value })}
-                                    className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className={`flex items-center gap-2 text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                    <Mail className="h-4 w-4" />
-                                    Content *
-                                </label>
-                                <textarea
-                                    value={campaignForm.content}
-                                    onChange={(e) => setCampaignForm({ ...campaignForm, content: e.target.value })}
-                                    rows={6}
-                                    className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Error/Success Messages */}
-                        {campaignError && (
-                            <div className="p-2 sm:p-3 mb-3 sm:mb-4 rounded-lg bg-red-500/20 text-red-200 flex items-center gap-2 text-xs sm:text-sm">
-                                <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                                <p>{campaignError}</p>
-                            </div>
-                        )}
-
-                        {campaignSuccess && (
-                            <div className="p-2 sm:p-3 mb-3 sm:mb-4 rounded-lg bg-green-500/20 text-green-200 flex items-center gap-2 text-xs sm:text-sm">
-                                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                                <p>{campaignSuccess}</p>
-                            </div>
-                        )}
-
-                        {/* Submit Button */}
-                        <div className="mt-6 sm:mt-8 flex justify-center sticky bottom-0 bg-inherit pt-4">
-                            <button
-                                onClick={handleUpdateCampaign}
-                                disabled={saving || !campaignForm.name || !campaignForm.subject || !campaignForm.content || !campaignForm.agent_id}
-                                className="group relative px-6 sm:px-8 lg:px-10 py-3 sm:py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg sm:rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 sm:gap-3"
-                            >
-                                {saving ? (
-                                    <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
-                                ) : (
-                                    <Edit className="h-4 w-4 sm:h-5 sm:w-5" />
-                                )}
-                                <span className="text-sm sm:text-base font-semibold">
-                                    {saving ? 'Updating...' : 'Update Campaign'}
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+          {/* Send Message Button */}
+          <div className="flex justify-center">
+            <button
+              onClick={() => setShowCreateSchedulerModal(true)}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ${
+                isDarkMode
+                  ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white'
+                  : 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white'
+              }`}
+            >
+              <GmailIcon className="h-5 w-5" />
+              <span>Send Gmail Message</span>
+            </button>
+          </div>
         </div>
-    );
+      </div>
+
+      {/* Send Message Modal */}
+      {showCreateSchedulerModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowCreateSchedulerModal(false)}>
+          <div className={`rounded-xl p-6 max-w-2xl w-full shadow-2xl min-h-[500px] flex flex-col justify-center ${isDarkMode ? 'bg-gray-800/95 backdrop-blur-md' : 'bg-white/95 backdrop-blur-md'}`} onClick={(e) => e.stopPropagation()}>
+            <h3 className={`text-lg font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+              Send Gmail Message
+            </h3>
+            
+            <div className="space-y-3">
+              {/* From Email */}
+              <div className="space-y-2">
+                <label className={`flex items-center gap-2 text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  <Mail className="h-4 w-4" />
+                  From Email *
+                </label>
+                <input
+                  type="email"
+                  placeholder="support@company.com"
+                  value={schedulerForm.receiving_number}
+                  onChange={(e) => {
+                    setSchedulerForm({...schedulerForm, receiving_number: e.target.value});
+                  }}
+                  className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-400'}`}
+                />
+              </div>
+
+              {/* To Email */}
+              <div className="space-y-2">
+                <label className={`flex items-center gap-2 text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  <User className="h-4 w-4" />
+                  To Email *
+                </label>
+                <input
+                  type="email"
+                  placeholder="user@example.com"
+                  value={schedulerForm.recipient_phone}
+                  onChange={(e) => {
+                    setSchedulerForm({...schedulerForm, recipient_phone: e.target.value});
+                  }}
+                  className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-400'}`}
+                />
+              </div>
+
+              {/* Subject */}
+              <div className="space-y-2">
+                <label className={`flex items-center gap-2 text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Subject *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Email subject"
+                  value={schedulerForm.context}
+                  onChange={(e) => {
+                    setSchedulerForm({...schedulerForm, context: e.target.value});
+                  }}
+                  className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-400'}`}
+                />
+              </div>
+
+              {/* Message Text */}
+              <div className="space-y-2">
+                <label className={`flex items-center gap-2 text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Message *
+                </label>
+                <textarea
+                  placeholder="Enter your email message..."
+                  value={schedulerForm.message_text}
+                  onChange={(e) => {
+                    setSchedulerForm({...schedulerForm, message_text: e.target.value});
+                  }}
+                  rows={4}
+                  className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-400'}`}
+                />
+              </div>
+            </div>
+
+            {/* Error/Success Messages */}
+            {schedulerError && (
+              <div className="p-2 mb-3 rounded-lg bg-red-500/20 text-red-200 flex items-center gap-2 text-sm">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <p>{schedulerError}</p>
+              </div>
+            )}
+
+            {schedulerSuccess && (
+              <div className="p-2 mb-3 rounded-lg bg-green-500/20 text-green-200 flex items-center gap-2 text-sm">
+                <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                <p>{schedulerSuccess}</p>
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <div className="mt-4 flex justify-center">
+              <button
+                onClick={handleSendGmailMessage}
+                disabled={sending || !schedulerForm.recipient_phone || !schedulerForm.message_text || !schedulerForm.receiving_number || !schedulerForm.context}
+                className="group relative px-8 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
+              >
+                {sending ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <GmailIcon className="h-5 w-5" />
+                )}
+                <span className="text-base font-semibold">
+                  {sending ? 'Sending...' : 'Send Gmail Message'}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

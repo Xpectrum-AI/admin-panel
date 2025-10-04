@@ -2,7 +2,7 @@
 
 // Shared API utility functions
 const getApiBaseUrl = (): string => {
-  return process.env.NEXT_PUBLIC_LIVE_API_URL || 'https://d2ref4sfj4q82j.cloudfront.net';
+  return process.env.NEXT_PUBLIC_LIVE_API_URL ;
 };
 
 // Generic API request function
@@ -19,7 +19,7 @@ const makeApiRequest = async (
   const defaultOptions: RequestInit = {
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
+      'X-API-Key': apiKey,
       ...options.headers,
     },
     ...options,
@@ -383,6 +383,48 @@ export class GmailService {
     } catch (error) {
       console.error('❌ Failed to unassign Gmail email agent:', error);
       throw error;
+    }
+  }
+
+  // Send test email
+  static async sendTestEmail(
+    toEmail: string,
+    subject: string,
+    message: string,
+    fromEmail: string
+  ): Promise<{ success: boolean; message?: string; data?: any }> {
+    console.log('🚀 Sending test email:', {
+      toEmail,
+      subject: subject.substring(0, 50) + '...',
+      message: message.substring(0, 50) + '...',
+      fromEmail
+    });
+
+    // Build query parameters
+    const queryParams = new URLSearchParams({
+      to_email: toEmail,
+      subject: subject,
+      message: message,
+      from_email: fromEmail
+    });
+
+    try {
+      const result = await makeApiRequest(`/mail/send-test-email?${queryParams.toString()}`, {
+        method: 'POST'
+      });
+      
+      console.log('✅ Test email sent successfully:', result);
+      return {
+        success: true,
+        message: result.message || 'Test email sent successfully!',
+        data: result.data
+      };
+    } catch (error: any) {
+      console.error('❌ Failed to send test email:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to send test email'
+      };
     }
   }
 }
