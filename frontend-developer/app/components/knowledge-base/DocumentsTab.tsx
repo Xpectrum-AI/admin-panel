@@ -1,6 +1,7 @@
-import React from 'react';
-import { ArrowLeft, Upload, FileText, Trash2, Eye } from 'lucide-react';
-import { KnowledgeBase, Document, UploadForm, DocumentSegment } from './types';
+import React, { useState } from 'react';
+import { ArrowLeft, Upload, FileText, Trash2, Eye, Globe, Settings } from 'lucide-react';
+import { KnowledgeBase, Document, UploadForm, DocumentSegment, UploadMethod, ChunkSettings } from './types';
+import ChunkSettingsSection from './ChunkSettingsSection';
 
 interface DocumentsTabProps {
   isDarkMode: boolean;
@@ -9,13 +10,13 @@ interface DocumentsTabProps {
   selectedDocument: any;
   documentSegments: DocumentSegment[];
   uploadForm: UploadForm;
-  uploadMethod: 'text' | 'file';
+  uploadMethod: UploadMethod;
   selectedFile: File | null;
   dragActive: boolean;
   loading: boolean;
   onBack: () => void;
   onUploadFormChange: (form: UploadForm) => void;
-  onUploadMethodChange: (method: 'text' | 'file') => void;
+  onUploadMethodChange: (method: UploadMethod) => void;
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onDrag: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
@@ -51,6 +52,19 @@ export default function DocumentsTab({
   onToggleSegment,
   onToggleDocument,
 }: DocumentsTabProps) {
+  const [editingDocId, setEditingDocId] = useState<string | null>(null);
+  const [editChunkSettings, setEditChunkSettings] = useState<ChunkSettings>({
+    mode: 'structure',
+    chunkSize: 1024,
+    chunkOverlap: 50,
+    minSectionSize: 100,
+    maxSectionSize: 4000,
+    headingPriority: 50,
+    replaceExtraSpaces: true,
+    removeUrlsEmails: false
+  });
+  const [reindexing, setReindexing] = useState(false);
+
   if (!selectedKnowledgeBase) return null;
 
   const handleInputChange = (field: keyof UploadForm, value: string) => {
@@ -58,6 +72,52 @@ export default function DocumentsTab({
       ...uploadForm,
       [field]: value,
     });
+  };
+
+  const handleChunkSettingsChange = (settings: ChunkSettings) => {
+    onUploadFormChange({
+      ...uploadForm,
+      chunkSettings: settings,
+    });
+  };
+
+  const handleEditChunkSettings = (docId: string) => {
+    setEditingDocId(docId);
+  };
+
+  const handleReindexDocument = async () => {
+    if (!editingDocId || !selectedKnowledgeBase) return;
+    
+    setReindexing(true);
+    try {
+      const response = await fetch(`/api/knowledge-bases/${selectedKnowledgeBase.id}/documents/${editingDocId}/reindex`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ chunkSettings: editChunkSettings }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.warning) {
+          alert(`⚠️ ${result.message}\n\n${result.warning}`);
+        } else {
+          alert('✅ Document reindexing started! It may take a few moments to complete.');
+        }
+        setEditingDocId(null);
+        // Optionally refresh documents list
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert(`Failed to reindex: ${error.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error reindexing document:', error);
+      alert('Failed to reindex document');
+    } finally {
+      setReindexing(false);
+    }
   };
 
   if (selectedDocument) {
@@ -137,11 +197,30 @@ export default function DocumentsTab({
                         {segment.enabled ? 'Enabled' : 'Disabled'}
                       </span>
                     </div>
-                    <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} leading-relaxed`}>
-                      {segment.content.length > 200 
-                        ? `${segment.content.substring(0, 200)}...` 
-                        : segment.content
-                      }
+                    <div 
+                      className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} leading-relaxed cursor-help relative group`}
+                      title={segment.content}
+                    >
+                      <div className="relative">
+                        {segment.content.length > 200 
+                          ? `${segment.content.substring(0, 200)}...` 
+                          : segment.content
+                        }
+                      </div>
+                      
+                      {/* Tooltip on hover */}
+                      {segment.content.length > 200 && (
+                        <div className={`absolute left-0 right-0 bottom-full mb-2 p-4 rounded-lg shadow-2xl border-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 max-h-96 overflow-y-auto ${
+                          isDarkMode 
+                            ? 'bg-gray-900 border-gray-600 text-gray-100' 
+                            : 'bg-white border-gray-300 text-gray-900'
+                        }`}>
+                          <div className="text-xs font-semibold mb-2 text-blue-500">Full Content:</div>
+                          <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                            {segment.content}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -189,7 +268,7 @@ export default function DocumentsTab({
         <div className="flex gap-2 mb-4">
           <button
             onClick={() => onUploadMethodChange('text')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
+            className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
               uploadMethod === 'text'
                 ? 'bg-blue-500 text-white'
                 : isDarkMode
@@ -197,11 +276,12 @@ export default function DocumentsTab({
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
           >
+            <FileText className="h-4 w-4" />
             Text Content
           </button>
           <button
             onClick={() => onUploadMethodChange('file')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
+            className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
               uploadMethod === 'file'
                 ? 'bg-blue-500 text-white'
                 : isDarkMode
@@ -209,7 +289,21 @@ export default function DocumentsTab({
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
           >
+            <Upload className="h-4 w-4" />
             File Upload
+          </button>
+          <button
+            onClick={() => onUploadMethodChange('url')}
+            className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              uploadMethod === 'url'
+                ? 'bg-blue-500 text-white'
+                : isDarkMode
+                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            <Globe className="h-4 w-4" />
+            From URL
           </button>
         </div>
 
@@ -247,8 +341,18 @@ export default function DocumentsTab({
                 placeholder="Enter document content"
               />
             </div>
+            
+            {/* Chunk Settings */}
+            {uploadForm.chunkSettings && (
+              <ChunkSettingsSection
+                isDarkMode={isDarkMode}
+                chunkSettings={uploadForm.chunkSettings}
+                onChange={handleChunkSettingsChange}
+                collapsible={true}
+              />
+            )}
           </div>
-        ) : (
+        ) : uploadMethod === 'file' ? (
           <div className="space-y-4">
             <div>
               <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
@@ -314,17 +418,80 @@ export default function DocumentsTab({
                 />
               </div>
             </div>
+            
+            {/* Chunk Settings */}
+            {uploadForm.chunkSettings && (
+              <ChunkSettingsSection
+                isDarkMode={isDarkMode}
+                chunkSettings={uploadForm.chunkSettings}
+                onChange={handleChunkSettingsChange}
+                collapsible={true}
+              />
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
+                Document Name (Optional)
+              </label>
+              <input
+                type="text"
+                value={uploadForm.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDarkMode 
+                    ? 'bg-gray-800 border-gray-600 text-white' 
+                    : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                placeholder="Auto-generated from URL if left empty"
+              />
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
+                URL
+              </label>
+              <input
+                type="url"
+                value={uploadForm.url || ''}
+                onChange={(e) => handleInputChange('url', e.target.value)}
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  isDarkMode 
+                    ? 'bg-gray-800 border-gray-600 text-white' 
+                    : 'bg-white border-gray-300 text-gray-900'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                placeholder="https://example.com/article"
+              />
+              <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                Enter a URL to crawl and extract content using Firecrawl
+              </p>
+            </div>
+            
+            {/* Chunk Settings */}
+            {uploadForm.chunkSettings && (
+              <ChunkSettingsSection
+                isDarkMode={isDarkMode}
+                chunkSettings={uploadForm.chunkSettings}
+                onChange={handleChunkSettingsChange}
+                collapsible={true}
+              />
+            )}
           </div>
         )}
 
         <div className="flex justify-end pt-4">
           <button
             onClick={onUpload}
-            disabled={loading || (!uploadForm.name || (uploadMethod === 'text' ? !uploadForm.content : !selectedFile))}
+            disabled={
+              loading || 
+              (uploadMethod === 'text' && (!uploadForm.name || !uploadForm.content)) ||
+              (uploadMethod === 'file' && (!uploadForm.name || !selectedFile)) ||
+              (uploadMethod === 'url' && !uploadForm.url)
+            }
             className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
           >
-            <Upload className="h-4 w-4" />
-            {loading ? 'Uploading...' : 'Upload Document'}
+            {uploadMethod === 'url' ? <Globe className="h-4 w-4" /> : <Upload className="h-4 w-4" />}
+            {loading ? 'Processing...' : uploadMethod === 'url' ? 'Crawl & Upload' : 'Upload Document'}
           </button>
         </div>
       </div>
@@ -378,6 +545,13 @@ export default function DocumentsTab({
                     {doc.status}
                   </span>
                   <button 
+                    onClick={() => handleEditChunkSettings(doc.id)}
+                    className="p-1 hover:bg-purple-50 text-purple-500 hover:text-purple-700 rounded transition-colors"
+                    title="Edit chunk settings"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </button>
+                  <button 
                     onClick={() => onViewDocument(doc)}
                     className="p-1 hover:bg-blue-50 text-blue-500 hover:text-blue-700 rounded transition-colors"
                     title="View document details"
@@ -400,8 +574,70 @@ export default function DocumentsTab({
         <div className="text-center py-8">
           <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            No documents uploaded yet
-          </p>
+          No documents uploaded yet
+        </p>
+      </div>
+      )}
+
+      {/* Edit Chunk Settings Modal */}
+      {editingDocId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto ${
+            isDarkMode ? 'bg-gray-800' : 'bg-white'
+          }`}>
+            <div className={`sticky top-0 p-6 border-b ${
+              isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+            }`}>
+              <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                Reindex Document
+              </h3>
+              <div className={`mt-3 p-3 rounded-lg ${isDarkMode ? 'bg-yellow-900/20 border border-yellow-700/50' : 'bg-yellow-50 border border-yellow-200'}`}>
+                <p className={`text-sm ${isDarkMode ? 'text-yellow-300' : 'text-yellow-800'}`}>
+                  ⚠️ <strong>Note:</strong> Chunk settings cannot be modified for existing documents. This action will disable and re-enable the document to trigger reindexing with its original chunk settings. To use different chunk settings, please delete and re-upload the document.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <p className={`text-sm mb-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                Click "Reindex" below to refresh this document's index. This is useful if the document failed to index properly or if you want to rebuild its segments.
+              </p>
+            </div>
+
+            <div className={`sticky bottom-0 p-6 border-t flex justify-end gap-3 ${
+              isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+            }`}>
+              <button
+                onClick={() => setEditingDocId(null)}
+                disabled={reindexing}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  isDarkMode
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReindexDocument}
+                disabled={reindexing}
+                className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                  reindexing
+                    ? 'bg-purple-400 cursor-not-allowed'
+                    : 'bg-purple-600 hover:bg-purple-700'
+                } text-white`}
+              >
+                {reindexing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    Reindexing...
+                  </>
+                ) : (
+                  'Reindex Document'
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
