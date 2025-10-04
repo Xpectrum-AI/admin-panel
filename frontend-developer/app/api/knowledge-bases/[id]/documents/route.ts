@@ -134,10 +134,47 @@ export async function POST(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, content, indexingTechnique } = body;
+    const { name, content, indexingTechnique, chunkSettings } = body;
 
     // Get dataset API key for service API
     const apiKey = await getDatasetApiKey(id);
+    
+    // Build process_rule from chunk settings
+    let processRule = {
+      mode: 'automatic',
+      rules: {
+        pre_processing_rules: [
+          { id: 'remove_extra_spaces', enabled: true },
+          { id: 'remove_urls_emails', enabled: true }
+        ],
+        segmentation: {
+          separator: '\n',
+          max_tokens: 500
+        }
+      }
+    };
+
+    if (chunkSettings && chunkSettings.mode === 'structure') {
+      processRule = {
+        mode: 'hierarchical',
+        rules: {
+          pre_processing_rules: [
+            { id: 'remove_extra_spaces', enabled: chunkSettings.replaceExtraSpaces !== false },
+            { id: 'remove_urls_emails', enabled: chunkSettings.removeUrlsEmails === true }
+          ],
+          segmentation: {
+            separator: '\\n\\n',
+            max_tokens: chunkSettings.chunkSize || 1024,
+            chunk_overlap: chunkSettings.chunkOverlap || 50,
+            hierarchical: {
+              enabled: true,
+              max_parent_tokens: chunkSettings.maxSectionSize || 4000,
+              overlap_tokens: Math.floor((chunkSettings.chunkSize || 1024) * (chunkSettings.chunkOverlap || 50) / 100)
+            }
+          }
+        }
+      };
+    }
     
     const uploadResponse = await fetch(`${SERVICE_ORIGIN}/v1/datasets/${id}/document/create_by_text`, {
       method: 'POST',
@@ -149,19 +186,7 @@ export async function POST(
         name,
         text: content,
         indexing_technique: indexingTechnique || 'high_quality',
-        process_rule: {
-          mode: 'automatic',
-          rules: {
-            pre_processing_rules: [
-              { id: 'remove_extra_spaces', enabled: true },
-              { id: 'remove_urls_emails', enabled: true }
-            ],
-            segmentation: {
-              separator: '\n',
-              max_tokens: 500
-            }
-          }
-        },
+        process_rule: processRule,
         doc_form: 'text_model',
         doc_language: 'English'
       })

@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { KnowledgeBase, Document, ApiKey, DocumentSegment, CreateForm, UploadForm } from './types';
+import { useAuthInfo } from '@propelauth/react';
+import { KnowledgeBase, Document, ApiKey, DocumentSegment, CreateForm, UploadForm, UploadMethod } from './types';
 
 export const useKnowledgeBase = () => {
+  const { accessToken, isLoggedIn, loading: authLoading } = useAuthInfo();
   const [activeSection, setActiveSection] = useState<'list' | 'create' | 'documents' | 'api-keys'>('list');
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -15,16 +17,37 @@ export const useKnowledgeBase = () => {
     name: '',
     description: '',
     indexingTechnique: 'high_quality',
-    permission: 'only_me'
+    permission: 'only_me',
+    chunkSettings: {
+      mode: 'structure',
+      chunkSize: 1024,
+      chunkOverlap: 50,
+      minSectionSize: 100,
+      maxSectionSize: 4000,
+      headingPriority: 50,
+      replaceExtraSpaces: true,
+      removeUrlsEmails: false
+    }
   });
 
   const [uploadForm, setUploadForm] = useState<UploadForm>({
     name: '',
     content: '',
-    indexingTechnique: 'high_quality'
+    url: '',
+    indexingTechnique: 'high_quality',
+    chunkSettings: {
+      mode: 'structure',
+      chunkSize: 1024,
+      chunkOverlap: 50,
+      minSectionSize: 100,
+      maxSectionSize: 4000,
+      headingPriority: 50,
+      replaceExtraSpaces: true,
+      removeUrlsEmails: false
+    }
   });
 
-  const [uploadMethod, setUploadMethod] = useState<'text' | 'file'>('text');
+  const [uploadMethod, setUploadMethod] = useState<UploadMethod>('text');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
 
@@ -35,15 +58,60 @@ export const useKnowledgeBase = () => {
 
   // Fetch knowledge bases
   const fetchKnowledgeBases = async () => {
+    // Debug auth state
+    console.log('🔍 Auth State:', { 
+      hasAccessToken: !!accessToken, 
+      isLoggedIn, 
+      authLoading,
+      tokenPrefix: accessToken ? accessToken.substring(0, 20) + '...' : 'none'
+    });
+
+    // Wait for auth to finish loading
+    if (authLoading) {
+      console.log('⏳ PropelAuth is still loading...');
+      return;
+    }
+
+    // Check if user is logged in
+    if (!isLoggedIn) {
+      console.error('❌ User is not logged in');
+      alert('You are not logged in. Please login to access Knowledge Bases.');
+      return;
+    }
+
+    // Wait for access token to be available
+    if (!accessToken) {
+      console.error('❌ No access token available despite being logged in');
+      alert('Authentication error. Please refresh the page and try again.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await fetch('/api/knowledge-bases');
+      console.log('📡 Fetching knowledge bases with token...');
+      const response = await fetch('/api/knowledge-bases', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Knowledge bases fetched:', data.length);
         setKnowledgeBases(data);
+      } else if (response.status === 401) {
+        console.error('❌ Authentication failed - 401 Unauthorized');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Error details:', errorData);
+        alert('Your session has expired. Please refresh the page and login again.');
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('❌ Failed to fetch knowledge bases:', errorData);
+        alert(`Failed to fetch knowledge bases: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Error fetching knowledge bases:', error);
+      console.error('❌ Network error:', error);
+      alert('Failed to connect to the server. Please check your internet connection.');
     } finally {
       setLoading(false);
     }
@@ -101,23 +169,52 @@ export const useKnowledgeBase = () => {
 
   // Create knowledge base
   const createKnowledgeBase = async () => {
+    if (!accessToken) {
+      console.error('❌ No access token available for creating knowledge base');
+      alert('Authentication error. Please refresh the page and try again.');
+      return;
+    }
+
     setLoading(true);
     try {
+      console.log('📝 Creating knowledge base with auth token...');
       const response = await fetch('/api/knowledge-bases', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
         },
         body: JSON.stringify(createForm),
       });
       
       if (response.ok) {
+        console.log('✅ Knowledge base created successfully');
         await fetchKnowledgeBases();
         setActiveSection('list');
-        setCreateForm({ name: '', description: '', indexingTechnique: 'high_quality', permission: 'only_me' });
+        setCreateForm({ 
+          name: '', 
+          description: '', 
+          indexingTechnique: 'high_quality', 
+          permission: 'only_me',
+          chunkSettings: {
+            mode: 'structure',
+            chunkSize: 1024,
+            chunkOverlap: 50,
+            minSectionSize: 100,
+            maxSectionSize: 4000,
+            headingPriority: 50,
+            replaceExtraSpaces: true,
+            removeUrlsEmails: false
+          }
+        });
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('❌ Failed to create knowledge base:', errorData);
+        alert(`Failed to create knowledge base: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Error creating knowledge base:', error);
+      console.error('❌ Error creating knowledge base:', error);
+      alert('Failed to connect to the server. Please check your internet connection.');
     } finally {
       setLoading(false);
     }
@@ -135,6 +232,9 @@ export const useKnowledgeBase = () => {
         formData.append('file', selectedFile);
         formData.append('name', uploadForm.name || selectedFile.name);
         formData.append('indexingTechnique', uploadForm.indexingTechnique);
+        if (uploadForm.chunkSettings) {
+          formData.append('chunkSettings', JSON.stringify(uploadForm.chunkSettings));
+        }
 
         const response = await fetch(`/api/knowledge-bases/${selectedKnowledgeBase.id}/documents/file`, {
           method: 'POST',
@@ -143,8 +243,67 @@ export const useKnowledgeBase = () => {
         
         if (response.ok) {
           await fetchDocuments(selectedKnowledgeBase.id);
-          setUploadForm({ name: '', content: '', indexingTechnique: 'high_quality' });
+          setUploadForm({ 
+            name: '', 
+            content: '', 
+            url: '', 
+            indexingTechnique: 'high_quality',
+            chunkSettings: {
+              mode: 'structure',
+              chunkSize: 1024,
+              chunkOverlap: 50,
+              minSectionSize: 100,
+              maxSectionSize: 4000,
+              headingPriority: 50,
+              replaceExtraSpaces: true,
+              removeUrlsEmails: false
+            }
+          });
           setSelectedFile(null);
+        }
+      } else if (uploadMethod === 'url' && uploadForm.url) {
+        // Upload from URL
+        const response = await fetch(`/api/knowledge-bases/${selectedKnowledgeBase.id}/documents/url`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url: uploadForm.url,
+            name: uploadForm.name,
+            indexingTechnique: uploadForm.indexingTechnique,
+            chunkSettings: uploadForm.chunkSettings,
+          }),
+        });
+        
+        if (response.ok) {
+          await fetchDocuments(selectedKnowledgeBase.id);
+          setUploadForm({ 
+            name: '', 
+            content: '', 
+            url: '', 
+            indexingTechnique: 'high_quality',
+            chunkSettings: {
+              mode: 'structure',
+              chunkSize: 1024,
+              chunkOverlap: 50,
+              minSectionSize: 100,
+              maxSectionSize: 4000,
+              headingPriority: 50,
+              replaceExtraSpaces: true,
+              removeUrlsEmails: false
+            }
+          });
+        } else {
+          const error = await response.json();
+          console.error('URL upload failed:', error);
+          
+          // Show formatted error message
+          if (error.configurationRequired) {
+            alert(`⚠️ Configuration Required\n\n${error.error}`);
+          } else {
+            alert(`Failed to crawl URL:\n${error.error || 'Unknown error'}`);
+          }
         }
       } else {
         // Upload text
@@ -158,7 +317,22 @@ export const useKnowledgeBase = () => {
         
         if (response.ok) {
           await fetchDocuments(selectedKnowledgeBase.id);
-          setUploadForm({ name: '', content: '', indexingTechnique: 'high_quality' });
+          setUploadForm({ 
+            name: '', 
+            content: '', 
+            url: '', 
+            indexingTechnique: 'high_quality',
+            chunkSettings: {
+              mode: 'structure',
+              chunkSize: 1024,
+              chunkOverlap: 50,
+              minSectionSize: 100,
+              maxSectionSize: 4000,
+              headingPriority: 50,
+              replaceExtraSpaces: true,
+              removeUrlsEmails: false
+            }
+          });
         }
       }
     } catch (error) {
@@ -423,6 +597,14 @@ export const useKnowledgeBase = () => {
       fetchApiKeys(selectedKnowledgeBase.id);
     }
   }, [selectedKnowledgeBase, activeSection]);
+
+  // Auto-fetch knowledge bases when authentication is ready
+  useEffect(() => {
+    if (!authLoading && isLoggedIn && accessToken && knowledgeBases.length === 0 && !loading) {
+      console.log('✅ Authentication ready, fetching knowledge bases...');
+      fetchKnowledgeBases();
+    }
+  }, [accessToken, isLoggedIn, authLoading]);
 
   return {
     // State

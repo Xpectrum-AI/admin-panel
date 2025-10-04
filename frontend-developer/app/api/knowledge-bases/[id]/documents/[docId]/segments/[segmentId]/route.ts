@@ -38,7 +38,7 @@ export async function PATCH(
     const body = await request.json();
     const { enabled } = body;
 
-    // Update segment status via Dify console API using action endpoint
+    // Update segment status via backend API using action endpoint
     const action = enabled ? 'enable' : 'disable';
     const response = await fetch(`${CONSOLE_ORIGIN}/console/api/datasets/${id}/documents/${docId}/segment/${action}?segment_id=${segmentId}`, {
       method: 'PATCH',
@@ -56,7 +56,7 @@ export async function PATCH(
 
     const data = await response.json();
 
-    // Return success status since Dify doesn't return the updated segment
+    // Return success status since the API doesn't return the updated segment
     return NextResponse.json({ success: true, enabled }, { status: 200 });
   } catch (error) {
     console.error('Error updating segment:', error);
