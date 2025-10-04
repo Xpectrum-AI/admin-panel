@@ -66,6 +66,10 @@ export interface SchedulerFormData {
   scheduled_time: string;
   flexible_time_minutes: number;
   max_retries: number;
+  message_text?: string;
+  message_type?: string;
+  context?: string;
+  receiving_number?: string;
 }
 
 export interface FormErrors {
