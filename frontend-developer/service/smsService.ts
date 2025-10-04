@@ -64,7 +64,7 @@ const makeSmsApiRequest = async (
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'x-api-key': apiKey,
+        'X-API-Key': apiKey,
       },
       body: params.toString(),
     });
@@ -367,6 +367,45 @@ export class SMSService {
     } catch (error: any) {
       console.error('❌ Error fetching SMS receiving number agent mappings:', error);
       return { success: false, message: error.message };
+    }
+  }
+
+  // Send SMS message
+  static async sendMessage(
+    fromNumber: string,
+    toNumber: string,
+    messageText: string,
+    context?: string
+  ): Promise<{ success: boolean; message?: string; data?: any }> {
+    console.log('🚀 Sending SMS message:', {
+      fromNumber,
+      toNumber,
+      messageText: messageText.substring(0, 50) + '...',
+      context
+    });
+
+    const formData = {
+      from_number: fromNumber,
+      to_number: toNumber,
+      message_text: messageText,
+      ...(context && { context })
+    };
+
+    try {
+      const result = await makeSmsApiRequest('/sms/send-message', formData);
+      
+      console.log('✅ SMS message sent successfully:', result);
+      return {
+        success: true,
+        message: result.message || 'SMS message sent successfully!',
+        data: result.data
+      };
+    } catch (error: any) {
+      console.error('❌ Failed to send SMS message:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to send SMS message'
+      };
     }
   }
 }
