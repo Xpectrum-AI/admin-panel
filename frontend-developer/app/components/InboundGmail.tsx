@@ -503,7 +503,7 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
                                         <option value="">Select an agent</option>
                                         {Array.isArray(agents) && agents.length > 0 ? agents.map((agent) => (
                                             <option key={agent.agent_prefix || agent.id} value={agent.agent_prefix || agent.id}>
-                                                {agent.name || agent.agent_prefix} ({agent.agent_prefix})
+                                                {agent.name || agent.agent_prefix}
                                             </option>
                                         )) : (
                                             <option value="" disabled>No agents available</option>
