@@ -120,9 +120,6 @@ export default function Navbar({
                         >
                             {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
                         </button>
-                        <div className={`hidden md:block px-4 py-2 rounded-xl border ${isDarkMode ? 'bg-gradient-to-r from-green-500/20 to-emerald-600/20 backdrop-blur-sm border-green-500/30' : 'bg-green-50 border-green-200'}`}>
-                            <span className={`text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-700'}`}>Developer Access</span>
-                        </div>
                         <div className="relative" ref={dropdownRef}>
                             <button
                                 onClick={() => setDropdownOpen(!dropdownOpen)}

@@ -33,10 +33,6 @@ export default function OverviewTab({}: OverviewTabProps) {
                             </p>
                         </div>
                     </div>
-                    <p className={`text-base sm:text-lg max-w-2xl ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                        Your central hub for managing AI assistants, communication channels, and monitoring system performance.
-                        Build, deploy, and observe your intelligent solutions.
-                    </p>
                 </div>
                 {/* <div className="absolute top-4 right-4">
                     <div className={`flex items-center gap-2 rounded-full px-4 py-2 border ${isDarkMode ? 'bg-green-500/20 backdrop-blur-sm border-green-500/30' : 'bg-green-50 border-green-200'}`}>

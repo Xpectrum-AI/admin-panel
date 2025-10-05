@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Activity, RefreshCw, MessageSquare, PhoneCall } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useTabPersistence } from '../../hooks/useTabPersistence';
 import InboundGmail from './InboundGmail';
 import OutboundGmail from './OutboundGmail';
 
@@ -11,8 +12,8 @@ interface GmailTabProps { }
 export default function GmailTab({ }: GmailTabProps) {
     const { isDarkMode } = useTheme();
 
-    // Tab state
-    const [activeTab, setActiveTab] = useState<'inbound' | 'outbound'>('inbound');
+    // Tab state - persist across page refreshes
+    const [activeTab, handleTabChange] = useTabPersistence<'inbound' | 'outbound'>('gmailTab', 'inbound');
 
     // Refresh function to trigger data reload in child components
     const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -53,7 +54,7 @@ export default function GmailTab({ }: GmailTabProps) {
                 <div className={`border-b ${isDarkMode ? 'border-gray-700/50' : 'border-gray-200/50'}`}>
                     <div className="flex">
                         <button
-                            onClick={() => setActiveTab('inbound')}
+                            onClick={() => handleTabChange('inbound')}
                             className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold transition-all duration-300 ${activeTab === 'inbound'
                                 ? isDarkMode
                                     ? 'bg-gradient-to-r from-blue-600/20 to-indigo-600/20 text-blue-400 border-b-2 border-blue-500'
@@ -69,7 +70,7 @@ export default function GmailTab({ }: GmailTabProps) {
                             </div>
                         </button>
                         <button
-                            onClick={() => setActiveTab('outbound')}
+                            onClick={() => handleTabChange('outbound')}
                             className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold transition-all duration-300 ${activeTab === 'outbound'
                                 ? isDarkMode
                                     ? 'bg-gradient-to-r from-blue-600/20 to-indigo-600/20 text-blue-400 border-b-2 border-blue-500'

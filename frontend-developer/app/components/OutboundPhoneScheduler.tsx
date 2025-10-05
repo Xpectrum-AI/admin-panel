@@ -25,6 +25,7 @@ import {
 } from './types/phoneNumbers';
 import { useOrganizationId } from './utils/phoneNumberUtils';
 import { getAgentDisplayName } from '../../lib/utils/agentNameUtils';
+import { useTabPersistence } from '../../hooks/useTabPersistence';
 
 interface OutboundSchedulerProps {
   // No props needed for this component
@@ -72,8 +73,8 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
   
-  // Tab state
-  const [activeTab, setActiveTab] = useState<'trunk' | 'scheduler'>('scheduler');
+  // Tab state - persist across page refreshes
+  const [activeTab, handleTabChange] = useTabPersistence<'trunk' | 'scheduler'>('outboundScheduler', 'trunk');
   
   // Trunk state
   const [trunks, setTrunks] = useState<any[]>([]);
@@ -655,7 +656,7 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
           {/* Tabs */}
           <div className="flex items-center gap-1 mb-4">
             <button
-              onClick={() => setActiveTab('trunk')}
+              onClick={() => handleTabChange('trunk')}
               className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
                 activeTab === 'trunk'
                   ? isDarkMode
@@ -669,7 +670,7 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
               Trunk
             </button>
             <button
-              onClick={() => setActiveTab('scheduler')}
+              onClick={() => handleTabChange('scheduler')}
               className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
                 activeTab === 'scheduler'
                   ? isDarkMode

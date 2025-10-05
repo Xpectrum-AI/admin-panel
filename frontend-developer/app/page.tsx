@@ -34,6 +34,7 @@ import { AgentsTab, PhoneNumbersTab, SMSTab, WhatsAppTab, GmailTab, KnowledgeBas
 import Navbar from './components/Navbar';
 import ChatSidebar from './components/ChatSidebar';
 import { useTheme } from './contexts/ThemeContext';
+import { useTabPersistence } from '../hooks/useTabPersistence';
 import { DashboardService, DashboardStats, OrganizationInfo } from '../service/dashboardService';
 
 // Custom WhatsApp icon component
@@ -59,7 +60,7 @@ const navigationItems = [
 ];
 
 export default function DeveloperDashboard() {
-  const [activeNavItem, setActiveNavItem] = useState('Overview');
+  const [activeNavItem, handleNavItemChange] = useTabPersistence<string>('mainNavigation', 'Overview');
 
   const { isDarkMode, toggleTheme } = useTheme();
 
@@ -184,7 +185,7 @@ export default function DeveloperDashboard() {
 
   // Handle navigation item click
   const handleNavItemClick = (itemName: string) => {
-    setActiveNavItem(itemName);
+    handleNavItemChange(itemName);
   };
 
   // Render content based on active navigation item
