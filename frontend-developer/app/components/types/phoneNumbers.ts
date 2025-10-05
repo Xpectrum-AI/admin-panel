@@ -31,11 +31,14 @@ export interface ScheduledEvent {
   scheduled_id: string;
   organization_id: string;
   agent_id: string;
+  agent_name?: string;
   call_type: string;
   status: string;
   recipient_phone: string;
-  scheduled_time: string;
+  caller_number?: string;
+  scheduled_time: string; // Unix timestamp as string
   flexible_time_minutes: number;
+  retry_interval_minutes?: number; // Alternative field name from API
   retry_count?: number;
   max_retries: number;
   message_template?: string;
@@ -64,6 +67,7 @@ export interface SchedulerFormData {
   agent_prefix: string;
   recipient_phone: string;
   scheduled_time: string;
+  caller_number: string;
   flexible_time_minutes: number;
   max_retries: number;
   message_text?: string;
@@ -74,6 +78,19 @@ export interface SchedulerFormData {
 
 export interface FormErrors {
   [key: string]: string;
+}
+
+// Message form data for immediate messaging (SMS/WhatsApp/Gmail)
+export interface MessageFormData {
+  organization_id: string;
+  to_number?: string;        // For SMS/WhatsApp
+  to_email?: string;         // For Gmail
+  from_number?: string;      // For SMS
+  from_email?: string;       // For Gmail
+  message_text: string;
+  message_type?: string;     // For WhatsApp
+  context?: string;
+  receiving_number?: string; // For WhatsApp
 }
 
 // Constants for magic numbers
