@@ -82,12 +82,12 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
   }, [modelConfig, voiceConfig, transcriberConfig, isEditing]);
 
   // Tools configuration state
-  const [initialMessage, setInitialMessage] = useState('Hello! How can I help you today?');
+  const [initialMessage, setInitialMessage] = useState('Hello! this is Emma, How can I help you today?');
   const [nudgeText, setNudgeText] = useState('Hello, Are you still there?');
   const [nudgeInterval, setNudgeInterval] = useState(15);
   const [maxNudges, setMaxNudges] = useState(3);
-  const [typingVolume, setTypingVolume] = useState(0.8);
-  const [maxCallDuration, setMaxCallDuration] = useState(300);
+  const [typingVolume, setTypingVolume] = useState(0.01);
+  const [maxCallDuration, setMaxCallDuration] = useState(1200);
 
   // Buffer states for text inputs to prevent flickering
   const [isEditingInitialMessage, setIsEditingInitialMessage] = useState(false);
@@ -165,12 +165,12 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
     } else if (modelConfig) {
       // Only use modelConfig for initialMessage, other fields use defaults
       configToLoad = {
-        initialMessage: modelConfig.firstMessage || modelConfig.systemPrompt || 'Hello! How can I help you today?',
+        initialMessage: modelConfig.firstMessage || modelConfig.systemPrompt || 'Hello! this is Emma, How can I help you today?',
         nudgeText: 'Hello, Are you still there?',
         nudgeInterval: 15,
         maxNudges: 3,
-        typingVolume: 0.8,
-        maxCallDuration: 300
+        typingVolume: 0.01,
+        maxCallDuration: 1200
       };
       source = 'modelConfig';
     }
@@ -179,12 +179,12 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
       console.log(`🔄 Loading configuration from ${source}:`, configToLoad);
 
       // Update all fields at once to prevent flickering
-      setInitialMessage(configToLoad.initialMessage || 'Hello! How can I help you today?');
+      setInitialMessage(configToLoad.initialMessage || 'Hello! this is Emma, How can I help you today?');
       setNudgeText(configToLoad.nudgeText || 'Hello, Are you still there?');
       setNudgeInterval(configToLoad.nudgeInterval ?? 15);
       setMaxNudges(configToLoad.maxNudges ?? 3);
-      setTypingVolume(configToLoad.typingVolume ?? 0.8);
-      setMaxCallDuration(configToLoad.maxCallDuration ?? 300);
+      setTypingVolume(configToLoad.typingVolume ?? 0.01);
+      setMaxCallDuration(configToLoad.maxCallDuration ?? 1200);
     }
   }, [toolsConfiguration, selectedAgent, existingConfig, modelConfig, isEditingInitialMessage, isEditingNudgeText, isEditingNudgeInterval, isEditingMaxNudges]);
 

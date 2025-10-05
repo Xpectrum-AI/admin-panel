@@ -648,12 +648,12 @@ Remember: You are the first point of contact for many patients. Your professiona
       },
       // Tools Configuration
       toolsConfig: {
-        initialMessage: 'Hello! How can I help you today?',
+        initialMessage: 'Hello! this is Emma, How can I help you today?',
         nudgeText: 'Hello, Are you still there?',
         nudgeInterval: 15,
         maxNudges: 3,
-        typingVolume: 0.8,
-        maxCallDuration: 300
+        typingVolume: 0.01,
+        maxCallDuration: 1200
       }
     };
 
@@ -1068,12 +1068,12 @@ Remember: You are the first point of contact for many patients. Your professiona
       // Convert configurations to backend format
       const completeConfig = {
         organization_id: selectedAgent.organization_id || currentOrganizationId || organizationName,
-        initial_message: tools?.initialMessage || selectedAgent.initial_message || 'Hello! How can I help you today?',
+        initial_message: tools?.initialMessage || selectedAgent.initial_message || 'Hello! this is Emma, How can I help you today?',
         nudge_text: tools?.nudgeText || selectedAgent.nudge_text || 'Hello, Are you still there?',
         nudge_interval: tools?.nudgeInterval ?? selectedAgent.nudge_interval ?? 15,
         max_nudges: tools?.maxNudges ?? selectedAgent.max_nudges ?? 3,
-        typing_volume: tools?.typingVolume ?? selectedAgent.typing_volume ?? 0.8,
-        max_call_duration: tools?.maxCallDuration ?? selectedAgent.max_call_duration ?? 300,
+        typing_volume: tools?.typingVolume ?? selectedAgent.typing_volume ?? 0.01,
+        max_call_duration: tools?.maxCallDuration ?? selectedAgent.max_call_duration ?? 1200,
         tts_config: backendVoiceConfig || undefined,
         stt_config: backendTranscriberConfig || undefined,
         chatbot_api: model?.chatbot_api || selectedAgent.chatbot_api,
