@@ -941,8 +941,8 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
                 >
                   <option value="">Select an agent</option>
                   {agents.map((agent, index) => (
-                    <option key={agent.id || agent.name || agent.agent_prefix || `agent_${index}`} value={agent.name || agent.agent_prefix}>
-                      {agent.name || agent.agent_prefix}
+                    <option key={agent.id || agent.name || agent.agent_prefix || `agent_${index}`} value={agent.agent_prefix}>
+                      {getAgentDisplayName({ name: agent.name, id: agent.agent_prefix })}
                     </option>
                   ))}
                 </select>
@@ -1064,8 +1064,8 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
                 >
                   <option value="None">None (Delete Agent)</option>
                   {agents.map((agent, index) => (
-                    <option key={agent.id || agent.name || agent.agent_prefix || `agent_${index}`} value={agent.name || agent.agent_prefix}>
-                      {agent.name || agent.agent_prefix}
+                    <option key={agent.id || agent.name || agent.agent_prefix || `agent_${index}`} value={getAgentDisplayName({ name: agent.name, id: agent.agent_prefix })}>
+                      {getAgentDisplayName({ name: agent.name, id: agent.agent_prefix })}
                     </option>
                   ))}
                 </select>

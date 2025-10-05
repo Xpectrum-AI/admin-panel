@@ -35,10 +35,11 @@ export interface SchedulerRequest {
   agent_id: string;
   call_type: string;
   recipient_phone: string;
-  scheduled_time: string;
-  message_template?: string;
-  flexible_time_minutes: number;
+  scheduled_time: number; // Unix timestamp
+  caller_number: string;
+  retry_interval_minutes: number; // Maps to flexible_time_minutes
   max_retries: number;
+  message_template?: string;
 }
 
 export interface SchedulerResponse {
@@ -460,12 +461,33 @@ export const scheduleOutboundCall = async (
   schedulerData: SchedulerRequest
 ): Promise<SchedulerResponse> => {
   try {
-    const data = await makeApiRequest('/scheduled/create', {
+    // Use live API URL directly for scheduled events
+    const baseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
+    const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
+    
+    console.log('🔍 Creating scheduled event:', schedulerData);
+    console.log('🌐 API URL:', baseUrl);
+    
+    const response = await fetch(`${baseUrl}/scheduled/create`, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': apiKey,
+      },
       body: JSON.stringify(schedulerData),
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Schedule API Error:', errorText);
+      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('✅ Schedule API Response:', data);
     return { success: true, data, message: 'Outbound call scheduled successfully!' };
   } catch (error: any) {
+    console.error('Error scheduling outbound call:', error);
     return { success: false, message: `Failed to schedule outbound call: ${error.message}` };
   }
 };
