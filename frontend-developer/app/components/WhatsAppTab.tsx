@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Activity, RefreshCw, MessageSquare, PhoneCall } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useTabPersistence } from '../../hooks/useTabPersistence';
 import InboundWhatsappNumbers from './InboundWhatsappNumbers';
 import OutboundWhatsappScheduler from './OutboundWhatsappScheduler';
 
@@ -23,7 +24,7 @@ export default function WhatsAppTab({ }: WhatsAppTabProps) {
   const { isDarkMode } = useTheme();
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<'inbound' | 'outbound'>('inbound');
+  const [activeTab, handleTabChange] = useTabPersistence<'inbound' | 'outbound'>('whatsappTab', 'inbound');
 
   // Refresh function to trigger data reload in child components
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -58,16 +59,6 @@ export default function WhatsAppTab({ }: WhatsAppTabProps) {
               {/* Action Buttons */}
               <div className="flex flex-col items-end gap-2">
                 <div className="flex gap-2 sm:gap-3">
-                  <button className="group relative px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 bg-gray-500 text-white rounded-lg sm:rounded-xl hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 sm:gap-3">
-                    <span className="text-sm sm:text-base font-semibold">Xpectrum</span>
-                  </button>
-                  <button
-                    onClick={handleRefresh}
-                    className="group relative px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 bg-green-600 text-white rounded-lg sm:rounded-xl hover:bg-green-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 sm:gap-3"
-                  >
-                    <RefreshCw className="h-4 w-4 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
-                    <span className="text-sm sm:text-base font-semibold">Refresh</span>
-                  </button>
                 </div>
               </div>
             </div>
@@ -78,7 +69,7 @@ export default function WhatsAppTab({ }: WhatsAppTabProps) {
         <div className={`border-b ${isDarkMode ? 'border-gray-700/50' : 'border-gray-200/50'}`}>
           <div className="flex">
             <button
-              onClick={() => setActiveTab('inbound')}
+              onClick={() => handleTabChange('inbound')}
               className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold transition-all duration-300 ${activeTab === 'inbound'
                 ? isDarkMode
                   ? 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 text-green-400 border-b-2 border-green-500'
@@ -94,7 +85,7 @@ export default function WhatsAppTab({ }: WhatsAppTabProps) {
               </div>
             </button>
             <button
-              onClick={() => setActiveTab('outbound')}
+              onClick={() => handleTabChange('outbound')}
               className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold transition-all duration-300 ${activeTab === 'outbound'
                 ? isDarkMode
                   ? 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 text-green-400 border-b-2 border-green-500'
