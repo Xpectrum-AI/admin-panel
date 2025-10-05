@@ -92,7 +92,7 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
   useEffect(() => {
     loadOrganizationPhoneNumbers();
     loadAgents();
-  }, [getOrganizationId]);
+  }, []); // Remove getOrganizationId dependency to prevent multiple calls
 
   // Get organization name from user context
   useEffect(() => {
@@ -163,7 +163,7 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
     } finally {
       setLoadingOrgPhoneNumbers(false);
     }
-  }, [getOrganizationId]);
+  }, []); // Remove getOrganizationId dependency to prevent infinite re-renders
 
   // Refresh data when refreshTrigger changes
   useEffect(() => {
@@ -210,7 +210,7 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
     } finally {
       setLoadingAgents(false);
     }
-  }, [getOrganizationId]);
+  }, []); // Remove getOrganizationId dependency to prevent infinite re-renders
 
   const loadAvailablePhoneNumbers = useCallback(async () => {
     setLoadingPhoneNumbers(true);
@@ -403,12 +403,12 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
 
       // Refresh only the relevant phone number list based on the action
       const action = !unassigningAgent.trim() || unassigningAgent.trim() === 'None' ? 'unassigned' : 'assigned';
-      
+
       if (!unassigningAgent.trim() || unassigningAgent.trim() === 'None') {
         // Unassigning - refresh organization numbers immediately, available numbers in background
         setSuccess(`Phone number ${selectedPhoneForUnassign.phone_number} unassigned successfully!`);
         await loadOrganizationPhoneNumbers();
-        loadAvailablePhoneNumbers().catch(err => 
+        loadAvailablePhoneNumbers().catch(err =>
           console.warn('Background refresh of available numbers failed:', err)
         );
       } else {
@@ -442,12 +442,12 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
 
       if (response.success) {
         setSuccess(`Phone number ${phoneNumber.phone_number} unassigned successfully!`);
-        
+
         // Refresh organization phone numbers immediately to show the change
         await loadOrganizationPhoneNumbers();
-        
+
         // Refresh available numbers in the background (non-blocking)
-        loadAvailablePhoneNumbers().catch(err => 
+        loadAvailablePhoneNumbers().catch(err =>
           console.warn('Background refresh of available numbers failed:', err)
         );
       } else {
@@ -755,8 +755,8 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
                   <tr
                     key={phoneNumber.phone_number}
                     className={`border-b transition-colors duration-200 ${isDarkMode
-                        ? 'border-gray-700 hover:bg-gray-800/50'
-                        : 'border-gray-200 hover:bg-gray-50'
+                      ? 'border-gray-700 hover:bg-gray-800/50'
+                      : 'border-gray-200 hover:bg-gray-50'
                       } ${index % 2 === 0 ? (isDarkMode ? 'bg-gray-900/30' : 'bg-white') : (isDarkMode ? 'bg-gray-800/30' : 'bg-gray-50/50')}`}
                   >
                     {/* Number Column */}
@@ -788,13 +788,13 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
                         <div className="flex items-center gap-1">
                           <PhoneCall
                             className={`h-4 w-4 ${phoneNumber.voice_enabled
-                                ? (isDarkMode ? 'text-green-400' : 'text-green-600')
-                                : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
+                              ? (isDarkMode ? 'text-green-400' : 'text-green-600')
+                              : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
                               }`}
                           />
                           <span className={`text-xs font-medium ${phoneNumber.voice_enabled
-                              ? (isDarkMode ? 'text-green-400' : 'text-green-600')
-                              : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
+                            ? (isDarkMode ? 'text-green-400' : 'text-green-600')
+                            : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
                             }`}>
                             Voice
                           </span>
@@ -804,13 +804,13 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
                         <div className="flex items-center gap-1">
                           <MessageSquare
                             className={`h-4 w-4 ${phoneNumber.sms_enabled
-                                ? (isDarkMode ? 'text-blue-400' : 'text-blue-600')
-                                : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
+                              ? (isDarkMode ? 'text-blue-400' : 'text-blue-600')
+                              : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
                               }`}
                           />
                           <span className={`text-xs font-medium ${phoneNumber.sms_enabled
-                              ? (isDarkMode ? 'text-blue-400' : 'text-blue-600')
-                              : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
+                            ? (isDarkMode ? 'text-blue-400' : 'text-blue-600')
+                            : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
                             }`}>
                             SMS
                           </span>
@@ -820,13 +820,13 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
                         <div className="flex items-center gap-1">
                           <WhatsAppIcon
                             className={`h-4 w-4 ${phoneNumber.whatsapp_enabled
-                                ? (isDarkMode ? 'text-green-400' : 'text-green-600')
-                                : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
+                              ? (isDarkMode ? 'text-green-400' : 'text-green-600')
+                              : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
                               }`}
                           />
                           <span className={`text-xs font-medium ${phoneNumber.whatsapp_enabled
-                              ? (isDarkMode ? 'text-green-400' : 'text-green-600')
-                              : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
+                            ? (isDarkMode ? 'text-green-400' : 'text-green-600')
+                            : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
                             }`}>
                             WhatsApp
                           </span>
@@ -860,10 +860,10 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
                             onClick={() => handleDirectUnassign(phoneNumber)}
                             disabled={unassigningPhoneId === phoneNumber.phone_id}
                             className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${unassigningPhoneId === phoneNumber.phone_id
-                                ? 'opacity-50 cursor-not-allowed'
-                                : isDarkMode
-                                  ? 'hover:bg-red-700 text-red-400 hover:text-white'
-                                  : 'hover:bg-red-100 text-red-500 hover:text-red-700'
+                              ? 'opacity-50 cursor-not-allowed'
+                              : isDarkMode
+                                ? 'hover:bg-red-700 text-red-400 hover:text-white'
+                                : 'hover:bg-red-100 text-red-500 hover:text-red-700'
                               }`}
                             title="Delete agent"
                           >
@@ -881,8 +881,8 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
                               setShowUnassignModal(true);
                             }}
                             className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${isDarkMode
-                                ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
-                                : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
+                              ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
+                              : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
                               }`}
                             title="Add agent"
                           >

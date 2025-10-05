@@ -408,6 +408,95 @@ export class SMSService {
       };
     }
   }
+
+  /**
+   * Assign SMS Phone Number to Agent
+   * POST /phone-numbers/{phone_id}/assign/{agent_id}
+   */
+  static async assignPhoneNumberToAgent(
+    phoneId: string,
+    agentId: string
+  ): Promise<PhoneNumberResponse> {
+    try {
+      console.log('🚀 Assigning SMS phone number to agent:', { phoneId, agentId });
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/phone-numbers/${encodeURIComponent(phoneId)}/assign/${encodeURIComponent(agentId)}`, {
+        method: 'POST',
+        headers: {
+          'x-api-key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ SMS phone number assigned successfully:', data);
+      return { success: true, data };
+    } catch (error: any) {
+      console.error('❌ Failed to assign SMS phone number to agent:', error);
+      return { success: false, message: `Failed to assign SMS phone number to agent: ${error.message}` };
+    }
+  }
+
+  /**
+   * Unassign SMS Phone Number from Agent
+   * DELETE /phone-numbers/{phone_id}/unassign/{agent_id}
+   */
+  static async unassignPhoneNumberFromAgent(
+    phoneId: string,
+    agentId: string
+  ): Promise<PhoneNumberResponse> {
+    try {
+      console.log('🚀 Unassigning SMS phone number from agent:', { phoneId, agentId });
+      
+      // Try different endpoint patterns and methods
+      const endpoints = [
+        // Pattern 1: POST /phone-numbers/{phone_id}/unassign/{agent_id}
+        { url: `/phone-numbers/${encodeURIComponent(phoneId)}/unassign/${encodeURIComponent(agentId)}`, method: 'POST' },
+        // Pattern 2: DELETE /phone-numbers/{phone_id}/unassign/{agent_id}
+        { url: `/phone-numbers/${encodeURIComponent(phoneId)}/unassign/${encodeURIComponent(agentId)}`, method: 'DELETE' },
+        // Pattern 3: POST /phone-numbers/{phone_id}/unassign with body
+        { url: `/phone-numbers/${encodeURIComponent(phoneId)}/unassign`, method: 'POST', body: { agent_id: agentId } },
+        // Pattern 4: PUT /phone-numbers/{phone_id}/assign with null agent
+        { url: `/phone-numbers/${encodeURIComponent(phoneId)}/assign`, method: 'PUT', body: { agent_id: null } }
+      ];
+
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`Trying SMS unassign endpoint: ${endpoint.method} ${endpoint.url}`);
+          
+          const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}${endpoint.url}`, {
+            method: endpoint.method,
+            headers: {
+              'x-api-key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
+              'Content-Type': 'application/json'
+            },
+            body: endpoint.body ? JSON.stringify(endpoint.body) : undefined
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`✅ SMS unassign successful with ${endpoint.method} ${endpoint.url}`);
+            return { success: true, data };
+          } else {
+            console.log(`❌ ${endpoint.method} ${endpoint.url} failed with status: ${response.status}`);
+          }
+        } catch (endpointError) {
+          console.log(`❌ ${endpoint.method} ${endpoint.url} failed with error:`, endpointError);
+          continue;
+        }
+      }
+
+      // If all endpoints fail, throw an error
+      throw new Error('All SMS unassign endpoint patterns failed');
+    } catch (error: any) {
+      console.error('❌ Failed to unassign SMS phone number from agent:', error);
+      return { success: false, message: `Failed to unassign SMS phone number from agent: ${error.message}` };
+    }
+  }
 }
 
 export default SMSService;
