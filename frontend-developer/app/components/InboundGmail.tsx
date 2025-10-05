@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Mail, RefreshCw, Search, Users, Bot, Edit, CheckCircle, XCircle, PhoneCall, MessageSquare, User, Settings, BarChart3, Activity } from 'lucide-react';
+import { Plus, Mail, RefreshCw, Search, Users, Bot, Edit, CheckCircle, XCircle, PhoneCall, MessageSquare, User, Settings, BarChart3, Activity, Trash2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuthInfo } from '@propelauth/react';
 import { GmailService, GmailAccount, GmailMessage, GmailAssignment, AgentMappingsResponse, AgentMapping } from '../../service/gmailService';
 import { getAgentsByOrganization } from '../../service/phoneNumberService';
 import { useOrganizationId } from './utils/phoneNumberUtils';
+import { getAgentDisplayName } from '../../lib/utils/agentNameUtils';
 
 interface Agent {
     id?: string;
@@ -27,6 +28,7 @@ interface GmailAccountAssignment {
     status: 'assigned' | 'unassigned';
     is_active?: boolean;
     agent_id?: string;
+    is_agent_from_current_org?: boolean;
 }
 
 interface InboundGmailProps {
@@ -56,11 +58,11 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
     const loadGmailAccounts = useCallback(async () => {
         setLoadingGmailAccounts(true);
         try {
-            console.log('🚀 Loading Gmail accounts from getAgentMappings...');
+            console.log('🚀 Loading Gmail accounts from MongoDB agent mappings...');
 
-            // Get Gmail accounts from getAgentMappings API
-            const response = await GmailService.getAgentMappings();
-            console.log('🚀 Gmail agent mappings API response:', response);
+            // Get Gmail accounts from MongoDB agent mappings API
+            const response = await GmailService.getGmailAccountsMongoDB();
+            console.log('🚀 Gmail MongoDB agent mappings API response:', response);
 
             if (response && response.mappings && Array.isArray(response.mappings) && response.mappings.length > 0) {
                 const accountsData = response.mappings.map((mapping: AgentMapping) => ({
@@ -68,21 +70,47 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
                     email: mapping.email_address,
                     name: mapping.description || mapping.email_address,
                     status: 'active' as const,
-                    assignedAgent: mapping.agent_url,
+                    assignedAgent: mapping.agent_id, // Use agent_id instead of agent_url
                     lastSync: mapping.updated_at || mapping.created_at || new Date().toISOString(),
                     messageCount: 0,
                     unreadCount: 0
                 }));
-                console.log('✅ Gmail accounts data loaded from API:', accountsData);
+                console.log('✅ Gmail accounts data loaded from MongoDB API:', accountsData);
                 setGmailAccounts(accountsData);
             } else {
-                console.log('❌ No Gmail accounts found in API response');
+                console.log('❌ No Gmail accounts found in MongoDB API response');
                 setGmailAccounts([]);
             }
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-            console.error('❌ Error loading Gmail accounts:', errorMessage);
-            setGmailAccounts([]);
+            console.error('❌ Error loading Gmail accounts from MongoDB:', errorMessage);
+            // Try fallback to original endpoint
+            try {
+                console.log('🔄 Trying fallback to original Gmail accounts endpoint...');
+                const fallbackResponse = await GmailService.getGmailAccounts();
+                console.log('🚀 Gmail fallback API response:', fallbackResponse);
+
+                if (fallbackResponse && fallbackResponse.mappings && Array.isArray(fallbackResponse.mappings) && fallbackResponse.mappings.length > 0) {
+                    const accountsData = fallbackResponse.mappings.map((mapping: AgentMapping) => ({
+                        id: mapping.email_address,
+                        email: mapping.email_address,
+                        name: mapping.description || mapping.email_address,
+                        status: 'active' as const,
+                        assignedAgent: mapping.agent_id, // Use agent_id instead of agent_url
+                        lastSync: mapping.updated_at || mapping.created_at || new Date().toISOString(),
+                        messageCount: 0,
+                        unreadCount: 0
+                    }));
+                    console.log('✅ Gmail accounts data loaded from fallback API:', accountsData);
+                    setGmailAccounts(accountsData);
+                } else {
+                    console.log('❌ No Gmail accounts found in fallback API response');
+                    setGmailAccounts([]);
+                }
+            } catch (fallbackErr) {
+                console.error('❌ Fallback also failed:', fallbackErr);
+                setGmailAccounts([]);
+            }
         } finally {
             setLoadingGmailAccounts(false);
         }
@@ -135,14 +163,14 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
         } finally {
             setLoadingAgents(false);
         }
-    }, [getOrganizationId]);
+    }, []); // Remove getOrganizationId dependency to prevent infinite re-renders
 
     // Load data on component mount
     useEffect(() => {
         console.log('🔍 useEffect triggered, loading Gmail accounts and agents');
         loadGmailAccounts();
         loadAgents();
-    }, [loadGmailAccounts, loadAgents]);
+    }, []); // Remove dependencies to prevent infinite re-renders
 
     // Debug logging for agents and gmail accounts
     useEffect(() => {
@@ -169,25 +197,81 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
     useEffect(() => {
         if (gmailAccounts.length > 0) {
             console.log('🔄 Converting Gmail accounts to assignments:', gmailAccounts);
-            const gmailAssignments: GmailAccountAssignment[] = gmailAccounts.map((account: GmailAccount, index: number) => ({
-                id: account.id || `gmail_${index}`,
-                email_address: account.email || '',
-                friendly_name: getFriendlyName(account.email || ''),
-                agent_name: account.assignedAgent || '',
-                agent_prefix: account.assignedAgent || '',
-                assigned_at: account.lastSync || '',
-                status: (account.assignedAgent && account.assignedAgent !== 'unassigned' && account.assignedAgent !== '' && account.assignedAgent !== null) ? 'assigned' as const : 'unassigned' as const,
-                is_active: account.status === 'active',
-                agent_id: account.assignedAgent || null
-            }));
+            console.log('🔄 Current organization agents:', agents);
 
-            console.log('✅ Gmail assignments created:', gmailAssignments);
+            const gmailAssignments: GmailAccountAssignment[] = gmailAccounts
+                .filter((account: GmailAccount) => {
+                    const assignedAgent = account.assignedAgent || '';
+                    const isAssigned = !!(assignedAgent && assignedAgent !== 'unassigned' && assignedAgent !== '' && assignedAgent !== null);
+
+                    console.log(`🔍 Processing email ${account.email}:`, {
+                        assignedAgent,
+                        isAssigned,
+                        agentsCount: agents.length,
+                        currentOrgAgents: agents.map(a => ({ prefix: a.agent_prefix, id: a.id, name: a.name }))
+                    });
+
+                    // Only show emails assigned to current organization agents
+                    if (isAssigned) {
+                        const isAgentFromCurrentOrg = agents.some(agent =>
+                            agent.agent_prefix === assignedAgent ||
+                            agent.id === assignedAgent ||
+                            agent.name === assignedAgent
+                        );
+
+                        console.log(`🔍 Email ${account.email} assigned to ${assignedAgent}:`, {
+                            isAgentFromCurrentOrg,
+                            currentOrgAgents: agents.map(a => a.agent_prefix),
+                            agentMatches: agents.map(agent => ({
+                                prefix: agent.agent_prefix,
+                                id: agent.id,
+                                name: agent.name,
+                                matchesPrefix: agent.agent_prefix === assignedAgent,
+                                matchesId: agent.id === assignedAgent,
+                                matchesName: agent.name === assignedAgent
+                            }))
+                        });
+
+                        return isAgentFromCurrentOrg;
+                    }
+
+                    // Show unassigned emails
+                    console.log(`✅ Showing unassigned email: ${account.email}`);
+                    return true;
+                })
+                .map((account: GmailAccount, index: number) => {
+                    const assignedAgent = account.assignedAgent || '';
+                    const isAssigned = !!(assignedAgent && assignedAgent !== 'unassigned' && assignedAgent !== '' && assignedAgent !== null);
+
+                    // Check if the assigned agent exists in current organization's agents
+                    const isAgentFromCurrentOrg = isAssigned && agents.some(agent =>
+                        agent.agent_prefix === assignedAgent ||
+                        agent.id === assignedAgent ||
+                        agent.name === assignedAgent
+                    );
+
+                    return {
+                        id: account.id || `gmail_${index}`,
+                        email_address: account.email || '',
+                        friendly_name: getFriendlyName(account.email || ''),
+                        agent_name: isAssigned ? assignedAgent : '',
+                        agent_prefix: isAssigned ? assignedAgent : '',
+                        assigned_at: account.lastSync || '',
+                        status: isAssigned ? 'assigned' as const : 'unassigned' as const,
+                        is_active: account.status === 'active',
+                        agent_id: isAssigned ? assignedAgent : null,
+                        is_agent_from_current_org: isAgentFromCurrentOrg
+                    };
+                });
+
+            console.log('✅ Gmail assignments created with organization filtering:', gmailAssignments);
+            console.log(`📊 Filtered results: ${gmailAccounts.length} total emails, ${gmailAssignments.length} from current org`);
             setAssignments(gmailAssignments);
         } else {
             console.log('❌ No Gmail accounts to convert to assignments');
             setAssignments([]);
         }
-    }, [gmailAccounts]);
+    }, [gmailAccounts, agents]);
 
     // Assignment functions
     const handleAssignAgent = async () => {
@@ -214,11 +298,10 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
                 apiKey: agent.api_key ? `${agent.api_key.substring(0, 10)}...` : 'No API key'
             });
 
-            // Call the actual Gmail service to assign the agent
-            const result = await GmailService.createAgentMappingCurl(
+            // Call the actual Gmail service to assign the agent using MongoDB endpoint
+            const result = await GmailService.createAgentMappingMongoDB(
                 selectedGmailAccount,
-                agent.api_key || '',
-                `${agent.name || agent.agent_prefix} Agent`
+                agent.agent_prefix || agent.id || ''
             );
 
             console.log('🔍 API result:', result);
@@ -253,8 +336,8 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
         try {
             console.log('🚀 Unassigning agent for Gmail account:', assignment.email_address);
 
-            // Call the actual Gmail service to unassign the agent
-            const result = await GmailService.unassignEmailAgent(assignment.email_address);
+            // Call the MongoDB Gmail service to unassign the agent
+            const result = await GmailService.unassignGmailAgentMongoDB(assignment.email_address);
 
             if (result.success) {
                 // Refresh data after successful unassignment
@@ -285,13 +368,37 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
         return emailRegex.test(email);
     };
 
-    // Filter assignments based on search terms
+    // Filter assignments based on search terms and organization
     const filteredAssignments = assignments.filter(assignment => {
+        // First filter: Only show emails from current organization or unassigned
+        const isFromCurrentOrg = assignment.is_agent_from_current_org === true || assignment.status === 'unassigned';
+
+        // Second filter: Search terms
         const matchesSearch = assignment.email_address.toLowerCase().includes(searchTerm.toLowerCase()) ||
             assignment.friendly_name.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesAgent = assignment.agent_name.toLowerCase().includes(agentSearchTerm.toLowerCase()) ||
             assignment.agent_prefix.toLowerCase().includes(agentSearchTerm.toLowerCase());
-        return matchesSearch && matchesAgent;
+
+        console.log(`🔍 Filtering assignment ${assignment.email_address}:`, {
+            isFromCurrentOrg,
+            status: assignment.status,
+            matchesSearch,
+            matchesAgent,
+            finalResult: isFromCurrentOrg && matchesSearch && matchesAgent
+        });
+
+        return isFromCurrentOrg && matchesSearch && matchesAgent;
+    });
+
+    // Debug: Log current assignments to see what's being displayed
+    console.log('🔍 Current assignments in table:', {
+        totalAssignments: assignments.length,
+        filteredAssignments: filteredAssignments.length,
+        assignments: assignments.map(a => ({
+            email: a.email_address,
+            agent: a.agent_name,
+            isFromCurrentOrg: a.is_agent_from_current_org
+        }))
     });
 
     // Check if any agents are assigned in the filtered assignments
@@ -393,6 +500,9 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
                                     <th className="text-left py-4 px-6 font-semibold text-sm">
                                         Status
                                     </th>
+                                    <th className="text-left py-4 px-6 font-semibold text-sm">
+                                        Agent
+                                    </th>
                                     {hasAssignedAgents && (
                                         <th className="text-left py-4 px-6 font-semibold text-sm">
                                             Unassign
@@ -438,6 +548,24 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
                                             </div>
                                         </td>
 
+                                        {/* Agent Column */}
+                                        <td className="py-4 px-6">
+                                            <div className="flex items-center gap-2">
+                                                <User className={`h-4 w-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                                                <span className="text-sm">
+                                                    {assignment.status === 'assigned' && assignment.agent_name
+                                                        ? getAgentDisplayName({ name: assignment.agent_name, id: assignment.agent_id }) || 'Gmail Agent'
+                                                        : 'Unassigned'
+                                                    }
+                                                </span>
+                                                {assignment.status === 'assigned' && assignment.is_agent_from_current_org === false && (
+                                                    <span className="px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">
+                                                        Other Org
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
+
                                         {/* Unassign Column - Only show when there are assigned agents */}
                                         {hasAssignedAgents && (
                                             <td className="py-4 px-6">
@@ -458,8 +586,10 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
                                                 >
                                                     {isUnassigning === assignment.id ? (
                                                         <RefreshCw className="h-4 w-4 animate-spin" />
+                                                    ) : assignment.status === 'assigned' ? (
+                                                        <Trash2 className="h-4 w-4" />
                                                     ) : (
-                                                        <Edit className="h-4 w-4" />
+                                                        <Plus className="h-4 w-4" />
                                                     )}
                                                 </button>
                                             </td>
@@ -577,3 +707,5 @@ export default function InboundGmail({ refreshTrigger }: InboundGmailProps) {
         </div>
     );
 }
+
+

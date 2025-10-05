@@ -44,21 +44,7 @@ export default function GmailTab({ }: GmailTabProps) {
                                 </p>
                             </div>
 
-                            {/* Action Buttons */}
-                            <div className="flex flex-col items-end gap-2">
-                                <div className="flex gap-2 sm:gap-3">
-                                    <button className="group relative px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 bg-gray-500 text-white rounded-lg sm:rounded-xl hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 sm:gap-3">
-                                        <span className="text-sm sm:text-base font-semibold">Xpectrum</span>
-                                    </button>
-                                    <button
-                                        onClick={handleRefresh}
-                                        className="group relative px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 bg-blue-600 text-white rounded-lg sm:rounded-xl hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 sm:gap-3"
-                                    >
-                                        <RefreshCw className="h-4 w-4 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
-                                        <span className="text-sm sm:text-base font-semibold">Refresh</span>
-                                    </button>
-                                </div>
-                            </div>
+                           
                         </div>
                     </div>
                 </div>
