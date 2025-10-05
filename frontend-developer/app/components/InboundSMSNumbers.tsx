@@ -6,7 +6,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { getAgentDisplayName } from '../../lib/utils/agentNameUtils';
 import { useAuthInfo } from '@propelauth/react';
 import { SMSService } from '../../service/smsService';
-import { getAgentsByOrganization, getPhoneNumbersByOrganization } from '../../service/phoneNumberService';
+import { getAgentsByOrganization, getPhoneNumbersByOrganization, getAvailablePhoneNumbersFromBackend } from '../../service/phoneNumberService';
 import { useOrganizationId } from './utils/phoneNumberUtils';
 import {
     PhoneNumber,
@@ -73,6 +73,7 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
     const [loadingAgents, setLoadingAgents] = useState(false);
     const [loadingOrgPhoneNumbers, setLoadingOrgPhoneNumbers] = useState(false);
     const [organizationName, setOrganizationName] = useState<string>('');
+    const [availablePhoneNumbers, setAvailablePhoneNumbers] = useState<PhoneNumber[]>([]);
 
     const loadPhoneNumbers = useCallback(async () => {
         setLoadingOrgPhoneNumbers(true);
@@ -200,6 +201,40 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
         }
     }, [getOrganizationId]);
 
+    const loadAvailablePhoneNumbers = useCallback(async () => {
+        try {
+            console.log('🚀 Loading available phone numbers (backend inventory)...');
+            const response = await getAvailablePhoneNumbersFromBackend();
+            console.log('🚀 Available numbers response:', response);
+            if (response.success && response.data) {
+                let phoneNumbersArray: PhoneNumber[] = [];
+                const raw = (response.data as any);
+                const list = Array.isArray(raw) ? raw : (Array.isArray(raw?.phone_numbers) ? raw.phone_numbers : []);
+                phoneNumbersArray = (list as unknown[]).map((phone: unknown) => {
+                    const phoneData = phone as Record<string, unknown>;
+                    return {
+                        phone_number: (phoneData.number as string) || (phoneData.phone_number as string) || '',
+                        agent_id: (phoneData.agent_id as string) || null,
+                        organization_id: (phoneData.organization_id as string) || '',
+                        status: (phoneData.status as string) || 'available',
+                        phone_id: (phoneData.phone_id as string) || '',
+                        voice_enabled: (phoneData.voice_enabled as boolean) || false,
+                        sms_enabled: (phoneData.sms_enabled as boolean) || false,
+                        whatsapp_enabled: (phoneData.whatsapp_enabled as boolean) || false,
+                        inbound_enabled: (phoneData.inbound_enabled as boolean) || false,
+                        outbound_enabled: (phoneData.outbound_enabled as boolean) || false,
+                    } as PhoneNumber;
+                });
+                setAvailablePhoneNumbers(phoneNumbersArray);
+            } else {
+                setAvailablePhoneNumbers([]);
+            }
+        } catch (err) {
+            console.error('❌ Error loading available phone numbers:', err);
+            setAvailablePhoneNumbers([]);
+        }
+    }, []);
+
     // Get organization name from user context
     useEffect(() => {
         if (userClass) {
@@ -224,7 +259,9 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
         loadPhoneNumbers();
         loadAgents();
         loadAgentMappings();
-    }, [loadPhoneNumbers, loadAgents, loadAgentMappings]);
+        loadAvailablePhoneNumbers();
+        // Deliberately use empty deps to keep array size constant and avoid re-renders
+    }, []);
 
     // Reload data when refreshTrigger changes
     useEffect(() => {
@@ -233,8 +270,9 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
             loadPhoneNumbers();
             loadAgents();
             loadAgentMappings();
+            loadAvailablePhoneNumbers();
         }
-    }, [refreshTrigger, loadPhoneNumbers, loadAgents, loadAgentMappings]);
+    }, [refreshTrigger]);
 
     // Get friendly name from phone number
     const getFriendlyName = (phoneNumber: string) => {
@@ -251,41 +289,76 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
         return phoneNumber;
     };
 
-    // Convert organization phone numbers to assignments format
+    // Convert organization and available phone numbers to assignments format
     useEffect(() => {
-        if (organizationPhoneNumbers.length > 0) {
-            console.log('🔄 Converting organization phone numbers to assignments:', organizationPhoneNumbers);
+        console.log('🔄 Converting phone numbers to SMS assignments', {
+            orgCount: organizationPhoneNumbers.length,
+            availableCount: availablePhoneNumbers.length,
+            agentsCount: agents.length
+        });
 
-            const smsAssignments: SMSAssignment[] = organizationPhoneNumbers
-                .filter((orgPhone: any) => orgPhone.sms_enabled === true) // Only SMS-enabled numbers
-                .map((orgPhone: any, index: number) => {
-                    const phoneNumber = orgPhone.number || orgPhone.phone_number || '';
-                    const agentId = orgPhone.agent_id || orgPhone.agent_name || '';
-                    const isAssigned = !!(agentId && agentId !== 'unassigned' && agentId !== null && agentId !== '');
+        const isAgentFromCurrentOrg = (candidate: string | null | undefined): boolean => {
+            if (!candidate) return false;
+            return agents.some(a => a.agent_prefix === candidate || a.name === candidate || a.agent_prefix === (candidate as string).trim());
+        };
 
-                    return {
-                        id: orgPhone.phone_id || orgPhone._id || `phone_${index}`,
-                        phone_number: phoneNumber,
-                        friendly_name: getFriendlyName(phoneNumber),
-                        agent_name: isAssigned ? (orgPhone.agent_name || agentId) : '',
-                        agent_prefix: isAssigned ? (orgPhone.agent_prefix || agentId) : '',
-                        assigned_at: isAssigned ? (orgPhone.assigned_at || orgPhone.updated_at || new Date().toISOString()) : '',
-                        status: isAssigned ? 'assigned' as const : 'unassigned' as const,
-                        voice_enabled: orgPhone.voice_enabled || false,
-                        sms_enabled: orgPhone.sms_enabled || true,
-                        whatsapp_enabled: orgPhone.whatsapp_enabled || false,
-                        agent_id: isAssigned ? agentId : null,
-                        mapping_data: null
-                    };
-                });
+        const orgSmsAssignments: SMSAssignment[] = (organizationPhoneNumbers || [])
+            .filter((orgPhone: any) => orgPhone.sms_enabled === true)
+            .map((orgPhone: any, index: number) => {
+                const phoneNumber = orgPhone.number || orgPhone.phone_number || '';
+                const agentIdOrName = orgPhone.agent_id || orgPhone.agent_name || '';
+                const isAssigned = !!(agentIdOrName && agentIdOrName !== 'unassigned' && agentIdOrName !== null && agentIdOrName !== '');
+                const inCurrentOrg = isAssigned ? isAgentFromCurrentOrg(orgPhone.agent_prefix || orgPhone.agent_id || orgPhone.agent_name) : false;
 
-            console.log('✅ SMS assignments created from organization phone numbers:', smsAssignments);
-            setAssignments(smsAssignments);
-        } else {
-            console.log('❌ No organization phone numbers to convert to assignments');
-            setAssignments([]);
-        }
-    }, [organizationPhoneNumbers]);
+                return {
+                    id: orgPhone.phone_id || orgPhone._id || `phone_${index}`,
+                    phone_number: phoneNumber,
+                    friendly_name: getFriendlyName(phoneNumber),
+                    agent_name: isAssigned ? (orgPhone.agent_name || agentIdOrName) : '',
+                    agent_prefix: isAssigned ? (orgPhone.agent_prefix || agentIdOrName) : '',
+                    assigned_at: isAssigned ? (orgPhone.assigned_at || orgPhone.updated_at || new Date().toISOString()) : '',
+                    status: isAssigned ? 'assigned' as const : 'unassigned' as const,
+                    voice_enabled: orgPhone.voice_enabled || false,
+                    sms_enabled: orgPhone.sms_enabled || true,
+                    whatsapp_enabled: orgPhone.whatsapp_enabled || false,
+                    agent_id: isAssigned ? (orgPhone.agent_id || orgPhone.agent_prefix || orgPhone.agent_name) : null,
+                    mapping_data: null,
+                } as SMSAssignment & { is_agent_from_current_org?: boolean };
+            })
+            .map((a) => ({ ...a, is_agent_from_current_org: a.status === 'assigned' ? isAgentFromCurrentOrg(a.agent_id || a.agent_prefix || a.agent_name) : false }));
+
+        const orgAssignedForCurrentOrg = orgSmsAssignments.filter(a => a.status === 'assigned' && (a as any).is_agent_from_current_org === true);
+
+        const orgNumbersSet = new Set((organizationPhoneNumbers || []).map((orgPhone: any) => (orgPhone.number || orgPhone.phone_number)));
+
+        const availableSmsAssignments: SMSAssignment[] = (availablePhoneNumbers || [])
+            .filter((available: PhoneNumber) => available.sms_enabled === true)
+            .filter((available: PhoneNumber) => {
+                const phone = available.phone_number || '';
+                return !orgNumbersSet.has(phone);
+            })
+            .map((available: PhoneNumber, index: number) => {
+                const phone = available.phone_number || '';
+                return {
+                    id: available.phone_id || `available_${index}_${phone}`,
+                    phone_number: phone,
+                    friendly_name: getFriendlyName(phone),
+                    agent_name: '',
+                    agent_prefix: '',
+                    assigned_at: '',
+                    status: 'unassigned' as const,
+                    voice_enabled: available.voice_enabled || false,
+                    sms_enabled: available.sms_enabled || true,
+                    whatsapp_enabled: available.whatsapp_enabled || false,
+                    agent_id: null,
+                    mapping_data: null
+                };
+            });
+
+        const finalList = orgAssignedForCurrentOrg.length > 0 ? orgAssignedForCurrentOrg : availableSmsAssignments;
+        console.log('✅ Final SMS list count:', finalList.length, { showing: orgAssignedForCurrentOrg.length > 0 ? 'assigned_for_current_org' : 'available' });
+        setAssignments(finalList);
+    }, [organizationPhoneNumbers, availablePhoneNumbers, agents]);
 
     // Assignment functions
     const handleAssignAgent = async () => {
@@ -299,10 +372,13 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
             console.log('🚀 Assigning agent:', { agent, phoneNumber: selectedPhoneNumber });
 
             // Find the phone number ID for the selected phone number
-            const selectedPhoneData = organizationPhoneNumbers.find(
+            const selectedPhoneDataOrg = organizationPhoneNumbers.find(
                 phone => (phone.number || phone.phone_number) === selectedPhoneNumber
             );
-            const phoneNumberId = selectedPhoneData?.phone_id || selectedPhoneData?._id || '';
+            const selectedPhoneDataAvailable = availablePhoneNumbers.find(
+                phone => (phone.phone_number) === selectedPhoneNumber
+            );
+            const phoneNumberId = selectedPhoneDataOrg?.phone_id || selectedPhoneDataOrg?._id || selectedPhoneDataAvailable?.phone_id || '';
 
             if (!phoneNumberId) {
                 alert('Phone number ID not found. Please refresh and try again.');
@@ -318,6 +394,9 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
             if (result.success) {
                 // Refresh agent mappings to get updated data
                 await loadAgentMappings();
+                // Reload phone numbers to reflect assignment changes
+                await loadPhoneNumbers();
+                await loadAvailablePhoneNumbers();
 
                 // Update local state
                 const updatedAssignments = assignments.map(assignment => {
@@ -379,6 +458,9 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
             if (result.success) {
                 // Reload agent mappings to get updated data
                 await loadAgentMappings();
+                // Reload phone numbers to reflect unassignment
+                await loadPhoneNumbers();
+                await loadAvailablePhoneNumbers();
 
                 // Update local state
                 const updatedAssignments = assignments.map(assignment => {
@@ -466,6 +548,19 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
                     </div>
 
                     <div className="flex items-center gap-4">
+                        {/* Refresh Button (replaces organization name) */}
+                        <button
+                            onClick={() => {
+                                loadPhoneNumbers();
+                                loadAgents();
+                                loadAgentMappings();
+                                loadAvailablePhoneNumbers();
+                            }}
+                            className="group relative px-4 py-2.5 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                        >
+                            <RefreshCw className="h-4 w-4" />
+                            <span className="text-sm font-semibold">Refresh</span>
+                        </button>
                         {/* Assign Agent Button */}
                         <button
                             onClick={() => setShowAssignModal(true)}
@@ -733,18 +828,28 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
                                         className={`w-full px-3 py-2 rounded-lg border ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                                     >
                                         <option value="">Select a phone number</option>
-                                        {organizationPhoneNumbers
-                                            .filter(phone => {
-                                                const phoneNumber = phone.number || phone.phone_number || '';
-                                                const cleanNumber = phoneNumber.replace(/\D/g, '');
-                                                const mapping = agentMappings[cleanNumber] || agentMappings[phoneNumber];
-                                                return !mapping; // Only show unassigned numbers
-                                            })
-                                            .map((phone, index) => (
-                                                <option key={phone.phone_id || phone._id || `phone_${index}`} value={phone.number || phone.phone_number}>
-                                                    {phone.number || phone.phone_number}
-                                                </option>
-                                            ))}
+                                        {(() => {
+                                            const orgNumbersSet = new Set((organizationPhoneNumbers || []).map((p: any) => (p.number || p.phone_number)));
+                                            const unassignedOrg = (organizationPhoneNumbers || [])
+                                                .filter((phone: any) => {
+                                                    const phoneNumber = phone.number || phone.phone_number || '';
+                                                    const cleanNumber = phoneNumber.replace(/\D/g, '');
+                                                    const mapping = agentMappings[cleanNumber] || agentMappings[phoneNumber];
+                                                    return !mapping; // Only show unassigned org numbers
+                                                });
+                                            const availableExtras = (availablePhoneNumbers || [])
+                                                .filter(p => p.sms_enabled === true)
+                                                .filter(p => !orgNumbersSet.has(p.phone_number));
+                                            const combined = [...unassignedOrg, ...availableExtras];
+                                            return combined.map((phone: any, index: number) => {
+                                                const value = phone.number || phone.phone_number || '';
+                                                return (
+                                                    <option key={phone.phone_id || phone._id || `phone_${index}`} value={value}>
+                                                        {value}
+                                                    </option>
+                                                );
+                                            });
+                                        })()}
                                     </select>
                                 </div>
                             </div>
