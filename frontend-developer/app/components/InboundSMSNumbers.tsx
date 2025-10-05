@@ -466,17 +466,6 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
                     </div>
 
                     <div className="flex items-center gap-4">
-                        {/* Organization Name */}
-                        {organizationName && (
-                            <div className="flex items-center gap-2">
-                                <span className={`text-sm font-medium px-3 py-2 rounded-lg ${isDarkMode
-                                    ? 'bg-gray-700 text-gray-200 border border-gray-600'
-                                    : 'bg-gray-100 text-gray-700 border border-gray-300'
-                                    }`}>
-                                    {organizationName}
-                                </span>
-                            </div>
-                        )}
                         {/* Assign Agent Button */}
                         <button
                             onClick={() => setShowAssignModal(true)}

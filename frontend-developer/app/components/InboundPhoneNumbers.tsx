@@ -87,10 +87,32 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
   // State for organization phone numbers
   const [organizationPhoneNumbers, setOrganizationPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [loadingOrgPhoneNumbers, setLoadingOrgPhoneNumbers] = useState(false);
+  
+  // Combined loading state to prevent showing "no numbers" while still loading
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-  // Load data on component mount
+  // Load data on component mount - optimized to only fetch available numbers if no assigned numbers exist
   useEffect(() => {
-    loadOrganizationPhoneNumbers();
+    const loadPhoneNumbers = async () => {
+      setIsInitialLoading(true);
+      
+      try {
+        // First, try to load assigned phone numbers
+        const hasAssignedNumbers = await loadOrganizationPhoneNumbers();
+        
+        // If no assigned phone numbers found, then load available phone numbers
+        if (!hasAssignedNumbers) {
+          console.log('📞 No assigned phone numbers found, loading available phone numbers...');
+          await loadAvailablePhoneNumbers();
+        } else {
+          console.log('📞 Found assigned phone numbers, skipping available phone numbers fetch');
+        }
+      } finally {
+        setIsInitialLoading(false);
+      }
+    };
+    
+    loadPhoneNumbers();
     loadAgents();
   }, []); // Remove getOrganizationId dependency to prevent multiple calls
 
@@ -112,14 +134,14 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
     }
   }, [userClass]);
 
-  const loadOrganizationPhoneNumbers = useCallback(async () => {
+  const loadOrganizationPhoneNumbers = useCallback(async (): Promise<boolean> => {
     setLoadingOrgPhoneNumbers(true);
     try {
       const orgId = getOrganizationId();
 
       if (!orgId) {
         setOrganizationPhoneNumbers([]);
-        return;
+        return false;
       }
 
       const response: ApiResponse<OrganizationData> = await getPhoneNumbersByOrganization(orgId);
@@ -130,6 +152,7 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
         // Check if we have phone_numbers in the response
         if (orgData.phone_numbers && Array.isArray(orgData.phone_numbers) && orgData.phone_numbers.length > 0) {
           setOrganizationPhoneNumbers(orgData.phone_numbers);
+          return true; // Found assigned phone numbers
         } else {
           // Try alternative data extraction methods
           let phoneNumbersData: PhoneNumber[] | null = null;
@@ -149,17 +172,21 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
 
           if (phoneNumbersData && phoneNumbersData.length > 0) {
             setOrganizationPhoneNumbers(phoneNumbersData);
+            return true; // Found assigned phone numbers
           } else {
             setOrganizationPhoneNumbers([]);
+            return false; // No assigned phone numbers
           }
         }
       } else {
         setOrganizationPhoneNumbers([]);
+        return false; // No assigned phone numbers
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       console.error('Error loading organization phone numbers:', errorMessage);
       setOrganizationPhoneNumbers([]);
+      return false; // Error occurred, no assigned phone numbers
     } finally {
       setLoadingOrgPhoneNumbers(false);
     }
@@ -168,9 +195,20 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
   // Refresh data when refreshTrigger changes
   useEffect(() => {
     if (refreshTrigger && refreshTrigger > 0) {
-      loadOrganizationPhoneNumbers();
+      const refreshData = async () => {
+        setIsInitialLoading(true);
+        try {
+          const hasAssignedNumbers = await loadOrganizationPhoneNumbers();
+          if (!hasAssignedNumbers) {
+            await loadAvailablePhoneNumbers();
+          }
+        } finally {
+          setIsInitialLoading(false);
+        }
+      };
+      refreshData();
     }
-  }, [refreshTrigger, loadOrganizationPhoneNumbers]);
+  }, [refreshTrigger]);
 
   const loadAgents = useCallback(async () => {
     setLoadingAgents(true);
@@ -256,11 +294,6 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
     }
   }, [phoneNumbers]);
 
-  // Load agents and available phone numbers on component mount
-  useEffect(() => {
-    loadAgents();
-    loadAvailablePhoneNumbers();
-  }, [loadAgents, loadAvailablePhoneNumbers]);
 
   // Show organization phone numbers if available, otherwise show available phone numbers
   const allPhoneNumbers: PhoneNumber[] = organizationPhoneNumbers.length > 0
@@ -595,17 +628,6 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Organization Name */}
-            {organizationName && (
-              <div className="flex items-center gap-2">
-                <span className={`text-sm font-medium px-3 py-2 rounded-lg ${isDarkMode
-                  ? 'bg-gray-700 text-gray-200 border border-gray-600'
-                  : 'bg-gray-100 text-gray-700 border border-gray-300'
-                  }`}>
-                  {organizationName}
-                </span>
-              </div>
-            )}
 
             {/* Assign Agent Button */}
             <button
@@ -630,47 +652,6 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
               Filter by Capabilities:
             </span> */}
 
-            {/* Voice Filter */}
-            <div className="flex items-center gap-3">
-              <PhoneCall className={`h-4 w-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-              <select
-                value={voiceFilter}
-                onChange={(e) => setVoiceFilter(e.target.value as 'all' | 'enabled' | 'disabled')}
-                className={`px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200 hover:bg-gray-600' : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50'}`}
-              >
-                <option value="all">All Voice</option>
-                <option value="enabled">Voice Enabled</option>
-                <option value="disabled">Voice Disabled</option>
-              </select>
-            </div>
-
-            {/* SMS Filter */}
-            <div className="flex items-center gap-3">
-              <MessageSquare className={`h-4 w-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-              <select
-                value={smsFilter}
-                onChange={(e) => setSmsFilter(e.target.value as 'all' | 'enabled' | 'disabled')}
-                className={`px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200 hover:bg-gray-600' : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50'}`}
-              >
-                <option value="all">All SMS</option>
-                <option value="enabled">SMS Enabled</option>
-                <option value="disabled">SMS Disabled</option>
-              </select>
-            </div>
-
-            {/* WhatsApp Filter */}
-            <div className="flex items-center gap-3">
-              <WhatsAppIcon className={`h-4 w-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-              <select
-                value={whatsappFilter}
-                onChange={(e) => setWhatsappFilter(e.target.value as 'all' | 'enabled' | 'disabled')}
-                className={`px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200 hover:bg-gray-600' : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50'}`}
-              >
-                <option value="all">All WhatsApp</option>
-                <option value="enabled">WhatsApp Enabled</option>
-                <option value="disabled">WhatsApp Disabled</option>
-              </select>
-            </div>
           </div>
 
           {/* Agent Filter and Clear Button Row */}
@@ -709,8 +690,8 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
 
       {/* Table Container */}
       <div className="flex-1 overflow-hidden">
-        {(loading || loadingOrgPhoneNumbers) && filteredPhoneNumbers.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
+        {(loading || loadingOrgPhoneNumbers || isInitialLoading) && filteredPhoneNumbers.length === 0 ? (
+          <div className="flex items-center justify-center h-full min-h-[220px] py-10">
             <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
             <span className={`ml-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
               Loading phone numbers...
