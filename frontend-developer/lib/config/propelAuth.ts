@@ -15,12 +15,13 @@ let auth: any = null;
 export function getAuth() {
   if (!auth) {
     try {
-      const { initAuth } = require("@propelauth/express");
-      auth = initAuth({
+      const { initBaseAuth } = require("@propelauth/node");
+      auth = initBaseAuth({
         authUrl: PROPELAUTH_CONFIG.AUTH_URL,
         apiKey: PROPELAUTH_CONFIG.API_KEY,
       });
     } catch (error) {
+      console.error("PropelAuth initialization error:", error);
       throw new Error("PropelAuth initialization failed");
     }
   }
