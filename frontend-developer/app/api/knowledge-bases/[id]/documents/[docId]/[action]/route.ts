@@ -36,7 +36,7 @@ export async function PATCH(
     const { id, docId, action } = await params;
     const token = await getAuthToken();
 
-    // Update document status via Dify console API
+    // Update document status via backend API
     const response = await fetch(`${CONSOLE_ORIGIN}/console/api/datasets/${id}/documents/status/${action}/batch?document_id=${docId}`, {
       method: 'PATCH',
       headers: {

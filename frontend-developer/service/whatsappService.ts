@@ -421,6 +421,95 @@ export class WhatsAppService {
       throw error;
     }
   }
+
+  /**
+   * Assign WhatsApp Phone Number to Agent
+   * POST /phone-numbers/{phone_id}/assign/{agent_name}
+   */
+  static async assignPhoneNumberToAgent(
+    phoneId: string,
+    agentName: string
+  ): Promise<PhoneNumberResponse> {
+    try {
+      console.log('🚀 Assigning WhatsApp phone number to agent:', { phoneId, agentName });
+      
+      const response = await fetch(`https://d2batbqeoehmxe.cloudfront.net/phone-numbers/${encodeURIComponent(phoneId)}/assign/${encodeURIComponent(agentName)}`, {
+        method: 'POST',
+        headers: {
+          'x-api-key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ WhatsApp phone number assigned successfully:', data);
+      return { success: true, data };
+    } catch (error: any) {
+      console.error('❌ Failed to assign WhatsApp phone number to agent:', error);
+      return { success: false, message: `Failed to assign WhatsApp phone number to agent: ${error.message}` };
+    }
+  }
+
+  /**
+   * Unassign WhatsApp Phone Number from Agent
+   * DELETE /phone-numbers/{phone_id}/unassign/{agent_name}
+   */
+  static async unassignPhoneNumberFromAgent(
+    phoneId: string,
+    agentName: string
+  ): Promise<PhoneNumberResponse> {
+    try {
+      console.log('🚀 Unassigning WhatsApp phone number from agent:', { phoneId, agentName });
+      
+      // Try different endpoint patterns and methods
+      const endpoints = [
+        // Pattern 1: POST /phone-numbers/{phone_id}/unassign/{agent_name}
+        { url: `/phone-numbers/${encodeURIComponent(phoneId)}/unassign/${encodeURIComponent(agentName)}`, method: 'POST' },
+        // Pattern 2: DELETE /phone-numbers/{phone_id}/unassign/{agent_name}
+        { url: `/phone-numbers/${encodeURIComponent(phoneId)}/unassign/${encodeURIComponent(agentName)}`, method: 'DELETE' },
+        // Pattern 3: POST /phone-numbers/{phone_id}/unassign with body
+        { url: `/phone-numbers/${encodeURIComponent(phoneId)}/unassign`, method: 'POST', body: { agent_name: agentName } },
+        // Pattern 4: PUT /phone-numbers/{phone_id}/assign with null agent
+        { url: `/phone-numbers/${encodeURIComponent(phoneId)}/assign`, method: 'PUT', body: { agent_name: null } }
+      ];
+
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`Trying WhatsApp unassign endpoint: ${endpoint.method} ${endpoint.url}`);
+          
+          const response = await fetch(`https://d2batbqeoehmxe.cloudfront.net/${endpoint.url}`, {
+            method: endpoint.method,
+            headers: {
+              'x-api-key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
+              'Content-Type': 'application/json'
+            },
+            body: endpoint.body ? JSON.stringify(endpoint.body) : undefined
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`✅ WhatsApp unassign successful with ${endpoint.method} ${endpoint.url}`);
+            return { success: true, data };
+          } else {
+            console.log(`❌ ${endpoint.method} ${endpoint.url} failed with status: ${response.status}`);
+          }
+        } catch (endpointError) {
+          console.log(`❌ ${endpoint.method} ${endpoint.url} failed with error:`, endpointError);
+          continue;
+        }
+      }
+
+      // If all endpoints fail, throw an error
+      throw new Error('All WhatsApp unassign endpoint patterns failed');
+    } catch (error: any) {
+      console.error('❌ Failed to unassign WhatsApp phone number from agent:', error);
+      return { success: false, message: `Failed to unassign WhatsApp phone number from agent: ${error.message}` };
+    }
+  }
 }
 
 export default WhatsAppService;

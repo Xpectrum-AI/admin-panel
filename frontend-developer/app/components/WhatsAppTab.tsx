@@ -60,7 +60,13 @@ export default function WhatsAppTab({ }: WhatsAppTabProps) {
               <div className="flex flex-col items-end gap-2">
                 <div className="flex gap-2 sm:gap-3">
                 </div>
+                <h2 className={`text-xl sm:text-2xl lg:text-3xl font-bold bg-clip-text text-transparent truncate ${isDarkMode ? 'bg-gradient-to-r from-white to-gray-300' : 'bg-gradient-to-r from-gray-900 to-gray-700'}`}>
+                  WhatsApp-Enabled Phone Numbers
+                </h2>
               </div>
+              <p className={`text-sm sm:text-base lg:text-lg truncate ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                {activeTab === 'inbound' ? 'View and manage WhatsApp-enabled phone number assignments to agents' : 'Schedule outbound WhatsApp messages with agents'}
+              </p>
             </div>
           </div>
         </div>

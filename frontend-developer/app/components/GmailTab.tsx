@@ -45,11 +45,7 @@ export default function GmailTab({ }: GmailTabProps) {
                                 </p>
                             </div>
 
-                            {/* Action Buttons */}
-                            <div className="flex flex-col items-end gap-2">
-                                <div className="flex gap-2 sm:gap-3">
-                                </div>
-                            </div>
+                           
                         </div>
                     </div>
                 </div>
