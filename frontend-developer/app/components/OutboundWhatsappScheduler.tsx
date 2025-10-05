@@ -6,7 +6,7 @@ import { useAuthInfo } from '@propelauth/react';
 import { useTheme } from '../contexts/ThemeContext';
 import { WhatsAppService } from '../../service/whatsappService';
 import { 
-  SchedulerFormData, 
+  MessageFormData, 
   FormErrors
 } from './types/phoneNumbers';
 import { useOrganizationId } from './utils/phoneNumberUtils';
@@ -35,13 +35,9 @@ export default function OutboundWhatsappScheduler({ refreshTrigger }: OutboundWh
   const [showCreateSchedulerModal, setShowCreateSchedulerModal] = useState(false);
   
   // WhatsApp message form state
-  const [schedulerForm, setSchedulerForm] = useState<SchedulerFormData>({
+  const [messageForm, setMessageForm] = useState<MessageFormData>({
     organization_id: '',
-    agent_prefix: '',
-    recipient_phone: '',
-    scheduled_time: '',
-    flexible_time_minutes: 0,
-    max_retries: 3,
+    to_number: '',
     message_text: '',
     message_type: 'text',
     context: '',
@@ -54,7 +50,7 @@ export default function OutboundWhatsappScheduler({ refreshTrigger }: OutboundWh
   // Load data on component mount
   useEffect(() => {
     const orgId = getOrganizationId();
-    setSchedulerForm(prev => ({ ...prev, organization_id: orgId }));
+    setMessageForm(prev => ({ ...prev, organization_id: orgId }));
   }, [getOrganizationId]);
 
   // Form validation function
@@ -62,14 +58,14 @@ export default function OutboundWhatsappScheduler({ refreshTrigger }: OutboundWh
     const errors: FormErrors = {};
     
     // Phone number validation
-    if (!schedulerForm.recipient_phone.trim()) {
-      errors.recipient_phone = 'Recipient phone number is required';
-    } else if (!/^\+[1-9]\d{1,14}$/.test(schedulerForm.recipient_phone)) {
-      errors.recipient_phone = 'Please enter a valid phone number (e.g., +1234567890)';
+    if (!messageForm.to_number?.trim()) {
+      errors.to_number = 'Recipient phone number is required';
+    } else if (!/^\+[1-9]\d{1,14}$/.test(messageForm.to_number)) {
+      errors.to_number = 'Please enter a valid phone number (e.g., +1234567890)';
     }
     
     // Message text validation
-    if (!schedulerForm.message_text?.trim()) {
+    if (!messageForm.message_text?.trim()) {
       errors.message_text = 'Message text is required';
     }
     
@@ -93,11 +89,11 @@ export default function OutboundWhatsappScheduler({ refreshTrigger }: OutboundWh
     try {
       // Send WhatsApp message using the new API format
       const result = await WhatsAppService.sendMessage(
-        schedulerForm.recipient_phone,
-        schedulerForm.message_text,
-        schedulerForm.message_type || 'text',
-        schedulerForm.context,
-        schedulerForm.receiving_number
+        messageForm.to_number || '',
+        messageForm.message_text,
+        messageForm.message_type || 'text',
+        messageForm.context,
+        messageForm.receiving_number
       );
 
       if (result.success) {
@@ -105,13 +101,9 @@ export default function OutboundWhatsappScheduler({ refreshTrigger }: OutboundWh
         
         // Reset form
         const orgId = getOrganizationId();
-        setSchedulerForm({
+        setMessageForm({
           organization_id: orgId,
-          agent_prefix: '',
-          recipient_phone: '',
-          scheduled_time: '',
-          flexible_time_minutes: 0,
-          max_retries: 3,
+          to_number: '',
           message_text: '',
           message_type: 'text',
           context: '',
@@ -194,9 +186,9 @@ export default function OutboundWhatsappScheduler({ refreshTrigger }: OutboundWh
                 <input
                   type="tel"
                   placeholder="+1234567890"
-                  value={schedulerForm.recipient_phone}
+                  value={messageForm.to_number || ''}
                   onChange={(e) => {
-                    setSchedulerForm({...schedulerForm, recipient_phone: e.target.value});
+                    setMessageForm({...messageForm, to_number: e.target.value});
                   }}
                   className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-400'}`}
                 />
@@ -210,9 +202,9 @@ export default function OutboundWhatsappScheduler({ refreshTrigger }: OutboundWh
                 </label>
                 <textarea
                   placeholder="Enter your WhatsApp message..."
-                  value={schedulerForm.message_text}
+                  value={messageForm.message_text}
                   onChange={(e) => {
-                    setSchedulerForm({...schedulerForm, message_text: e.target.value});
+                    setMessageForm({...messageForm, message_text: e.target.value});
                   }}
                   rows={4}
                   className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-400'}`}
@@ -226,9 +218,9 @@ export default function OutboundWhatsappScheduler({ refreshTrigger }: OutboundWh
                     Message Type
                   </label>
                   <select
-                    value={schedulerForm.message_type}
+                    value={messageForm.message_type}
                     onChange={(e) => {
-                      setSchedulerForm({...schedulerForm, message_type: e.target.value});
+                      setMessageForm({...messageForm, message_type: e.target.value});
                     }}
                     className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
                   >
@@ -245,9 +237,9 @@ export default function OutboundWhatsappScheduler({ refreshTrigger }: OutboundWh
                   <input
                     type="text"
                     placeholder="Message context for logging"
-                    value={schedulerForm.context}
+                    value={messageForm.context || ''}
                     onChange={(e) => {
-                      setSchedulerForm({...schedulerForm, context: e.target.value});
+                      setMessageForm({...messageForm, context: e.target.value});
                     }}
                     className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-400'}`}
                   />
@@ -263,9 +255,9 @@ export default function OutboundWhatsappScheduler({ refreshTrigger }: OutboundWh
                 <input
                   type="tel"
                   placeholder="Your business phone number for agent mapping"
-                  value={schedulerForm.receiving_number}
+                  value={messageForm.receiving_number || ''}
                   onChange={(e) => {
-                    setSchedulerForm({...schedulerForm, receiving_number: e.target.value});
+                    setMessageForm({...messageForm, receiving_number: e.target.value});
                   }}
                   className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-400'}`}
                 />
@@ -291,7 +283,7 @@ export default function OutboundWhatsappScheduler({ refreshTrigger }: OutboundWh
             <div className="mt-4 flex justify-center">
               <button
                 onClick={handleSendWhatsAppMessage}
-                disabled={sending || !schedulerForm.recipient_phone || !schedulerForm.message_text}
+                disabled={sending || !messageForm.to_number || !messageForm.message_text}
                 className="group relative px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
               >
                 {sending ? (

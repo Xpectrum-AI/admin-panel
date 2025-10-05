@@ -6,7 +6,7 @@ import { useAuthInfo } from '@propelauth/react';
 import { useTheme } from '../contexts/ThemeContext';
 import { GmailService } from '../../service/gmailService';
 import { 
-  SchedulerFormData, 
+  MessageFormData, 
   FormErrors
 } from './types/phoneNumbers';
 import { useOrganizationId } from './utils/phoneNumberUtils';
@@ -35,17 +35,12 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
   const [showCreateSchedulerModal, setShowCreateSchedulerModal] = useState(false);
   
   // Gmail message form state
-  const [schedulerForm, setSchedulerForm] = useState<SchedulerFormData>({
+  const [messageForm, setMessageForm] = useState<MessageFormData>({
     organization_id: '',
-    agent_prefix: '',
-    recipient_phone: '', // Will be used for to_email
-    scheduled_time: '',
-    flexible_time_minutes: 0,
-    max_retries: 3,
-    message_text: '', // Will be used for message
-    message_type: 'text',
-    context: '',
-    receiving_number: '' // Will be used for from_email
+    to_email: '',
+    from_email: '',
+    message_text: '',
+    context: '' // Used for subject
   });
   const [sending, setSending] = useState(false);
   const [schedulerError, setSchedulerError] = useState<string | null>(null);
@@ -54,7 +49,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
   // Load data on component mount
   useEffect(() => {
     const orgId = getOrganizationId();
-    setSchedulerForm(prev => ({ ...prev, organization_id: orgId }));
+    setMessageForm(prev => ({ ...prev, organization_id: orgId }));
   }, [getOrganizationId]);
 
   // Form validation function
@@ -62,26 +57,26 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
     const errors: FormErrors = {};
     
     // From email validation
-    if (!schedulerForm.receiving_number.trim()) {
-      errors.receiving_number = 'From email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(schedulerForm.receiving_number)) {
-      errors.receiving_number = 'Please enter a valid email address';
+    if (!messageForm.from_email?.trim()) {
+      errors.from_email = 'From email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(messageForm.from_email)) {
+      errors.from_email = 'Please enter a valid email address';
     }
     
     // To email validation
-    if (!schedulerForm.recipient_phone.trim()) {
-      errors.recipient_phone = 'To email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(schedulerForm.recipient_phone)) {
-      errors.recipient_phone = 'Please enter a valid email address';
+    if (!messageForm.to_email?.trim()) {
+      errors.to_email = 'To email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(messageForm.to_email)) {
+      errors.to_email = 'Please enter a valid email address';
     }
     
     // Subject validation (using context field for subject)
-    if (!schedulerForm.context?.trim()) {
+    if (!messageForm.context?.trim()) {
       errors.context = 'Subject is required';
     }
     
     // Message text validation
-    if (!schedulerForm.message_text?.trim()) {
+    if (!messageForm.message_text?.trim()) {
       errors.message_text = 'Message text is required';
     }
     
@@ -105,10 +100,10 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
     try {
       // Send Gmail message using the API format
       const result = await GmailService.sendTestEmail(
-        schedulerForm.recipient_phone, // to_email
-        schedulerForm.context, // subject
-        schedulerForm.message_text, // message
-        schedulerForm.receiving_number // from_email
+        messageForm.to_email || '', // to_email
+        messageForm.context || '', // subject
+        messageForm.message_text, // message
+        messageForm.from_email || '' // from_email
       );
 
       if (result.success) {
@@ -116,17 +111,12 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
         
         // Reset form
         const orgId = getOrganizationId();
-        setSchedulerForm({
+        setMessageForm({
           organization_id: orgId,
-          agent_prefix: '',
-          recipient_phone: '',
-          scheduled_time: '',
-          flexible_time_minutes: 0,
-          max_retries: 3,
+          to_email: '',
+          from_email: '',
           message_text: '',
-          message_type: 'text',
-          context: '',
-          receiving_number: ''
+          context: ''
         });
         
         // Close modal
@@ -205,9 +195,9 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                 <input
                   type="email"
                   placeholder="support@company.com"
-                  value={schedulerForm.receiving_number}
+                  value={messageForm.from_email || ''}
                   onChange={(e) => {
-                    setSchedulerForm({...schedulerForm, receiving_number: e.target.value});
+                    setMessageForm({...messageForm, from_email: e.target.value});
                   }}
                   className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-400'}`}
                 />
@@ -222,9 +212,9 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                 <input
                   type="email"
                   placeholder="user@example.com"
-                  value={schedulerForm.recipient_phone}
+                  value={messageForm.to_email || ''}
                   onChange={(e) => {
-                    setSchedulerForm({...schedulerForm, recipient_phone: e.target.value});
+                    setMessageForm({...messageForm, to_email: e.target.value});
                   }}
                   className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-400'}`}
                 />
@@ -238,9 +228,9 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                 <input
                   type="text"
                   placeholder="Email subject"
-                  value={schedulerForm.context}
+                  value={messageForm.context || ''}
                   onChange={(e) => {
-                    setSchedulerForm({...schedulerForm, context: e.target.value});
+                    setMessageForm({...messageForm, context: e.target.value});
                   }}
                   className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-400'}`}
                 />
@@ -253,9 +243,9 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
                 </label>
                 <textarea
                   placeholder="Enter your email message..."
-                  value={schedulerForm.message_text}
+                  value={messageForm.message_text}
                   onChange={(e) => {
-                    setSchedulerForm({...schedulerForm, message_text: e.target.value});
+                    setMessageForm({...messageForm, message_text: e.target.value});
                   }}
                   rows={4}
                   className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-400'}`}
@@ -282,7 +272,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
             <div className="mt-4 flex justify-center">
               <button
                 onClick={handleSendGmailMessage}
-                disabled={sending || !schedulerForm.recipient_phone || !schedulerForm.message_text || !schedulerForm.receiving_number || !schedulerForm.context}
+                disabled={sending || !messageForm.to_email || !messageForm.message_text || !messageForm.from_email || !messageForm.context}
                 className="group relative px-8 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
               >
                 {sending ? (
