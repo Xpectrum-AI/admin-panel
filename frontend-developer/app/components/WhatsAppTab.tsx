@@ -40,36 +40,18 @@ export default function WhatsAppTab({ }: WhatsAppTabProps) {
         {/* Header */}
         <div className={`p-3 sm:p-4 lg:p-6 xl:p-8 border-b rounded-t-xl sm:rounded-t-2xl flex-shrink-0 ${isDarkMode ? 'border-gray-700/50 bg-gradient-to-r from-green-900/20 to-emerald-900/20' : 'border-gray-200/50 bg-gradient-to-r from-green-50 to-emerald-50'}`}>
           <div className="flex flex-col gap-3 sm:gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-              <div className="space-y-1 sm:space-y-2 min-w-0 flex-1">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="p-1.5 sm:p-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg sm:rounded-xl flex-shrink-0">
-                    <WhatsAppIcon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
-                  </div>
-                  <h2 className={`text-xl sm:text-2xl lg:text-3xl font-bold bg-clip-text text-transparent truncate ${isDarkMode ? 'bg-gradient-to-r from-white to-gray-300' : 'bg-gradient-to-r from-gray-900 to-gray-700'}`}>
-                    WhatsApp-Enabled Phone Numbers
-                  </h2>
+            <div className="space-y-1 sm:space-y-2 min-w-0 flex-1">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg sm:rounded-xl flex-shrink-0">
+                  <WhatsAppIcon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
                 </div>
-                <p className={`text-sm sm:text-base lg:text-lg truncate ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  {activeTab === 'inbound' ? 'View and manage WhatsApp-enabled phone number assignments to agents' : 'Schedule outbound WhatsApp messages with agents'}
-                </p>
+                <h2 className={`text-xl sm:text-2xl lg:text-3xl font-bold bg-clip-text text-transparent truncate ${isDarkMode ? 'bg-gradient-to-r from-white to-gray-300' : 'bg-gradient-to-r from-gray-900 to-gray-700'}`}>
+                  WhatsApp-Enabled Phone Numbers
+                </h2>
               </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col items-end gap-2">
-                <div className="flex gap-2 sm:gap-3">
-                  <button className="group relative px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 bg-gray-500 text-white rounded-lg sm:rounded-xl hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 sm:gap-3">
-                    <span className="text-sm sm:text-base font-semibold">Xpectrum</span>
-                  </button>
-                  <button
-                    onClick={handleRefresh}
-                    className="group relative px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 bg-green-600 text-white rounded-lg sm:rounded-xl hover:bg-green-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 sm:gap-3"
-                  >
-                    <RefreshCw className="h-4 w-4 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
-                    <span className="text-sm sm:text-base font-semibold">Refresh</span>
-                  </button>
-                </div>
-              </div>
+              <p className={`text-sm sm:text-base lg:text-lg truncate ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                {activeTab === 'inbound' ? 'View and manage WhatsApp-enabled phone number assignments to agents' : 'Schedule outbound WhatsApp messages with agents'}
+              </p>
             </div>
           </div>
         </div>
