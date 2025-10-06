@@ -677,7 +677,7 @@ Remember: You are the first point of contact for many patients. Your professiona
         nudgeText: 'Hello, Are you still there?',
         nudgeInterval: 15,
         maxNudges: 3,
-        typingVolume: 0.08,
+        typingVolume: 0.8,
         maxCallDuration: 300
       }
     };
