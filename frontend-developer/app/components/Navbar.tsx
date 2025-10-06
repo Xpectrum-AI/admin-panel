@@ -80,7 +80,7 @@ export default function Navbar({
     }, [dropdownOpen]);
 
     return (
-        <nav className={`w-full sticky top-0 z-[100] ${isDarkMode ? 'bg-gray-900/80 backdrop-blur-xl border-b border-gray-700/50' : 'bg-white border-b border-gray-200'}`}>
+        <nav className={`w-full sticky top-0 z-[10000] ${isDarkMode ? 'bg-gray-900/80 backdrop-blur-xl border-b border-gray-700/50' : 'bg-white border-b border-gray-200'}`}>
             <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center flex-wrap gap-3 sm:gap-4">
@@ -132,7 +132,7 @@ export default function Navbar({
                                 </div>
                             </button>
                             {dropdownOpen && (
-                                <div className={`absolute right-0 mt-3 w-[90vw] sm:w-80 max-w-[calc(100vw-2rem)] rounded-2xl shadow-2xl z-[9999] animate-fade-in-down ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`} style={{ zIndex: 9999 }}>
+                                <div className={`absolute right-0 mt-3 w-[90vw] sm:w-80 max-w-[calc(100vw-2rem)] rounded-2xl shadow-2xl z-[10010] animate-fade-in-down ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`} style={{ zIndex: 10010 }}>
                                     <div className={`p-4 sm:p-6 ${isDarkMode ? 'border-b border-gray-700/50' : 'border-b border-gray-200'}`}>
                                         <p className={`font-bold text-base sm:text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                                             {user?.firstName} {user?.lastName}
