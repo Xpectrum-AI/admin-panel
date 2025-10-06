@@ -86,7 +86,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
   const [nudgeText, setNudgeText] = useState('Hello, Are you still there?');
   const [nudgeInterval, setNudgeInterval] = useState(15);
   const [maxNudges, setMaxNudges] = useState(3);
-  const [typingVolume, setTypingVolume] = useState(0.01);
+  const [typingVolume, setTypingVolume] = useState(0.8);
   const [maxCallDuration, setMaxCallDuration] = useState(1200);
 
   // Buffer states for text inputs to prevent flickering
@@ -169,7 +169,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
         nudgeText: 'Hello, Are you still there?',
         nudgeInterval: 15,
         maxNudges: 3,
-        typingVolume: 0.01,
+        typingVolume: 0.8,
         maxCallDuration: 1200
       };
       source = 'modelConfig';
@@ -177,13 +177,18 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
 
     if (configToLoad) {
       console.log(`🔄 Loading configuration from ${source}:`, configToLoad);
+      console.log(`🔍 Typing volume from ${source}:`, configToLoad.typingVolume);
 
       // Update all fields at once to prevent flickering
       setInitialMessage(configToLoad.initialMessage || 'Hello! this is Emma, How can I help you today?');
       setNudgeText(configToLoad.nudgeText || 'Hello, Are you still there?');
       setNudgeInterval(configToLoad.nudgeInterval ?? 15);
       setMaxNudges(configToLoad.maxNudges ?? 3);
-      setTypingVolume(configToLoad.typingVolume ?? 0.01);
+
+      // Ensure typing volume is within the new valid range (0.1-10)
+      const validTypingVolume = configToLoad.typingVolume && configToLoad.typingVolume >= 0.1 ? configToLoad.typingVolume : 0.8;
+      console.log(`🔍 Setting typing volume to:`, validTypingVolume);
+      setTypingVolume(validTypingVolume);
       setMaxCallDuration(configToLoad.maxCallDuration ?? 1200);
     }
   }, [toolsConfiguration, selectedAgent, existingConfig, modelConfig, isEditingInitialMessage, isEditingNudgeText, isEditingNudgeInterval, isEditingMaxNudges]);
@@ -757,8 +762,8 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                 <div className="flex items-center gap-4">
                   <input
                     type="range"
-                    min="0"
-                    max="1"
+                    min="0.1"
+                    max="10"
                     step="0.1"
                     value={typingVolume}
                     onChange={(e) => handleTypingVolumeChange(parseFloat(e.target.value))}
@@ -770,8 +775,8 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                   />
                   <input
                     type="number"
-                    min="0"
-                    max="1"
+                    min="0.1"
+                    max="10"
                     step="0.1"
                     value={typingVolume}
                     onChange={(e) => handleTypingVolumeChange(parseFloat(e.target.value) || 0.8)}
@@ -787,8 +792,8 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                   />
                 </div>
                 <div className="flex justify-between text-xs text-gray-500">
-                  <span>0 (Muted)</span>
-                  <span>1 (Full Volume)</span>
+                  <span>0.1 (Min)</span>
+                  <span>10 (Max)</span>
                 </div>
               </div>
             </div>
@@ -803,8 +808,8 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                 <div className="flex items-center gap-4">
                   <input
                     type="range"
-                    min="0"
-                    max="600"
+                    min="60"
+                    max="1200"
                     step="30"
                     value={maxCallDuration}
                     onChange={(e) => handleMaxCallDurationChange(parseInt(e.target.value))}
@@ -831,8 +836,8 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                   />
                 </div>
                 <div className="flex justify-between text-xs text-gray-500">
-                  <span>0:00</span>
-                  <span>10:00</span>
+                  <span>1:00</span>
+                  <span>20:00</span>
                 </div>
               </div>
             </div>

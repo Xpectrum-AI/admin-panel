@@ -118,7 +118,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const [startVoiceCall, setStartVoiceCall] = useState(false);
   const [endVoiceCall, setEndVoiceCall] = useState(false);
   const [isConnectingToAgent, setIsConnectingToAgent] = useState(false);
-  
+
   // Call controls state
   const [callDuration, setCallDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
@@ -203,7 +203,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
   // Call duration timer
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
-    
+
     if (showVoiceChat && callStartTime) {
       interval = setInterval(() => {
         const now = new Date();
@@ -213,7 +213,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
     } else {
       setCallDuration(0);
     }
-    
+
     return () => {
       if (interval) {
         clearInterval(interval);
@@ -653,23 +653,22 @@ Remember: You are the first point of contact for many patients. Your professiona
         provider: 'openai' as const,
         openai: {
           api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
-          model: 'tts-1', // Default OpenAI model
+          model: 'gpt-4o-mini-tts',
           response_format: 'mp3',
           voice: 'alloy',
           language: 'en',
-          speed: 1.0
-        }
+          speed: 1
+        },
+        elevenlabs: null
       },
       // Transcriber Configuration
       transcriberConfig: {
-        provider: 'deepgram' as const,
-        deepgram: {
-          api_key: process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY || '',
-          model: 'nova-2',
-          language: 'en-US',
-          punctuate: true,
-          smart_format: true,
-          interim_results: false
+        provider: 'openai' as const,
+        deepgram: null,
+        openai: {
+          api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
+          model: 'gpt-4o-mini-transcribe',
+          language: 'en'
         }
       },
       // Tools Configuration
@@ -678,8 +677,8 @@ Remember: You are the first point of contact for many patients. Your professiona
         nudgeText: 'Hello, Are you still there?',
         nudgeInterval: 15,
         maxNudges: 3,
-        typingVolume: 0.01,
-        maxCallDuration: 1200
+        typingVolume: 0.08,
+        maxCallDuration: 300
       }
     };
 
@@ -1098,7 +1097,7 @@ Remember: You are the first point of contact for many patients. Your professiona
         nudge_text: tools?.nudgeText || selectedAgent.nudge_text || 'Hello, Are you still there?',
         nudge_interval: tools?.nudgeInterval ?? selectedAgent.nudge_interval ?? 15,
         max_nudges: tools?.maxNudges ?? selectedAgent.max_nudges ?? 3,
-        typing_volume: tools?.typingVolume ?? selectedAgent.typing_volume ?? 0.01,
+        typing_volume: tools?.typingVolume ?? selectedAgent.typing_volume ?? 0.8,
         max_call_duration: tools?.maxCallDuration ?? selectedAgent.max_call_duration ?? 1200,
         tts_config: backendVoiceConfig || undefined,
         stt_config: backendTranscriberConfig || undefined,
@@ -1745,22 +1744,21 @@ Remember: You are the first point of contact for many patients. Your professiona
                             {(callDuration % 60).toString().padStart(2, '0')}
                           </span>
                         </div>
-                        
+
                         {/* Mute Button */}
                         <button
                           onClick={() => setIsMuted(!isMuted)}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                            isMuted 
-                              ? 'bg-red-100 text-red-800 border border-red-200 hover:bg-red-200' 
-                              : 'bg-green-100 text-green-800 border border-green-200 hover:bg-green-200'
-                          }`}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isMuted
+                            ? 'bg-red-100 text-red-800 border border-red-200 hover:bg-red-200'
+                            : 'bg-green-100 text-green-800 border border-green-200 hover:bg-green-200'
+                            }`}
                         >
                           {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
                           {isMuted ? 'Unmute' : 'Mute'}
                         </button>
                       </>
                     )}
-                    
+
                     {selectedAgent && (
                       <button
                         onClick={() => {

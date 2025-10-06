@@ -508,93 +508,6 @@ export default function AgentCards({
           </div>
         )}
 
-        {/* Delete Confirmation Modal */}
-        {showDeleteModal && agentToDelete && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-            <div className={`relative p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all duration-300 scale-100 ${isDarkMode
-              ? 'bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50'
-              : 'bg-gradient-to-br from-white to-gray-50 border border-gray-200/50'
-              }`}>
-              {/* Close button */}
-              <button
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setAgentToDelete(null);
-                }}
-                className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${isDarkMode
-                  ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
-                  : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
-                  }`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-
-              <div className="text-center">
-                {/* Warning icon with animation */}
-                <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
-                  <Trash2 className="w-10 h-10 text-red-600 dark:text-red-400" />
-                </div>
-
-                {/* Title with gradient text */}
-                <h3 className="text-2xl font-bold mb-3 bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">
-                  Delete Agent
-                </h3>
-
-                {/* Warning message */}
-                <div className={`p-4 rounded-xl mb-6 ${isDarkMode
-                  ? 'bg-red-900/20 border border-red-800/50'
-                  : 'bg-red-50 border border-red-200'
-                  }`}>
-                  <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-red-200' : 'text-red-800'}`}>
-                    Are you sure you want to delete <strong className="font-semibold">"{agentToDelete.name}"</strong>?
-                  </p>
-                  <p className={`text-xs mt-2 ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>
-                    This action cannot be undone and will permanently remove the agent and all its data.
-                  </p>
-                </div>
-
-                {/* Action buttons */}
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => {
-                      setShowDeleteModal(false);
-                      setAgentToDelete(null);
-                    }}
-                    disabled={isDeletingAgent}
-                    className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 ${isDarkMode
-                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50'
-                      }`}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleDeleteAgent}
-                    disabled={isDeletingAgent}
-                    className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 ${isDeletingAgent
-                      ? 'bg-red-400 text-white cursor-not-allowed'
-                      : 'bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-700 hover:to-red-600 shadow-lg shadow-red-500/25'
-                      }`}
-                  >
-                    {isDeletingAgent ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        Deleting...
-                      </>
-                    ) : (
-                      <>
-                        <Trash2 className="w-4 h-4" />
-                        Delete Agent
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* QR Code Modal */}
         {showQrModal && qrAgent && (
@@ -627,6 +540,108 @@ export default function AgentCards({
 
         {/* Success modal removed */}
       </div>
+
+      {/* Delete Confirmation Modal - Outside main container */}
+      {showDeleteModal && agentToDelete && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            margin: 0,
+            padding: '1rem',
+            zIndex: 9999
+          }}
+        >
+          <div className={`relative p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all duration-300 scale-100 ${isDarkMode
+            ? 'bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50'
+            : 'bg-gradient-to-br from-white to-gray-50 border border-gray-200/50'
+            }`}>
+            {/* Close button */}
+            <button
+              onClick={() => {
+                setShowDeleteModal(false);
+                setAgentToDelete(null);
+              }}
+              className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${isDarkMode
+                ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
+                : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
+                }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <div className="text-center">
+              {/* Warning icon with animation */}
+              <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+                <Trash2 className="w-10 h-10 text-red-600 dark:text-red-400" />
+              </div>
+
+              {/* Title with gradient text */}
+              <h3 className="text-2xl font-bold mb-3 bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">
+                Delete Agent
+              </h3>
+
+              {/* Warning message */}
+              <div className={`p-4 rounded-xl mb-6 ${isDarkMode
+                ? 'bg-red-900/20 border border-red-800/50'
+                : 'bg-red-50 border border-red-200'
+                }`}>
+                <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-red-200' : 'text-red-800'}`}>
+                  Are you sure you want to delete <strong className="font-semibold">"{agentToDelete.name}"</strong>?
+                </p>
+                <p className={`text-xs mt-2 ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>
+                  This action cannot be undone and will permanently remove the agent and all its data.
+                </p>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setAgentToDelete(null);
+                  }}
+                  disabled={isDeletingAgent}
+                  className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 ${isDarkMode
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50'
+                    }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAgent}
+                  disabled={isDeletingAgent}
+                  className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 ${isDeletingAgent
+                    ? 'bg-red-400 text-white cursor-not-allowed'
+                    : 'bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-700 hover:to-red-600 shadow-lg shadow-red-500/25'
+                    }`}
+                >
+                  {isDeletingAgent ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      Delete Agent
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
