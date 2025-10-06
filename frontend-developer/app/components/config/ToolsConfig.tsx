@@ -185,8 +185,8 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
       setNudgeInterval(configToLoad.nudgeInterval ?? 15);
       setMaxNudges(configToLoad.maxNudges ?? 3);
 
-      // Ensure typing volume is within the new valid range (0.1-10)
-      const validTypingVolume = configToLoad.typingVolume && configToLoad.typingVolume >= 0.1 ? configToLoad.typingVolume : 0.8;
+      // Ensure typing volume is within the new valid range (0.01-10)
+      const validTypingVolume = configToLoad.typingVolume && configToLoad.typingVolume >= 0.01 ? configToLoad.typingVolume : 0.8;
       console.log(`🔍 Setting typing volume to:`, validTypingVolume);
       setTypingVolume(validTypingVolume);
       setMaxCallDuration(configToLoad.maxCallDuration ?? 1200);
@@ -762,9 +762,9 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                 <div className="flex items-center gap-4">
                   <input
                     type="range"
-                    min="0.1"
+                    min="0.01"
                     max="10"
-                    step="0.1"
+                    step="0.01"
                     value={typingVolume}
                     onChange={(e) => handleTypingVolumeChange(parseFloat(e.target.value))}
                     disabled={!isEditing}
@@ -775,9 +775,9 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                   />
                   <input
                     type="number"
-                    min="0.1"
+                    min="0.01"
                     max="10"
-                    step="0.1"
+                    step="0.01"
                     value={typingVolume}
                     onChange={(e) => handleTypingVolumeChange(parseFloat(e.target.value) || 0.8)}
                     disabled={!isEditing}
@@ -792,7 +792,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                   />
                 </div>
                 <div className="flex justify-between text-xs text-gray-500">
-                  <span>0.1 (Min)</span>
+                  <span>0.01 (Min)</span>
                   <span>10 (Max)</span>
                 </div>
               </div>
