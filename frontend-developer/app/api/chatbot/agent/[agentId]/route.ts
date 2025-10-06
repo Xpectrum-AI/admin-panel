@@ -57,21 +57,24 @@ export async function GET(
       chatbot_api: fallbackChatbotApi,
       chatbot_key: fallbackChatbotKey,
       tts_config: {
-        provider: "cartesian",
-        cartesian: {
-          voice_id: "e8e5fffb-252c-436d-b842-8879b84445b6",
-          tts_api_key: process.env.NEXT_PUBLIC_CARTESIA_API_KEY || '',
-          model: "sonic-2", // Default Cartesia model
-          speed: 1,
-          language: "english"
-        }
+        provider: "openai",
+        openai: {
+          api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
+          model: "gpt-4o-mini-tts",
+          response_format: "mp3",
+          voice: "alloy",
+          language: "en",
+          speed: 1
+        },
+        elevenlabs: null
       },
       stt_config: {
-        provider: "whisper",
-        whisper: {
-          api_key: process.env.NEXT_PUBLIC_WHISPER_API_KEY || '',
-          model: "whisper-1",
-          language: "en-US"
+        provider: "openai",
+        deepgram: null,
+        openai: {
+          api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
+          model: "gpt-4o-mini-transcribe",
+          language: "en"
         }
       },
       initial_message: "Hello! How can I help you today?",

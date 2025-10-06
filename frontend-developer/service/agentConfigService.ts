@@ -99,22 +99,21 @@ export const agentConfigService = {
           provider: 'openai',
           openai: {
             api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
-            model: 'tts-1', // Default OpenAI model
+            model: 'gpt-4o-mini-tts',
             response_format: 'mp3',
             voice: 'alloy',
             language: 'en',
-            speed: 1.0
-          }
+            speed: 1
+          },
+          elevenlabs: null
         },
         stt_config: {
-          provider: 'deepgram',
-          deepgram: {
-            api_key: process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY || '',
-            model: 'nova-2',
-            language: 'en-US',
-            punctuate: true,
-            smart_format: true,
-            interim_results: true
+          provider: 'openai',
+          deepgram: null,
+          openai: {
+            api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
+            model: 'gpt-4o-mini-transcribe',
+            language: 'en'
           }
         },
         initial_message: "Hello! I'm your AI assistant, how can I help you today?",
@@ -224,22 +223,21 @@ Remember: You are the first point of contact for many patients. Your professiona
           provider: 'openai',
           openai: {
             api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
-            model: 'tts-1', // Default OpenAI model
+            model: 'gpt-4o-mini-tts',
             response_format: 'mp3',
             voice: 'alloy',
             language: 'en',
-            speed: 1.0
-          }
+            speed: 1
+          },
+          elevenlabs: null
         },
         stt_config: config.stt_config || {
-          provider: 'deepgram',
-          deepgram: {
-            api_key: process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY || '',
-            model: 'nova-2',
-            language: 'en-US',
-            punctuate: true,
-            smart_format: true,
-            interim_results: true
+          provider: 'openai',
+          deepgram: null,
+          openai: {
+            api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
+            model: 'gpt-4o-mini-transcribe',
+            language: 'en'
           }
         },
         initial_message: config.initial_message || "Hello! I'm your AI assistant, how can I help you today?",
