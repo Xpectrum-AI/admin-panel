@@ -211,10 +211,7 @@ export default function DeveloperDashboard() {
                     </p>
                   </div>
                 </div>
-                <p className={`text-sm sm:text-base lg:text-lg max-w-2xl ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  Your central hub for managing AI assistants, communication channels, and monitoring system performance.
-                  Build, deploy, and observe your intelligent solutions.
-                </p>
+            
               </div>
               <div className="absolute top-3 sm:top-4 right-3 sm:right-4">
                 <div className={`flex items-center gap-2 rounded-full px-2 sm:px-4 py-1 sm:py-2 border ${isDarkMode ? 'bg-green-500/20 backdrop-blur-sm border-green-500/30' : 'bg-green-50 border-green-200'}`}>
