@@ -80,13 +80,13 @@ export default function Navbar({
     }, [dropdownOpen]);
 
     return (
-        <nav className={`w-full ${isDarkMode ? 'bg-gray-900/80 backdrop-blur-xl border-b border-gray-700/50' : 'bg-white border-b border-gray-200'}`}>
+        <nav className={`w-full sticky top-0 z-[100] ${isDarkMode ? 'bg-gray-900/80 backdrop-blur-xl border-b border-gray-700/50' : 'bg-white border-b border-gray-200'}`}>
             <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center flex-wrap gap-3 sm:gap-4">
                         <div className="h-10 w-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
                             <span className="text-white font-bold text-lg">
-                                {organizationName.charAt(0).toUpperCase() }
+                                {organizationName.charAt(0).toUpperCase()}
                             </span>
                         </div>
                         <div className="ml-3 sm:ml-4">
