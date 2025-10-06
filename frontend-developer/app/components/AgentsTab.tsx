@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Bot, Settings, Mic, Wrench, BarChart3, MessageSquare, Sparkles, Zap, Activity, Search, RefreshCw, Trash2, ChevronDown, Loader2, Code, CheckCircle, Phone, X, Send } from 'lucide-react';
+import { Bot, Settings, Mic, Wrench, BarChart3, MessageSquare, Sparkles, Zap, Activity, Search, RefreshCw, Trash2, ChevronDown, Loader2, Code, CheckCircle, Phone, X, Send, VolumeX, Volume2 } from 'lucide-react';
 
 import ModelConfig from './config/ModelConfig';
 import VoiceConfig from './config/VoiceConfig';
@@ -118,6 +118,11 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const [startVoiceCall, setStartVoiceCall] = useState(false);
   const [endVoiceCall, setEndVoiceCall] = useState(false);
   const [isConnectingToAgent, setIsConnectingToAgent] = useState(false);
+  
+  // Call controls state
+  const [callDuration, setCallDuration] = useState(0);
+  const [isMuted, setIsMuted] = useState(false);
+  const [callStartTime, setCallStartTime] = useState<Date | null>(null);
   const [showChatSidebar, setShowChatSidebar] = useState(false);
   const [chatMessages, setChatMessages] = useState<Array<{ id: string, type: 'user' | 'bot', message: string, timestamp: Date }>>([]);
   const [currentMessage, setCurrentMessage] = useState('');
@@ -194,6 +199,27 @@ export default function AgentsTab({ }: AgentsTabProps) {
     console.log('Active Config Tab:', activeConfigTab);
     console.log('================================');
   }, [selectedAgent, configuration, hasUnsavedChanges, autoSaveStatus, activeConfigTab]);
+
+  // Call duration timer
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    
+    if (showVoiceChat && callStartTime) {
+      interval = setInterval(() => {
+        const now = new Date();
+        const duration = Math.floor((now.getTime() - callStartTime.getTime()) / 1000);
+        setCallDuration(duration);
+      }, 1000);
+    } else {
+      setCallDuration(0);
+    }
+    
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [showVoiceChat, callStartTime]);
 
   // Debug function to check localStorage state
   const logLocalStorageState = useCallback(() => {
@@ -1709,6 +1735,32 @@ Remember: You are the first point of contact for many patients. Your professiona
                         Chat
                       </button>
                     )}
+                    {/* Call Controls - Time Counter and Mute */}
+                    {showVoiceChat && !isConnectingToAgent && (
+                      <>
+                        {/* Time Counter */}
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-green-100 text-green-800 border border-green-200">
+                          <span className="font-mono">
+                            {Math.floor(callDuration / 60).toString().padStart(2, '0')}:
+                            {(callDuration % 60).toString().padStart(2, '0')}
+                          </span>
+                        </div>
+                        
+                        {/* Mute Button */}
+                        <button
+                          onClick={() => setIsMuted(!isMuted)}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            isMuted 
+                              ? 'bg-red-100 text-red-800 border border-red-200 hover:bg-red-200' 
+                              : 'bg-green-100 text-green-800 border border-green-200 hover:bg-green-200'
+                          }`}
+                        >
+                          {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                          {isMuted ? 'Unmute' : 'Mute'}
+                        </button>
+                      </>
+                    )}
+                    
                     {selectedAgent && (
                       <button
                         onClick={() => {
@@ -1716,12 +1768,17 @@ Remember: You are the first point of contact for many patients. Your professiona
                             setEndVoiceCall(true);
                             setShowVoiceChat(false);
                             setIsConnectingToAgent(false);
+                            setCallStartTime(null);
+                            setCallDuration(0);
+                            setIsMuted(false);
                             // Reset end call flag after a brief delay
                             setTimeout(() => setEndVoiceCall(false), 100);
                           } else {
                             // Start voice chat immediately
                             setShowVoiceChat(true);
                             setStartVoiceCall(true);
+                            setCallStartTime(new Date());
+                            setIsMuted(false);
                             // Reset start call flag after a brief delay
                             setTimeout(() => setStartVoiceCall(false), 100);
 
@@ -1748,6 +1805,7 @@ Remember: You are the first point of contact for many patients. Your professiona
                         isDarkMode={isDarkMode}
                         startCall={startVoiceCall}
                         endCall={endVoiceCall}
+                        isMuted={isMuted}
                       />
                     )}
                     {selectedAgent && (
