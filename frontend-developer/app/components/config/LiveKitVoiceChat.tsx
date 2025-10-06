@@ -87,9 +87,10 @@ interface LiveKitVoiceChatProps {
   isDarkMode: boolean;
   startCall?: boolean; // when true, start connection
   endCall?: boolean;   // when true, end connection
+  isMuted?: boolean;   // when true, mute microphone
 }
 
-export default function LiveKitVoiceChat({ agentName, isDarkMode, startCall, endCall }: LiveKitVoiceChatProps) {
+export default function LiveKitVoiceChat({ agentName, isDarkMode, startCall, endCall, isMuted }: LiveKitVoiceChatProps) {
   const [connectionDetails, setConnectionDetails] = useState<TokenResponse | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -194,7 +195,7 @@ export default function LiveKitVoiceChat({ agentName, isDarkMode, startCall, end
           onConnected={() => console.log('🎤 LiveKit room connected successfully')}
           onError={(error) => console.error('🎤 LiveKit room error:', error)}
         >
-          <RoomStatusComponent onDisconnected={disconnect} isDarkMode={isDarkMode} />
+          <RoomStatusComponent onDisconnected={disconnect} isDarkMode={isDarkMode} isMuted={isMuted} />
           <RoomAudioRenderer />
         </LiveKitRoom>
       </div>
@@ -204,10 +205,10 @@ export default function LiveKitVoiceChat({ agentName, isDarkMode, startCall, end
   return null;
 }
 
-function RoomStatusComponent({ onDisconnected, isDarkMode }: { onDisconnected: () => void; isDarkMode: boolean }) {
+function RoomStatusComponent({ onDisconnected, isDarkMode, isMuted }: { onDisconnected: () => void; isDarkMode: boolean; isMuted?: boolean }) {
   const connectionState = useConnectionState();
   const participants = useParticipants();
-  const { localParticipant: _localParticipant } = useLocalParticipant();
+  const { localParticipant } = useLocalParticipant();
   const tracks = useTracks([Track.Source.Microphone]);
 
   // Debug logging
@@ -222,6 +223,26 @@ function RoomStatusComponent({ onDisconnected, isDarkMode }: { onDisconnected: (
   useEffect(() => {
     console.log('🎤 Tracks changed:', tracks.length, tracks.map(t => ({ source: t.source, publication: t.publication?.kind })));
   }, [tracks]);
+
+  // Handle microphone muting/unmuting
+  useEffect(() => {
+    if (localParticipant && typeof isMuted === 'boolean') {
+      console.log('🎤 Mute state changed:', isMuted);
+      
+      // Find the microphone track
+      const micTrack = localParticipant.audioTrackPublications.values().next().value;
+      
+      if (micTrack) {
+        if (isMuted) {
+          console.log('🎤 Muting microphone...');
+          micTrack.mute();
+        } else {
+          console.log('🎤 Unmuting microphone...');
+          micTrack.unmute();
+        }
+      }
+    }
+  }, [localParticipant, isMuted]);
 
   // Monitor for room destruction and auto-disconnect
   useEffect(() => {
