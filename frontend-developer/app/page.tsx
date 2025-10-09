@@ -30,8 +30,7 @@ import {
 import { useAuthInfo, useLogoutFunction } from '@propelauth/react';
 import { SyncLoader } from 'react-spinners';
 import { useRouter } from 'next/navigation';
-import { AgentsTab, PhoneNumbersTab, SMSTab, WhatsAppTab, GmailTab, KnowledgeBaseTab, OrgSetup } from './components';
-import Navbar from './components/Navbar';
+import { AgentsTab, PhoneNumbersTab, SMSTab, WhatsAppTab, GmailTab, KnowledgeBaseTab, OrgSetup, Sidebar, MobileNav } from './components';
 import ChatSidebar from './components/ChatSidebar';
 import { useTheme } from './contexts/ThemeContext';
 import { useTabPersistence } from '../hooks/useTabPersistence';
@@ -61,6 +60,7 @@ const navigationItems = [
 
 export default function DeveloperDashboard() {
   const [activeNavItem, handleNavItemChange] = useTabPersistence<string>('mainNavigation', 'Overview');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const { isDarkMode, toggleTheme } = useTheme();
 
@@ -444,15 +444,37 @@ export default function DeveloperDashboard() {
 
   return (
     <>
-      <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-black' : 'bg-gray-50'}`}>
-        {/* Navigation */}
-        <Navbar
+      <div className={`min-h-screen flex ${isDarkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-black' : 'bg-gray-50'}`}>
+        {/* Mobile Navigation */}
+        <MobileNav
           activeTab={activeNavItem}
           onChange={(tab) => handleNavItemClick(tab)}
-          activeTitle={activeNavItem}
-          sidebarOpen={true}
-          onToggleSidebar={() => { }}
           navigationItems={navigationItems}
+          organizationName={organizationName}
+          onLogout={async () => {
+            try {
+              setLoggingOut(true);
+              // Clear chat history before logout
+              localStorage.removeItem('chatMessages');
+              await logout(true);
+              // Redirect to login page
+              window.location.href = '/login';
+            } catch (error) {
+              console.error('Logout error:', error);
+              setLoggingOut(false);
+              // Force redirect even if logout fails
+              window.location.href = '/login';
+            }
+          }}
+        />
+
+        {/* Desktop Sidebar */}
+        <Sidebar
+          activeTab={activeNavItem}
+          onChange={(tab) => handleNavItemClick(tab)}
+          navigationItems={navigationItems}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           onLogout={async () => {
             try {
               setLoggingOut(true);
@@ -471,7 +493,7 @@ export default function DeveloperDashboard() {
         />
 
         {/* Main Content Area */}
-        <main className="p-3 sm:p-4 lg:p-6">
+        <main className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} p-3 sm:p-4 lg:p-6`}>
           {orgSetupComplete ? renderContent() : (
             <div className="flex items-center justify-center h-64">
               <div className={`text-center rounded-xl shadow-sm border p-8 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
