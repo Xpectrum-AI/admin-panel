@@ -461,7 +461,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
   const openaiModels = {
     'alloy': 'Alloy',
     'ash': 'Ash',
-    'ballad': 'Ballad',
     'coral': 'Coral',
     'echo': 'Echo',
     'fable': 'Fable',
