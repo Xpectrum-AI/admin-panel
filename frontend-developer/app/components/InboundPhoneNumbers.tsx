@@ -91,22 +91,18 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
   // Combined loading state to prevent showing "no numbers" while still loading
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-  // Load data on component mount - optimized to only fetch available numbers if no assigned numbers exist
+  // Load data on component mount - always load both assigned and available numbers
   useEffect(() => {
     const loadPhoneNumbers = async () => {
       setIsInitialLoading(true);
       
       try {
-        // First, try to load assigned phone numbers
-        const hasAssignedNumbers = await loadOrganizationPhoneNumbers();
-        
-        // If no assigned phone numbers found, then load available phone numbers
-        if (!hasAssignedNumbers) {
-          console.log('📞 No assigned phone numbers found, loading available phone numbers...');
-          await loadAvailablePhoneNumbers();
-        } else {
-          console.log('📞 Found assigned phone numbers, skipping available phone numbers fetch');
-        }
+        // Always load both assigned and available phone numbers
+        console.log('📞 Loading assigned and available phone numbers...');
+        await Promise.all([
+          loadOrganizationPhoneNumbers(),
+          loadAvailablePhoneNumbers()
+        ]);
       } finally {
         setIsInitialLoading(false);
       }
@@ -198,10 +194,11 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
       const refreshData = async () => {
         setIsInitialLoading(true);
         try {
-          const hasAssignedNumbers = await loadOrganizationPhoneNumbers();
-          if (!hasAssignedNumbers) {
-            await loadAvailablePhoneNumbers();
-          }
+          // Always refresh both assigned and available phone numbers
+          await Promise.all([
+            loadOrganizationPhoneNumbers(),
+            loadAvailablePhoneNumbers()
+          ]);
         } finally {
           setIsInitialLoading(false);
         }
