@@ -35,9 +35,9 @@ export interface SchedulerRequest {
   agent_id: string;
   call_type: string;
   recipient_phone: string;
-  scheduled_time: number; // Unix timestamp
+  scheduled_time: number;
   caller_number: string;
-  retry_interval_minutes: number; // Maps to flexible_time_minutes
+  retry_interval_minutes: number;
   max_retries: number;
   message_template?: string;
 }
