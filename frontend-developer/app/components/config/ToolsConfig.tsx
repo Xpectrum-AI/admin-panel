@@ -94,7 +94,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
   // Prop Synchronization Effect (The Fix for Flickering)
   useEffect(() => {
     const latestConfig = getInitialConfig();
-    
+
     // Only sync on initial load or when external props actually change
     // Don't sync if user has manually cleared fields (empty strings)
     if (!isSynchronizedRef.current) {
@@ -115,7 +115,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
         (nudgeInterval === '' && latestConfig.nudgeInterval !== '') ||
         (maxNudges === '' && latestConfig.maxNudges !== '')
       );
-      
+
       if (!hasUserModifiedEmptyValues) {
         const currentKey = JSON.stringify({
           im: initialMessage, nt: nudgeText, ni: nudgeInterval, mn: maxNudges, tv: typingVolume, mcd: maxCallDuration
@@ -123,7 +123,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
         const latestKey = JSON.stringify({
           im: latestConfig.initialMessage, nt: latestConfig.nudgeText, ni: latestConfig.nudgeInterval, mn: latestConfig.maxNudges, tv: latestConfig.typingVolume, mcd: latestConfig.maxCallDuration
         });
-        
+
         if (currentKey !== latestKey) {
           console.log('🔄 External config change detected. Updating local state.');
           setInitialMessage(latestConfig.initialMessage);
@@ -183,17 +183,17 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
   }, []);
 
   // Unified Change Handlers (No more buffers)
-  
+
   const handleMessageChange = useCallback((setter: React.Dispatch<React.SetStateAction<any>>, updates: any) => (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
     const value = e.target.value;
     setter(value); // Update the state immediately for responsive UI
     // Debounce the save to prevent excessive calls during typing
     saveStateToCentralized(updates(value));
   }, [saveStateToCentralized]);
-  
+
   const handleNumberChange = useCallback((setter: React.Dispatch<React.SetStateAction<string | number>>, updates: any) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value;
-    
+
     if (rawValue === '') {
       // Allow empty string - keep it empty
       setter('');
@@ -209,7 +209,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
       }
     }
   }, [saveStateToCentralized]);
-  
+
   const handleRangeChange = useCallback((setter: React.Dispatch<React.SetStateAction<number>>, updates: any) => (value: number) => {
     setter(value);
     saveStateToCentralized(updates(value));
@@ -221,7 +221,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
   // Number input handlers that allow empty values
   const handleNudgeIntervalChange = useCallback(handleNumberChange(setNudgeInterval, (value: number | null) => ({ nudgeInterval: value })), [handleNumberChange]);
   const handleMaxNudgesChange = useCallback(handleNumberChange(setMaxNudges, (value: number | null) => ({ maxNudges: value })), [handleNumberChange]);
-  
+
   const handleTypingVolumeChange = useCallback(handleRangeChange(setTypingVolume, (value: number) => ({ typingVolume: value })), [handleRangeChange]);
   const handleMaxCallDurationChange = useCallback(handleRangeChange(setMaxCallDuration, (value: number) => ({ maxCallDuration: value })), [handleRangeChange]);
 
@@ -238,7 +238,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
       return (parts[0] * 60) + (parts[1] || 0);
     }
     // Fallback if user types an invalid duration string, try to parse it as seconds
-    return parseInt(duration) || 1200; 
+    return parseInt(duration) || 1200;
   };
 
   // Test Dify integration manually
@@ -506,14 +506,14 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                     type="text"
                     value={formatDuration(maxCallDuration)}
                     onChange={(e) => {
-                        const newDuration = parseDuration(e.target.value);
-                        // Only save if it's a valid duration string, otherwise just update the displayed value
-                        if (newDuration >= 60 && newDuration <= 1200) {
-                            handleMaxCallDurationChange(newDuration);
-                        } else {
-                             // Allow temporary invalid display in text field
-                             setMaxCallDuration(newDuration);
-                        }
+                      const newDuration = parseDuration(e.target.value);
+                      // Only save if it's a valid duration string, otherwise just update the displayed value
+                      if (newDuration >= 60 && newDuration <= 1200) {
+                        handleMaxCallDurationChange(newDuration);
+                      } else {
+                        // Allow temporary invalid display in text field
+                        setMaxCallDuration(newDuration);
+                      }
                     }}
                     disabled={!isEditing}
                     className={`w-24 px-3 py-2 border rounded-lg text-center ${!isEditing
