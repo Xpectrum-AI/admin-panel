@@ -58,7 +58,20 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
 
   const [voiceProviders, setVoiceProviders] = useState({
     'OpenAI': ['tts-1', 'tts-1-hd', 'gpt-4o-mini-tts'],
-    '11Labs': ['eleven_v3', 'eleven_ttv_v3', 'scribe_v1', 'scribe_v1_experimental', 'eleven_multilingual_v2', 'eleven_flash_v2_5', 'eleven_flash_v2', 'eleven_turbo_v2_5', 'eleven_turbo_v2', 'eleven_multilingual_sts_v2', 'eleven_multilingual_ttv_v2', 'eleven_english_sts_v2'],
+    '11Labs': [
+      // 'eleven_v3', // not working
+      // 'eleven_ttv_v3', // not working
+      // 'scribe_v1', // not working
+      // 'scribe_v1_experimental', // not working
+      'eleven_multilingual_v2', // working
+      'eleven_flash_v2_5', // working
+      'eleven_flash_v2', // working
+      'eleven_turbo_v2_5', // working
+      'eleven_turbo_v2', // working
+      // 'eleven_multilingual_sts_v2', // not working
+      // 'eleven_multilingual_ttv_v2', // not working
+      // 'eleven_english_sts_v2' // not working
+    ],
     'Cartesia': ['sonic-2', 'sonic-turbo', 'sonic']
   });
 
@@ -365,34 +378,34 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
 
   // 11Labs Model Language Support
   const elevenLabsModelLanguages = {
-    'eleven_v3': ['afr', 'ara', 'hye', 'asm', 'aze', 'bel', 'ben', 'bos', 'bul', 'cat', 'ceb', 'nya', 'hrv', 'ces', 'dan', 'nld', 'eng', 'est', 'fil', 'fin', 'fra', 'glg', 'kat', 'deu', 'ell', 'guj', 'hau', 'heb', 'hin', 'hun', 'isl', 'ind', 'gle', 'ita', 'jpn', 'jav', 'kan', 'kaz', 'kir', 'kor', 'lav', 'lin', 'lit', 'ltz', 'mkd', 'msa', 'mal', 'cmn', 'mar', 'nep', 'nor', 'pus', 'fas', 'pol', 'por', 'pan', 'ron', 'rus', 'srp', 'snd', 'slk', 'slv', 'som', 'spa', 'swa', 'swe', 'tam', 'tel', 'tha', 'tur', 'ukr', 'urd', 'vie', 'cym'],
-    'eleven_ttv_v3': ['afr', 'ara', 'hye', 'asm', 'aze', 'bel', 'ben', 'bos', 'bul', 'cat', 'ceb', 'nya', 'hrv', 'ces', 'dan', 'nld', 'eng', 'est', 'fil', 'fin', 'fra', 'glg', 'kat', 'deu', 'ell', 'guj', 'hau', 'heb', 'hin', 'hun', 'isl', 'ind', 'gle', 'ita', 'jpn', 'jav', 'kan', 'kaz', 'kir', 'kor', 'lav', 'lin', 'lit', 'ltz', 'mkd', 'msa', 'mal', 'cmn', 'mar', 'nep', 'nor', 'pus', 'fas', 'pol', 'por', 'pan', 'ron', 'rus', 'srp', 'snd', 'slk', 'slv', 'som', 'spa', 'swa', 'swe', 'tam', 'tel', 'tha', 'tur', 'ukr', 'urd', 'vie', 'cym'],
-    'scribe_v1': ['afr', 'amh', 'ara', 'hye', 'asm', 'ast', 'aze', 'bel', 'ben', 'bos', 'bul', 'mya', 'yue', 'cat', 'ceb', 'nya', 'hrv', 'ces', 'dan', 'nld', 'eng', 'est', 'fil', 'fin', 'fra', 'ful', 'glg', 'lug', 'kat', 'deu', 'ell', 'guj', 'hau', 'heb', 'hin', 'hun', 'isl', 'ibo', 'ind', 'gle', 'ita', 'jpn', 'jav', 'kea', 'kan', 'kaz', 'khm', 'kor', 'kur', 'kir', 'lao', 'lav', 'lin', 'lit', 'luo', 'ltz', 'mkd', 'msa', 'mal', 'mlt', 'zho', 'mri', 'mar', 'mon', 'nep', 'nso', 'nor', 'oci', 'ori', 'pus', 'fas', 'pol', 'por', 'pan', 'ron', 'rus', 'srp', 'sna', 'snd', 'slk', 'slv', 'som', 'spa', 'swa', 'swe', 'tam', 'tgk', 'tel', 'tha', 'tur', 'ukr', 'umb', 'urd', 'uzb', 'vie', 'cym', 'wol', 'xho', 'zul'],
-    'scribe_v1_experimental': ['afr', 'amh', 'ara', 'hye', 'asm', 'ast', 'aze', 'bel', 'ben', 'bos', 'bul', 'mya', 'yue', 'cat', 'ceb', 'nya', 'hrv', 'ces', 'dan', 'nld', 'eng', 'est', 'fil', 'fin', 'fra', 'ful', 'glg', 'lug', 'kat', 'deu', 'ell', 'guj', 'hau', 'heb', 'hin', 'hun', 'isl', 'ibo', 'ind', 'gle', 'ita', 'jpn', 'jav', 'kea', 'kan', 'kaz', 'khm', 'kor', 'kur', 'kir', 'lao', 'lav', 'lin', 'lit', 'luo', 'ltz', 'mkd', 'msa', 'mal', 'mlt', 'zho', 'mri', 'mar', 'mon', 'nep', 'nso', 'nor', 'oci', 'ori', 'pus', 'fas', 'pol', 'por', 'pan', 'ron', 'rus', 'srp', 'sna', 'snd', 'slk', 'slv', 'som', 'spa', 'swa', 'swe', 'tam', 'tgk', 'tel', 'tha', 'tur', 'ukr', 'umb', 'urd', 'uzb', 'vie', 'cym', 'wol', 'xho', 'zul'],
-    'eleven_multilingual_v2': ['en', 'ja', 'zh', 'de', 'hi', 'fr', 'ko', 'pt', 'it', 'es', 'id', 'nl', 'tr', 'fil', 'pl', 'sv', 'bg', 'ro', 'ar', 'cs', 'el', 'fi', 'hr', 'ms', 'sk', 'da', 'ta', 'uk', 'ru'],
-    'eleven_flash_v2_5': ['en', 'ja', 'zh', 'de', 'hi', 'fr', 'ko', 'pt', 'it', 'es', 'id', 'nl', 'tr', 'fil', 'pl', 'sv', 'bg', 'ro', 'ar', 'cs', 'el', 'fi', 'hr', 'ms', 'sk', 'da', 'ta', 'uk', 'ru', 'hu', 'no', 'vi'],
-    'eleven_flash_v2': ['en'],
-    'eleven_turbo_v2_5': ['en', 'ja', 'zh', 'de', 'hi', 'fr', 'ko', 'pt', 'it', 'es', 'id', 'nl', 'tr', 'fil', 'pl', 'sv', 'bg', 'ro', 'ar', 'cs', 'el', 'fi', 'hr', 'ms', 'sk', 'da', 'ta', 'uk', 'ru', 'hu', 'no', 'vi'],
-    'eleven_turbo_v2': ['en'],
-    'eleven_multilingual_sts_v2': ['en', 'ja', 'zh', 'de', 'hi', 'fr', 'ko', 'pt', 'it', 'es', 'id', 'nl', 'tr', 'fil', 'pl', 'sv', 'bg', 'ro', 'ar', 'cs', 'el', 'fi', 'hr', 'ms', 'sk', 'da', 'ta', 'uk', 'ru'],
-    'eleven_multilingual_ttv_v2': ['en', 'ja', 'zh', 'de', 'hi', 'fr', 'ko', 'pt', 'it', 'es', 'id', 'nl', 'tr', 'fil', 'pl', 'sv', 'bg', 'ro', 'ar', 'cs', 'el', 'fi', 'hr', 'ms', 'sk', 'da', 'ta', 'uk', 'ru'],
-    'eleven_english_sts_v2': ['en']
+    // 'eleven_v3': ['afr', 'ara', 'hye', 'asm', 'aze', 'bel', 'ben', 'bos', 'bul', 'cat', 'ceb', 'nya', 'hrv', 'ces', 'dan', 'nld', 'eng', 'est', 'fil', 'fin', 'fra', 'glg', 'kat', 'deu', 'ell', 'guj', 'hau', 'heb', 'hin', 'hun', 'isl', 'ind', 'gle', 'ita', 'jpn', 'jav', 'kan', 'kaz', 'kir', 'kor', 'lav', 'lin', 'lit', 'ltz', 'mkd', 'msa', 'mal', 'cmn', 'mar', 'nep', 'nor', 'pus', 'fas', 'pol', 'por', 'pan', 'ron', 'rus', 'srp', 'snd', 'slk', 'slv', 'som', 'spa', 'swa', 'swe', 'tam', 'tel', 'tha', 'tur', 'ukr', 'urd', 'vie', 'cym'], // not working
+    // 'eleven_ttv_v3': ['afr', 'ara', 'hye', 'asm', 'aze', 'bel', 'ben', 'bos', 'bul', 'cat', 'ceb', 'nya', 'hrv', 'ces', 'dan', 'nld', 'eng', 'est', 'fil', 'fin', 'fra', 'glg', 'kat', 'deu', 'ell', 'guj', 'hau', 'heb', 'hin', 'hun', 'isl', 'ind', 'gle', 'ita', 'jpn', 'jav', 'kan', 'kaz', 'kir', 'kor', 'lav', 'lin', 'lit', 'ltz', 'mkd', 'msa', 'mal', 'cmn', 'mar', 'nep', 'nor', 'pus', 'fas', 'pol', 'por', 'pan', 'ron', 'rus', 'srp', 'snd', 'slk', 'slv', 'som', 'spa', 'swa', 'swe', 'tam', 'tel', 'tha', 'tur', 'ukr', 'urd', 'vie', 'cym'], // not working
+    // 'scribe_v1': ['afr', 'amh', 'ara', 'hye', 'asm', 'ast', 'aze', 'bel', 'ben', 'bos', 'bul', 'mya', 'yue', 'cat', 'ceb', 'nya', 'hrv', 'ces', 'dan', 'nld', 'eng', 'est', 'fil', 'fin', 'fra', 'ful', 'glg', 'lug', 'kat', 'deu', 'ell', 'guj', 'hau', 'heb', 'hin', 'hun', 'isl', 'ibo', 'ind', 'gle', 'ita', 'jpn', 'jav', 'kea', 'kan', 'kaz', 'khm', 'kor', 'kur', 'kir', 'lao', 'lav', 'lin', 'lit', 'luo', 'ltz', 'mkd', 'msa', 'mal', 'mlt', 'zho', 'mri', 'mar', 'mon', 'nep', 'nso', 'nor', 'oci', 'ori', 'pus', 'fas', 'pol', 'por', 'pan', 'ron', 'rus', 'srp', 'sna', 'snd', 'slk', 'slv', 'som', 'spa', 'swa', 'swe', 'tam', 'tgk', 'tel', 'tha', 'tur', 'ukr', 'umb', 'urd', 'uzb', 'vie', 'cym', 'wol', 'xho', 'zul'], // not working
+    // 'scribe_v1_experimental': ['afr', 'amh', 'ara', 'hye', 'asm', 'ast', 'aze', 'bel', 'ben', 'bos', 'bul', 'mya', 'yue', 'cat', 'ceb', 'nya', 'hrv', 'ces', 'dan', 'nld', 'eng', 'est', 'fil', 'fin', 'fra', 'ful', 'glg', 'lug', 'kat', 'deu', 'ell', 'guj', 'hau', 'heb', 'hin', 'hun', 'isl', 'ibo', 'ind', 'gle', 'ita', 'jpn', 'jav', 'kea', 'kan', 'kaz', 'khm', 'kor', 'kur', 'kir', 'lao', 'lav', 'lin', 'lit', 'luo', 'ltz', 'mkd', 'msa', 'mal', 'mlt', 'zho', 'mri', 'mar', 'mon', 'nep', 'nso', 'nor', 'oci', 'ori', 'pus', 'fas', 'pol', 'por', 'pan', 'ron', 'rus', 'srp', 'sna', 'snd', 'slk', 'slv', 'som', 'spa', 'swa', 'swe', 'tam', 'tgk', 'tel', 'tha', 'tur', 'ukr', 'umb', 'urd', 'uzb', 'vie', 'cym', 'wol', 'xho', 'zul'], // not working
+    'eleven_multilingual_v2': ['en', 'ja', 'zh', 'de', 'hi', 'fr', 'ko', 'pt', 'it', 'es', 'id', 'nl', 'tr', 'fil', 'pl', 'sv', 'bg', 'ro', 'ar', 'cs', 'el', 'fi', 'hr', 'ms', 'sk', 'da', 'ta', 'uk', 'ru'], // working
+    'eleven_flash_v2_5': ['en', 'ja', 'zh', 'de', 'hi', 'fr', 'ko', 'pt', 'it', 'es', 'id', 'nl', 'tr', 'fil', 'pl', 'sv', 'bg', 'ro', 'ar', 'cs', 'el', 'fi', 'hr', 'ms', 'sk', 'da', 'ta', 'uk', 'ru', 'hu', 'no', 'vi'], // working
+    'eleven_flash_v2': ['en'], // working
+    'eleven_turbo_v2_5': ['en', 'ja', 'zh', 'de', 'hi', 'fr', 'ko', 'pt', 'it', 'es', 'id', 'nl', 'tr', 'fil', 'pl', 'sv', 'bg', 'ro', 'ar', 'cs', 'el', 'fi', 'hr', 'ms', 'sk', 'da', 'ta', 'uk', 'ru', 'hu', 'no', 'vi'], // working
+    'eleven_turbo_v2': ['en'], // working
+    // 'eleven_multilingual_sts_v2': ['en', 'ja', 'zh', 'de', 'hi', 'fr', 'ko', 'pt', 'it', 'es', 'id', 'nl', 'tr', 'fil', 'pl', 'sv', 'bg', 'ro', 'ar', 'cs', 'el', 'fi', 'hr', 'ms', 'sk', 'da', 'ta', 'uk', 'ru'], // not working
+    // 'eleven_multilingual_ttv_v2': ['en', 'ja', 'zh', 'de', 'hi', 'fr', 'ko', 'pt', 'it', 'es', 'id', 'nl', 'tr', 'fil', 'pl', 'sv', 'bg', 'ro', 'ar', 'cs', 'el', 'fi', 'hr', 'ms', 'sk', 'da', 'ta', 'uk', 'ru'], // not working
+    // 'eleven_english_sts_v2': ['en'] // not working
   };
 
   // 11Labs Model Display Names
   const elevenLabsModelNames = {
-    'eleven_v3': 'Eleven v3',
-    'eleven_ttv_v3': 'Eleven TTV v3',
-    'scribe_v1': 'Scribe v1',
-    'scribe_v1_experimental': 'Scribe v1 Experimental',
-    'eleven_multilingual_v2': 'Eleven Multilingual v2',
-    'eleven_flash_v2_5': 'Eleven Flash v2.5',
-    'eleven_flash_v2': 'Eleven Flash v2',
-    'eleven_turbo_v2_5': 'Eleven Turbo v2.5',
-    'eleven_turbo_v2': 'Eleven Turbo v2',
-    'eleven_multilingual_sts_v2': 'Eleven Multilingual STS v2',
-    'eleven_multilingual_ttv_v2': 'Eleven Multilingual TTV v2',
-    'eleven_english_sts_v2': 'Eleven English STS v2'
+    // 'eleven_v3': 'Eleven v3', // not working
+    // 'eleven_ttv_v3': 'Eleven TTV v3', // not working
+    // 'scribe_v1': 'Scribe v1', // not working
+    // 'scribe_v1_experimental': 'Scribe v1 Experimental', // not working
+    'eleven_multilingual_v2': 'Eleven Multilingual v2', // working
+    'eleven_flash_v2_5': 'Eleven Flash v2.5', // working
+    'eleven_flash_v2': 'Eleven Flash v2', // working
+    'eleven_turbo_v2_5': 'Eleven Turbo v2.5', // working
+    'eleven_turbo_v2': 'Eleven Turbo v2', // working
+    // 'eleven_multilingual_sts_v2': 'Eleven Multilingual STS v2', // not working
+    // 'eleven_multilingual_ttv_v2': 'Eleven Multilingual TTV v2', // not working
+    // 'eleven_english_sts_v2': 'Eleven English STS v2' // not working
   };
 
   // Deepgram Language Mapping
