@@ -2,6 +2,8 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Bot, Settings, Mic, Wrench, BarChart3, MessageSquare, Sparkles, Zap, Activity, Search, RefreshCw, Trash2, ChevronDown, Loader2, Code, CheckCircle, Phone, X, Send, VolumeX, Volume2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 import ModelConfig from './config/ModelConfig';
 import VoiceConfig from './config/VoiceConfig';
@@ -127,8 +129,10 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const [chatMessages, setChatMessages] = useState<Array<{ id: string, type: 'user' | 'bot', message: string, timestamp: Date }>>([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [conversationId, setConversationId] = useState('');
   const selectedAgentIdRef = useRef<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Use centralized configuration state
   const {
@@ -220,6 +224,30 @@ export default function AgentsTab({ }: AgentsTabProps) {
       }
     };
   }, [showVoiceChat, callStartTime]);
+
+  // Auto-scroll to bottom when new messages arrive
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatMessages, scrollToBottom]);
+
+  // Add welcome message when chat sidebar opens
+  useEffect(() => {
+    if (showChatSidebar && selectedAgent && chatMessages.length === 0) {
+      if (selectedAgent.initial_message) {
+        const welcomeMessage = {
+          id: 'welcome',
+          type: 'bot' as const,
+          message: selectedAgent.initial_message,
+          timestamp: new Date()
+        };
+        setChatMessages([welcomeMessage]);
+      }
+    }
+  }, [showChatSidebar, selectedAgent, chatMessages.length]);
 
   // Debug function to check localStorage state
   const logLocalStorageState = useCallback(() => {
@@ -952,7 +980,7 @@ Remember: You are the first point of contact for many patients. Your professiona
           difyApiUrl: selectedAgent.chatbot_api || process.env.NEXT_PUBLIC_CHATBOT_API_URL || 'https://dlb20rrk0t1tl.cloudfront.net/v1/chat-messages',
           difyApiKey: selectedAgent.chatbot_key,
           message: messageToSend,
-          conversationId: '', // Start new conversation
+          conversationId: conversationId, // Use existing conversation ID for context
           useStreaming: true // Use streaming mode like the working chatbot
         }),
       });
@@ -960,6 +988,11 @@ Remember: You are the first point of contact for many patients. Your professiona
       const data = await response.json();
 
       if (response.ok && data.answer) {
+        // Update conversation ID if provided
+        if (data.conversationId) {
+          setConversationId(data.conversationId);
+        }
+
         const botMessage = {
           id: (Date.now() + 1).toString(),
           type: 'bot' as const,
@@ -971,7 +1004,7 @@ Remember: You are the first point of contact for many patients. Your professiona
         const errorMessage = {
           id: (Date.now() + 1).toString(),
           type: 'bot' as const,
-          message: 'Sorry, I encountered an error. Please try again.',
+          message: data.error || 'Sorry, I encountered an error. Please try again.',
           timestamp: new Date()
         };
         setChatMessages(prev => [...prev, errorMessage]);
@@ -981,7 +1014,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       const errorMessage = {
         id: (Date.now() + 1).toString(),
         type: 'bot' as const,
-        message: 'Sorry, I encountered an error. Please try again.',
+        message: error instanceof Error ? error.message : 'Sorry, there was an error connecting to the chatbot. Please check your API configuration.',
         timestamp: new Date()
       };
       setChatMessages(prev => [...prev, errorMessage]);
@@ -999,6 +1032,18 @@ Remember: You are the first point of contact for many patients. Your professiona
 
   const clearChat = () => {
     setChatMessages([]);
+    setConversationId('');
+
+    // Add welcome message if available
+    if (selectedAgent?.initial_message) {
+      const welcomeMessage = {
+        id: 'welcome',
+        type: 'bot' as const,
+        message: selectedAgent.initial_message,
+        timestamp: new Date()
+      };
+      setChatMessages([welcomeMessage]);
+    }
   };
 
   // Helper function to convert UI voice config to backend format
@@ -2090,7 +2135,11 @@ Remember: You are the first point of contact for many patients. Your professiona
                           : 'bg-gray-50 text-gray-900 rounded-bl-md border border-gray-200'
                         }`}
                     >
-                      <p className="text-sm leading-relaxed">{message.message}</p>
+                      <div className={`text-sm leading-relaxed ${message.type === 'user' ? 'text-white' : isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {message.message}
+                        </ReactMarkdown>
+                      </div>
                       <p className={`text-xs mt-2 ${message.type === 'user' ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
                         }`}>
                         {message.timestamp.toLocaleTimeString()}
@@ -2114,6 +2163,7 @@ Remember: You are the first point of contact for many patients. Your professiona
                   </div>
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Chat Input */}
