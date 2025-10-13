@@ -44,7 +44,8 @@ const TwilioNumberImport: React.FC<TwilioNumberImportProps> = ({
     setSuccess('');
 
     try {
-      const response = await fetch('/api/phone-numbers/import-twilio-number', {
+      const apiUrl = process.env.NEXT_PUBLIC_LIVE_API_URL || 'https://d3sgivh2kmd3c8.cloudfront.net';
+      const response = await fetch(`${apiUrl}/phone-numbers/import-twilio-number`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
