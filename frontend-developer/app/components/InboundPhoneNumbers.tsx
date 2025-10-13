@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Phone, Search, User, AlertCircle, CheckCircle, XCircle, Loader2, Plus, MessageSquare, PhoneCall, Edit, Trash2 } from 'lucide-react';
+import { Phone, Search, User, AlertCircle, CheckCircle, XCircle, Loader2, Plus, MessageSquare, PhoneCall, Edit, Trash2, Download } from 'lucide-react';
 import { useAuthInfo } from '@propelauth/react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getAgentDisplayName } from '../../lib/utils/agentNameUtils';
@@ -21,6 +21,7 @@ import {
   TIMEOUTS
 } from './types/phoneNumbers';
 import { useOrganizationId, isAssigned } from './utils/phoneNumberUtils';
+import TwilioNumberImport from './TwilioNumberImport';
 
 // Custom WhatsApp icon component
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -90,6 +91,9 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
   
   // Combined loading state to prevent showing "no numbers" while still loading
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  // Twilio import modal state
+  const [showTwilioImportModal, setShowTwilioImportModal] = useState(false);
 
   // Load data on component mount - always load both assigned and available numbers
   useEffect(() => {
@@ -574,6 +578,25 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
     }
   };
 
+  // Handle successful Twilio import
+  const handleTwilioImportSuccess = async (importedPhone: any) => {
+    console.log('Phone imported from Twilio:', importedPhone);
+    
+    // Refresh both phone number lists to show the newly imported number
+    await Promise.all([
+      loadOrganizationPhoneNumbers(),
+      loadAvailablePhoneNumbers()
+    ]);
+    
+    // Show success message
+    setSuccess(`Phone number ${importedPhone.phone_number} imported successfully from Twilio!`);
+    
+    // Clear success message after 5 seconds
+    setTimeout(() => {
+      setSuccess(null);
+    }, 5000);
+  };
+
   // Format phone number for display
   const formatPhoneNumber = (phoneNumber: string) => {
     // Remove any non-digit characters
@@ -625,6 +648,17 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
           </div>
 
           <div className="flex items-center gap-4">
+
+            {/* Import from Twilio Button */}
+            <button
+              onClick={() => {
+                setShowTwilioImportModal(true);
+              }}
+              className="group relative px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              <span className="text-sm font-semibold">Import from Twilio</span>
+            </button>
 
             {/* Assign Agent Button */}
             <button
@@ -1078,6 +1112,16 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
             </div>
           </div>
         </div>
+      )}
+
+      {/* Twilio Import Modal */}
+      {showTwilioImportModal && (
+        <TwilioNumberImport
+          organizationId={getOrganizationId()}
+          onImportSuccess={handleTwilioImportSuccess}
+          onClose={() => setShowTwilioImportModal(false)}
+          agents={agents}
+        />
       )}
     </div>
   );
