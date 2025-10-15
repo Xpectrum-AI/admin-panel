@@ -30,8 +30,13 @@ import {
 import { useAuthInfo, useLogoutFunction } from '@propelauth/react';
 import { SyncLoader } from 'react-spinners';
 import { useRouter } from 'next/navigation';
-import { AgentsTab, PhoneNumbersTab, SMSTab, WhatsAppTab, GmailTab, KnowledgeBaseTab, OrgSetup, Sidebar, MobileNav } from './components';
+
+import { AgentsTab, PhoneNumbersTab, SMSTab, WhatsAppTab, GmailTab, KnowledgeBaseTab, OrgSetup } from './components';
+import ConversationLogsTab from './components/ConversationLogsTab';
+import Navbar from './components/Navbar';
 import ChatSidebar from './components/ChatSidebar';
+import MobileNav from './components/MobileNav';
+import Sidebar from './components/Sidebar';
 import { useTheme } from './contexts/ThemeContext';
 import { useTabPersistence } from '../hooks/useTabPersistence';
 import { DashboardService, DashboardStats, OrganizationInfo } from '../service/dashboardService';
@@ -56,6 +61,7 @@ const navigationItems = [
   { name: 'WhatsApp', icon: Globe, color: 'from-green-600 to-emerald-700' },
   { name: 'Email', icon: Mail, color: 'from-red-500 to-pink-600' },
   { name: 'Knowledge Base', icon: BookOpen, color: 'from-purple-500 to-indigo-600' },
+  { name: 'Conversation Logs', icon: FileText, color: 'from-yellow-500 to-orange-600' },
 ];
 
 export default function DeveloperDashboard() {
@@ -385,6 +391,12 @@ export default function DeveloperDashboard() {
 
       case 'Knowledge Base':
         return <KnowledgeBaseTab />;
+
+      case 'Conversation Logs':
+        // Pass both orgId (UUID) and orgName (name) - agents use orgName
+        return <ConversationLogsTab 
+          organizationId={orgs.length > 0 ? (orgs[0] as any).orgName || (orgs[0] as any).name || orgs[0].orgId : undefined} 
+        />;
 
       default:
         return (
