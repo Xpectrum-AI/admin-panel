@@ -1078,7 +1078,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       };
     } else if (provider === '11Labs') {
       backendConfig.elevenlabs = {
-        voice_id: uiConfig.voiceId || 'pNInz6obpgDQGcFmaJgB',
+        voice_id: uiConfig.voiceId || '',
         api_key: uiConfig.apiKey || '',
         model_id: uiConfig.selectedModel || 'eleven_v3', // Use selectedModel instead of hardcoded value
         speed: uiConfig.speedValue || 1.0,

@@ -1,13 +1,10 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProviderWrapper } from './auth/AuthProviderWrapper'
 import { ErrorProvider } from './contexts/ErrorContext'
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { AgentConfigProvider } from './contexts/AgentConfigContext'
-
-const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Developer Dashboard',
@@ -28,7 +25,7 @@ export default function RootLayout({
         <meta name="format-detection" content="telephone=no" />
         <meta name="robots" content="noindex, nofollow" />
       </head>
-      <body className={`${inter.className} dark:bg-gray-900 dark:text-white min-h-screen overflow-x-hidden`}>
+      <body className="font-sans dark:bg-gray-900 dark:text-white min-h-screen overflow-x-hidden">
 
         <ThemeProvider>
           <AgentConfigProvider>

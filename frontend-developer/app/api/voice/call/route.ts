@@ -20,21 +20,46 @@ export async function POST(request: NextRequest) {
     
     console.log('🎤 Using API credentials:', { apiBaseUrl, apiKey: apiKey ? '***' : 'NOT_SET' });
 
-    // Get voice configuration based on provider
+    // Get agent configuration from MongoDB to get voice settings
+    let agentConfig = null;
+    if (agentName) {
+      try {
+        const agentResponse = await fetch(`${finalApiBaseUrl}/api/agents/${agentName}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${finalApiKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (agentResponse.ok) {
+          const agentData = await agentResponse.json();
+          agentConfig = agentData.data;
+          console.log('🎤 Loaded agent config:', { agentName, hasTtsConfig: !!agentConfig?.tts_config });
+        }
+      } catch (error) {
+        console.warn('🎤 Failed to load agent config, using defaults:', error);
+      }
+    }
+
+    // Get voice configuration based on provider and agent config
     let voiceApiKey: string;
     let voiceId: string;
     let voiceUrl: string;
 
     if (voiceProvider === 'elevenlabs') {
-      voiceApiKey = process.env.NEXT_PUBLIC_ELEVEN_LABS_API_KEY || '';
-      voiceId = process.env.NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID || '';
+      // Use agent-specific voice ID if available, otherwise fallback to env var
+      voiceApiKey = agentConfig?.tts_config?.elevenlabs?.api_key || process.env.NEXT_PUBLIC_ELEVEN_LABS_API_KEY || '';
+      voiceId = agentConfig?.tts_config?.elevenlabs?.voice_id || process.env.NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID || '';
       voiceUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
     } else {
-      // Default to Cartesia - use the correct API key
-      voiceApiKey = process.env.NEXT_PUBLIC_CARTESIA_API_KEY || 'REDACTED';
-      voiceId = process.env.NEXT_PUBLIC_CARTESIA_VOICE_ID || 'e8e5fffb-252c-436d-b842-8879b84445b6';
+      // Default to Cartesia - use agent-specific config if available
+      voiceApiKey = agentConfig?.tts_config?.cartesian?.tts_api_key || process.env.NEXT_PUBLIC_CARTESIA_API_KEY || 'REDACTED';
+      voiceId = agentConfig?.tts_config?.cartesian?.voice_id || process.env.NEXT_PUBLIC_CARTESIA_VOICE_ID || 'e8e5fffb-252c-436d-b842-8879b84445b6';
       voiceUrl = 'https://api.cartesia.ai/v1/tts';
     }
+
+    console.log('🎤 Voice configuration:', { voiceProvider, voiceId: voiceId ? '***' : 'NOT_SET', hasAgentConfig: !!agentConfig });
 
     // Try the new API first, then fallback to direct voice providers
     let audioBase64: string;

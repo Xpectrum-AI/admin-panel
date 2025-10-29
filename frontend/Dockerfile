@@ -14,26 +14,32 @@ ARG NEXT_PUBLIC_DIFY_ADMIN_PASSWORD
 ARG NEXT_PUBLIC_DIFY_WORKSPACE_ID
 
 # Set environment variables for build
-ENV NEXT_PUBLIC_LIVE_API_URL=$NEXT_PUBLIC_LIVE_API_URL
-ENV NEXT_PUBLIC_PROPELAUTH_URL=$NEXT_PUBLIC_PROPELAUTH_URL
-ENV NEXT_PUBLIC_LIVE_API_KEY=$NEXT_PUBLIC_LIVE_API_KEY
-ENV NEXT_PUBLIC_PROPELAUTH_API_KEY=$NEXT_PUBLIC_PROPELAUTH_API_KEY
-ENV NEXT_PUBLIC_SUPER_ADMIN_ORG_ID=$NEXT_PUBLIC_SUPER_ADMIN_ORG_ID
+ENV NEXT_PUBLIC_PROPELAUTH_URL=https://auth.admin-dev.xpectrum-ai.com
+ENV NEXT_PUBLIC_PROPELAUTH_API_KEY=888ea8af8e1d78888fcb15304e2633446516519573b7f6219943b306a4626df95d477061f77b939b8cdadd7a50559a6c
+ENV NEXT_PUBLIC_LIVE_API_URL=https://d3sgivh2kmd3c8.cloudfront.net
+ENV NEXT_PUBLIC_LIVE_API_KEY=xpectrum-ai@123
+ENV NEXT_PUBLIC_SUPER_ADMIN_ORG_ID=c53e8731-2ce7-4484-919c-0aba50c2f46a
 ENV NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN=$NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN
 ENV NEXT_PUBLIC_DIFY_ADMIN_EMAIL=$NEXT_PUBLIC_DIFY_ADMIN_EMAIL
 ENV NEXT_PUBLIC_DIFY_ADMIN_PASSWORD=$NEXT_PUBLIC_DIFY_ADMIN_PASSWORD
 ENV NEXT_PUBLIC_DIFY_WORKSPACE_ID=$NEXT_PUBLIC_DIFY_WORKSPACE_ID
 
-# Set npm registry and configure DNS
+# Set npm registry and configure DNS with better retry settings
 RUN npm config set registry https://registry.npmjs.org/ && \
     npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 120000
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-retries 5 && \
+    npm config set fetch-retry-factor 2
+
+# Disable Next.js telemetry and Google Fonts during build
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_FONT_GOOGLE_MOCKED_RESPONSES=1
 
 # Copy only package files first for better caching
 COPY package*.json ./
 
-# Install dependencies with aggressive cleanup
-RUN npm ci --prefer-offline --no-audit --production=false && \
+# Install dependencies with aggressive cleanup and better network handling
+RUN npm ci --no-audit --production=false --maxsockets 1 --network-timeout 300000 && \
     npm cache clean --force && \
     rm -rf /root/.npm
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateApiKey } from '@/lib/middleware/auth';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 // Live API configuration
 const LIVE_API_BASE_URL = process.env.NEXT_PUBLIC_LIVE_API_URL || ""
@@ -61,7 +61,7 @@ export async function getAllAgents(request: NextRequest) {
       count: agents.length,
       agents: agents
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('getAllAgents error:', error);
     if (axios.isAxiosError(error)) {
       return NextResponse.json({
@@ -95,7 +95,7 @@ export async function getAgentInfo(request: NextRequest, agentId: string) {
       success: true,
       agent: response.data
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('getAgentInfo error:', error);
     if (axios.isAxiosError(error)) {
       return NextResponse.json({
@@ -156,7 +156,7 @@ export async function updateAgent(request: NextRequest, agentId: string) {
                  tts_config.cartesian.model && 
                  tts_config.cartesian.speed !== undefined && 
                  tts_config.cartesian.language;
-    }
+    } 
     
     if (!ttsValid) {
       return NextResponse.json({
@@ -202,6 +202,8 @@ export async function updateAgent(request: NextRequest, agentId: string) {
       payload.tts_config.openai = tts_config.openai;
     } else if (ttsProvider === 'cartesian') {
       payload.tts_config.cartesian = tts_config.cartesian;
+    } else if (ttsProvider === 'elevenlabs') {
+      payload.tts_config.elevenlabs = tts_config.elevenlabs;
     }
 
     // Add only the selected STT provider configuration
@@ -241,7 +243,7 @@ export async function updateAgent(request: NextRequest, agentId: string) {
       message: `Agent ${agentId} updated successfully`,
       data: response.data
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('updateAgent error:', error);
     if (axios.isAxiosError(error)) {
       return NextResponse.json({
@@ -288,7 +290,7 @@ export async function setAgentPhone(request: NextRequest, agentId: string) {
       message: `Phone number updated for agent ${agentId}`,
       data: response.data
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('setAgentPhone error:', error);
     if (axios.isAxiosError(error)) {
       console.error('Axios error details:', {
@@ -332,7 +334,7 @@ export async function deleteAgentPhone(request: NextRequest, agentId: string) {
       message: `Phone number deleted for agent ${agentId}`,
       data: response.data
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('deleteAgentPhone error:', error);
     if (axios.isAxiosError(error)) {
       return NextResponse.json({
@@ -366,7 +368,7 @@ export async function getAgentByPhone(request: NextRequest, phoneNumber: string)
       success: true,
       agent: response.data
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('getAgentByPhone error:', error);
     if (axios.isAxiosError(error)) {
       return NextResponse.json({
@@ -404,7 +406,7 @@ export async function getActiveCalls(request: NextRequest) {
       total_active_calls: result.total_active_calls || 0,
       timestamp: result.timestamp || new Date().toISOString()
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('getActiveCalls error:', error);
     if (axios.isAxiosError(error)) {
       return NextResponse.json({
