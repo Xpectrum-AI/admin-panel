@@ -6,6 +6,12 @@ const config = new pulumi.Config();
 const region = config.get("region") || "sfo3";
 const githubRepo = config.get("githubRepo") || "Xpectrum-AI/admin-panel";
 
+// Create nested config objects for admin and dev namespaces
+const adminConfig = new pulumi.Config("admin");
+const devConfig = new pulumi.Config("dev");
+
+// Note: All secrets should be set using: pulumi config set --secret <key> <value>
+
 // Admin Panel App
 const adminApp = new digitalocean.App("admin-panel-app", {
     spec: {
@@ -29,23 +35,23 @@ const adminApp = new digitalocean.App("admin-panel-app", {
                 },
                 {
                     key: "NEXT_PUBLIC_PROPELAUTH_URL",
-                    value: "https://auth.admin-dev.xpectrum-ai.com"
+                    value: adminConfig.get("propelauthUrl") || "https://auth.admin-dev.xpectrum-ai.com"
                 },
                 {
                     key: "NEXT_PUBLIC_PROPELAUTH_API_KEY",
-                    value: "888ea8af8e1d78888fcb15304e2633446516519573b7f6219943b306a4626df95d477061f77b939b8cdadd7a50559a6c"
+                    value: adminConfig.requireSecret("propelauthApiKey")
                 },
                 {
                     key: "NEXT_PUBLIC_LIVE_API_URL",
-                    value: "https://d3sgivh2kmd3c8.cloudfront.net"
+                    value: adminConfig.get("liveApiUrl") || "https://d3sgivh2kmd3c8.cloudfront.net"
                 },
                 {
                     key: "NEXT_PUBLIC_LIVE_API_KEY",
-                    value: "xpectrum-ai@123"
+                    value: adminConfig.requireSecret("liveApiKey")
                 },
                 {
                     key: "NEXT_PUBLIC_SUPER_ADMIN_ORG_ID",
-                    value: "c53e8731-2ce7-4484-919c-0aba50c2f46a"
+                    value: adminConfig.get("superAdminOrgId") || "c53e8731-2ce7-4484-919c-0aba50c2f46a"
                 }
             ]
         }]
@@ -75,111 +81,111 @@ const devApp = new digitalocean.App("developer-dashboard-app", {
                 },
                 {
                     key: "NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL",
-                    value: "https://auth.developer-dev.xpectrum-ai.com"
+                    value: devConfig.get("propelauthUrl") || "https://auth.developer-dev.xpectrum-ai.com"
                 },
                 {
                     key: "NEXT_PUBLIC_API_BASE_URL",
-                    value: "http://localhost:3001/api"
+                    value: devConfig.get("apiBaseUrl") || "http://localhost:3001/api"
                 },
                 {
                     key: "NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY",
-                    value: "8203315022b0778dce72003f464938218ea7b22dfb0a396e1388250db6058579a412f9752a05e70611d377dc5fcc265f"
+                    value: devConfig.requireSecret("propelauthApiKey")
                 },
                 {
                     key: "NEXT_PUBLIC_ENABLE_EMAIL_VERIFICATION",
-                    value: "true"
+                    value: devConfig.get("enableEmailVerification") || "true"
                 },
                 {
                     key: "NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN",
-                    value: "https://demos.xpectrum-ai.com/"
+                    value: devConfig.get("difyConsoleOrigin") || "https://demos.xpectrum-ai.com/"
                 },
                 {
                     key: "NEXT_PUBLIC_DIFY_ADMIN_EMAIL",
-                    value: "ghosh.ishw@gmail.com"
+                    value: devConfig.get("difyAdminEmail") || "ghosh.ishw@gmail.com"
                 },
                 {
                     key: "NEXT_PUBLIC_DIFY_ADMIN_PASSWORD",
-                    value: "Ghosh1@*123"
+                    value: devConfig.requireSecret("difyAdminPassword")
                 },
                 {
                     key: "NEXT_PUBLIC_DIFY_WORKSPACE_ID",
-                    value: "661d95ae-77ee-4cfd-88e3-e6f3ef8d638b"
+                    value: devConfig.get("difyWorkspaceId") || "661d95ae-77ee-4cfd-88e3-e6f3ef8d638b"
                 },
                 {
                     key: "NEXT_PUBLIC_DIFY_BASE_URL",
-                    value: "https://demos.xpectrum-ai.com/v1"
+                    value: devConfig.get("difyBaseUrl") || "https://demos.xpectrum-ai.com/v1"
                 },
                 {
                     key: "NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY",
-                    value: "REDACTED"
+                    value: devConfig.requireSecret("modelOpenAiApiKey")
                 },
                 {
                     key: "NEXT_PUBLIC_MODEL_GROQ_API_KEY",
-                    value: "REDACTED"
+                    value: devConfig.requireSecret("modelGroqApiKey")
                 },
                 {
                     key: "NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY",
-                    value: "REDACTED"
+                    value: devConfig.requireSecret("modelAnthropicApiKey")
                 },
                 {
                     key: "NEXT_PUBLIC_CHATBOT_API_URL",
-                    value: "https://demos.xpectrum-ai.com/v1/chat-messages"
+                    value: devConfig.get("chatbotApiUrl") || "https://demos.xpectrum-ai.com/v1/chat-messages"
                 },
                 {
                     key: "NEXT_PUBLIC_CHATBOT_API_KEY",
-                    value: "REDACTED"
+                    value: devConfig.requireSecret("chatbotApiKey")
                 },
                 {
                     key: "NEXT_PUBLIC_ELEVEN_LABS_API_KEY",
-                    value: "REDACTED"
+                    value: devConfig.requireSecret("elevenLabsApiKey")
                 },
                 {
                     key: "NEXT_PUBLIC_OPEN_AI_API_KEY",
-                    value: "REDACTED"
+                    value: devConfig.requireSecret("openAiApiKey")
                 },
                 {
                     key: "NEXT_PUBLIC_WHISPER_API_KEY",
-                    value: "REDACTED"
+                    value: devConfig.requireSecret("whisperApiKey")
                 },
                 {
                     key: "NEXT_PUBLIC_DEEPGRAM_API_KEY",
-                    value: "e1db3c9cab55f4d427f6f03b8a5975bed3160aa9"
+                    value: devConfig.requireSecret("deepgramApiKey")
                 },
                 {
                     key: "NEXT_PUBLIC_CARTESIA_API_KEY",
-                    value: "REDACTED"
+                    value: devConfig.requireSecret("cartesiaApiKey")
                 },
                 {
                     key: "NEXT_PUBLIC_CARTESIA_VOICE_ID",
-                    value: "e8e5fffb-252c-436d-b842-8879b84445b6"
+                    value: devConfig.get("cartesiaVoiceId") || "e8e5fffb-252c-436d-b842-8879b84445b6"
                 },
                 {
                     key: "NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID",
-                    value: "pNInz6obpgDQGcFmaJgB"
+                    value: devConfig.get("elevenLabsVoiceId") || "pNInz6obpgDQGcFmaJgB"
                 },
                 {
                     key: "NEXT_PUBLIC_LIVE_API_URL",
-                    value: "https://d3sgivh2kmd3c8.cloudfront.net"
+                    value: devConfig.get("liveApiUrl") || "https://d3sgivh2kmd3c8.cloudfront.net"
                 },
                 {
                     key: "NEXT_PUBLIC_LIVE_API_KEY",
-                    value: "xpectrum-ai@123"
+                    value: devConfig.requireSecret("liveApiKey")
                 },
                 {
                     key: "MONGODB_URL",
-                    value: "your_mongodb_connection_string"
+                    value: devConfig.requireSecret("mongodbUrl")
                 },
                 {
                     key: "DATABASE_NAME",
-                    value: "your_database_name"
+                    value: devConfig.get("databaseName") || "your_database_name"
                 },
                 {
                     key: "NEXT_PUBLIC_APP_NAME",
-                    value: "Developer Dashboard"
+                    value: devConfig.get("appName") || "Developer Dashboard"
                 },
                 {
                     key: "NEXT_PUBLIC_APP_VERSION",
-                    value: "1.0.0"
+                    value: devConfig.get("appVersion") || "1.0.0"
                 }
             ]
         }]
