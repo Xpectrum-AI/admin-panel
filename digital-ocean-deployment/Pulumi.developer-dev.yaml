@@ -1,0 +1,5 @@
+config:
+  digitalocean:token:
+    secure: AAABAJqqTTfxl0DoJFEc04ZmqvKp9KtCC+84jrw5wUzOtDJU/B/CbtTZKxZr1u+tqSFlbpnfX+++9x5rUq2aR9O+FudhwmH+GOq7TwC7aCtqfUN7RbiDqpXHcGr7TPttBi8d6sWYaw==
+  index:region: sfo3
+  index:githubRepo: Xpectrum-AI/admin-panel

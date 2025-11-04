@@ -1,7 +1,7 @@
 'use client';
 
 import React, { forwardRef, useState, useEffect, useRef, useCallback } from 'react';
-import { Mic, Volume2, Settings, Loader2, RefreshCw, MessageSquare, Zap } from 'lucide-react';
+import { Mic, Volume2, Settings, Loader2, RefreshCw, MessageSquare, Zap, X } from 'lucide-react';
 import { agentConfigService, maskApiKey } from '../../../service/agentConfigService';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useVoiceConfig, useTranscriberConfig } from '../../hooks/useAgentConfigSection';
@@ -42,8 +42,15 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
   const [responseFormat, setResponseFormat] = useState('mp3');
   const [isUserChangingProvider, setIsUserChangingProvider] = useState(false);
   const [isUserChangingVoiceField, setIsUserChangingVoiceField] = useState(false);
+  
+  // ElevenLabs voices state
+  const [availableVoices, setAvailableVoices] = useState<any[]>([]);
+  const [isLoadingVoices, setIsLoadingVoices] = useState(false);
+  const [voicesError, setVoicesError] = useState('');
   const providerChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const voiceFieldChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastConfigRef = useRef<string>('');
+  const lastVoiceIdRef = useRef<string>('');
 
   // Transcriber state
   const [selectedTranscriberProvider, setSelectedTranscriberProvider] = useState('Deepgram');
@@ -472,15 +479,15 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
   };
 
   const openaiModels = {
-    'alloy': 'Alloy',
+    'alloy': 'Alloy - Neutral',
     'ash': 'Ash',
     'coral': 'Coral',
-    'echo': 'Echo',
-    'fable': 'Fable',
-    'nova': 'Nova',
-    'onyx': 'Onyx',
+    'echo': 'Echo - Male, clear',
+    'fable': 'Fable - British accent',
+    'nova': 'Nova - Female, warm',
+    'onyx': 'Onyx - Male, deeper',
     'sage': 'Sage',
-    'shimmer': 'Shimmer'
+    'shimmer': 'Shimmer - Female, brighter'
   };
 
   const responseFormats = {
@@ -608,6 +615,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     // Load from centralized configuration
     if (voiceConfiguration && !isUserChangingProvider && !isUserChangingVoiceField) {
       console.log('🔄 Loading voice state from centralized configuration:', voiceConfiguration);
+      console.log('🔄 Current voiceId state:', voiceId, 'Configuration voiceId:', voiceConfiguration.voiceId);
 
       if (voiceConfiguration.selectedVoiceProvider) {
         console.log('🔄 Setting voice provider:', voiceConfiguration.selectedVoiceProvider);
@@ -625,9 +633,10 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
         console.log('🔄 Setting API key');
         setApiKey(voiceConfiguration.apiKey);
       }
-      if (voiceConfiguration.voiceId) {
-        console.log('🔄 Setting voice ID');
+      if (voiceConfiguration.voiceId !== undefined) {
+        console.log('🔄 Setting voice ID:', voiceConfiguration.voiceId);
         setVoiceId(voiceConfiguration.voiceId);
+        lastVoiceIdRef.current = voiceConfiguration.voiceId;
       }
       if (voiceConfiguration.selectedVoice) {
         console.log('🔄 Setting selected voice:', voiceConfiguration.selectedVoice);
@@ -727,26 +736,84 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     }
   }, [selectedVoiceProvider, selectedLanguage, speedValue, apiKey, voiceId, selectedVoice, stability, similarityBoost, responseFormat, selectedModel, onConfigChange]);
 
+  // Fetch ElevenLabs voices
+  const fetchElevenLabsVoices = useCallback(async () => {
+    if (selectedVoiceProvider !== '11Labs' || availableVoices.length > 0) return;
+    
+    setIsLoadingVoices(true);
+    setVoicesError('');
+    
+    try {
+      const response = await fetch('https://api.elevenlabs.io/v1/voices', {
+        headers: {
+          'xi-api-key': apiKey || process.env.NEXT_PUBLIC_ELEVEN_LABS_API_KEY || ''
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch voices: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setAvailableVoices(data.voices || []);
+      console.log('✅ Fetched ElevenLabs voices:', data.voices?.length || 0);
+      console.log('🔍 Voice details:', data.voices?.map(v => ({
+        name: v.name,
+        hasLabels: Object.keys(v.labels || {}).length > 0,
+        labels: v.labels,
+        description: v.description?.substring(0, 50) + '...'
+      })));
+    } catch (error) {
+      console.error('❌ Error fetching ElevenLabs voices:', error);
+      setVoicesError(error instanceof Error ? error.message : 'Failed to fetch voices');
+    } finally {
+      setIsLoadingVoices(false);
+    }
+  }, [selectedVoiceProvider, apiKey, availableVoices.length]);
+
   // Load default values on component mount
   useEffect(() => {
     const defaultApiKeys = agentConfigService.getFullApiKeys();
     const defaultVoiceIds = agentConfigService.getDefaultVoiceIds();
 
-    // Set default API key based on selected provider
-    switch (selectedVoiceProvider) {
-      case 'OpenAI':
-        setApiKey(defaultApiKeys.openai || '');
-        break;
-      case '11Labs':
-        setApiKey(defaultApiKeys.elevenlabs || '');
-        setVoiceId(defaultVoiceIds.elevenlabs || '');
-        break;
-      case 'Cartesia':
-        setApiKey(defaultApiKeys.cartesia || '');
-        setVoiceId(defaultVoiceIds.cartesia || '');
-        break;
+    // Only set defaults if we don't have existing configuration
+    if (!voiceConfiguration) {
+      // Set default API key based on selected provider
+      switch (selectedVoiceProvider) {
+        case 'OpenAI':
+          setApiKey(defaultApiKeys.openai || '');
+          break;
+        case '11Labs':
+          setApiKey(defaultApiKeys.elevenlabs || '');
+          // Set default voice ID for 11Labs
+          setVoiceId('pNInz6obpgDQGcFmaJgB');
+          break;
+        case 'Cartesia':
+          setApiKey(defaultApiKeys.cartesia || '');
+          setVoiceId(defaultVoiceIds.cartesia || '');
+          break;
+      }
     }
-  }, [selectedVoiceProvider]);
+  }, [selectedVoiceProvider, voiceConfiguration]);
+
+  // Fetch ElevenLabs voices when provider changes to 11Labs
+  useEffect(() => {
+    if (selectedVoiceProvider === '11Labs' && apiKey) {
+      fetchElevenLabsVoices();
+    }
+  }, [selectedVoiceProvider, apiKey, fetchElevenLabsVoices]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (voiceFieldChangeTimeoutRef.current) {
+        clearTimeout(voiceFieldChangeTimeoutRef.current);
+      }
+      if (providerChangeTimeoutRef.current) {
+        clearTimeout(providerChangeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Load default transcriber API key when transcriber provider changes
   useEffect(() => {
@@ -818,6 +885,32 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     return maskApiKey(actualKey);
   };
 
+  // Format voice display name
+  const formatVoiceDisplayName = (voice: any) => {
+    const { name, labels, description } = voice;
+    const gender = labels?.gender || '';
+    const accent = labels?.accent || '';
+    const descriptive = labels?.descriptive || '';
+    const age = labels?.age || '';
+    
+    // Build characteristics array, filtering out empty values
+    const characteristics = [gender, accent, descriptive, age].filter(Boolean);
+    
+    // If we have characteristics, show them
+    if (characteristics.length > 0) {
+      return `${name} - ${characteristics.join(', ')}`;
+    }
+    
+    // If no characteristics but we have description, show a shortened version
+    if (description) {
+      const shortDesc = description.length > 50 ? description.substring(0, 50) + '...' : description;
+      return `${name} - ${shortDesc}`;
+    }
+    
+    // Fallback to just the name
+    return name;
+  };
+
   const handleSpeedChange = (value: string | number) => {
     const numValue = typeof value === 'string' ? parseFloat(value) : value;
     if (!isNaN(numValue)) {
@@ -867,17 +960,24 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     let newApiKey = '';
     let newVoiceId = '';
 
+    // Check if there's already a voice ID in the centralized configuration
+    const existingVoiceId = voiceConfiguration?.voiceId || '';
+
     switch (newProvider) {
       case 'OpenAI':
         newApiKey = defaultApiKeys.openai || '';
+        // For OpenAI, we don't use voice ID, so clear it
+        newVoiceId = '';
         break;
       case '11Labs':
         newApiKey = defaultApiKeys.elevenlabs || '';
-        newVoiceId = defaultVoiceIds.elevenlabs || '';
+        // Preserve existing voice ID if user has entered one, otherwise use default
+        newVoiceId = existingVoiceId || 'pNInz6obpgDQGcFmaJgB';
         break;
       case 'Cartesia':
         newApiKey = defaultApiKeys.cartesia || '';
-        newVoiceId = defaultVoiceIds.cartesia || '';
+        // Preserve existing voice ID if user has entered one, otherwise use default
+        newVoiceId = existingVoiceId || defaultVoiceIds.cartesia || '';
         break;
     }
 
@@ -1072,18 +1172,65 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
             </div>
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Voice ID
+                Voice Selection
               </label>
-              <input
-                type="text"
-                value={voiceId ? maskApiKey(voiceId) : 'pNInz6obpgDQGcFmaJgB'}
-                readOnly
-                className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${isDarkMode
-                  ? 'border-gray-600 bg-gray-700/50 text-gray-400'
-                  : 'border-gray-200 bg-gray-100/50 text-gray-500'
-                  }`}
-                placeholder="Default voice ID (Adam voice)"
-              />
+              {isLoadingVoices ? (
+                <div className={`w-full p-3 rounded-xl border ${isDarkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200 bg-gray-100/50'}`}>
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      Loading voices...
+                    </span>
+                  </div>
+                </div>
+              ) : voicesError ? (
+                <div className={`w-full p-3 rounded-xl border ${isDarkMode ? 'border-red-600 bg-red-900/20' : 'border-red-300 bg-red-50'}`}>
+                  <div className="flex items-center gap-2">
+                    <X className="h-4 w-4 text-red-500" />
+                    <span className={`text-sm ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>
+                      {voicesError}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <select
+                  value={voiceId || ''}
+                  onChange={(e) => {
+                    setIsUserChangingVoiceField(true);
+                    setVoiceId(e.target.value);
+                    lastVoiceIdRef.current = e.target.value;
+                    saveStateToCentralized({ voiceId: e.target.value });
+                    
+                    // Clear any existing timeout
+                    if (voiceFieldChangeTimeoutRef.current) {
+                      clearTimeout(voiceFieldChangeTimeoutRef.current);
+                    }
+                    
+                    // Reset the flag after a delay to prevent immediate override
+                    voiceFieldChangeTimeoutRef.current = setTimeout(() => {
+                      setIsUserChangingVoiceField(false);
+                    }, 2000);
+                  }}
+                  disabled={!isEditing || availableVoices.length === 0}
+                  className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing || availableVoices.length === 0
+                    ? isDarkMode
+                      ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                    : isDarkMode
+                      ? 'bg-gray-700/50 border-gray-600 text-gray-200'
+                      : 'bg-gray-50 border-gray-200 text-gray-900'
+                    }`}
+                >
+                  <option value="">
+                    {availableVoices.length === 0 ? 'No voices available' : 'Select a voice...'}
+                  </option>
+                  {availableVoices.map((voice) => (
+                    <option key={voice.voice_id} value={voice.voice_id}>
+                      {formatVoiceDisplayName(voice)}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
