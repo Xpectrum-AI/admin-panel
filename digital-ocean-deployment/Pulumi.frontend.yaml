@@ -1,0 +1,52 @@
+config:
+  digitalocean:token:
+    secure: AAABAIGwpHMlIZ/JnEgfRaPb4uebr/ORADhivFCe/XamrIAMSUlJh8N+DYzJXhiUPgrv+/KB9zkI+WqoQPlhd4j/EDpwZ9r2uixjqa1u2u8YuRTGZyBqrVfZ0C1v2fCKed8bfT6e1g==
+  index:region: sfo3
+  index:githubRepo: Xpectrum-AI/admin-panel
+  admin:propelauthApiKey:
+    secure: AAABAPpzF8WUEy0NuDsVYsdoOVT8i7SxXt4sJ5O40UmuJEkzGiqGDzmHHg8DPOHvFSnNp5mrqt3lLfUDMxDBbdG2yEsdmLmOW2Gs/hhq3x7bzwNl+cTYxuBJr9jPoDbskOTQrx4h2SGHb0XtCmtoeYtbdAMV6Tr2hJ+r6M1CsY4=
+  admin:liveApiKey:
+    secure: AAABANAH5us5UXSEPfnbIClclZjLyANhO4rzLPFCff7TJQSdL4+vb2MY7BEAb2s=
+  dev:propelauthApiKey:
+    secure: AAABAJMlq5XHaW1eTZLG0E+bl3qyqFd6n7bCEQJnL2T81SsHQvMFOfGmgsSC5aQnTuiC1mJwvIWdhVBROvWPBZAEsB0bcIM4yTO3jVDQ7xfTGXOt0uJz9XpG+rGHoXxdYbcdBlb1ZO2CpYQ9KkOG8tV0u6KnB+YssEqlsAlchy8=
+  dev:difyAdminPassword:
+    secure: AAABAMKWjxCQ1sid4Ix0jo1FzbigykM171N52ctkrpX8vhFwVfavPLWoHQ==
+  dev:modelOpenAiApiKey:
+    secure: AAABAKrt5fj15v2xXdz3B05rhX2nx/xEaWYnByzxdUxSuFpnnKKR7kdHdYaJsTnKaeBFZl7T7oytaBrr5nBao3YfrcaOxVIZkKeKYHSxWOD+GTfXSqRnx9OEkz+aDtapWP/hKsdroJxZtbdIJ17R4DThBfaCqVt4RmWhnFHRtYZ8hXoe4JVIwPv4TcUtxRiQBA8yD7wHbUbYaKYiZ3U7uHsrFLZN42uContnWUAIrlIh1/uzERt+ijOLJO7+9OO1oBRfEK/7DQ==
+  dev:modelGroqApiKey:
+    secure: AAABAAlv83FKUbvt15JggPNi8oRLEn7fapDFSR4kvL9g3K6fem1+e57GVX1tsozppHQCX2rIXKui/Zsk1uFneRjD//3KIX7Cx0zyOxTHHFC+sqhwwnYMCQ==
+  dev:modelAnthropicApiKey:
+    secure: AAABAPiJuNVnQN9aWjXn01uw7NME39i6vBF7KUcAOAM1hmOT5LRAzDlH0Q7Ip0Gcv081fAJ4f+Aj8JhDUjrEFJ8p7foCHSCDThocuycvqAKIPasEscxru9HMLSUSdiNuYK33dN03tB2m4cF0exlJUnVpEfT/rCNkGbhWSAfkBHk437JpOtlI0iQtRg8=
+  dev:chatbotApiKey:
+    secure: AAABACZxZNFzywqteDJ5DTOMcncd9mTWlTSQTpot+Eqr8udzsR6naM0956ZvK9fcsSj/qO8Ym8BRE143
+  dev:elevenLabsApiKey:
+    secure: AAABAPe/pXdVcyCdrKTngtkAkcB2YBa73muzwJ9xrCevUOkhjyJWCkU9hJi3QvVUdZuXZs6pMXzcRbLZJ2KAuwgIMSb1oubIjpoSxrhTUCVfisc=
+  dev:openAiApiKey:
+    secure: AAABABHVXQoFPoZYErtJ79Wf1g27E9rXLF0eQdjsBHTcg5vcLx3LJM+qcCcHl1xiBBPZOhQG6p8+ryMnCmqfTRLqWMcUwALGpmu4k2OfmcHB5f+N3CIGvRPZPl9wJlC8S5DeSdS1nspYx4Dl1JgRSMIooBrZflSzVS8UM+z25fV7XTeOTy+rLp2oLXt01H3BEP/+Zh0zWu6PJkGTnnYRizC4INRCupvCCYMOAQtqMHxFvc0s3T8BWRFfRpHrD/dVw45l6Q==
+  dev:whisperApiKey:
+    secure: AAABAJnG3CfQWeCBTI3yopk0WcRmo8p8xXiP/62gpcKfB1dCJsLGvv710hLgXSwPU9lYQxgDFQqOVWN1vxACVLWA/8y7PBsnPAGfFLOzbwlIfes6zhhK84HcJgyDOEqdQVB/rwK1dDTW52Ly1lPOuLDjLtAfkEXVlU887DiouSH/nUGmD2SZ4IRwQ46D91DIYL6o0kyMhXyvU8APt5Ebd3gszDFslBn2bFiCBo5zmx+dcILCh/FlVFqM5/k9yzRe1PnzoQ==
+  dev:deepgramApiKey:
+    secure: AAABALarsmgQZEFM0HUqnKp9//+b5LYBAU+ljHAJ+8wvZ0jLCLFfa+xItyd2L36p0bulFyKHQlNPDeB0EmQnHSxR5BAnttrB
+  dev:cartesiaApiKey:
+    secure: AAABAL0YPb3sRiWsaWNGnpl0gmaeSyhm8t6Z8Xu1rB2KqqfRNi/l99jo+yClRolX59EtKFvt4h6U1nEhJw==
+  dev:liveApiKey:
+    secure: AAABAGnDND95tv+HOT21pXsflIHi3LhcovJ+D9ad8PcIwuKVkprCmKfu/uto3NI=
+  dev:mongodbUrl:
+    secure: AAABAHmzQ4lKqvRN+vMPt3BL2JYbABG2a/zCsc7MVuX1wqEs1rGzOXLHTviieG+g8ZR9ydfeqqV87U4xTb8=
+  admin:propelauthUrl: https://auth.admin-dev.xpectrum-ai.com
+  admin:liveApiUrl: https://d3sgivh2kmd3c8.cloudfront.net
+  admin:superAdminOrgId: c53e8731-2ce7-4484-919c-0aba50c2f46a
+  dev:propelauthUrl: https://auth.developer-dev.xpectrum-ai.com
+  dev:apiBaseUrl: http://localhost:3001/api
+  dev:enableEmailVerification: "true"
+  dev:difyConsoleOrigin: https://demos.xpectrum-ai.com/
+  dev:difyAdminEmail: ghosh.ishw@gmail.com
+  dev:difyWorkspaceId: 661d95ae-77ee-4cfd-88e3-e6f3ef8d638b
+  dev:difyBaseUrl: https://demos.xpectrum-ai.com/v1
+  dev:chatbotApiUrl: https://demos.xpectrum-ai.com/v1/chat-messages
+  dev:cartesiaVoiceId: e8e5fffb-252c-436d-b842-8879b84445b6
+  dev:elevenLabsVoiceId: pNInz6obpgDQGcFmaJgB
+  dev:liveApiUrl: https://d3sgivh2kmd3c8.cloudfront.net
+  dev:databaseName: your_database_name
+  dev:appName: Developer Dashboard
+  dev:appVersion: 1.0.0
