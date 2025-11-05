@@ -72,7 +72,7 @@ jobs:
           NEXT_PUBLIC_SUPER_ADMIN_ORG_ID: ${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}
         run: |
           # Use the specific registry name
-          REPO="registry.digitalocean.com/xpectrum-main-app-dev/admin-panel"
+          REPO="registry.digitalocean.com/xpectrum-main-app-dev/admin-dev"
 
           # Build, tag, and push main frontend with environment variables
           cd frontend
@@ -82,8 +82,8 @@ jobs:
             --build-arg NEXT_PUBLIC_LIVE_API_KEY="${NEXT_PUBLIC_LIVE_API_KEY}" \
             --build-arg NEXT_PUBLIC_PROPELAUTH_API_KEY="${NEXT_PUBLIC_PROPELAUTH_API_KEY}" \
             --build-arg NEXT_PUBLIC_SUPER_ADMIN_ORG_ID="${NEXT_PUBLIC_SUPER_ADMIN_ORG_ID}" \
-            -t admin-panel:latest .
-          docker tag admin-panel:latest $REPO:latest
+            -t admin-panel-dev:latest .
+          docker tag admin-panel-dev:latest $REPO:latest
           docker push $REPO:latest
           cd ..
 
@@ -114,7 +114,7 @@ jobs:
           NEXT_PUBLIC_DIFY_BASE_URL: ${{ vars.DEV_DIFY_BASE_URL }}
         run: |
           # Use the specific registry name
-          REPO="registry.digitalocean.com/xpectrum-main-app-dev/developer-dashboard"
+          REPO="registry.digitalocean.com/xpectrum-main-app-dev/developer-dev"
 
           # Build, tag, and push developer frontend with environment variables
           cd frontend-developer
@@ -143,8 +143,8 @@ jobs:
             --build-arg NEXT_PUBLIC_MODEL_GROQ_API_KEY="${NEXT_PUBLIC_MODEL_GROQ_API_KEY}" \
             --build-arg NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY="${NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY}" \
             --build-arg NEXT_PUBLIC_DIFY_BASE_URL="${NEXT_PUBLIC_DIFY_BASE_URL}" \
-            -t developer-dashboard:latest .
-          docker tag developer-dashboard:latest $REPO:latest
+            -t developer-dashboard-dev:latest .
+          docker tag developer-dashboard-dev:latest $REPO:latest
           docker push $REPO:latest
           cd ..
 
@@ -158,61 +158,71 @@ jobs:
           cd digital-ocean-deployment
           npm ci
 
-      - name: Sync Pulumi config with GitHub secrets (optional update)
+      - name: Check and create Pulumi stack if needed
+        working-directory: digital-ocean-deployment
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+        run: |
+          # Check if stack exists, if not create it
+          if pulumi stack select frontend-dev 2>/dev/null; then
+            echo "✅ Stack 'frontend-dev' already exists, using it"
+          else
+            echo "📦 Stack 'frontend-dev' does not exist, creating it..."
+            pulumi stack init frontend-dev
+            echo "✅ Stack 'frontend-dev' created successfully"
+          fi
+
+      - name: Configure Pulumi from GitHub secrets
         working-directory: digital-ocean-deployment
         env:
           DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
         run: |
-          # Note: Secrets are already stored in Pulumi.frontend.yaml
-          # This step updates them from GitHub secrets to ensure they're in sync
-          # If secrets already match, this will just confirm them
+          # Select the stack (required before setting config)
+          pulumi stack select frontend-dev
           
-          # Select the stack first (required before setting config)
-          pulumi stack select frontend
-          
-          # Set DigitalOcean token (if not already set or different)
+          # Set DigitalOcean token (required - from GitHub secret)
           pulumi config set digitalocean:token $DIGITALOCEAN_TOKEN --secret
           
-          # Set region (if not already set)
-          pulumi config set index:region ${{ env.DIGITALOCEAN_REGION }} || true
+          # Set region (required - from env variable)
+          pulumi config set index:region ${{ env.DIGITALOCEAN_REGION }}
           
-          # Update Admin Panel secrets from GitHub (if needed)
-          pulumi config set admin:propelauthApiKey "${{ secrets.DEV_PROPELAUTH_API_KEY }}" --secret || true
-          pulumi config set admin:liveApiKey "${{ secrets.DEV_LIVE_API_KEY }}" --secret || true
-          pulumi config set admin:propelauthUrl "${{ vars.DEV_PROPELAUTH_URL }}" || true
-          pulumi config set admin:liveApiUrl "${{ vars.DEV_LIVE_API_URL }}" || true
-          pulumi config set admin:superAdminOrgId "${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}" || true
+          # Admin Panel secrets - all from GitHub secrets
+          pulumi config set admin:propelauthApiKey "${{ secrets.DEV_PROPELAUTH_API_KEY }}" --secret
+          pulumi config set admin:liveApiKey "${{ secrets.DEV_LIVE_API_KEY }}" --secret
+          pulumi config set admin:propelauthUrl "${{ vars.DEV_PROPELAUTH_URL }}"
+          pulumi config set admin:liveApiUrl "${{ vars.DEV_LIVE_API_URL }}"
+          pulumi config set admin:superAdminOrgId "${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}"
           
-          # Update Developer Dashboard secrets from GitHub (if needed)
-          pulumi config set dev:propelauthApiKey "${{ secrets.DEV_DEVELOPER_PROPELAUTH_API_KEY }}" --secret || true
-          pulumi config set dev:liveApiKey "${{ secrets.DEV_LIVE_API_KEY }}" --secret || true
-          pulumi config set dev:difyAdminPassword "${{ secrets.DEV_DIFY_ADMIN_PASSWORD }}" --secret || true
-          pulumi config set dev:modelOpenAiApiKey "${{ secrets.DEV_MODEL_OPEN_AI_API_KEY }}" --secret || true
-          pulumi config set dev:modelGroqApiKey "${{ secrets.DEV_MODEL_GROQ_API_KEY }}" --secret || true
-          pulumi config set dev:modelAnthropicApiKey "${{ secrets.DEV_MODEL_ANTHROPIC_API_KEY }}" --secret || true
-          pulumi config set dev:chatbotApiKey "${{ secrets.DEV_CHATBOT_API_KEY }}" --secret || true
-          pulumi config set dev:elevenLabsApiKey "${{ secrets.DEV_ELEVEN_LABS_API_KEY }}" --secret || true
-          pulumi config set dev:openAiApiKey "${{ secrets.DEV_OPEN_AI_API_KEY }}" --secret || true
-          pulumi config set dev:whisperApiKey "${{ secrets.DEV_WHISPER_API_KEY }}" --secret || true
-          pulumi config set dev:deepgramApiKey "${{ secrets.DEV_DEEPGRAM_API_KEY }}" --secret || true
-          pulumi config set dev:cartesiaApiKey "${{ secrets.DEV_CARTESIA_API_KEY }}" --secret || true
-          pulumi config set dev:mongodbUrl "${{ secrets.DEV_MONGODB_URL }}" --secret || true
+          # Developer Dashboard secrets - all from GitHub secrets
+          pulumi config set dev:propelauthApiKey "${{ secrets.DEV_DEVELOPER_PROPELAUTH_API_KEY }}" --secret
+          pulumi config set dev:liveApiKey "${{ secrets.DEV_LIVE_API_KEY }}" --secret
+          pulumi config set dev:difyAdminPassword "${{ secrets.DEV_DIFY_ADMIN_PASSWORD }}" --secret
+          pulumi config set dev:modelOpenAiApiKey "${{ secrets.DEV_MODEL_OPEN_AI_API_KEY }}" --secret
+          pulumi config set dev:modelGroqApiKey "${{ secrets.DEV_MODEL_GROQ_API_KEY }}" --secret
+          pulumi config set dev:modelAnthropicApiKey "${{ secrets.DEV_MODEL_ANTHROPIC_API_KEY }}" --secret
+          pulumi config set dev:chatbotApiKey "${{ secrets.DEV_CHATBOT_API_KEY }}" --secret
+          pulumi config set dev:elevenLabsApiKey "${{ secrets.DEV_ELEVEN_LABS_API_KEY }}" --secret
+          pulumi config set dev:openAiApiKey "${{ secrets.DEV_OPEN_AI_API_KEY }}" --secret
+          pulumi config set dev:whisperApiKey "${{ secrets.DEV_WHISPER_API_KEY }}" --secret
+          pulumi config set dev:deepgramApiKey "${{ secrets.DEV_DEEPGRAM_API_KEY }}" --secret
+          pulumi config set dev:cartesiaApiKey "${{ secrets.DEV_CARTESIA_API_KEY }}" --secret
+          pulumi config set dev:mongodbUrl "${{ secrets.DEV_MONGODB_URL }}" --secret
           
-          # Update Developer Dashboard config values
-          pulumi config set dev:propelauthUrl "${{ vars.DEV_DEVELOPER_PROPELAUTH_URL }}" || true
-          pulumi config set dev:apiBaseUrl "${{ vars.DEV_MODEL_API_BASE_URL }}" || true
-          pulumi config set dev:enableEmailVerification "true" || true
-          pulumi config set dev:difyConsoleOrigin "${{ vars.DEV_DIFY_CONSOLE_ORIGIN }}" || true
-          pulumi config set dev:difyAdminEmail "${{ vars.DEV_DIFY_ADMIN_EMAIL }}" || true
-          pulumi config set dev:difyWorkspaceId "${{ vars.DEV_DIFY_WORKSPACE_ID }}" || true
-          pulumi config set dev:difyBaseUrl "${{ vars.DEV_DIFY_BASE_URL }}" || true
-          pulumi config set dev:chatbotApiUrl "${{ vars.DEV_CHATBOT_API_URL }}" || true
-          pulumi config set dev:cartesiaVoiceId "${{ vars.DEV_CARTESIA_VOICE_ID }}" || true
-          pulumi config set dev:elevenLabsVoiceId "${{ vars.DEV_ELEVEN_LABS_VOICE_ID }}" || true
-          pulumi config set dev:liveApiUrl "${{ vars.DEV_LIVE_API_URL }}" || true
+          # Developer Dashboard config values - all from GitHub vars
+          pulumi config set dev:propelauthUrl "${{ vars.DEV_DEVELOPER_PROPELAUTH_URL }}"
+          pulumi config set dev:apiBaseUrl "${{ vars.DEV_MODEL_API_BASE_URL }}"
+          pulumi config set dev:enableEmailVerification "true"
+          pulumi config set dev:difyConsoleOrigin "${{ vars.DEV_DIFY_CONSOLE_ORIGIN }}"
+          pulumi config set dev:difyAdminEmail "${{ vars.DEV_DIFY_ADMIN_EMAIL }}"
+          pulumi config set dev:difyWorkspaceId "${{ vars.DEV_DIFY_WORKSPACE_ID }}"
+          pulumi config set dev:difyBaseUrl "${{ vars.DEV_DIFY_BASE_URL }}"
+          pulumi config set dev:chatbotApiUrl "${{ vars.DEV_CHATBOT_API_URL }}"
+          pulumi config set dev:cartesiaVoiceId "${{ vars.DEV_CARTESIA_VOICE_ID }}"
+          pulumi config set dev:elevenLabsVoiceId "${{ vars.DEV_ELEVEN_LABS_VOICE_ID }}"
+          pulumi config set dev:liveApiUrl "${{ vars.DEV_LIVE_API_URL }}"
           
-          echo "Pulumi config synced with GitHub secrets"
+          echo "✅ Pulumi config fully configured from GitHub secrets and variables"
 
       - name: Deploy with Pulumi
         working-directory: digital-ocean-deployment
@@ -220,8 +230,8 @@ jobs:
           DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
         run: |
-          # Select the existing frontend stack (you mentioned you already ran pulumi up)
-          pulumi stack select frontend
+          # Select the stack
+          pulumi stack select frontend-dev
           
           # Deploy updates
           pulumi up --yes
@@ -232,7 +242,7 @@ jobs:
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
         run: |
-          pulumi stack select frontend
+          pulumi stack select frontend-dev
           ADMIN_URL=$(pulumi stack output adminPanelUrl 2>/dev/null || echo "")
           DEVELOPER_URL=$(pulumi stack output developerDashboardUrl 2>/dev/null || echo "")
           
