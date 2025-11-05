@@ -168,6 +168,9 @@ jobs:
           # This step updates them from GitHub secrets to ensure they're in sync
           # If secrets already match, this will just confirm them
           
+          # Select the stack first (required before setting config)
+          pulumi stack select frontend
+          
           # Set DigitalOcean token (if not already set or different)
           pulumi config set digitalocean:token $DIGITALOCEAN_TOKEN --secret
           
@@ -229,6 +232,7 @@ jobs:
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
         run: |
+          pulumi stack select frontend
           ADMIN_URL=$(pulumi stack output adminPanelUrl 2>/dev/null || echo "")
           DEVELOPER_URL=$(pulumi stack output developerDashboardUrl 2>/dev/null || echo "")
           
