@@ -13,16 +13,16 @@ const devConfig = new pulumi.Config("dev");
 // Note: All secrets should be set using: pulumi config set --secret <key> <value>
 
 // Admin Panel App
-const adminApp = new digitalocean.App("admin-panel-app", {
+const adminApp = new digitalocean.App("admin-panel-app-dev", {
     spec: {
-        name: "admin-panel-app",
+        name: "admin-panel-app-dev",
         region: region,
         domains: ["admin-dev.xpectrum-ai.com"],
         services: [{
-            name: "admin-panel",
+            name: "admin-panel-dev",
             image: {
                 registryType: "DOCR",
-                repository: "admin-panel",
+                repository: "admin-dev",
                 tag: "latest"
             },
             httpPort: 3000,
@@ -59,16 +59,16 @@ const adminApp = new digitalocean.App("admin-panel-app", {
 });
 
 // Developer Dashboard App
-const devApp = new digitalocean.App("developer-dashboard-app", {
+const devApp = new digitalocean.App("developer-dashboard-app-dev", {
     spec: {
-        name: "developer-dashboard-app",
+        name: "developer-dashboard-app-dev",
         region: region,
         domains: ["developer-dev.xpectrum-ai.com"],
         services: [{
-            name: "developer-dashboard",
+            name: "developer-dashboard-dev",
             image: {
                 registryType: "DOCR",
-                repository: "developer-dashboard",
+                repository: "developer-dev",
                 tag: "latest"
             },
             httpPort: 3000,
