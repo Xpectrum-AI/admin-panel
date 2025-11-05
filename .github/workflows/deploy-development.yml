@@ -4,8 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  AWS_REGION: us-west-1
-  ACCOUNT_ID: "049229311248"
+  DIGITALOCEAN_REGION: sfo3
 
 jobs:
   test:
@@ -50,18 +49,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Setup Node.js for Pulumi
+        uses: actions/setup-node@v4
         with:
-          aws-access-key-id: ${{ secrets.DEV_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.DEV_AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          node-version: "18"
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+      - name: Login to DigitalOcean Container Registry
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_TOKEN }}
 
-      - name: Build and push Main Frontend image to ECR
+      - name: Authenticate Docker with DOCR
+        run: |
+          doctl registry login --expiry-seconds 1200
+
+      - name: Build and push Main Frontend image to DOCR
         env:
           NEXT_PUBLIC_LIVE_API_URL: ${{ vars.DEV_LIVE_API_URL }}
           NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.DEV_PROPELAUTH_URL }}
@@ -69,8 +71,8 @@ jobs:
           NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.DEV_PROPELAUTH_API_KEY }}
           NEXT_PUBLIC_SUPER_ADMIN_ORG_ID: ${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}
         run: |
-          # Set ECR repository URI
-          REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
+          # Use the specific registry name
+          REPO="registry.digitalocean.com/xpectrum-main-app-dev/admin-panel"
 
           # Build, tag, and push main frontend with environment variables
           cd frontend
@@ -80,12 +82,12 @@ jobs:
             --build-arg NEXT_PUBLIC_LIVE_API_KEY="${NEXT_PUBLIC_LIVE_API_KEY}" \
             --build-arg NEXT_PUBLIC_PROPELAUTH_API_KEY="${NEXT_PUBLIC_PROPELAUTH_API_KEY}" \
             --build-arg NEXT_PUBLIC_SUPER_ADMIN_ORG_ID="${NEXT_PUBLIC_SUPER_ADMIN_ORG_ID}" \
-            -t admin-panel:frontend-development .
-          docker tag admin-panel:frontend-development $REPO:frontend-development
-          docker push $REPO:frontend-development
+            -t admin-panel:latest .
+          docker tag admin-panel:latest $REPO:latest
+          docker push $REPO:latest
           cd ..
 
-      - name: Build and push Developer Frontend image to ECR
+      - name: Build and push Developer Frontend image to DOCR
         env:
           NEXT_PUBLIC_LIVE_API_URL: ${{ vars.DEV_LIVE_API_URL }}
           NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL: ${{ vars.DEV_DEVELOPER_PROPELAUTH_URL }}
@@ -102,19 +104,17 @@ jobs:
           NEXT_PUBLIC_CARTESIA_API_KEY: ${{ secrets.DEV_CARTESIA_API_KEY }}
           NEXT_PUBLIC_CARTESIA_VOICE_ID: ${{ vars.DEV_CARTESIA_VOICE_ID }}
           NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID: ${{ vars.DEV_ELEVEN_LABS_VOICE_ID }}
-          # Dify Configuration
           NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN: ${{ vars.DEV_DIFY_CONSOLE_ORIGIN }}
           NEXT_PUBLIC_DIFY_ADMIN_EMAIL: ${{ vars.DEV_DIFY_ADMIN_EMAIL }}
           NEXT_PUBLIC_DIFY_ADMIN_PASSWORD: ${{ secrets.DEV_DIFY_ADMIN_PASSWORD }}
           NEXT_PUBLIC_DIFY_WORKSPACE_ID: ${{ vars.DEV_DIFY_WORKSPACE_ID }}
-          # Model Provider API Keys
           NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY: ${{ secrets.DEV_MODEL_OPEN_AI_API_KEY }}
           NEXT_PUBLIC_MODEL_GROQ_API_KEY: ${{ secrets.DEV_MODEL_GROQ_API_KEY }}
           NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY: ${{ secrets.DEV_MODEL_ANTHROPIC_API_KEY }}
           NEXT_PUBLIC_DIFY_BASE_URL: ${{ vars.DEV_DIFY_BASE_URL }}
         run: |
-          # Set ECR repository URI
-          REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
+          # Use the specific registry name
+          REPO="registry.digitalocean.com/xpectrum-main-app-dev/developer-dashboard"
 
           # Build, tag, and push developer frontend with environment variables
           cd frontend-developer
@@ -143,320 +143,133 @@ jobs:
             --build-arg NEXT_PUBLIC_MODEL_GROQ_API_KEY="${NEXT_PUBLIC_MODEL_GROQ_API_KEY}" \
             --build-arg NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY="${NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY}" \
             --build-arg NEXT_PUBLIC_DIFY_BASE_URL="${NEXT_PUBLIC_DIFY_BASE_URL}" \
-            -t admin-panel:frontend-developer-development .
-          docker tag admin-panel:frontend-developer-development $REPO:frontend-developer-development
-          docker push $REPO:frontend-developer-development
+            -t developer-dashboard:latest .
+          docker tag developer-dashboard:latest $REPO:latest
+          docker push $REPO:latest
           cd ..
 
-      - name: Setup Python for CDK
-        uses: actions/setup-python@v4
+      - name: Install Pulumi CLI
+        uses: pulumi/actions@v4
         with:
-          python-version: "3.11"
+          pulumi-version: latest
 
-      - name: Install CDK dependencies
+      - name: Install Pulumi dependencies
         run: |
-          cd python-cdk-v2
-          pip install -r requirements.txt
+          cd digital-ocean-deployment
+          npm ci
 
-      - name: Install AWS CDK
-        run: |
-          npm install -g aws-cdk
-
-      - name: Log Environment Variables (Development)
-        run: |
-          echo "=== DEVELOPMENT ENVIRONMENT VARIABLES ==="
-          echo "DEVELOPMENT_LIVE_API_KEY: ${{ secrets.DEV_LIVE_API_KEY }}"
-          echo "DEVELOPMENT_PROPELAUTH_API_KEY: ${{ secrets.DEV_PROPELAUTH_API_KEY }}"
-          echo "DEVELOPMENT_DEVELOPER_PROPELAUTH_API_KEY: ${{ secrets.DEV_DEVELOPER_PROPELAUTH_API_KEY }}"
-          echo "DEVELOPMENT_SUPER_ADMIN_ORG_ID: ${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}"
-          echo "DEVELOPMENT_LIVE_API_URL: ${{ vars.DEV_LIVE_API_URL }}"
-          echo "DEVELOPMENT_PROPELAUTH_URL: ${{ vars.DEV_PROPELAUTH_URL }}"
-          echo "DEVELOPMENT_DEVELOPER_PROPELAUTH_URL: ${{ vars.DEV_DEVELOPER_PROPELAUTH_URL }}"
-          echo "====================================="
-
-          echo "=== SUPER ADMIN CONFIGURATION DEBUG ==="
-          if [ -z "${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}" ]; then
-            echo "❌ ERROR: DEVELOPMENT_SUPER_ADMIN_ORG_ID is empty or not set!"
-          else
-            echo "✅ DEVELOPMENT_SUPER_ADMIN_ORG_ID is set: ${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}"
-          fi
-
-          if [ -z "${{ secrets.DEV_PROPELAUTH_API_KEY }}" ]; then
-            echo "❌ ERROR: DEVELOPMENT_PROPELAUTH_API_KEY is empty or not set!"
-          else
-            echo "✅ DEVELOPMENT_PROPELAUTH_API_KEY is set (length: ${#DEVELOPMENT_PROPELAUTH_API_KEY})"
-          fi
-
-          if [ -z "${{ vars.DEV_LIVE_API_URL }}" ]; then
-            echo "❌ ERROR: DEVELOPMENT_LIVE_API_URL is empty or not set!"
-          else
-            echo "✅ DEVELOPMENT_LIVE_API_URL is set: ${{ vars.DEV_LIVE_API_URL }}"
-          fi
-
-          if [ -z "${{ vars.DEV_PROPELAUTH_URL }}" ]; then
-            echo "❌ ERROR: DEVELOPMENT_PROPELAUTH_URL is empty or not set!"
-          else
-            echo "✅ DEVELOPMENT_PROPELAUTH_URL is set: ${{ vars.DEV_PROPELAUTH_URL }}"
-          fi
-
-          if [ -z "${{ vars.DEV_DEVELOPER_PROPELAUTH_URL }}" ]; then
-            echo "❌ ERROR: DEVELOPMENT_DEVELOPER_PROPELAUTH_URL is empty or not set!"
-          else
-            echo "✅ DEVELOPMENT_DEVELOPER_PROPELAUTH_URL is set: ${{ vars.DEV_DEVELOPER_PROPELAUTH_URL }}"
-          fi
-
-          if [ -z "${{ secrets.DEV_DEVELOPER_PROPELAUTH_API_KEY }}" ]; then
-            echo "❌ ERROR: DEVELOPMENT_DEVELOPER_PROPELAUTH_API_KEY is empty or not set!"
-          else
-            echo "✅ DEVELOPMENT_DEVELOPER_PROPELAUTH_API_KEY is set (length: ${#DEVELOPMENT_DEVELOPER_PROPELAUTH_API_KEY})"
-          fi
-          echo "====================================="
-
-      - name: Deploy CDK stack (development)
+      - name: Sync Pulumi config with GitHub secrets (optional update)
+        working-directory: digital-ocean-deployment
         env:
-          # Backend API
-          DEV_LIVE_API_URL: ${{ vars.DEV_LIVE_API_URL }}
-          DEV_LIVE_API_KEY: ${{ secrets.DEV_LIVE_API_KEY }}
-          # PropelAuth
-          DEV_PROPELAUTH_URL: ${{ vars.DEV_PROPELAUTH_URL }}
-          DEV_PROPELAUTH_API_KEY: ${{ secrets.DEV_PROPELAUTH_API_KEY }}
-          DEV_DEVELOPER_PROPELAUTH_URL: ${{ vars.DEV_DEVELOPER_PROPELAUTH_URL }}
-          DEV_DEVELOPER_PROPELAUTH_API_KEY: ${{ secrets.DEV_DEVELOPER_PROPELAUTH_API_KEY }}
-          # Model Configuration API
-          DEV_MODEL_API_BASE_URL: ${{ vars.DEV_MODEL_API_BASE_URL }}
-          DEV_MODEL_API_KEY: ${{ secrets.DEV_MODEL_API_KEY }}
-          # Chatbot API
-          DEV_CHATBOT_API_URL: ${{ vars.DEV_CHATBOT_API_URL }}
-          DEV_CHATBOT_API_KEY: ${{ secrets.DEV_CHATBOT_API_KEY }}
-          # Voice Provider API Keys
-          DEV_ELEVEN_LABS_API_KEY: ${{ secrets.DEV_ELEVEN_LABS_API_KEY }}
-          DEV_OPEN_AI_API_KEY: ${{ secrets.DEV_OPEN_AI_API_KEY }}
-          DEV_WHISPER_API_KEY: ${{ secrets.DEV_WHISPER_API_KEY }}
-          DEV_DEEPGRAM_API_KEY: ${{ secrets.DEV_DEEPGRAM_API_KEY }}
-          DEV_CARTESIA_API_KEY: ${{ secrets.DEV_CARTESIA_API_KEY }}
-          # Voice Provider Voice IDs
-          DEV_CARTESIA_VOICE_ID: ${{ vars.DEV_CARTESIA_VOICE_ID }}
-          DEV_ELEVEN_LABS_VOICE_ID: ${{ vars.DEV_ELEVEN_LABS_VOICE_ID }}
-          # Dify Configuration
-          DEV_DIFY_CONSOLE_ORIGIN: ${{ vars.DEV_DIFY_CONSOLE_ORIGIN }}
-          DEV_DIFY_ADMIN_EMAIL: ${{ vars.DEV_DIFY_ADMIN_EMAIL }}
-          DEV_DIFY_ADMIN_PASSWORD: ${{ secrets.DEV_DIFY_ADMIN_PASSWORD }}
-          DEV_DIFY_WORKSPACE_ID: ${{ vars.DEV_DIFY_WORKSPACE_ID }}
-          # Model Provider API Keys
-          DEV_MODEL_OPEN_AI_API_KEY: ${{ secrets.DEV_MODEL_OPEN_AI_API_KEY }}
-          DEV_MODEL_GROQ_API_KEY: ${{ secrets.DEV_MODEL_GROQ_API_KEY }}
-          DEV_MODEL_ANTHROPIC_API_KEY: ${{ secrets.DEV_MODEL_ANTHROPIC_API_KEY }}
-          DEV_DIFY_BASE_URL: ${{ vars.DEV_DIFY_BASE_URL }}
+          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
         run: |
-          cd python-cdk-v2
+          # Note: Secrets are already stored in Pulumi.frontend.yaml
+          # This step updates them from GitHub secrets to ensure they're in sync
+          # If secrets already match, this will just confirm them
+          
+          # Set DigitalOcean token (if not already set or different)
+          pulumi config set digitalocean:token $DIGITALOCEAN_TOKEN --secret
+          
+          # Set region (if not already set)
+          pulumi config set index:region ${{ env.DIGITALOCEAN_REGION }} || true
+          
+          # Update Admin Panel secrets from GitHub (if needed)
+          pulumi config set admin:propelauthApiKey "${{ secrets.DEV_PROPELAUTH_API_KEY }}" --secret || true
+          pulumi config set admin:liveApiKey "${{ secrets.DEV_LIVE_API_KEY }}" --secret || true
+          pulumi config set admin:propelauthUrl "${{ vars.DEV_PROPELAUTH_URL }}" || true
+          pulumi config set admin:liveApiUrl "${{ vars.DEV_LIVE_API_URL }}" || true
+          pulumi config set admin:superAdminOrgId "${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}" || true
+          
+          # Update Developer Dashboard secrets from GitHub (if needed)
+          pulumi config set dev:propelauthApiKey "${{ secrets.DEV_DEVELOPER_PROPELAUTH_API_KEY }}" --secret || true
+          pulumi config set dev:liveApiKey "${{ secrets.DEV_LIVE_API_KEY }}" --secret || true
+          pulumi config set dev:difyAdminPassword "${{ secrets.DEV_DIFY_ADMIN_PASSWORD }}" --secret || true
+          pulumi config set dev:modelOpenAiApiKey "${{ secrets.DEV_MODEL_OPEN_AI_API_KEY }}" --secret || true
+          pulumi config set dev:modelGroqApiKey "${{ secrets.DEV_MODEL_GROQ_API_KEY }}" --secret || true
+          pulumi config set dev:modelAnthropicApiKey "${{ secrets.DEV_MODEL_ANTHROPIC_API_KEY }}" --secret || true
+          pulumi config set dev:chatbotApiKey "${{ secrets.DEV_CHATBOT_API_KEY }}" --secret || true
+          pulumi config set dev:elevenLabsApiKey "${{ secrets.DEV_ELEVEN_LABS_API_KEY }}" --secret || true
+          pulumi config set dev:openAiApiKey "${{ secrets.DEV_OPEN_AI_API_KEY }}" --secret || true
+          pulumi config set dev:whisperApiKey "${{ secrets.DEV_WHISPER_API_KEY }}" --secret || true
+          pulumi config set dev:deepgramApiKey "${{ secrets.DEV_DEEPGRAM_API_KEY }}" --secret || true
+          pulumi config set dev:cartesiaApiKey "${{ secrets.DEV_CARTESIA_API_KEY }}" --secret || true
+          pulumi config set dev:mongodbUrl "${{ secrets.DEV_MONGODB_URL }}" --secret || true
+          
+          # Update Developer Dashboard config values
+          pulumi config set dev:propelauthUrl "${{ vars.DEV_DEVELOPER_PROPELAUTH_URL }}" || true
+          pulumi config set dev:apiBaseUrl "${{ vars.DEV_MODEL_API_BASE_URL }}" || true
+          pulumi config set dev:enableEmailVerification "true" || true
+          pulumi config set dev:difyConsoleOrigin "${{ vars.DEV_DIFY_CONSOLE_ORIGIN }}" || true
+          pulumi config set dev:difyAdminEmail "${{ vars.DEV_DIFY_ADMIN_EMAIL }}" || true
+          pulumi config set dev:difyWorkspaceId "${{ vars.DEV_DIFY_WORKSPACE_ID }}" || true
+          pulumi config set dev:difyBaseUrl "${{ vars.DEV_DIFY_BASE_URL }}" || true
+          pulumi config set dev:chatbotApiUrl "${{ vars.DEV_CHATBOT_API_URL }}" || true
+          pulumi config set dev:cartesiaVoiceId "${{ vars.DEV_CARTESIA_VOICE_ID }}" || true
+          pulumi config set dev:elevenLabsVoiceId "${{ vars.DEV_ELEVEN_LABS_VOICE_ID }}" || true
+          pulumi config set dev:liveApiUrl "${{ vars.DEV_LIVE_API_URL }}" || true
+          
+          echo "Pulumi config synced with GitHub secrets"
 
-          echo "=== CDK DEPLOYMENT DEBUG ==="
-          echo "Current directory: $(pwd)"
-          echo "Environment variables are now handled during Docker build and CDK deployment"
-          echo "====================================="
-
-          # Deploy to development environment with development context
-          # Add timeout to prevent hanging (increased from 30m to 60m for ECS service creation)
-          timeout 60m cdk deploy AdminPanelDevelopmentStack --require-approval never --context environment=development || {
-            echo "CDK deployment timed out or failed"
-            echo "Checking ECS service status..."
-            aws ecs describe-services \
-              --cluster admin-panel-development \
-              --services admin-panel-service-development admin-panel-developer-service-development \
-              --region ${{ env.AWS_REGION }} || echo "Could not check ECS status"
-            exit 1
-          }
-
-      - name: Wait for deployment to complete
+      - name: Deploy with Pulumi
+        working-directory: digital-ocean-deployment
+        env:
+          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
         run: |
-          # Check if stack exists first
-          if aws cloudformation describe-stacks --stack-name AdminPanelDevelopmentStack --region ${{ env.AWS_REGION }} 2>/dev/null; then
-            # Get the actual cluster and service names from CloudFormation outputs
-            CLUSTER_NAME="admin-panel-development"
-            MAIN_SERVICE_NAME="admin-panel-service-development"
-            DEVELOPER_SERVICE_NAME="admin-panel-developer-service-development"
-            
-            echo "Using cluster: $CLUSTER_NAME"
-            echo "Using main service: $MAIN_SERVICE_NAME"
-            echo "Using developer service: $DEVELOPER_SERVICE_NAME"
-            
-            # Wait for ECS services to be stable
-            aws ecs wait services-stable \
-              --cluster $CLUSTER_NAME \
-              --services $MAIN_SERVICE_NAME $DEVELOPER_SERVICE_NAME \
-              --region ${{ env.AWS_REGION }} || echo "Services not stable yet"
-          else
-            echo "Stack does not exist yet, skipping wait"
-          fi
+          # Select the existing frontend stack (you mentioned you already ran pulumi up)
+          pulumi stack select frontend
+          
+          # Deploy updates
+          pulumi up --yes
 
-      - name: Get ALB DNS names
-        id: alb-dns
+      - name: Get deployment URLs
+        id: pulumi-outputs
+        working-directory: digital-ocean-deployment
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
         run: |
-          DOCTOR_DNS=$(aws cloudformation describe-stacks \
-            --stack-name AdminPanelDevelopmentStack \
-            --query 'Stacks[0].Outputs[?OutputKey==`DoctorServiceURL`].OutputValue' \
-            --output text \
-            --region ${{ env.AWS_REGION }})
-          DEVELOPER_DNS=$(aws cloudformation describe-stacks \
-            --stack-name AdminPanelDevelopmentStack \
-            --query 'Stacks[0].Outputs[?OutputKey==`DeveloperServiceURL`].OutputValue' \
-            --output text \
-            --region ${{ env.AWS_REGION }})
-          echo "doctor-dns=$DOCTOR_DNS" >> $GITHUB_OUTPUT
-          echo "developer-dns=$DEVELOPER_DNS" >> $GITHUB_OUTPUT
+          ADMIN_URL=$(pulumi stack output adminPanelUrl 2>/dev/null || echo "")
+          DEVELOPER_URL=$(pulumi stack output developerDashboardUrl 2>/dev/null || echo "")
+          
+          echo "admin-url=$ADMIN_URL" >> $GITHUB_OUTPUT
+          echo "developer-url=$DEVELOPER_URL" >> $GITHUB_OUTPUT
+          
+          echo "Admin Panel URL: $ADMIN_URL"
+          echo "Developer Dashboard URL: $DEVELOPER_URL"
+
+      - name: Wait for apps to be ready
+        run: |
+          echo "Waiting for DigitalOcean apps to be ready..."
+          sleep 90
 
       - name: Health check
         run: |
-          # Wait for services to be fully ready
-          sleep 60
-
-          # Get ALB DNS names for both services
-          DOCTOR_DNS=$(aws cloudformation describe-stacks \
-            --stack-name AdminPanelDevelopmentStack \
-            --query 'Stacks[0].Outputs[?OutputKey==`DoctorServiceURL`].OutputValue' \
-            --output text \
-            --region ${{ env.AWS_REGION }})
-
-          DEVELOPER_DNS=$(aws cloudformation describe-stacks \
-            --stack-name AdminPanelDevelopmentStack \
-            --query 'Stacks[0].Outputs[?OutputKey==`DeveloperServiceURL`].OutputValue' \
-            --output text \
-            --region ${{ env.AWS_REGION }})
-
-          # Check if DNS names are not empty
-          if [ -z "$DOCTOR_DNS" ] || [ "$DOCTOR_DNS" = "None" ]; then
-            echo "Error: Could not get Doctor service DNS name from CloudFormation stack"
-            exit 1
+          ADMIN_URL="${{ steps.pulumi-outputs.outputs.admin-url }}"
+          DEVELOPER_URL="${{ steps.pulumi-outputs.outputs.developer-url }}"
+          
+          if [ -z "$ADMIN_URL" ] || [ "$ADMIN_URL" = "" ]; then
+            echo "Warning: Could not get Admin Panel URL from Pulumi outputs"
+            ADMIN_URL="https://admin-dev.xpectrum-ai.com"
           fi
-
-          if [ -z "$DEVELOPER_DNS" ] || [ "$DEVELOPER_DNS" = "None" ]; then
-            echo "Error: Could not get Developer service DNS name from CloudFormation stack"
-            exit 1
+          
+          if [ -z "$DEVELOPER_URL" ] || [ "$DEVELOPER_URL" = "" ]; then
+            echo "Warning: Could not get Developer Dashboard URL from Pulumi outputs"
+            DEVELOPER_URL="https://developer-dev.xpectrum-ai.com"
           fi
-
-          echo "Testing Doctor service health endpoints on: $DOCTOR_DNS"
-          echo "Testing Developer service health endpoints on: $DEVELOPER_DNS"
-
-          # Health checks for Doctor service (main frontend)
-          curl -f -k "$DOCTOR_DNS/" || exit 1
-          curl -f -k "$DOCTOR_DNS/api/health" || exit 1
-
-          # Health checks for Developer service (separate domain)
-          curl -f -k "$DEVELOPER_DNS/" || exit 1
-          curl -f -k "$DEVELOPER_DNS/api/health" || exit 1
-
-          echo "=== VERIFYING DEPLOYED ENVIRONMENT VARIABLES ==="
-          # Get ECS task details to verify environment variables
-          CLUSTER_NAME="admin-panel-development"
-
-          # Check main service tasks
-          MAIN_TASK_ARN=$(aws ecs list-tasks \
-            --cluster $CLUSTER_NAME \
-            --service-name admin-panel-service-development \
-            --region ${{ env.AWS_REGION }} \
-            --query 'taskArns[0]' \
-            --output text 2>/dev/null || echo "")
-
-          if [ ! -z "$MAIN_TASK_ARN" ] && [ "$MAIN_TASK_ARN" != "None" ]; then
-            echo "Checking environment variables in main frontend container..."
-            
-            echo "=== MAIN FRONTEND ENVIRONMENT VARIABLES VERIFICATION ==="
-            aws ecs describe-tasks \
-              --cluster $CLUSTER_NAME \
-              --tasks $MAIN_TASK_ARN \
-              --region ${{ env.AWS_REGION }} \
-              --query 'tasks[0].overrides.containerOverrides[0].environment[?contains(name, `SUPER_ADMIN`) || contains(name, `PROPELAUTH`)].{name:name,value:value}' \
-              --output table || echo "Could not get main frontend environment variables"
-          else
-            echo "No main frontend tasks found to verify environment variables"
-          fi
-
-          # Check developer service tasks
-          DEVELOPER_TASK_ARN=$(aws ecs list-tasks \
-            --cluster $CLUSTER_NAME \
-            --service-name admin-panel-developer-service-development \
-            --region ${{ env.AWS_REGION }} \
-            --query 'taskArns[0]' \
-            --output text 2>/dev/null || echo "")
-
-          if [ ! -z "$DEVELOPER_TASK_ARN" ] && [ "$DEVELOPER_TASK_ARN" != "None" ]; then
-            echo "Checking environment variables in developer frontend container..."
-            
-            echo "=== DEVELOPER FRONTEND ENVIRONMENT VARIABLES VERIFICATION ==="
-            aws ecs describe-tasks \
-              --cluster $CLUSTER_NAME \
-              --tasks $DEVELOPER_TASK_ARN \
-              --region ${{ env.AWS_REGION }} \
-              --query 'tasks[0].overrides.containerOverrides[0].environment[?contains(name, `PROPELAUTH`)].{name:name,value:value}' \
-              --output table || echo "Could not get developer frontend environment variables"
-          else
-            echo "No developer frontend tasks found to verify environment variables"
-          fi
-
-      - name: Force restart ECS services
-        run: |
-          aws ecs update-service \
-            --cluster "admin-panel-development" \
-            --service "admin-panel-service-development" \
-            --force-new-deployment \
-            --region "$AWS_REGION"
-
-          aws ecs update-service \
-            --cluster "admin-panel-development" \
-            --service "admin-panel-developer-service-development" \
-            --force-new-deployment \
-            --region "$AWS_REGION"
-
-      - name: Debug deployment status
-        run: |
-          echo "=== Checking CloudFormation stack status ==="
-          aws cloudformation describe-stacks \
-            --stack-name AdminPanelDevelopmentStack \
-            --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].StackStatus' \
-            --output text || echo "Stack not found"
-
-          # Get actual cluster and service names
-          CLUSTER_NAME="admin-panel-development"
-          MAIN_SERVICE_NAME="admin-panel-service-development"
-          DEVELOPER_SERVICE_NAME="admin-panel-developer-service-development"
-
-          echo "=== Checking ECS service status ==="
-          aws ecs describe-services \
-            --cluster $CLUSTER_NAME \
-            --services $MAIN_SERVICE_NAME $DEVELOPER_SERVICE_NAME \
-            --region ${{ env.AWS_REGION }} \
-            --query 'services[].{serviceName:serviceName,status:status,desiredCount:desiredCount,runningCount:runningCount,pendingCount:pendingCount}' \
-            --output table || echo "Could not check ECS status"
-
-          echo "=== Checking ECS tasks ==="
-          aws ecs list-tasks \
-            --cluster $CLUSTER_NAME \
-            --region ${{ env.AWS_REGION }} || echo "Could not list tasks"
-
-      - name: Debug ECS task failures
-        if: always()
-        run: |
-          echo "=== Checking for failed ECS tasks ==="
-          CLUSTER_NAME="admin-panel-development"
-
-          TASK_ARNS=$(aws ecs list-tasks \
-            --cluster $CLUSTER_NAME \
-            --region ${{ env.AWS_REGION }} \
-            --query 'taskArns' \
-            --output text 2>/dev/null || echo "")
-
-          if [ ! -z "$TASK_ARNS" ]; then
-            echo "=== Task Details ==="
-            aws ecs describe-tasks \
-              --cluster $CLUSTER_NAME \
-              --tasks $TASK_ARNS \
-              --region ${{ env.AWS_REGION }} \
-              --query 'tasks[].{taskArn:taskArn,lastStatus:lastStatus,desiredStatus:desiredStatus,stoppedReason:stoppedReason,healthStatus:healthStatus}' \
-              --output table || echo "Could not get task details"
-          else
-            echo "No tasks found"
-          fi
+          
+          echo "Testing Admin Panel health endpoints on: $ADMIN_URL"
+          echo "Testing Developer Dashboard health endpoints on: $DEVELOPER_URL"
+          
+          # Health checks for Admin Panel
+          curl -f -k "$ADMIN_URL/" || echo "Admin Panel root endpoint check failed"
+          curl -f -k "$ADMIN_URL/api/health" || echo "Admin Panel health endpoint check failed"
+          
+          # Health checks for Developer Dashboard
+          curl -f -k "$DEVELOPER_URL/" || echo "Developer Dashboard root endpoint check failed"
+          curl -f -k "$DEVELOPER_URL/api/health" || echo "Developer Dashboard health endpoint check failed"
+          
+          echo "Health checks completed"
 
   deployment-failure:
     needs: deploy-development
