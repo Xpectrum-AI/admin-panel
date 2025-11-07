@@ -803,6 +803,27 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     }
   }, [selectedVoiceProvider, apiKey, fetchElevenLabsVoices]);
 
+  // Clear voice selection if current voice doesn't support selected language/model
+  useEffect(() => {
+    if (selectedVoiceProvider === '11Labs' && voiceId && availableVoices.length > 0) {
+      // Get language code from selected language name
+      const reverseMapping = getCurrentReverseLanguageMapping();
+      const languageCode = reverseMapping[selectedLanguage] || 'en';
+      
+      // Check if current voice supports the selected language for the selected model
+      const currentVoice = availableVoices.find((voice: any) => voice.voice_id === voiceId);
+      const isSupported = currentVoice?.verified_languages?.some((lang: any) => 
+        lang.model_id === selectedModel && lang.language === languageCode
+      );
+      
+      if (!isSupported) {
+        console.log('⚠️ Current voice does not support selected language/model, clearing selection');
+        setVoiceId('');
+        saveStateToCentralized({ voiceId: '' });
+      }
+    }
+  }, [selectedLanguage, selectedModel, selectedVoiceProvider, voiceId, availableVoices]);
+
   // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
@@ -885,7 +906,51 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     return maskApiKey(actualKey);
   };
 
-  // Format voice display name
+  // Get unique languages supported by a voice for the selected model
+  const getVoiceSupportedLanguages = (voice: any, modelId: string) => {
+    if (!voice.verified_languages || !Array.isArray(voice.verified_languages)) {
+      return [];
+    }
+    
+    // Get unique languages that support the selected model
+    const supportedLanguages = new Set<string>();
+    voice.verified_languages.forEach((lang: any) => {
+      if (lang.model_id === modelId && lang.language) {
+        supportedLanguages.add(lang.language);
+      }
+    });
+    
+    // Convert to array and map to display names
+    return Array.from(supportedLanguages)
+      .map(langCode => elevenLabsLanguageMapping[langCode as keyof typeof elevenLabsLanguageMapping] || langCode)
+      .filter(Boolean)
+      .sort();
+  };
+
+  // Filter voices by selected language and model
+  const getFilteredVoices = () => {
+    if (selectedVoiceProvider !== '11Labs' || availableVoices.length === 0) {
+      return availableVoices;
+    }
+
+    // Get language code from selected language name
+    const reverseMapping = getCurrentReverseLanguageMapping();
+    const languageCode = reverseMapping[selectedLanguage] || 'en';
+    
+    // Filter voices that support the selected language for the selected model
+    return availableVoices.filter((voice: any) => {
+      if (!voice.verified_languages || !Array.isArray(voice.verified_languages)) {
+        return false; // Skip voices without verified languages
+      }
+      
+      // Check if voice supports the selected language for the selected model
+      return voice.verified_languages.some((lang: any) => 
+        lang.model_id === selectedModel && lang.language === languageCode
+      );
+    });
+  };
+
+  // Format voice display name with language info
   const formatVoiceDisplayName = (voice: any) => {
     const { name, labels, description } = voice;
     const gender = labels?.gender || '';
@@ -893,12 +958,29 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     const descriptive = labels?.descriptive || '';
     const age = labels?.age || '';
     
+    // Get supported languages for the selected model
+    const supportedLanguages = getVoiceSupportedLanguages(voice, selectedModel);
+    const languagesText = supportedLanguages.length > 0 
+      ? `[${supportedLanguages.join(', ')}]`
+      : '';
+    
     // Build characteristics array, filtering out empty values
     const characteristics = [gender, accent, descriptive, age].filter(Boolean);
     
-    // If we have characteristics, show them
+    // Build display string with languages
+    let displayParts = [name];
+    
     if (characteristics.length > 0) {
-      return `${name} - ${characteristics.join(', ')}`;
+      displayParts.push(characteristics.join(', '));
+    }
+    
+    if (languagesText) {
+      displayParts.push(languagesText);
+    }
+    
+    // If we have parts, join them
+    if (displayParts.length > 1) {
+      return displayParts.join(' - ');
     }
     
     // If no characteristics but we have description, show a shortened version
@@ -1211,8 +1293,8 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                       setIsUserChangingVoiceField(false);
                     }, 2000);
                   }}
-                  disabled={!isEditing || availableVoices.length === 0}
-                  className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing || availableVoices.length === 0
+                  disabled={!isEditing || getFilteredVoices().length === 0}
+                  className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing || getFilteredVoices().length === 0
                     ? isDarkMode
                       ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
                       : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
@@ -1222,42 +1304,23 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                     }`}
                 >
                   <option value="">
-                    {availableVoices.length === 0 ? 'No voices available' : 'Select a voice...'}
+                    {(() => {
+                      const filteredVoices = getFilteredVoices();
+                      if (filteredVoices.length === 0) {
+                        return availableVoices.length === 0 
+                          ? 'No voices available' 
+                          : `No voices support ${selectedLanguage} for ${elevenLabsModelNames[selectedModel as keyof typeof elevenLabsModelNames] || selectedModel}`;
+                      }
+                      return 'Select a voice...';
+                    })()}
                   </option>
-                  {availableVoices.map((voice) => (
+                  {getFilteredVoices().map((voice) => (
                     <option key={voice.voice_id} value={voice.voice_id}>
                       {formatVoiceDisplayName(voice)}
                     </option>
                   ))}
                 </select>
               )}
-            </div>
-            <div>
-              <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Model
-              </label>
-              <select
-                value={selectedModel}
-                onChange={(e) => {
-                  setSelectedModel(e.target.value);
-                  saveStateToCentralized({ selectedModel: e.target.value });
-                }}
-                disabled={!isEditing}
-                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
-                  ? isDarkMode
-                    ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
-                    : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
-                  : isDarkMode
-                    ? 'bg-gray-700/50 border-gray-600 text-gray-200'
-                    : 'bg-gray-50 border-gray-200 text-gray-900'
-                  }`}
-              >
-                {Object.keys(elevenLabsModelNames).map((model) => (
-                  <option key={model} value={model}>
-                    {elevenLabsModelNames[model as keyof typeof elevenLabsModelNames]}
-                  </option>
-                ))}
-              </select>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -1539,14 +1602,14 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
               <select
                 value={selectedLanguage}
                 onChange={(e) => {
-                  if (selectedVoiceProvider === 'OpenAI' || selectedVoiceProvider === '11Labs') {
-                    return; // languages fixed for OpenAI and 11Labs voices
+                  if (selectedVoiceProvider === 'OpenAI') {
+                    return; // languages fixed for OpenAI voices
                   }
                   setSelectedLanguage(e.target.value);
                   saveStateToCentralized({ selectedLanguage: e.target.value });
                 }}
-                disabled={!isEditing || selectedVoiceProvider === 'OpenAI' || selectedVoiceProvider === '11Labs'}
-                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base ${!isEditing || selectedVoiceProvider === 'OpenAI' || selectedVoiceProvider === '11Labs'
+                disabled={!isEditing || selectedVoiceProvider === 'OpenAI'}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base ${!isEditing || selectedVoiceProvider === 'OpenAI'
                   ? isDarkMode
                     ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
                     : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
