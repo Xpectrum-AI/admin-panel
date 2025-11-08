@@ -1413,31 +1413,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
             </div>
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Model
-              </label>
-              <select
-                value={selectedModel}
-                onChange={(e) => {
-                  setSelectedModel(e.target.value);
-                  saveStateToCentralized({ selectedModel: e.target.value });
-                }}
-                disabled={!isEditing}
-                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
-                  ? isDarkMode
-                    ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
-                    : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
-                  : isDarkMode
-                    ? 'bg-gray-700/50 border-gray-600 text-gray-200'
-                    : 'bg-gray-50 border-gray-200 text-gray-900'
-                  }`}
-              >
-                {voiceProviders['Cartesia'].map((model) => (
-                  <option key={model} value={model}>{model}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 Speed: {speedValue}
               </label>
               <div className="flex items-center gap-3">
