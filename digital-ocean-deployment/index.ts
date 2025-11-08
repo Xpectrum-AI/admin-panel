@@ -27,11 +27,27 @@ const adminApp = new digitalocean.App("admin-panel-app-dev", {
             },
             httpPort: 3000,
             instanceCount: 1,
-            instanceSizeSlug: "basic-xxs",
+            instanceSizeSlug: "basic-xs",
+            healthCheck: {
+                httpPath: "/api/health",
+                initialDelaySeconds: 10,
+                periodSeconds: 10,
+                timeoutSeconds: 5,
+                successThreshold: 1,
+                failureThreshold: 3
+            },
             envs: [
                 {
                     key: "NODE_ENV",
                     value: "production"
+                },
+                {
+                    key: "PORT",
+                    value: "3000"
+                },
+                {
+                    key: "HOSTNAME",
+                    value: "0.0.0.0"
                 },
                 {
                     key: "NEXT_PUBLIC_PROPELAUTH_URL",
@@ -73,11 +89,27 @@ const devApp = new digitalocean.App("developer-dashboard-app-dev", {
             },
             httpPort: 3000,
             instanceCount: 1,
-            instanceSizeSlug: "basic-xxs",
+            instanceSizeSlug: "basic-xs",
+            healthCheck: {
+                httpPath: "/api/health",
+                initialDelaySeconds: 10,
+                periodSeconds: 10,
+                timeoutSeconds: 5,
+                successThreshold: 1,
+                failureThreshold: 3
+            },
             envs: [
                 {
                     key: "NODE_ENV",
                     value: "development"
+                },
+                {
+                    key: "PORT",
+                    value: "3000"
+                },
+                {
+                    key: "HOSTNAME",
+                    value: "0.0.0.0"
                 },
                 {
                     key: "NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL",
