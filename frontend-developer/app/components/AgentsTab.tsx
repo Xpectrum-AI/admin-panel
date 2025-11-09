@@ -977,7 +977,7 @@ Remember: You are the first point of contact for many patients. Your professiona
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          difyApiUrl: selectedAgent.chatbot_api || process.env.NEXT_PUBLIC_CHATBOT_API_URL || 'https://dlb20rrk0t1tl.cloudfront.net/v1/chat-messages',
+          difyApiUrl: selectedAgent.chatbot_api || process.env.NEXT_PUBLIC_CHATBOT_API_URL ,
           difyApiKey: selectedAgent.chatbot_key,
           message: messageToSend,
           conversationId: conversationId, // Use existing conversation ID for context
@@ -1278,7 +1278,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       transcriberConfig: agent.stt_config || null,
       // Widget config data
       widgetConfig: {
-        difyApiUrl: agent.chatbot_api ? agent.chatbot_api.replace('/chat-messages', '') : process.env.NEXT_PUBLIC_DIFY_BASE_URL || process.env.NEXT_PUBLIC_CHATBOT_API_URL?.replace('/chat-messages', '') || 'https://dlb20rrk0t1tl.cloudfront.net/v1',
+        difyApiUrl: agent.chatbot_api ? agent.chatbot_api.replace('/chat-messages', '') : process.env.NEXT_PUBLIC_DIFY_BASE_URL || process.env.NEXT_PUBLIC_CHATBOT_API_URL?.replace('/chat-messages', '') ,
         difyApiKey: agent.chatbot_key || ''
       },
       // Tools config data

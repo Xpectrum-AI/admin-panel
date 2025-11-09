@@ -39,7 +39,7 @@ export async function GET(
     }
 
     // Fallback to mock agent data if real agent not found
-    const fallbackChatbotApi = process.env.NEXT_PUBLIC_CHATBOT_API_URL || process.env.NEXT_PUBLIC_DIFY_BASE_URL || 'https://dlb20rrk0t1tl.cloudfront.net/v1';
+    const fallbackChatbotApi = process.env.NEXT_PUBLIC_CHATBOT_API_URL || process.env.NEXT_PUBLIC_DIFY_BASE_URL + '/chat-messages';
     const fallbackChatbotKey = process.env.NEXT_PUBLIC_CHATBOT_API_KEY || 'app-n7DlZX2MOhaIncYyGJzUZ12g';
     
     console.log('🔄 Using fallback agent configuration:', {
