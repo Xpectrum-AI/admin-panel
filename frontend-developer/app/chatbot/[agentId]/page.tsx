@@ -184,7 +184,7 @@ export default function ChatbotPage() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          difyApiUrl: agentConfig.chatbot_api || process.env.NEXT_PUBLIC_CHATBOT_API_URL || 'https://dlb20rrk0t1tl.cloudfront.net/v1/chat-messages',
+          difyApiUrl: agentConfig.chatbot_api || process.env.NEXT_PUBLIC_CHATBOT_API_URL ,
           difyApiKey: agentConfig.chatbot_key,
           message: currentMessage,
           conversationId: conversationId,

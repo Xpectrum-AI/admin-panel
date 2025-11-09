@@ -32,7 +32,7 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
     if (!actualKey) return '••••••••••••••••••••••••••••••••';
     return maskApiKey(actualKey);
   };
-  const [localDifyApiUrl, setLocalDifyApiUrl] = useState(difyApiUrl || process.env.NEXT_PUBLIC_CHATBOT_API_URL || process.env.NEXT_PUBLIC_DIFY_BASE_URL + '/chat-messages' || 'https://dlb20rrk0t1tl.cloudfront.net/v1/chat-messages');
+  const [localDifyApiUrl, setLocalDifyApiUrl] = useState(difyApiUrl || process.env.NEXT_PUBLIC_CHATBOT_API_URL || process.env.NEXT_PUBLIC_DIFY_BASE_URL + '/chat-messages' );
   const [localDifyApiKey, setLocalDifyApiKey] = useState(difyApiKey || '');
   const [copiedScript, setCopiedScript] = useState(false);
   const [copiedVoiceScript, setCopiedVoiceScript] = useState(false);

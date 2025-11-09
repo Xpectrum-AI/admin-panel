@@ -59,7 +59,7 @@ const adminApp = new digitalocean.App("admin-panel-app-dev", {
                 },
                 {
                     key: "NEXT_PUBLIC_LIVE_API_URL",
-                    value: adminConfig.get("liveApiUrl") || "https://d3sgivh2kmd3c8.cloudfront.net"
+                    value: adminConfig.get("liveApiUrl") || "https://fastapi-server-app-dev-lxd97.ondigitalocean.app/"
                 },
                 {
                     key: "NEXT_PUBLIC_LIVE_API_KEY",
@@ -197,7 +197,7 @@ const devApp = new digitalocean.App("developer-dashboard-app-dev", {
                 },
                 {
                     key: "NEXT_PUBLIC_LIVE_API_URL",
-                    value: devConfig.get("liveApiUrl") || "https://d3sgivh2kmd3c8.cloudfront.net"
+                    value: devConfig.get("liveApiUrl") || "https://fastapi-server-app-dev-lxd97.ondigitalocean.app/"
                 },
                 {
                     key: "NEXT_PUBLIC_LIVE_API_KEY",
