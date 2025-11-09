@@ -37,7 +37,10 @@ export async function POST(
     console.log('🔍 Chatbot API values received:', { chatbot_api, chatbot_key });
 
     // Call the real backend service to save to MongoDB
-    const backendUrl = process.env.NEXT_PUBLIC_LIVE_API_URL || 'https://d3sgivh2kmd3c8.cloudfront.net';
+    const backendUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
+    if (!backendUrl) {
+      return NextResponse.json({ error: 'NEXT_PUBLIC_LIVE_API_URL is not configured' }, { status: 500 });
+    }
     const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
 
     if (!apiKey) {

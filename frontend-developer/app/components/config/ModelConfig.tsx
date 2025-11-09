@@ -508,6 +508,29 @@ Remember: You are the first point of contact for many patients. Your professiona
         console.log('🔍 selectedModel:', stateToUse.selectedModel);
         console.log('🔍 apiModel:', apiModel);
 
+        // Get app_id from localStorage using the chatbot API key
+        let appId: string | null = null;
+        if (chatbotApiKey) {
+          appId = localStorage.getItem(`dify_app_id_${chatbotApiKey}`);
+          console.log('🔍 Retrieved app_id from localStorage:', appId ? `${appId.substring(0, 8)}...` : 'not found');
+        }
+
+        // If not found in localStorage, try to get from existingConfig
+        if (!appId && existingConfig?.dify_app_id) {
+          appId = existingConfig.dify_app_id;
+          console.log('🔍 Retrieved app_id from existingConfig:', appId ? `${appId.substring(0, 8)}...` : 'not found');
+          // Store for future use
+          if (chatbotApiKey && appId) {
+            localStorage.setItem(`dify_app_id_${chatbotApiKey}`, appId);
+          }
+        }
+
+        if (!appId) {
+          console.warn('⚠️ App ID not found. Model configuration may fail. Please ensure the agent was created properly.');
+          setErrorMessage('App ID not found. Please ensure the agent was created properly.');
+          return;
+        }
+
         // Use the same API endpoint as the original function
         const response = await fetch('/api/model-config', {
           method: 'POST',
@@ -519,7 +542,8 @@ Remember: You are the first point of contact for many patients. Your professiona
             provider: provider.apiProvider,
             model: apiModel,
             api_key: stateToUse.modelApiKey,
-            chatbot_api_key: chatbotApiKey
+            chatbot_api_key: chatbotApiKey,
+            app_id: appId
           }),
         });
 

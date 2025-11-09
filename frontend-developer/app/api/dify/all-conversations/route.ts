@@ -148,7 +148,10 @@ export async function POST(request: NextRequest) {
             const conversationIds = new Set<string>();
             
             // Use default base URL
-            const baseUrl = 'https://demos.xpectrum-ai.com/v1';
+            const baseUrl = process.env.NEXT_PUBLIC_DIFY_BASE_URL;
+            if (!baseUrl) {
+              throw new Error('NEXT_PUBLIC_DIFY_BASE_URL is not configured');
+            }
       
       for (const userId of userTypes) {
         try {
@@ -202,7 +205,10 @@ export async function POST(request: NextRequest) {
     // Console API gives us UUIDs, but we need user strings for App API
     // Try to match each conversation with the correct user string
     const conversationsWithUser = await Promise.all(conversations.map(async (conv: any) => {
-      const baseUrl = 'https://demos.xpectrum-ai.com/v1';
+      const baseUrl = process.env.NEXT_PUBLIC_DIFY_BASE_URL;
+      if (!baseUrl) {
+        throw new Error('NEXT_PUBLIC_DIFY_BASE_URL is not configured');
+      }
       const userTypes = ['preview-user', 'voice-session-abc123', 'admin', 'user', 'test-user'];
       
       // Try to find which user string works for this conversation

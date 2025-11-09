@@ -12,7 +12,11 @@ export async function GET(
     try {
       // Use the correct endpoint with a default organization ID
       const organizationId = 'default_org';
-      const agentsResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/agents/by-org/${organizationId}`);
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+      if (!appUrl) {
+        throw new Error('NEXT_PUBLIC_APP_URL is not configured');
+      }
+      const agentsResponse = await fetch(`${appUrl}/api/agents/by-org/${organizationId}`);
       if (agentsResponse.ok) {
         const agentsData = await agentsResponse.json();
         const realAgent = agentsData.data?.find((agent: any) => 
@@ -39,8 +43,8 @@ export async function GET(
     }
 
     // Fallback to mock agent data if real agent not found
-    const fallbackChatbotApi = process.env.NEXT_PUBLIC_CHATBOT_API_URL || process.env.NEXT_PUBLIC_DIFY_BASE_URL + '/chat-messages';
-    const fallbackChatbotKey = process.env.NEXT_PUBLIC_CHATBOT_API_KEY || 'app-n7DlZX2MOhaIncYyGJzUZ12g';
+    const fallbackChatbotApi = process.env.NEXT_PUBLIC_CHATBOT_API_URL || (process.env.NEXT_PUBLIC_DIFY_BASE_URL ? `${process.env.NEXT_PUBLIC_DIFY_BASE_URL}/chat-messages` : '');
+    const fallbackChatbotKey = process.env.NEXT_PUBLIC_CHATBOT_API_KEY || '';
     
     console.log('🔄 Using fallback agent configuration:', {
       agentId,

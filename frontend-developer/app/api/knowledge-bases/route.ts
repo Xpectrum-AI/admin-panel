@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserFromRequest, getOrgIdFromKnowledgeBaseName, removeOrgPrefixFromName } from '@/lib/auth/getUserFromRequest';
 
-// Configuration from environment variables with fallback values
-const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN || "https://demos.xpectrum-ai.com";
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL || "ghosh.ishw@gmail.com";
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD || "Ghosh1@*123";
-const WS_ID = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID || "661d95ae-77ee-4cfd-88e3-e6f3ef8d638b";
+// Configuration from environment variables
+const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN;
+if (!CONSOLE_ORIGIN) {
+  throw new Error('NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN is not configured');
+}
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD;
+const WS_ID = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID;
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD || !WS_ID) {
+  throw new Error('NEXT_PUBLIC_DIFY_ADMIN_EMAIL, NEXT_PUBLIC_DIFY_ADMIN_PASSWORD, or NEXT_PUBLIC_DIFY_WORKSPACE_ID is not configured');
+}
 
 // Debug logging to help identify environment variable issues
 console.log('🔍 Environment variables check:');

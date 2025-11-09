@@ -72,7 +72,11 @@ export interface ScheduledEventFilters {
 
 // Get API base URL - use live API
 const getApiBaseUrl = (): string => {
-  return process.env.NEXT_PUBLIC_LIVE_API_URL || 'https://d2ref4sfj4q82j.cloudfront.net';
+  const apiBaseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
+  if (!apiBaseUrl) {
+    throw new Error('NEXT_PUBLIC_LIVE_API_URL is not configured');
+  }
+  return apiBaseUrl;
 };
 
 // Generic API request function

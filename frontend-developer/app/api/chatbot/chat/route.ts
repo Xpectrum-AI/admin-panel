@@ -25,8 +25,11 @@ export async function POST(request: NextRequest) {
       if (process.env.NODE_ENV === 'development' && (!difyApiKey || difyApiKey.trim() === '')) {
         console.log('⚠️ Development mode: Using fallback API key for testing');
         // Use a fallback API key for development
-        const fallbackApiKey = process.env.NEXT_PUBLIC_DIFY_API_KEY || 'app-fallback-key-for-testing';
-        if (fallbackApiKey && fallbackApiKey !== 'app-fallback-key-for-testing') {
+        const fallbackApiKey = process.env.NEXT_PUBLIC_DIFY_API_KEY;
+        if (!fallbackApiKey) {
+          throw new Error('NEXT_PUBLIC_DIFY_API_KEY is not configured');
+        }
+        if (fallbackApiKey) {
           console.log('🔄 Using fallback API key from environment');
           // Continue with fallback key
         } else {
@@ -48,15 +51,19 @@ export async function POST(request: NextRequest) {
     let difyServiceUrl = difyApiUrl;
     
     // Use environment variable for Dify service URL if available
-    const envDifyUrl = process.env.NEXT_PUBLIC_CHATBOT_API_URL || process.env.NEXT_PUBLIC_DIFY_BASE_URL + '/chat-messages';
+    const envDifyUrl = process.env.NEXT_PUBLIC_CHATBOT_API_URL || (process.env.NEXT_PUBLIC_DIFY_BASE_URL ? `${process.env.NEXT_PUBLIC_DIFY_BASE_URL}/chat-messages` : '');
     
-    // If the agent is using an old URL, use the environment variable
-    if (difyServiceUrl.includes('d22yt2oewbcglh.cloudfront.net') || !difyServiceUrl.includes('/chat-messages')) {
-      console.log('🔄 Agent using old Dify URL, switching to environment URL');
-      difyServiceUrl = envDifyUrl;
-    } else if (!difyServiceUrl.includes('/chat-messages')) {
-      // Only append /chat-messages if it's not already in the URL
-      difyServiceUrl = `${difyServiceUrl.replace(/\/$/, '')}/chat-messages`;
+    // If the agent is using an old URL or no URL, use the environment variable
+    if (!difyServiceUrl || !difyServiceUrl.includes('/chat-messages')) {
+      if (envDifyUrl) {
+        console.log('🔄 Agent using invalid Dify URL, switching to environment URL');
+        difyServiceUrl = envDifyUrl;
+      } else if (difyServiceUrl && !difyServiceUrl.includes('/chat-messages')) {
+        // Only append /chat-messages if it's not already in the URL
+        difyServiceUrl = `${difyServiceUrl.replace(/\/$/, '')}/chat-messages`;
+      } else {
+        throw new Error('Dify API URL is not configured. Please set NEXT_PUBLIC_CHATBOT_API_URL or NEXT_PUBLIC_DIFY_BASE_URL');
+      }
     }
     
     // Determine response mode based on useStreaming parameter
