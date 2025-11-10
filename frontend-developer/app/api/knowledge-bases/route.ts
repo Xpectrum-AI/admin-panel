@@ -1,27 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserFromRequest, getOrgIdFromKnowledgeBaseName, removeOrgPrefixFromName } from '@/lib/auth/getUserFromRequest';
 
-// Configuration from environment variables
-const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN;
-if (!CONSOLE_ORIGIN) {
-  throw new Error('NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN is not configured');
-}
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL;
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD;
-const WS_ID = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID;
-if (!ADMIN_EMAIL || !ADMIN_PASSWORD || !WS_ID) {
-  throw new Error('NEXT_PUBLIC_DIFY_ADMIN_EMAIL, NEXT_PUBLIC_DIFY_ADMIN_PASSWORD, or NEXT_PUBLIC_DIFY_WORKSPACE_ID is not configured');
-}
-
-// Debug logging to help identify environment variable issues
-console.log('🔍 Environment variables check:');
-console.log('🔍 CONSOLE_ORIGIN:', CONSOLE_ORIGIN);
-console.log('🔍 ADMIN_EMAIL:', ADMIN_EMAIL ? 'Present' : 'Missing');
-console.log('🔍 ADMIN_PASSWORD:', ADMIN_PASSWORD ? 'Present' : 'Missing');
-console.log('🔍 WS_ID:', WS_ID ? 'Present' : 'Missing');
-
 // Helper function to get auth token
 async function getAuthToken() {
+  const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN;
+  const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL;
+  const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD;
+  
+  if (!CONSOLE_ORIGIN || !ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    throw new Error('NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN, NEXT_PUBLIC_DIFY_ADMIN_EMAIL, or NEXT_PUBLIC_DIFY_ADMIN_PASSWORD is not configured');
+  }
+
   console.log('🔐 Attempting authentication with:', {
     url: `${CONSOLE_ORIGIN}/console/api/login`,
     email: ADMIN_EMAIL,
@@ -55,6 +44,17 @@ async function getAuthToken() {
 // GET - List all knowledge bases (filtered by organization)
 export async function GET(request: NextRequest) {
   try {
+    // Validate environment variables at runtime
+    const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN;
+    const WS_ID = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID;
+    
+    if (!CONSOLE_ORIGIN || !WS_ID) {
+      return NextResponse.json(
+        { error: 'NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN or NEXT_PUBLIC_DIFY_WORKSPACE_ID is not configured' },
+        { status: 500 }
+      );
+    }
+    
     // Get the authenticated user's organization
     const user = await getUserFromRequest(request);
     
@@ -120,6 +120,17 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     console.log('📝 POST /api/knowledge-bases - Starting...');
+    
+    // Validate environment variables at runtime
+    const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN;
+    const WS_ID = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID;
+    
+    if (!CONSOLE_ORIGIN || !WS_ID) {
+      return NextResponse.json(
+        { error: 'NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN or NEXT_PUBLIC_DIFY_WORKSPACE_ID is not configured' },
+        { status: 500 }
+      );
+    }
     
     // Get the authenticated user's organization
     const user = await getUserFromRequest(request);
