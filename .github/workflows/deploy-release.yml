@@ -21,22 +21,22 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run:
+        run: |
           cd frontend
           npm ci
 
       - name: Lint frontend
-        run:
+        run: |
           cd frontend
           npm run lint || echo "Lint completed with warnings"
 
       - name: Type check frontend
-        run:
+        run: |
           cd frontend
           npx tsc --noEmit || echo "Type check completed with warnings"
 
       - name: Run tests
-        run:
+        run: |
           cd frontend
           npm test -- --coverage --watchAll=false
 
@@ -70,7 +70,7 @@ jobs:
           NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.PROD_LIVE_API_KEY }}
           NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.PROD_PROPELAUTH_API_KEY }}
           NEXT_PUBLIC_SUPER_ADMIN_ORG_ID: ${{ secrets.PROD_SUPER_ADMIN_ORG_ID }}
-        run:
+        run: |
           # Use the specific registry name
           REPO="registry.digitalocean.com/xpectrum-main-app-dev/admin-release"
 
@@ -112,7 +112,7 @@ jobs:
           NEXT_PUBLIC_MODEL_GROQ_API_KEY: ${{ secrets.PROD_MODEL_GROQ_API_KEY }}
           NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY: ${{ secrets.PROD_MODEL_ANTHROPIC_API_KEY }}
           NEXT_PUBLIC_DIFY_BASE_URL: ${{ vars.PROD_DIFY_BASE_URL }}
-        run:
+        run: |
           # Use the specific registry name
           REPO="registry.digitalocean.com/xpectrum-main-app-dev/developer-release"
 
@@ -154,7 +154,7 @@ jobs:
           pulumi-version: latest
 
       - name: Install Pulumi dependencies
-        run:
+        run: |
           cd digital-ocean-deployment
           npm ci
 
@@ -162,7 +162,7 @@ jobs:
         working-directory: digital-ocean-deployment
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-        run:
+        run: |
           # Check if stack exists, if not create it
           if pulumi stack select frontend-release 2>/dev/null; then
             echo "✅ Stack 'frontend-release' already exists, using it"
@@ -177,7 +177,7 @@ jobs:
         env:
           DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-        run:
+        run: |
           # Select the stack (required before setting config)
           pulumi stack select frontend-release
           
@@ -227,7 +227,7 @@ jobs:
         env:
           DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-        run:
+        run: |
           # Select the stack
           pulumi stack select frontend-release
           
@@ -239,7 +239,7 @@ jobs:
         working-directory: digital-ocean-deployment
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-        run:
+        run: |
           pulumi stack select frontend-release
           ADMIN_URL=$(pulumi stack output adminPanelUrl 2>/dev/null || echo "")
           DEVELOPER_URL=$(pulumi stack output developerDashboardUrl 2>/dev/null || echo "")
@@ -251,12 +251,12 @@ jobs:
           echo "Developer Dashboard URL: $DEVELOPER_URL"
 
       - name: Wait for apps to be ready
-        run:
+        run: |
           echo "Waiting for DigitalOcean apps to be ready..."
           sleep 90
 
       - name: Health check
-        run:
+        run: |
           ADMIN_URL="${{ steps.pulumi-outputs.outputs.admin-url }}"
           DEVELOPER_URL="${{ steps.pulumi-outputs.outputs.developer-url }}"
           
@@ -289,5 +289,5 @@ jobs:
     if: failure()
     steps:
       - name: Release Deployment Failed
-        run:
+        run: |
           echo "Release deployment failed - check the logs for details"
