@@ -60,7 +60,7 @@ jobs:
           token: ${{ secrets.DIGITALOCEAN_TOKEN }}
 
       - name: Authenticate Docker with DOCR
-        run:
+        run: |
           doctl registry login --expiry-seconds 1200
 
       - name: Build and push Main Frontend image to DOCR
@@ -187,12 +187,12 @@ jobs:
           # Set region (required - from env variable)
           pulumi config set index:region ${{ env.DIGITALOCEAN_REGION }}
           
-          # Admin Panel secrets - using PROD_* secrets, storing in prod: namespace
-          pulumi config set prod:propelauthApiKey "${{ secrets.PROD_PROPELAUTH_API_KEY }}" --secret
-          pulumi config set prod:liveApiKey "${{ secrets.PROD_LIVE_API_KEY }}" --secret
-          pulumi config set prod:propelauthUrl "${{ vars.PROD_PROPELAUTH_URL }}"
-          pulumi config set prod:liveApiUrl "${{ vars.PROD_LIVE_API_URL }}"
-          pulumi config set prod:superAdminOrgId "${{ secrets.PROD_SUPER_ADMIN_ORG_ID }}"
+          # Admin Panel secrets - using PROD_* secrets, storing in admin: namespace
+          pulumi config set admin:propelauthApiKey "${{ secrets.PROD_PROPELAUTH_API_KEY }}" --secret
+          pulumi config set admin:liveApiKey "${{ secrets.PROD_LIVE_API_KEY }}" --secret
+          pulumi config set admin:propelauthUrl "${{ vars.PROD_PROPELAUTH_URL }}"
+          pulumi config set admin:liveApiUrl "${{ vars.PROD_LIVE_API_URL }}"
+          pulumi config set admin:superAdminOrgId "${{ secrets.PROD_SUPER_ADMIN_ORG_ID }}"
           
           # Developer Dashboard secrets - using PROD_* secrets, storing in prod: namespace
           pulumi config set prod:difyAdminPassword "${{ secrets.PROD_DIFY_ADMIN_PASSWORD }}" --secret
