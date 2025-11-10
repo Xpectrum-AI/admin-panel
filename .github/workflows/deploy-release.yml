@@ -207,7 +207,6 @@ jobs:
           pulumi config set release:whisperApiKey "${{ secrets.PRODUCTION_WHISPER_API_KEY }}" --secret
           pulumi config set release:deepgramApiKey "${{ secrets.PRODUCTION_DEEPGRAM_API_KEY }}" --secret
           pulumi config set release:cartesiaApiKey "${{ secrets.PRODUCTION_CARTESIA_API_KEY }}" --secret
-         
           
           # Developer Dashboard config values - using PRODUCTION_* vars, storing in release: namespace
           # Note: propelauthUrl already set above (shared with Admin Panel)

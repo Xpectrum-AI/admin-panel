@@ -222,10 +222,6 @@ function createDeveloperDashboardApp(env: string, envConfig: pulumi.Config) {
                         value: envConfig.requireSecret("liveApiKey")
                     },
                     {
-                        key: "MONGODB_URL",
-                        value: envConfig.requireSecret("mongodbUrl")
-                    },
-                    {
                         key: "DATABASE_NAME",
                         value: envConfig.get("databaseName") || "your_database_name"
                     },
