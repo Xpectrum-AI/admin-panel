@@ -95,11 +95,20 @@ export default function LiveKitVoiceChat({ agentName, isDarkMode, startCall, end
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Configuration - Use the same API as the working voice chat
-  const API_BASE_URL = 'https://d3sgivh2kmd3c8.cloudfront.net';
-  const API_KEY = 'xpectrum-ai@123';
-
   const connectToAgent = async () => {
+    // Configuration - Use environment variables
+    const API_BASE_URL = process.env.NEXT_PUBLIC_LIVE_API_URL;
+    if (!API_BASE_URL) {
+      setError('NEXT_PUBLIC_LIVE_API_URL is not configured');
+      setIsConnecting(false);
+      return;
+    }
+    const API_KEY = process.env.NEXT_PUBLIC_LIVE_API_KEY;
+    if (!API_KEY) {
+      setError('NEXT_PUBLIC_LIVE_API_KEY is not configured');
+      setIsConnecting(false);
+      return;
+    }
     setIsConnecting(true);
     setError(null);
 

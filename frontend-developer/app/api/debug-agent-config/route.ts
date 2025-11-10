@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const DIFY_BASE_URL = process.env.NEXT_PUBLIC_DIFY_BASE_URL || '';
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL || "ghosh.ishw@gmail.com";
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD || "Ghosh1@*123";
-const WS_ID = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID || "661d95ae-77ee-4cfd-88e3-e6f3ef8d638b";
+const DIFY_BASE_URL = process.env.NEXT_PUBLIC_DIFY_BASE_URL;
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD;
+const WS_ID = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID;
+if (!DIFY_BASE_URL || !ADMIN_EMAIL || !ADMIN_PASSWORD || !WS_ID) {
+  throw new Error('NEXT_PUBLIC_DIFY_BASE_URL, NEXT_PUBLIC_DIFY_ADMIN_EMAIL, NEXT_PUBLIC_DIFY_ADMIN_PASSWORD, or NEXT_PUBLIC_DIFY_WORKSPACE_ID is not configured');
+}
 
 async function getAuthToken() {
   const loginResponse = await fetch(`${DIFY_BASE_URL.replace('/v1', '')}/console/api/login`, {

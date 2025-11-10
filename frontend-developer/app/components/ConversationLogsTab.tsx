@@ -307,7 +307,10 @@ export default function ConversationLogsTab({ organizationId }: ConversationLogs
       console.log('📝 Conversation user_id:', conversation.user_id);
 
       // Extract base URL from chatbot_api
-      const baseUrl = selectedAgent?.chatbot_api?.replace(/\/chat-messages$/, '') || 'https://demos.xpectrum-ai.com/v1';
+      const baseUrl = selectedAgent?.chatbot_api?.replace(/\/chat-messages$/, '') || process.env.NEXT_PUBLIC_DIFY_BASE_URL;
+      if (!baseUrl) {
+        throw new Error('Chatbot API URL or NEXT_PUBLIC_DIFY_BASE_URL is not configured');
+      }
       console.log('🔗 Base URL:', baseUrl);
 
       // Use the user_id from the conversation (fetched via Console API)

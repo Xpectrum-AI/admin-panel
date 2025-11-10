@@ -11,7 +11,7 @@ const testDeleteAgent = async () => {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          "X-API-Key": process.env.NEXT_PUBLIC_LIVE_API_KEY || "test-key",
+          "X-API-Key": process.env.NEXT_PUBLIC_LIVE_API_KEY || "",
         },
         body: JSON.stringify({
           agentName: "test-agent",
@@ -31,7 +31,7 @@ const testDeleteAgent = async () => {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          "X-API-Key": process.env.NEXT_PUBLIC_LIVE_API_KEY || "test-key",
+          "X-API-Key": process.env.NEXT_PUBLIC_LIVE_API_KEY || "",
         },
         body: JSON.stringify({
           agentName: "test-agent",

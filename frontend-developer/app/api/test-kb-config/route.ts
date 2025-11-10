@@ -28,14 +28,18 @@ export async function POST(request: NextRequest) {
     
     console.log('📤 Sending test config to Dify:', testPayload);
     
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001'}/api/model-config`, {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+    if (!baseUrl) {
+      return NextResponse.json({ error: 'NEXT_PUBLIC_BASE_URL is not configured' }, { status: 500 });
+    }
+    const response = await fetch(`${baseUrl}/api/model-config`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         ...testPayload,
-        chatbot_api_key: body.chatbot_api_key || 'app-szaJmbeM4hpks7OYxae2MlcL'
+        chatbot_api_key: body.chatbot_api_key || ''
       }),
     });
 

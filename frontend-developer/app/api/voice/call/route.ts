@@ -11,12 +11,14 @@ export async function POST(request: NextRequest) {
     console.log('🎤 Voice call request:', { message: message.substring(0, 50) + '...', agentName, voiceProvider });
 
     // Use the new API credentials from environment variables
-    const apiBaseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL || 'https://d3sgivh2kmd3c8.cloudfront.net';
-    const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || 'xpectrum-ai@123';
-    
-    // Override with the correct values provided by user
-    const finalApiBaseUrl = 'https://d3sgivh2kmd3c8.cloudfront.net';
-    const finalApiKey = 'xpectrum-ai@123';
+    const apiBaseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
+    if (!apiBaseUrl) {
+      return NextResponse.json({ error: 'NEXT_PUBLIC_LIVE_API_URL is not configured' }, { status: 500 });
+    }
+    const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ error: 'NEXT_PUBLIC_LIVE_API_KEY is not configured' }, { status: 500 });
+    }
     
     console.log('🎤 Using API credentials:', { apiBaseUrl, apiKey: apiKey ? '***' : 'NOT_SET' });
 
@@ -31,8 +33,8 @@ export async function POST(request: NextRequest) {
       voiceUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
     } else {
       // Default to Cartesia - use the correct API key
-      voiceApiKey = process.env.NEXT_PUBLIC_CARTESIA_API_KEY || 'sk_car_ARNxuXPontQGnghJPFxDQa';
-      voiceId = process.env.NEXT_PUBLIC_CARTESIA_VOICE_ID || 'e8e5fffb-252c-436d-b842-8879b84445b6';
+      voiceApiKey = process.env.NEXT_PUBLIC_CARTESIA_API_KEY || '';
+      voiceId = process.env.NEXT_PUBLIC_CARTESIA_VOICE_ID || '';
       voiceUrl = 'https://api.cartesia.ai/v1/tts';
     }
 
@@ -44,10 +46,10 @@ export async function POST(request: NextRequest) {
       // First, try to use the new API endpoint for voice calls
       console.log('🎤 Trying new API endpoint for voice call');
       
-      const newApiResponse = await fetch(`${finalApiBaseUrl}/api/voice/tts`, {
+      const newApiResponse = await fetch(`${apiBaseUrl}/api/voice/tts`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${finalApiKey}`,
+          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -132,7 +134,7 @@ export async function POST(request: NextRequest) {
       audio: `data:${audioMimeType};base64,${audioBase64}`,
       provider: voiceProvider,
       message: message,
-      apiBaseUrl: finalApiBaseUrl
+      apiBaseUrl: apiBaseUrl
     });
 
   } catch (error) {

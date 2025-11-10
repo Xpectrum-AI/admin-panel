@@ -433,7 +433,11 @@ export class WhatsAppService {
     try {
       console.log('🚀 Assigning WhatsApp phone number to agent:', { phoneId, agentName });
       
-      const response = await fetch(`https://d2batbqeoehmxe.cloudfront.net/phone-numbers/${encodeURIComponent(phoneId)}/assign/${encodeURIComponent(agentName)}`, {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
+      if (!apiBaseUrl) {
+        throw new Error('NEXT_PUBLIC_LIVE_API_URL is not configured');
+      }
+      const response = await fetch(`${apiBaseUrl}/phone-numbers/${encodeURIComponent(phoneId)}/assign/${encodeURIComponent(agentName)}`, {
         method: 'POST',
         headers: {
           'x-api-key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
@@ -481,7 +485,11 @@ export class WhatsAppService {
         try {
           console.log(`Trying WhatsApp unassign endpoint: ${endpoint.method} ${endpoint.url}`);
           
-          const response = await fetch(`https://d2batbqeoehmxe.cloudfront.net/${endpoint.url}`, {
+          const apiBaseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
+          if (!apiBaseUrl) {
+            throw new Error('NEXT_PUBLIC_LIVE_API_URL is not configured');
+          }
+          const response = await fetch(`${apiBaseUrl}/${endpoint.url}`, {
             method: endpoint.method,
             headers: {
               'x-api-key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',

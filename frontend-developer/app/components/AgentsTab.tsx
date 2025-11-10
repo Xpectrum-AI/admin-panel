@@ -47,6 +47,7 @@ interface Agent {
   max_call_duration?: number;
   created_at?: string;
   updated_at?: string;
+  agent_prefix?: string; // Add agent_prefix field for backend compatibility
 
   config?: Record<string, unknown>;
 
@@ -287,7 +288,10 @@ export default function AgentsTab({ }: AgentsTabProps) {
           console.log('🔍 Raw agent data from API:', result.data);
           // Transform backend data to match our Agent interface
           const transformedAgents: Agent[] = result.data.map((agent: any) => {
-            console.log('🔍 Processing agent:', agent.name, 'with data:', {
+            // Get agent_prefix from backend (could be in name, agent_prefix, or id field)
+            const agentPrefix = agent.agent_prefix || agent.name || agent.id || '';
+            console.log('🔍 Processing agent:', agent.name || agent.agent_prefix, 'with data:', {
+              agent_prefix: agentPrefix,
               initial_message: agent.initial_message,
               nudge_text: agent.nudge_text,
               nudge_interval: agent.nudge_interval,
@@ -296,8 +300,9 @@ export default function AgentsTab({ }: AgentsTabProps) {
               max_call_duration: agent.max_call_duration
             });
             return {
-              id: agent.name || agent.id || `agent_${Date.now()}`, // Keep the full UUID as ID
-              name: getDisplayName(agent.name || agent.id || 'Unnamed Agent'), // Display only the agent name
+              id: agentPrefix || `agent_${Date.now()}`, // Use agent_prefix as ID (full UUID format)
+              name: getDisplayName(agent.name || agent.agent_prefix || agent.id || 'Unnamed Agent'), // Display only the agent name
+              agent_prefix: agentPrefix, // Store agent_prefix for backend API calls
               status: agent.status || 'draft',
               model: agent.model || 'GPT-4o',
               provider: agent.provider || 'OpenAI',
@@ -743,6 +748,12 @@ Remember: You are the first point of contact for many patients. Your professiona
         // Now POST model and prompt configurations to Dify
         if (difyApiKey) {
           try {
+            // Get app_id from localStorage (stored earlier when Dify agent was created)
+            const appId = localStorage.getItem(`dify_app_id_${difyApiKey}`);
+            if (!appId) {
+              console.warn('⚠️ App ID not found for model configuration. The model config may fail.');
+            }
+            
             console.log('🔧 Posting model configuration to Dify...');
             const modelConfigResponse = await fetch('/api/model-config', {
               method: 'POST',
@@ -754,7 +765,8 @@ Remember: You are the first point of contact for many patients. Your professiona
                 provider: 'langgenius/openai/openai',
                 model: currentModel.toLowerCase(),
                 api_key: currentModelApiKey,
-                chatbot_api_key: difyApiKey
+                chatbot_api_key: difyApiKey,
+                app_id: appId || undefined
               })
             });
 
@@ -815,6 +827,7 @@ Remember: You are the first point of contact for many patients. Your professiona
         const newAgent: Agent = {
           id: agentNameUuid, // Use UUID as the ID
           name: getDisplayName(agentNameUuid), // Display only the agent name
+          agent_prefix: agentNameUuid, // Store agent_prefix for backend API calls
           status: 'active',
           avatar: '🤖',
           description: 'AI Agent - Ready to use',
@@ -1078,7 +1091,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       };
     } else if (provider === '11Labs') {
       backendConfig.elevenlabs = {
-        voice_id: uiConfig.voiceId || 'pNInz6obpgDQGcFmaJgB',
+        voice_id: uiConfig.voiceId || '',
         api_key: uiConfig.apiKey || '',
         model_id: uiConfig.selectedModel || 'eleven_v3', // Use selectedModel instead of hardcoded value
         speed: uiConfig.speedValue || 1.0,
@@ -1278,7 +1291,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       transcriberConfig: agent.stt_config || null,
       // Widget config data
       widgetConfig: {
-        difyApiUrl: agent.chatbot_api ? agent.chatbot_api.replace('/chat-messages', '') : process.env.NEXT_PUBLIC_DIFY_BASE_URL || process.env.NEXT_PUBLIC_CHATBOT_API_URL?.replace('/chat-messages', '') ,
+        difyApiUrl: agent.chatbot_api ? agent.chatbot_api.replace('/chat-messages', '') : (process.env.NEXT_PUBLIC_DIFY_BASE_URL || process.env.NEXT_PUBLIC_CHATBOT_API_URL?.replace('/chat-messages', '') || ''),
         difyApiKey: agent.chatbot_key || ''
       },
       // Tools config data
@@ -1442,9 +1455,11 @@ Remember: You are the first point of contact for many patients. Your professiona
           console.log('✅ Found updated agent, refreshing configuration:', updatedAgent);
 
           // Transform the agent data
+          const agentPrefix = updatedAgent.agent_prefix || updatedAgent.name || updatedAgent.id || '';
           const transformedAgent: Agent = {
-            id: updatedAgent.name || updatedAgent.id || `agent_${Date.now()}`,
-            name: updatedAgent.name || 'Unnamed Agent',
+            id: agentPrefix || `agent_${Date.now()}`,
+            name: getDisplayName(updatedAgent.name || updatedAgent.agent_prefix || updatedAgent.id || 'Unnamed Agent'),
+            agent_prefix: agentPrefix, // Store agent_prefix for backend API calls
             status: updatedAgent.status || 'draft',
             model: updatedAgent.model || 'Unknown Model',
             provider: updatedAgent.provider || 'Unknown Provider',
@@ -1844,7 +1859,7 @@ Remember: You are the first point of contact for many patients. Your professiona
                     {/* Voice Chat Component - Hidden UI, only props */}
                     {showVoiceChat && selectedAgent && (
                       <LiveKitVoiceChat
-                        agentName={selectedAgent.id}
+                        agentName={selectedAgent.agent_prefix || selectedAgent.id}
                         isDarkMode={isDarkMode}
                         startCall={startVoiceCall}
                         endCall={endVoiceCall}

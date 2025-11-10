@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Configuration from environment variables
-const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN || "https://demos.xpectrum-ai.com";
-const SERVICE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN || "https://demos.xpectrum-ai.com";
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL || "ghosh.ishw@gmail.com";
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD || "Ghosh1@*123";
-const WS_ID = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID || "661d95ae-77ee-4cfd-88e3-e6f3ef8d638b";
+const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN;
+const SERVICE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN;
+if (!CONSOLE_ORIGIN || !SERVICE_ORIGIN) {
+  throw new Error('NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN is not configured');
+}
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD;
+const WS_ID = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID;
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD || !WS_ID) {
+  throw new Error('NEXT_PUBLIC_DIFY_ADMIN_EMAIL, NEXT_PUBLIC_DIFY_ADMIN_PASSWORD, or NEXT_PUBLIC_DIFY_WORKSPACE_ID is not configured');
+}
 
 // Helper function to get auth token
 async function getAuthToken() {
@@ -165,13 +171,12 @@ export async function POST(
           segmentation: {
             separator: '\\n\\n',
             max_tokens: chunkSettings.chunkSize || 1024,
-            chunk_overlap: chunkSettings.chunkOverlap || 50,
             hierarchical: {
               enabled: true,
               max_parent_tokens: chunkSettings.maxSectionSize || 4000,
               overlap_tokens: Math.floor((chunkSettings.chunkSize || 1024) * (chunkSettings.chunkOverlap || 50) / 100)
             }
-          }
+          } as any
         }
       };
     }

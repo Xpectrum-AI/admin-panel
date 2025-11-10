@@ -51,7 +51,7 @@ const adminApp = new digitalocean.App("admin-panel-app-dev", {
                 },
                 {
                     key: "NEXT_PUBLIC_PROPELAUTH_URL",
-                    value: adminConfig.get("propelauthUrl") || "https://auth.admin-dev.xpectrum-ai.com"
+                    value: adminConfig.require("propelauthUrl")
                 },
                 {
                     key: "NEXT_PUBLIC_PROPELAUTH_API_KEY",
@@ -59,7 +59,7 @@ const adminApp = new digitalocean.App("admin-panel-app-dev", {
                 },
                 {
                     key: "NEXT_PUBLIC_LIVE_API_URL",
-                    value: adminConfig.get("liveApiUrl") || "https://fastapi-server-app-dev-lxd97.ondigitalocean.app/"
+                    value: adminConfig.require("liveApiUrl")
                 },
                 {
                     key: "NEXT_PUBLIC_LIVE_API_KEY",
@@ -113,11 +113,11 @@ const devApp = new digitalocean.App("developer-dashboard-app-dev", {
                 },
                 {
                     key: "NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL",
-                    value: devConfig.get("propelauthUrl") || "https://auth.developer-dev.xpectrum-ai.com"
+                    value: devConfig.require("propelauthUrl")
                 },
                 {
                     key: "NEXT_PUBLIC_API_BASE_URL",
-                    value: devConfig.get("apiBaseUrl") || "http://localhost:3001/api"
+                    value: devConfig.require("apiBaseUrl")
                 },
                 {
                     key: "NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY",
@@ -129,11 +129,11 @@ const devApp = new digitalocean.App("developer-dashboard-app-dev", {
                 },
                 {
                     key: "NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN",
-                    value: devConfig.get("difyConsoleOrigin") || "https://demos.xpectrum-ai.com/"
+                    value: devConfig.require("difyConsoleOrigin")
                 },
                 {
                     key: "NEXT_PUBLIC_DIFY_ADMIN_EMAIL",
-                    value: devConfig.get("difyAdminEmail") || "ghosh.ishw@gmail.com"
+                    value: devConfig.require("difyAdminEmail")
                 },
                 {
                     key: "NEXT_PUBLIC_DIFY_ADMIN_PASSWORD",
@@ -141,11 +141,11 @@ const devApp = new digitalocean.App("developer-dashboard-app-dev", {
                 },
                 {
                     key: "NEXT_PUBLIC_DIFY_WORKSPACE_ID",
-                    value: devConfig.get("difyWorkspaceId") || "661d95ae-77ee-4cfd-88e3-e6f3ef8d638b"
+                    value: devConfig.require("difyWorkspaceId")
                 },
                 {
                     key: "NEXT_PUBLIC_DIFY_BASE_URL",
-                    value: devConfig.get("difyBaseUrl") || "https://demos.xpectrum-ai.com/v1"
+                    value: devConfig.require("difyBaseUrl")
                 },
                 {
                     key: "NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY",
@@ -161,7 +161,7 @@ const devApp = new digitalocean.App("developer-dashboard-app-dev", {
                 },
                 {
                     key: "NEXT_PUBLIC_CHATBOT_API_URL",
-                    value: devConfig.get("chatbotApiUrl") || "https://demos.xpectrum-ai.com/v1/chat-messages"
+                    value: devConfig.require("chatbotApiUrl")
                 },
                 {
                     key: "NEXT_PUBLIC_CHATBOT_API_KEY",
@@ -189,15 +189,15 @@ const devApp = new digitalocean.App("developer-dashboard-app-dev", {
                 },
                 {
                     key: "NEXT_PUBLIC_CARTESIA_VOICE_ID",
-                    value: devConfig.get("cartesiaVoiceId") || "e8e5fffb-252c-436d-b842-8879b84445b6"
+                    value: devConfig.require("cartesiaVoiceId")
                 },
                 {
                     key: "NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID",
-                    value: devConfig.get("elevenLabsVoiceId") || "pNInz6obpgDQGcFmaJgB"
+                    value: devConfig.require("elevenLabsVoiceId")
                 },
                 {
                     key: "NEXT_PUBLIC_LIVE_API_URL",
-                    value: devConfig.get("liveApiUrl") || "https://fastapi-server-app-dev-lxd97.ondigitalocean.app/"
+                    value: devConfig.require("liveApiUrl")
                 },
                 {
                     key: "NEXT_PUBLIC_LIVE_API_KEY",

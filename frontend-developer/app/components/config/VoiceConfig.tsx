@@ -1054,7 +1054,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       case '11Labs':
         newApiKey = defaultApiKeys.elevenlabs || '';
         // Preserve existing voice ID if user has entered one, otherwise use default
-        newVoiceId = existingVoiceId || 'pNInz6obpgDQGcFmaJgB';
+        newVoiceId = existingVoiceId || '';
         break;
       case 'Cartesia':
         newApiKey = defaultApiKeys.cartesia || '';

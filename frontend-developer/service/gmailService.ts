@@ -2,8 +2,11 @@
 
 // Shared API utility functions
 const getApiBaseUrl = (): string => {
-  // Use specific CloudFront URL for Gmail operations
-  return 'https://d2batbqeoehmxe.cloudfront.net';
+  const apiBaseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
+  if (!apiBaseUrl) {
+    throw new Error('NEXT_PUBLIC_LIVE_API_URL is not configured');
+  }
+  return apiBaseUrl;
 };
 
 // Generic API request function
