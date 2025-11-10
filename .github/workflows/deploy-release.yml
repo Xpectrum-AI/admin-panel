@@ -48,6 +48,26 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create release branch
+        run: |
+          # Generate branch name with format: release-YYYYWW (year + week number)
+          BRANCH_NAME="release-$(date +%Y%V)"
+          echo "Creating release branch: $BRANCH_NAME"
+          
+          # Create and checkout the new branch
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b $BRANCH_NAME
+          
+          # Push the branch to remote
+          git push -u origin $BRANCH_NAME
+          
+          echo "✅ Created and pushed branch: $BRANCH_NAME"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
 
       - name: Setup Node.js for Pulumi
         uses: actions/setup-node@v4

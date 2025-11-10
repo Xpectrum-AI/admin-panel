@@ -48,6 +48,26 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create release branch
+        run: |
+          # Generate branch name with format: release-YYYYWW (year + week number)
+          BRANCH_NAME="release-$(date +%Y%V)"
+          echo "Creating release branch: $BRANCH_NAME"
+          
+          # Create and checkout the new branch
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b $BRANCH_NAME
+          
+          # Push the branch to remote
+          git push -u origin $BRANCH_NAME
+          
+          echo "✅ Created and pushed branch: $BRANCH_NAME"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
 
       - name: Setup Node.js for Pulumi
         uses: actions/setup-node@v4
@@ -63,90 +83,39 @@ jobs:
         run: |
           doctl registry login --expiry-seconds 1200
 
-      - name: Build and push Main Frontend image to DOCR
-        env:
-          NEXT_PUBLIC_LIVE_API_URL: ${{ vars.PRODUCTION_LIVE_API_URL }}
-          NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.PRODUCTION_PROPELAUTH_URL }}
-          NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.PRODUCTION_LIVE_API_KEY }}
-          NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_PROPELAUTH_API_KEY }}
-          NEXT_PUBLIC_SUPER_ADMIN_ORG_ID: ${{ secrets.PRODUCTION_SUPER_ADMIN_ORG_ID }}
+      - name: Pull and tag Release Main Frontend image for Production
         run: |
-          # Use the specific registry name
-          REPO="registry.digitalocean.com/xpectrum-main-app-dev/admin-prod"
+          # Pull the release image and tag it for production
+          RELEASE_REPO="registry.digitalocean.com/xpectrum-main-app-dev/admin-release"
+          PROD_REPO="registry.digitalocean.com/xpectrum-main-app-dev/admin-prod"
+          
+          echo "📥 Pulling release image: $RELEASE_REPO:latest"
+          docker pull $RELEASE_REPO:latest
+          
+          echo "🏷️ Tagging release image as production: $PROD_REPO:latest"
+          docker tag $RELEASE_REPO:latest $PROD_REPO:latest
+          
+          echo "📤 Pushing production image: $PROD_REPO:latest"
+          docker push $PROD_REPO:latest
+          
+          echo "✅ Successfully tagged and pushed release image to production"
 
-          # Build, tag, and push main frontend with environment variables
-          cd frontend
-          docker build \
-            --build-arg NEXT_PUBLIC_LIVE_API_URL="${NEXT_PUBLIC_LIVE_API_URL}" \
-            --build-arg NEXT_PUBLIC_PROPELAUTH_URL="${NEXT_PUBLIC_PROPELAUTH_URL}" \
-            --build-arg NEXT_PUBLIC_LIVE_API_KEY="${NEXT_PUBLIC_LIVE_API_KEY}" \
-            --build-arg NEXT_PUBLIC_PROPELAUTH_API_KEY="${NEXT_PUBLIC_PROPELAUTH_API_KEY}" \
-            --build-arg NEXT_PUBLIC_SUPER_ADMIN_ORG_ID="${NEXT_PUBLIC_SUPER_ADMIN_ORG_ID}" \
-            -t admin-panel-prod:latest .
-          docker tag admin-panel-prod:latest $REPO:latest
-          docker push $REPO:latest
-          cd ..
-
-      - name: Build and push Developer Frontend image to DOCR
-        env:
-          NEXT_PUBLIC_LIVE_API_URL: ${{ vars.PRODUCTION_LIVE_API_URL }}
-          NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL: ${{ vars.PRODUCTION_DEVELOPMENT_PROPELAUTH_URL }}
-          NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.PRODUCTION_LIVE_API_KEY }}
-          NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_DEVELOPMENT_PROPELAUTH_API_KEY }}
-          NEXT_PUBLIC_MODEL_API_BASE_URL: ${{ vars.PRODUCTION_MODEL_API_BASE_URL }}
-          NEXT_PUBLIC_MODEL_API_KEY: ${{ secrets.PRODUCTION_MODEL_API_KEY }}
-          NEXT_PUBLIC_CHATBOT_API_URL: ${{ vars.PRODUCTION_CHATBOT_API_URL }}
-          NEXT_PUBLIC_CHATBOT_API_KEY: ${{ secrets.PRODUCTION_CHATBOT_API_KEY }}
-          NEXT_PUBLIC_ELEVEN_LABS_API_KEY: ${{ secrets.PRODUCTION_ELEVEN_LABS_API_KEY }}
-          NEXT_PUBLIC_OPEN_AI_API_KEY: ${{ secrets.PRODUCTION_OPEN_AI_API_KEY }}
-          NEXT_PUBLIC_WHISPER_API_KEY: ${{ secrets.PRODUCTION_WHISPER_API_KEY }}
-          NEXT_PUBLIC_DEEPGRAM_API_KEY: ${{ secrets.PRODUCTION_DEEPGRAM_API_KEY }}
-          NEXT_PUBLIC_CARTESIA_API_KEY: ${{ secrets.PRODUCTION_CARTESIA_API_KEY }}
-          NEXT_PUBLIC_CARTESIA_VOICE_ID: ${{ vars.PRODUCTION_CARTESIA_VOICE_ID }}
-          NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID: ${{ vars.PRODUCTION_ELEVEN_LABS_VOICE_ID }}
-          NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN: ${{ vars.PRODUCTION_DIFY_CONSOLE_ORIGIN }}
-          NEXT_PUBLIC_DIFY_ADMIN_EMAIL: ${{ vars.PRODUCTION_DIFY_ADMIN_EMAIL }}
-          NEXT_PUBLIC_DIFY_ADMIN_PASSWORD: ${{ secrets.PRODUCTION_DIFY_ADMIN_PASSWORD }}
-          NEXT_PUBLIC_DIFY_WORKSPACE_ID: ${{ vars.PRODUCTION_DIFY_WORKSPACE_ID }}
-          NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY: ${{ secrets.PRODUCTION_MODEL_OPEN_AI_API_KEY }}
-          NEXT_PUBLIC_MODEL_GROQ_API_KEY: ${{ secrets.PRODUCTION_MODEL_GROQ_API_KEY }}
-          NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY: ${{ secrets.PRODUCTION_MODEL_ANTHROPIC_API_KEY }}
-          NEXT_PUBLIC_DIFY_BASE_URL: ${{ vars.PRODUCTION_DIFY_BASE_URL }}
+      - name: Pull and tag Release Developer Frontend image for Production
         run: |
-          # Use the specific registry name
-          REPO="registry.digitalocean.com/xpectrum-main-app-dev/developer-prod"
-
-          # Build, tag, and push developer frontend with environment variables
-          cd frontend-developer
-          docker build \
-            --no-cache \
-            --build-arg NEXT_PUBLIC_LIVE_API_URL="${NEXT_PUBLIC_LIVE_API_URL}" \
-            --build-arg NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL="${NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL}" \
-            --build-arg NEXT_PUBLIC_LIVE_API_KEY="${NEXT_PUBLIC_LIVE_API_KEY}" \
-            --build-arg NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY="${NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY}" \
-            --build-arg NEXT_PUBLIC_MODEL_API_BASE_URL="${NEXT_PUBLIC_MODEL_API_BASE_URL}" \
-            --build-arg NEXT_PUBLIC_MODEL_API_KEY="${NEXT_PUBLIC_MODEL_API_KEY}" \
-            --build-arg NEXT_PUBLIC_CHATBOT_API_URL="${NEXT_PUBLIC_CHATBOT_API_URL}" \
-            --build-arg NEXT_PUBLIC_CHATBOT_API_KEY="${NEXT_PUBLIC_CHATBOT_API_KEY}" \
-            --build-arg NEXT_PUBLIC_ELEVEN_LABS_API_KEY="${NEXT_PUBLIC_ELEVEN_LABS_API_KEY}" \
-            --build-arg NEXT_PUBLIC_OPEN_AI_API_KEY="${NEXT_PUBLIC_OPEN_AI_API_KEY}" \
-            --build-arg NEXT_PUBLIC_WHISPER_API_KEY="${NEXT_PUBLIC_WHISPER_API_KEY}" \
-            --build-arg NEXT_PUBLIC_DEEPGRAM_API_KEY="${NEXT_PUBLIC_DEEPGRAM_API_KEY}" \
-            --build-arg NEXT_PUBLIC_CARTESIA_API_KEY="${NEXT_PUBLIC_CARTESIA_API_KEY}" \
-            --build-arg NEXT_PUBLIC_CARTESIA_VOICE_ID="${NEXT_PUBLIC_CARTESIA_VOICE_ID}" \
-            --build-arg NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID="${NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID}" \
-            --build-arg NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN="${NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN}" \
-            --build-arg NEXT_PUBLIC_DIFY_ADMIN_EMAIL="${NEXT_PUBLIC_DIFY_ADMIN_EMAIL}" \
-            --build-arg NEXT_PUBLIC_DIFY_ADMIN_PASSWORD="${NEXT_PUBLIC_DIFY_ADMIN_PASSWORD}" \
-            --build-arg NEXT_PUBLIC_DIFY_WORKSPACE_ID="${NEXT_PUBLIC_DIFY_WORKSPACE_ID}" \
-            --build-arg NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY="${NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY}" \
-            --build-arg NEXT_PUBLIC_MODEL_GROQ_API_KEY="${NEXT_PUBLIC_MODEL_GROQ_API_KEY}" \
-            --build-arg NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY="${NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY}" \
-            --build-arg NEXT_PUBLIC_DIFY_BASE_URL="${NEXT_PUBLIC_DIFY_BASE_URL}" \
-            -t developer-dashboard-prod:latest .
-          docker tag developer-dashboard-prod:latest $REPO:latest
-          docker push $REPO:latest
-          cd ..
+          # Pull the release image and tag it for production
+          RELEASE_REPO="registry.digitalocean.com/xpectrum-main-app-dev/developer-release"
+          PROD_REPO="registry.digitalocean.com/xpectrum-main-app-dev/developer-prod"
+          
+          echo "📥 Pulling release image: $RELEASE_REPO:latest"
+          docker pull $RELEASE_REPO:latest
+          
+          echo "🏷️ Tagging release image as production: $PROD_REPO:latest"
+          docker tag $RELEASE_REPO:latest $PROD_REPO:latest
+          
+          echo "📤 Pushing production image: $PROD_REPO:latest"
+          docker push $PROD_REPO:latest
+          
+          echo "✅ Successfully tagged and pushed release image to production"
 
       - name: Install Pulumi CLI
         uses: pulumi/actions@v4
