@@ -187,16 +187,16 @@ jobs:
           # Set region (required - from env variable)
           pulumi config set index:region ${{ env.DIGITALOCEAN_REGION }}
           
-          # Admin Panel secrets - all from GitHub secrets
-          pulumi config set admin:propelauthApiKey "${{ secrets.DEV_PROPELAUTH_API_KEY }}" --secret
-          pulumi config set admin:liveApiKey "${{ secrets.DEV_LIVE_API_KEY }}" --secret
-          pulumi config set admin:propelauthUrl "${{ vars.DEV_PROPELAUTH_URL }}"
-          pulumi config set admin:liveApiUrl "${{ vars.DEV_LIVE_API_URL }}"
-          pulumi config set admin:superAdminOrgId "${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}"
-          
-          # Developer Dashboard secrets - all from GitHub secrets
+          # Admin Panel and Developer Dashboard share the same namespace (dev:)
+          # Both use the same propelauthApiKey and propelauthUrl config keys
+          # Using Developer Dashboard values since they're more specific
           pulumi config set dev:propelauthApiKey "${{ secrets.DEV_DEVELOPER_PROPELAUTH_API_KEY }}" --secret
           pulumi config set dev:liveApiKey "${{ secrets.DEV_LIVE_API_KEY }}" --secret
+          pulumi config set dev:propelauthUrl "${{ vars.DEV_DEVELOPER_PROPELAUTH_URL }}"
+          pulumi config set dev:liveApiUrl "${{ vars.DEV_LIVE_API_URL }}"
+          pulumi config set dev:superAdminOrgId "${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}"
+          
+          # Developer Dashboard secrets - all from GitHub secrets
           pulumi config set dev:difyAdminPassword "${{ secrets.DEV_DIFY_ADMIN_PASSWORD }}" --secret
           pulumi config set dev:modelOpenAiApiKey "${{ secrets.DEV_MODEL_OPEN_AI_API_KEY }}" --secret
           pulumi config set dev:modelGroqApiKey "${{ secrets.DEV_MODEL_GROQ_API_KEY }}" --secret
@@ -210,7 +210,7 @@ jobs:
           pulumi config set dev:mongodbUrl "${{ secrets.DEV_MONGODB_URL }}" --secret
           
           # Developer Dashboard config values - all from GitHub vars
-          pulumi config set dev:propelauthUrl "${{ vars.DEV_DEVELOPER_PROPELAUTH_URL }}"
+          # Note: propelauthUrl already set above (shared with Admin Panel)
           pulumi config set dev:apiBaseUrl "${{ vars.DEV_MODEL_API_BASE_URL }}"
           pulumi config set dev:enableEmailVerification "true"
           pulumi config set dev:difyConsoleOrigin "${{ vars.DEV_DIFY_CONSOLE_ORIGIN }}"
