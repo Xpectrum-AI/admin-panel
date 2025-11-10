@@ -1,13 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { initBaseAuth } from "@propelauth/node";
 
-const auth = initBaseAuth({
-  authUrl: process.env.NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL!,
-  apiKey: process.env.NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY!,
-});
-
 export async function POST(request: NextRequest) {
   try {
+    // Initialize auth at runtime
+    const authUrl = process.env.NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL;
+    const apiKey = process.env.NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY;
+    
+    if (!authUrl || !apiKey) {
+      return NextResponse.json(
+        { error: "NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL or NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY is not configured" },
+        { status: 500 }
+      );
+    }
+
+    const auth = initBaseAuth({
+      authUrl,
+      apiKey,
+    });
+
     const body = await request.json();
     const { username, firstName, lastName } = body;
 
