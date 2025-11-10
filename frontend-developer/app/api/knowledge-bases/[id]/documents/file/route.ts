@@ -1,20 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Configuration from environment variables
-const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN;
-const SERVICE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN;
-if (!CONSOLE_ORIGIN || !SERVICE_ORIGIN) {
-  throw new Error('NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN is not configured');
-}
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL;
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD;
-const WS_ID = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID;
-if (!ADMIN_EMAIL || !ADMIN_PASSWORD || !WS_ID) {
-  throw new Error('NEXT_PUBLIC_DIFY_ADMIN_EMAIL, NEXT_PUBLIC_DIFY_ADMIN_PASSWORD, or NEXT_PUBLIC_DIFY_WORKSPACE_ID is not configured');
-}
-
 // Helper function to get dataset API key
 async function getDatasetApiKey(datasetId: string) {
+  const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN;
+  const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL;
+  const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD;
+  const WS_ID = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID;
+  
+  if (!CONSOLE_ORIGIN || !ADMIN_EMAIL || !ADMIN_PASSWORD || !WS_ID) {
+    throw new Error('NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN, NEXT_PUBLIC_DIFY_ADMIN_EMAIL, NEXT_PUBLIC_DIFY_ADMIN_PASSWORD, or NEXT_PUBLIC_DIFY_WORKSPACE_ID is not configured');
+  }
+
   const loginResponse = await fetch(`${CONSOLE_ORIGIN}/console/api/login`, {
     method: 'POST',
     headers: {
@@ -73,6 +69,15 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const SERVICE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN;
+    
+    if (!SERVICE_ORIGIN) {
+      return NextResponse.json(
+        { error: 'NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN is not configured' },
+        { status: 500 }
+      );
+    }
+    
     const { id } = await params;
     const formData = await request.formData();
     

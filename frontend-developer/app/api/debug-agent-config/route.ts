@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const DIFY_BASE_URL = process.env.NEXT_PUBLIC_DIFY_BASE_URL;
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL;
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD;
-const WS_ID = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID;
-if (!DIFY_BASE_URL || !ADMIN_EMAIL || !ADMIN_PASSWORD || !WS_ID) {
-  throw new Error('NEXT_PUBLIC_DIFY_BASE_URL, NEXT_PUBLIC_DIFY_ADMIN_EMAIL, NEXT_PUBLIC_DIFY_ADMIN_PASSWORD, or NEXT_PUBLIC_DIFY_WORKSPACE_ID is not configured');
-}
-
 async function getAuthToken() {
+  const DIFY_BASE_URL = process.env.NEXT_PUBLIC_DIFY_BASE_URL;
+  const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL;
+  const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD;
+  
+  if (!DIFY_BASE_URL || !ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    throw new Error('NEXT_PUBLIC_DIFY_BASE_URL, NEXT_PUBLIC_DIFY_ADMIN_EMAIL, or NEXT_PUBLIC_DIFY_ADMIN_PASSWORD is not configured');
+  }
+
   const loginResponse = await fetch(`${DIFY_BASE_URL.replace('/v1', '')}/console/api/login`, {
     method: 'POST',
     headers: {
@@ -31,6 +31,20 @@ async function getAuthToken() {
 export async function GET(request: NextRequest) {
   try {
     console.log('🔍 Debug: Getting agent configuration from Dify');
+    
+    // Validate environment variables at runtime
+    const DIFY_BASE_URL = process.env.NEXT_PUBLIC_DIFY_BASE_URL;
+    const WS_ID = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID;
+    
+    if (!DIFY_BASE_URL || !WS_ID) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'NEXT_PUBLIC_DIFY_BASE_URL or NEXT_PUBLIC_DIFY_WORKSPACE_ID is not configured'
+        },
+        { status: 500 }
+      );
+    }
     
     // Get authenticaton token
     const token = await getAuthToken();
