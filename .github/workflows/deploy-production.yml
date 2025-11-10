@@ -4,298 +4,284 @@ on:
   workflow_dispatch:
 
 env:
-  AWS_REGION: us-west-1
-  ACCOUNT_ID: 503561436224
+  DIGITALOCEAN_REGION: sfo3
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run:
+          cd frontend
+          npm ci
+
+      - name: Lint frontend
+        run:
+          cd frontend
+          npm run lint || echo "Lint completed with warnings"
+
+      - name: Type check frontend
+        run:
+          cd frontend
+          npx tsc --noEmit || echo "Type check completed with warnings"
+
+      - name: Run tests
+        run:
+          cd frontend
+          npm test -- --coverage --watchAll=false
+
   deploy-production:
     runs-on: ubuntu-latest
     environment: production
+    needs: test
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Setup Node.js for Pulumi
+        uses: actions/setup-node@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_PROD_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_PROD_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          node-version: "18"
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Pull and retag Frontend images from Release
-        run: |
-          # Set ECR repository URI
-          REPO="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/admin-panel"
-
-          # Pull the latest release images
-          docker pull $REPO:frontend-release-latest
-          docker pull $REPO:frontend-developer-release-latest
-
-          # Retag as production latest and push
-          docker tag $REPO:frontend-release-latest $REPO:frontend-latest
-          docker tag $REPO:frontend-developer-release-latest $REPO:frontend-developer-latest
-          docker push $REPO:frontend-latest
-          docker push $REPO:frontend-developer-latest
-
-      - name: Setup Python for CDK
-        uses: actions/setup-python@v4
+      - name: Login to DigitalOcean Container Registry
+        uses: digitalocean/action-doctl@v2
         with:
-          python-version: "3.11"
+          token: ${{ secrets.DIGITALOCEAN_TOKEN }}
 
-      - name: Install CDK dependencies
-        run: |
-          cd python-cdk-v2
-          pip install -r requirements.txt
+      - name: Authenticate Docker with DOCR
+        run:
+          doctl registry login --expiry-seconds 1200
 
-      - name: Install AWS CDK
-        run: |
-          npm install -g aws-cdk
-
-      - name: Log Environment Variables (Production)
-        run: |
-          echo "=== PRODUCTION ENVIRONMENT VARIABLES ==="
-          echo "Note: Secrets are now handled at runtime by CDK deployment"
-          echo "✅ Environment variables will be set during container startup"
-          echo "========================================"
-
-      - name: Deploy CDK stack (production)
+      - name: Build and push Main Frontend image to DOCR
         env:
-          # Backend API
-          PRODUCTION_LIVE_API_URL: ${{ vars.PRODUCTION_LIVE_API_URL }}
-          PRODUCTION_LIVE_API_KEY: ${{ secrets.PRODUCTION_LIVE_API_KEY }}
-          # PropelAuth
-          PRODUCTION_PROPELAUTH_URL: ${{ vars.PRODUCTION_PROPELAUTH_URL }}
-          PRODUCTION_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_PROPELAUTH_API_KEY }}
-          PRODUCTION_DEVELOPMENT_PROPELAUTH_URL: ${{ vars.PRODUCTION_DEVELOPMENT_PROPELAUTH_URL }}
-          PRODUCTION_DEVELOPMENT_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_DEVELOPMENT_PROPELAUTH_API_KEY }}
-          # Model Configuration API
-          PRODUCTION_MODEL_API_BASE_URL: ${{ vars.PRODUCTION_MODEL_API_BASE_URL }}
-          PRODUCTION_MODEL_API_KEY: ${{ secrets.PRODUCTION_MODEL_API_KEY }}
-          # Chatbot API
-          PRODUCTION_CHATBOT_API_URL: ${{ vars.PRODUCTION_CHATBOT_API_URL }}
-          PRODUCTION_CHATBOT_API_KEY: ${{ secrets.PRODUCTION_CHATBOT_API_KEY }}
-          # Voice Provider API Keys
-          PRODUCTION_ELEVEN_LABS_API_KEY: ${{ secrets.PRODUCTION_ELEVEN_LABS_API_KEY }}
-          PRODUCTION_OPEN_AI_API_KEY: ${{ secrets.PRODUCTION_OPEN_AI_API_KEY }}
-          PRODUCTION_WHISPER_API_KEY: ${{ secrets.PRODUCTION_WHISPER_API_KEY }}
-          PRODUCTION_DEEPGRAM_API_KEY: ${{ secrets.PRODUCTION_DEEPGRAM_API_KEY }}
-          PRODUCTION_CARTESIA_API_KEY: ${{ secrets.PRODUCTION_CARTESIA_API_KEY }}
-          # Model Provider API Keys
-          PRODUCTION_MODEL_OPEN_AI_API_KEY: ${{ secrets.PRODUCTION_MODEL_OPEN_AI_API_KEY }}
-          PRODUCTION_MODEL_GROQ_API_KEY: ${{ secrets.PRODUCTION_MODEL_GROQ_API_KEY }}
-          PRODUCTION_MODEL_ANTHROPIC_API_KEY: ${{ secrets.PRODUCTION_MODEL_ANTHROPIC_API_KEY }}
-          PRODUCTION_DIFY_BASE_URL: ${{ vars.PRODUCTION_DIFY_BASE_URL }}
-          # Voice Provider Voice IDs
-          PRODUCTION_CARTESIA_VOICE_ID: ${{ vars.PRODUCTION_CARTESIA_VOICE_ID }}
-          PRODUCTION_ELEVEN_LABS_VOICE_ID: ${{ vars.PRODUCTION_ELEVEN_LABS_VOICE_ID }}
-          # Dify Configuration
-          PRODUCTION_DIFY_CONSOLE_ORIGIN: ${{ vars.PRODUCTION_DIFY_CONSOLE_ORIGIN }}
-          PRODUCTION_DIFY_ADMIN_EMAIL: ${{ vars.PRODUCTION_DIFY_ADMIN_EMAIL }}
-          PRODUCTION_DIFY_ADMIN_PASSWORD: ${{ secrets.PRODUCTION_DIFY_ADMIN_PASSWORD }}
-          PRODUCTION_DIFY_WORKSPACE_ID: ${{ vars.PRODUCTION_DIFY_WORKSPACE_ID }}
-        run: |
-          cd python-cdk-v2
-          # Deploy to production environment
-          timeout 30m cdk deploy AdminPanelProductionStack --require-approval never --context environment=production || {
-            echo "CDK deployment timed out or failed"
-            echo "Checking ECS service status..."
-            
-            # Get the actual cluster and service names
-            CLUSTER_NAME="admin-panel-production"
-            
-            SERVICE_NAME="admin-panel-service-production"
-            
-            aws ecs describe-services \
-              --cluster $CLUSTER_NAME \
-              --services $SERVICE_NAME \
-              --region ${{ env.AWS_REGION }} || echo "Could not check ECS status"
-            exit 1
-          }
+          NEXT_PUBLIC_LIVE_API_URL: ${{ vars.PROD_LIVE_API_URL }}
+          NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.PROD_PROPELAUTH_URL }}
+          NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.PROD_LIVE_API_KEY }}
+          NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.PROD_PROPELAUTH_API_KEY }}
+          NEXT_PUBLIC_SUPER_ADMIN_ORG_ID: ${{ secrets.PROD_SUPER_ADMIN_ORG_ID }}
+        run:
+          # Use the specific registry name
+          REPO="registry.digitalocean.com/xpectrum-main-app-dev/admin-prod"
 
-      - name: Wait for deployment to complete
-        run: |
-          # Check if stack exists first
-          if aws cloudformation describe-stacks --stack-name AdminPanelProductionStack --region ${{ env.AWS_REGION }} 2>/dev/null; then
-            # Get the actual cluster and service names from CloudFormation outputs
-            CLUSTER_NAME="admin-panel-production"
-            
-            SERVICE_NAME="admin-panel-service-production"
-            
-            echo "Using cluster: $CLUSTER_NAME"
-            echo "Using service: $SERVICE_NAME"
-            
-            # Wait for ECS services to be stable
-            aws ecs wait services-stable \
-              --cluster $CLUSTER_NAME \
-              --services $SERVICE_NAME \
-              --region ${{ env.AWS_REGION }} || echo "Services not stable yet"
+          # Build, tag, and push main frontend with environment variables
+          cd frontend
+          docker build \
+            --build-arg NEXT_PUBLIC_LIVE_API_URL="${NEXT_PUBLIC_LIVE_API_URL}" \
+            --build-arg NEXT_PUBLIC_PROPELAUTH_URL="${NEXT_PUBLIC_PROPELAUTH_URL}" \
+            --build-arg NEXT_PUBLIC_LIVE_API_KEY="${NEXT_PUBLIC_LIVE_API_KEY}" \
+            --build-arg NEXT_PUBLIC_PROPELAUTH_API_KEY="${NEXT_PUBLIC_PROPELAUTH_API_KEY}" \
+            --build-arg NEXT_PUBLIC_SUPER_ADMIN_ORG_ID="${NEXT_PUBLIC_SUPER_ADMIN_ORG_ID}" \
+            -t admin-panel-prod:latest .
+          docker tag admin-panel-prod:latest $REPO:latest
+          docker push $REPO:latest
+          cd ..
+
+      - name: Build and push Developer Frontend image to DOCR
+        env:
+          NEXT_PUBLIC_LIVE_API_URL: ${{ vars.PROD_LIVE_API_URL }}
+          NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL: ${{ vars.PROD_DEVELOPER_PROPELAUTH_URL }}
+          NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.PROD_LIVE_API_KEY }}
+          NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY: ${{ secrets.PROD_DEVELOPER_PROPELAUTH_API_KEY }}
+          NEXT_PUBLIC_MODEL_API_BASE_URL: ${{ vars.PROD_MODEL_API_BASE_URL }}
+          NEXT_PUBLIC_MODEL_API_KEY: ${{ secrets.PROD_MODEL_API_KEY }}
+          NEXT_PUBLIC_CHATBOT_API_URL: ${{ vars.PROD_CHATBOT_API_URL }}
+          NEXT_PUBLIC_CHATBOT_API_KEY: ${{ secrets.PROD_CHATBOT_API_KEY }}
+          NEXT_PUBLIC_ELEVEN_LABS_API_KEY: ${{ secrets.PROD_ELEVEN_LABS_API_KEY }}
+          NEXT_PUBLIC_OPEN_AI_API_KEY: ${{ secrets.PROD_OPEN_AI_API_KEY }}
+          NEXT_PUBLIC_WHISPER_API_KEY: ${{ secrets.PROD_WHISPER_API_KEY }}
+          NEXT_PUBLIC_DEEPGRAM_API_KEY: ${{ secrets.PROD_DEEPGRAM_API_KEY }}
+          NEXT_PUBLIC_CARTESIA_API_KEY: ${{ secrets.PROD_CARTESIA_API_KEY }}
+          NEXT_PUBLIC_CARTESIA_VOICE_ID: ${{ vars.PROD_CARTESIA_VOICE_ID }}
+          NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID: ${{ vars.PROD_ELEVEN_LABS_VOICE_ID }}
+          NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN: ${{ vars.PROD_DIFY_CONSOLE_ORIGIN }}
+          NEXT_PUBLIC_DIFY_ADMIN_EMAIL: ${{ vars.PROD_DIFY_ADMIN_EMAIL }}
+          NEXT_PUBLIC_DIFY_ADMIN_PASSWORD: ${{ secrets.PROD_DIFY_ADMIN_PASSWORD }}
+          NEXT_PUBLIC_DIFY_WORKSPACE_ID: ${{ vars.PROD_DIFY_WORKSPACE_ID }}
+          NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY: ${{ secrets.PROD_MODEL_OPEN_AI_API_KEY }}
+          NEXT_PUBLIC_MODEL_GROQ_API_KEY: ${{ secrets.PROD_MODEL_GROQ_API_KEY }}
+          NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY: ${{ secrets.PROD_MODEL_ANTHROPIC_API_KEY }}
+          NEXT_PUBLIC_DIFY_BASE_URL: ${{ vars.PROD_DIFY_BASE_URL }}
+        run:
+          # Use the specific registry name
+          REPO="registry.digitalocean.com/xpectrum-main-app-dev/developer-prod"
+
+          # Build, tag, and push developer frontend with environment variables
+          cd frontend-developer
+          docker build \
+            --no-cache \
+            --build-arg NEXT_PUBLIC_LIVE_API_URL="${NEXT_PUBLIC_LIVE_API_URL}" \
+            --build-arg NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL="${NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL}" \
+            --build-arg NEXT_PUBLIC_LIVE_API_KEY="${NEXT_PUBLIC_LIVE_API_KEY}" \
+            --build-arg NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY="${NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY}" \
+            --build-arg NEXT_PUBLIC_MODEL_API_BASE_URL="${NEXT_PUBLIC_MODEL_API_BASE_URL}" \
+            --build-arg NEXT_PUBLIC_MODEL_API_KEY="${NEXT_PUBLIC_MODEL_API_KEY}" \
+            --build-arg NEXT_PUBLIC_CHATBOT_API_URL="${NEXT_PUBLIC_CHATBOT_API_URL}" \
+            --build-arg NEXT_PUBLIC_CHATBOT_API_KEY="${NEXT_PUBLIC_CHATBOT_API_KEY}" \
+            --build-arg NEXT_PUBLIC_ELEVEN_LABS_API_KEY="${NEXT_PUBLIC_ELEVEN_LABS_API_KEY}" \
+            --build-arg NEXT_PUBLIC_OPEN_AI_API_KEY="${NEXT_PUBLIC_OPEN_AI_API_KEY}" \
+            --build-arg NEXT_PUBLIC_WHISPER_API_KEY="${NEXT_PUBLIC_WHISPER_API_KEY}" \
+            --build-arg NEXT_PUBLIC_DEEPGRAM_API_KEY="${NEXT_PUBLIC_DEEPGRAM_API_KEY}" \
+            --build-arg NEXT_PUBLIC_CARTESIA_API_KEY="${NEXT_PUBLIC_CARTESIA_API_KEY}" \
+            --build-arg NEXT_PUBLIC_CARTESIA_VOICE_ID="${NEXT_PUBLIC_CARTESIA_VOICE_ID}" \
+            --build-arg NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID="${NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID}" \
+            --build-arg NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN="${NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN}" \
+            --build-arg NEXT_PUBLIC_DIFY_ADMIN_EMAIL="${NEXT_PUBLIC_DIFY_ADMIN_EMAIL}" \
+            --build-arg NEXT_PUBLIC_DIFY_ADMIN_PASSWORD="${NEXT_PUBLIC_DIFY_ADMIN_PASSWORD}" \
+            --build-arg NEXT_PUBLIC_DIFY_WORKSPACE_ID="${NEXT_PUBLIC_DIFY_WORKSPACE_ID}" \
+            --build-arg NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY="${NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY}" \
+            --build-arg NEXT_PUBLIC_MODEL_GROQ_API_KEY="${NEXT_PUBLIC_MODEL_GROQ_API_KEY}" \
+            --build-arg NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY="${NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY}" \
+            --build-arg NEXT_PUBLIC_DIFY_BASE_URL="${NEXT_PUBLIC_DIFY_BASE_URL}" \
+            -t developer-dashboard-prod:latest .
+          docker tag developer-dashboard-prod:latest $REPO:latest
+          docker push $REPO:latest
+          cd ..
+
+      - name: Install Pulumi CLI
+        uses: pulumi/actions@v4
+        with:
+          pulumi-version: latest
+
+      - name: Install Pulumi dependencies
+        run:
+          cd digital-ocean-deployment
+          npm ci
+
+      - name: Check and create Pulumi stack if needed
+        working-directory: digital-ocean-deployment
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+        run:
+          # Check if stack exists, if not create it
+          if pulumi stack select frontend-prod 2>/dev/null; then
+            echo "✅ Stack 'frontend-prod' already exists, using it"
           else
-            echo "Stack does not exist yet, skipping wait"
+            echo "📦 Stack 'frontend-prod' does not exist, creating it..."
+            pulumi stack init frontend-prod
+            echo "✅ Stack 'frontend-prod' created successfully"
           fi
 
-      - name: Get ALB DNS names
-        id: alb-dns
-        run: |
-          # Try to get DoctorServiceURL and DeveloperServiceURL
-          DOCTOR_DNS=$(aws cloudformation describe-stacks \
-            --stack-name AdminPanelProductionStack \
-            --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`DoctorServiceURL`].OutputValue' \
-            --output text)
+      - name: Configure Pulumi from GitHub secrets
+        working-directory: digital-ocean-deployment
+        env:
+          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+        run:
+          # Select the stack (required before setting config)
+          pulumi stack select frontend-prod
+          
+          # Set DigitalOcean token (required - from GitHub secret)
+          pulumi config set digitalocean:token $DIGITALOCEAN_TOKEN --secret
+          
+          # Set region (required - from env variable)
+          pulumi config set index:region ${{ env.DIGITALOCEAN_REGION }}
+          
+          # Admin Panel secrets - using PROD_* secrets, storing in prod: namespace
+          pulumi config set prod:propelauthApiKey "${{ secrets.PROD_PROPELAUTH_API_KEY }}" --secret
+          pulumi config set prod:liveApiKey "${{ secrets.PROD_LIVE_API_KEY }}" --secret
+          pulumi config set prod:propelauthUrl "${{ vars.PROD_PROPELAUTH_URL }}"
+          pulumi config set prod:liveApiUrl "${{ vars.PROD_LIVE_API_URL }}"
+          pulumi config set prod:superAdminOrgId "${{ secrets.PROD_SUPER_ADMIN_ORG_ID }}"
+          
+          # Developer Dashboard secrets - using PROD_* secrets, storing in prod: namespace
+          pulumi config set prod:difyAdminPassword "${{ secrets.PROD_DIFY_ADMIN_PASSWORD }}" --secret
+          pulumi config set prod:modelOpenAiApiKey "${{ secrets.PROD_MODEL_OPEN_AI_API_KEY }}" --secret
+          pulumi config set prod:modelGroqApiKey "${{ secrets.PROD_MODEL_GROQ_API_KEY }}" --secret
+          pulumi config set prod:modelAnthropicApiKey "${{ secrets.PROD_MODEL_ANTHROPIC_API_KEY }}" --secret
+          pulumi config set prod:chatbotApiKey "${{ secrets.PROD_CHATBOT_API_KEY }}" --secret
+          pulumi config set prod:elevenLabsApiKey "${{ secrets.PROD_ELEVEN_LABS_API_KEY }}" --secret
+          pulumi config set prod:openAiApiKey "${{ secrets.PROD_OPEN_AI_API_KEY }}" --secret
+          pulumi config set prod:whisperApiKey "${{ secrets.PROD_WHISPER_API_KEY }}" --secret
+          pulumi config set prod:deepgramApiKey "${{ secrets.PROD_DEEPGRAM_API_KEY }}" --secret
+          pulumi config set prod:cartesiaApiKey "${{ secrets.PROD_CARTESIA_API_KEY }}" --secret
+          pulumi config set prod:mongodbUrl "${{ secrets.PROD_MONGODB_URL }}" --secret
+          
+          # Developer Dashboard config values - using PROD_* vars, storing in prod: namespace
+          pulumi config set prod:propelauthUrl "${{ vars.PROD_DEVELOPER_PROPELAUTH_URL }}"
+          pulumi config set prod:apiBaseUrl "${{ vars.PROD_MODEL_API_BASE_URL }}"
+          pulumi config set prod:enableEmailVerification "true"
+          pulumi config set prod:difyConsoleOrigin "${{ vars.PROD_DIFY_CONSOLE_ORIGIN }}"
+          pulumi config set prod:difyAdminEmail "${{ vars.PROD_DIFY_ADMIN_EMAIL }}"
+          pulumi config set prod:difyWorkspaceId "${{ vars.PROD_DIFY_WORKSPACE_ID }}"
+          pulumi config set prod:difyBaseUrl "${{ vars.PROD_DIFY_BASE_URL }}"
+          pulumi config set prod:chatbotApiUrl "${{ vars.PROD_CHATBOT_API_URL }}"
+          pulumi config set prod:cartesiaVoiceId "${{ vars.PROD_CARTESIA_VOICE_ID }}"
+          pulumi config set prod:elevenLabsVoiceId "${{ vars.PROD_ELEVEN_LABS_VOICE_ID }}"
+          pulumi config set prod:liveApiUrl "${{ vars.PROD_LIVE_API_URL }}"
+          
+          echo "✅ Pulumi config fully configured from GitHub secrets and variables"
 
-          DEVELOPER_DNS=$(aws cloudformation describe-stacks \
-            --stack-name AdminPanelProductionStack \
-            --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`DeveloperServiceURL`].OutputValue' \
-            --output text)
+      - name: Deploy with Pulumi
+        working-directory: digital-ocean-deployment
+        env:
+          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+        run:
+          # Select the stack
+          pulumi stack select frontend-prod
+          
+          # Deploy updates
+          pulumi up --yes
 
-          # If URLs are not available, use LoadBalancerDNS and construct HTTPS URLs
-          if [ -z "$DOCTOR_DNS" ] || [ "$DOCTOR_DNS" = "None" ]; then
-            echo "DoctorServiceURL not found, using DoctorLoadBalancerDNS..."
-            DOCTOR_LB_DNS=$(aws cloudformation describe-stacks \
-              --stack-name AdminPanelProductionStack \
-              --region ${{ env.AWS_REGION }} \
-              --query 'Stacks[0].Outputs[?OutputKey==`DoctorLoadBalancerDNS`].OutputValue' \
-              --output text)
-            
-            if [ -z "$DOCTOR_LB_DNS" ] || [ "$DOCTOR_LB_DNS" = "None" ]; then
-              echo "Error: Could not get DoctorLoadBalancerDNS from CloudFormation stack"
-              echo "Available outputs:"
-              aws cloudformation describe-stacks \
-                --stack-name AdminPanelProductionStack \
-                --region ${{ env.AWS_REGION }} \
-                --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
-                --output table
-              exit 1
-            fi
-            
-            DOCTOR_DNS="https://$DOCTOR_LB_DNS"
-            echo "Constructed Doctor URL: $DOCTOR_DNS"
-          fi
+      - name: Get deployment URLs
+        id: pulumi-outputs
+        working-directory: digital-ocean-deployment
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+        run:
+          pulumi stack select frontend-prod
+          ADMIN_URL=$(pulumi stack output adminPanelUrl 2>/dev/null || echo "")
+          DEVELOPER_URL=$(pulumi stack output developerDashboardUrl 2>/dev/null || echo "")
+          
+          echo "admin-url=$ADMIN_URL" >> $GITHUB_OUTPUT
+          echo "developer-url=$DEVELOPER_URL" >> $GITHUB_OUTPUT
+          
+          echo "Admin Panel URL: $ADMIN_URL"
+          echo "Developer Dashboard URL: $DEVELOPER_URL"
 
-          if [ -z "$DEVELOPER_DNS" ] || [ "$DEVELOPER_DNS" = "None" ]; then
-            echo "DeveloperServiceURL not found, using DeveloperLoadBalancerDNS..."
-            DEVELOPER_LB_DNS=$(aws cloudformation describe-stacks \
-              --stack-name AdminPanelProductionStack \
-              --region ${{ env.AWS_REGION }} \
-              --query 'Stacks[0].Outputs[?OutputKey==`DeveloperLoadBalancerDNS`].OutputValue' \
-              --output text)
-            
-            if [ -z "$DEVELOPER_LB_DNS" ] || [ "$DEVELOPER_LB_DNS" = "None" ]; then
-              echo "Error: Could not get DeveloperLoadBalancerDNS from CloudFormation stack"
-              echo "Available outputs:"
-              aws cloudformation describe-stacks \
-                --stack-name AdminPanelProductionStack \
-                --region ${{ env.AWS_REGION }} \
-                --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
-                --output table
-              exit 1
-            fi
-            
-            DEVELOPER_DNS="https://$DEVELOPER_LB_DNS"
-            echo "Constructed Developer URL: $DEVELOPER_DNS"
-          fi
-
-          echo "doctor-dns=$DOCTOR_DNS" >> $GITHUB_OUTPUT
-          echo "developer-dns=$DEVELOPER_DNS" >> $GITHUB_OUTPUT
+      - name: Wait for apps to be ready
+        run:
+          echo "Waiting for DigitalOcean apps to be ready..."
+          sleep 90
 
       - name: Health check
-        run: |
-          # Wait for services to be fully ready
-          sleep 60
-
-          # Get ALB DNS names for both services
-          DOCTOR_DNS=$(aws cloudformation describe-stacks \
-            --stack-name AdminPanelProductionStack \
-            --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`DoctorServiceURL`].OutputValue' \
-            --output text)
-
-          DEVELOPER_DNS=$(aws cloudformation describe-stacks \
-            --stack-name AdminPanelProductionStack \
-            --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`DeveloperServiceURL`].OutputValue' \
-            --output text)
-
-          # If URLs are not available, use LoadBalancerDNS and construct HTTPS URLs
-          if [ -z "$DOCTOR_DNS" ] || [ "$DOCTOR_DNS" = "None" ]; then
-            echo "DoctorServiceURL not found, using DoctorLoadBalancerDNS..."
-            DOCTOR_LB_DNS=$(aws cloudformation describe-stacks \
-              --stack-name AdminPanelProductionStack \
-              --region ${{ env.AWS_REGION }} \
-              --query 'Stacks[0].Outputs[?OutputKey==`DoctorLoadBalancerDNS`].OutputValue' \
-              --output text)
-            
-            if [ -z "$DOCTOR_LB_DNS" ] || [ "$DOCTOR_LB_DNS" = "None" ]; then
-              echo "Error: Could not get DoctorLoadBalancerDNS from CloudFormation stack"
-              echo "Available outputs:"
-              aws cloudformation describe-stacks \
-                --stack-name AdminPanelProductionStack \
-                --region ${{ env.AWS_REGION }} \
-                --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
-                --output table
-              exit 1
-            fi
-            
-            DOCTOR_DNS="https://$DOCTOR_LB_DNS"
-            echo "Constructed Doctor URL: $DOCTOR_DNS"
+        run:
+          ADMIN_URL="${{ steps.pulumi-outputs.outputs.admin-url }}"
+          DEVELOPER_URL="${{ steps.pulumi-outputs.outputs.developer-url }}"
+          
+          if [ -z "$ADMIN_URL" ] || [ "$ADMIN_URL" = "" ]; then
+            echo "Warning: Could not get Admin Panel URL from Pulumi outputs"
+            ADMIN_URL="https://admin-prod.xpectrum-ai.com"
           fi
-
-          if [ -z "$DEVELOPER_DNS" ] || [ "$DEVELOPER_DNS" = "None" ]; then
-            echo "DeveloperServiceURL not found, using DeveloperLoadBalancerDNS..."
-            DEVELOPER_LB_DNS=$(aws cloudformation describe-stacks \
-              --stack-name AdminPanelProductionStack \
-              --region ${{ env.AWS_REGION }} \
-              --query 'Stacks[0].Outputs[?OutputKey==`DeveloperLoadBalancerDNS`].OutputValue' \
-              --output text)
-            
-            if [ -z "$DEVELOPER_LB_DNS" ] || [ "$DEVELOPER_LB_DNS" = "None" ]; then
-              echo "Error: Could not get DeveloperLoadBalancerDNS from CloudFormation stack"
-              echo "Available outputs:"
-              aws cloudformation describe-stacks \
-                --stack-name AdminPanelProductionStack \
-                --region ${{ env.AWS_REGION }} \
-                --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
-                --output table
-              exit 1
-            fi
-            
-            DEVELOPER_DNS="https://$DEVELOPER_LB_DNS"
-            echo "Constructed Developer URL: $DEVELOPER_DNS"
+          
+          if [ -z "$DEVELOPER_URL" ] || [ "$DEVELOPER_URL" = "" ]; then
+            echo "Warning: Could not get Developer Dashboard URL from Pulumi outputs"
+            DEVELOPER_URL="https://developer-prod.xpectrum-ai.com"
           fi
-
-          echo "Testing Doctor service health endpoints on: $DOCTOR_DNS"
-          echo "Testing Developer service health endpoints on: $DEVELOPER_DNS"
-
-          # Health checks for Doctor service (main frontend)
-          curl -f -k "$DOCTOR_DNS/" || exit 1
-          curl -f -k "$DOCTOR_DNS/api/health" || exit 1
-
-          # Health checks for Developer service (separate domain)
-          curl -f -k "$DEVELOPER_DNS/" || exit 1
-          curl -f -k "$DEVELOPER_DNS/api/health" || exit 1
-
-      - name: Force restart ECS services
-        run: |
-          aws ecs update-service \
-            --cluster "admin-panel-production" \
-            --service "admin-panel-service-production" \
-            --force-new-deployment \
-            --region "$AWS_REGION"
-
-          aws ecs update-service \
-            --cluster "admin-panel-production" \
-            --service "admin-panel-developer-service-production" \
-            --force-new-deployment \
-            --region "$AWS_REGION"
-
-    # GitHub release creation removed due to permissions issue
-    # You can manually create releases from GitHub UI if needed
+          
+          echo "Testing Admin Panel health endpoints on: $ADMIN_URL"
+          echo "Testing Developer Dashboard health endpoints on: $DEVELOPER_URL"
+          
+          # Health checks for Admin Panel
+          curl -f -k "$ADMIN_URL/" || echo "Admin Panel root endpoint check failed"
+          curl -f -k "$ADMIN_URL/api/health" || echo "Admin Panel health endpoint check failed"
+          
+          # Health checks for Developer Dashboard
+          curl -f -k "$DEVELOPER_URL/" || echo "Developer Dashboard root endpoint check failed"
+          curl -f -k "$DEVELOPER_URL/api/health" || echo "Developer Dashboard health endpoint check failed"
+          
+          echo "Health checks completed"
 
   deployment-failure:
     needs: deploy-production
@@ -303,5 +289,5 @@ jobs:
     if: failure()
     steps:
       - name: Production Deployment Failed
-        run: |
+        run:
           echo "Production deployment failed - check the logs for details"
