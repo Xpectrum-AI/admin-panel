@@ -28,7 +28,6 @@ pulumi config set release:openAiApiKey "YOUR_PRODUCTION_OPEN_AI_API_KEY" --secre
 pulumi config set release:whisperApiKey "YOUR_PRODUCTION_WHISPER_API_KEY" --secret
 pulumi config set release:deepgramApiKey "YOUR_PRODUCTION_DEEPGRAM_API_KEY" --secret
 pulumi config set release:cartesiaApiKey "YOUR_PRODUCTION_CARTESIA_API_KEY" --secret
-pulumi config set release:mongodbUrl "YOUR_PRODUCTION_MONGODB_URL" --secret
 
 # Developer Dashboard config values - using PRODUCTION_* vars, storing in release: namespace
 # Note: propelauthUrl already set above (shared with Admin Panel)
