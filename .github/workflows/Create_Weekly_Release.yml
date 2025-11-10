@@ -46,10 +46,7 @@ jobs:
             owner: context.repo.owner,
             repo: context.repo.repo,
             workflow_id: 'deploy-release.yml',
-            ref: '${{ steps.week-number.outputs.branch_name }}',
-            inputs: {
-              image_tag_suffix: '${{ steps.week-number.outputs.year_week }}'
-            }
+            ref: '${{ steps.week-number.outputs.branch_name }}'
           });
           
     - name: Create summary
