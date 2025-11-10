@@ -65,11 +65,11 @@ jobs:
 
       - name: Build and push Main Frontend image to DOCR
         env:
-          NEXT_PUBLIC_LIVE_API_URL: ${{ vars.PROD_LIVE_API_URL }}
-          NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.PROD_PROPELAUTH_URL }}
-          NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.PROD_LIVE_API_KEY }}
-          NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.PROD_PROPELAUTH_API_KEY }}
-          NEXT_PUBLIC_SUPER_ADMIN_ORG_ID: ${{ secrets.PROD_SUPER_ADMIN_ORG_ID }}
+          NEXT_PUBLIC_LIVE_API_URL: ${{ vars.PRODUCTION_LIVE_API_URL }}
+          NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.PRODUCTION_PROPELAUTH_URL }}
+          NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.PRODUCTION_LIVE_API_KEY }}
+          NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_PROPELAUTH_API_KEY }}
+          NEXT_PUBLIC_SUPER_ADMIN_ORG_ID: ${{ secrets.PRODUCTION_SUPER_ADMIN_ORG_ID }}
         run: |
           # Use the specific registry name
           REPO="registry.digitalocean.com/xpectrum-main-app-dev/admin-release"
@@ -89,29 +89,29 @@ jobs:
 
       - name: Build and push Developer Frontend image to DOCR
         env:
-          NEXT_PUBLIC_LIVE_API_URL: ${{ vars.PROD_LIVE_API_URL }}
-          NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL: ${{ vars.PROD_DEVELOPER_PROPELAUTH_URL }}
-          NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.PROD_LIVE_API_KEY }}
-          NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY: ${{ secrets.PROD_DEVELOPER_PROPELAUTH_API_KEY }}
-          NEXT_PUBLIC_MODEL_API_BASE_URL: ${{ vars.PROD_MODEL_API_BASE_URL }}
-          NEXT_PUBLIC_MODEL_API_KEY: ${{ secrets.PROD_MODEL_API_KEY }}
-          NEXT_PUBLIC_CHATBOT_API_URL: ${{ vars.PROD_CHATBOT_API_URL }}
-          NEXT_PUBLIC_CHATBOT_API_KEY: ${{ secrets.PROD_CHATBOT_API_KEY }}
-          NEXT_PUBLIC_ELEVEN_LABS_API_KEY: ${{ secrets.PROD_ELEVEN_LABS_API_KEY }}
-          NEXT_PUBLIC_OPEN_AI_API_KEY: ${{ secrets.PROD_OPEN_AI_API_KEY }}
-          NEXT_PUBLIC_WHISPER_API_KEY: ${{ secrets.PROD_WHISPER_API_KEY }}
-          NEXT_PUBLIC_DEEPGRAM_API_KEY: ${{ secrets.PROD_DEEPGRAM_API_KEY }}
-          NEXT_PUBLIC_CARTESIA_API_KEY: ${{ secrets.PROD_CARTESIA_API_KEY }}
-          NEXT_PUBLIC_CARTESIA_VOICE_ID: ${{ vars.PROD_CARTESIA_VOICE_ID }}
-          NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID: ${{ vars.PROD_ELEVEN_LABS_VOICE_ID }}
-          NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN: ${{ vars.PROD_DIFY_CONSOLE_ORIGIN }}
-          NEXT_PUBLIC_DIFY_ADMIN_EMAIL: ${{ vars.PROD_DIFY_ADMIN_EMAIL }}
-          NEXT_PUBLIC_DIFY_ADMIN_PASSWORD: ${{ secrets.PROD_DIFY_ADMIN_PASSWORD }}
-          NEXT_PUBLIC_DIFY_WORKSPACE_ID: ${{ vars.PROD_DIFY_WORKSPACE_ID }}
-          NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY: ${{ secrets.PROD_MODEL_OPEN_AI_API_KEY }}
-          NEXT_PUBLIC_MODEL_GROQ_API_KEY: ${{ secrets.PROD_MODEL_GROQ_API_KEY }}
-          NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY: ${{ secrets.PROD_MODEL_ANTHROPIC_API_KEY }}
-          NEXT_PUBLIC_DIFY_BASE_URL: ${{ vars.PROD_DIFY_BASE_URL }}
+          NEXT_PUBLIC_LIVE_API_URL: ${{ vars.PRODUCTION_LIVE_API_URL }}
+          NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL: ${{ vars.PRODUCTION_DEVELOPMENT_PROPELAUTH_URL }}
+          NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.PRODUCTION_LIVE_API_KEY }}
+          NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_DEVELOPMENT_PROPELAUTH_API_KEY }}
+          NEXT_PUBLIC_MODEL_API_BASE_URL: ${{ vars.PRODUCTION_MODEL_API_BASE_URL }}
+          NEXT_PUBLIC_MODEL_API_KEY: ${{ secrets.PRODUCTION_MODEL_API_KEY }}
+          NEXT_PUBLIC_CHATBOT_API_URL: ${{ vars.PRODUCTION_CHATBOT_API_URL }}
+          NEXT_PUBLIC_CHATBOT_API_KEY: ${{ secrets.PRODUCTION_CHATBOT_API_KEY }}
+          NEXT_PUBLIC_ELEVEN_LABS_API_KEY: ${{ secrets.PRODUCTION_ELEVEN_LABS_API_KEY }}
+          NEXT_PUBLIC_OPEN_AI_API_KEY: ${{ secrets.PRODUCTION_OPEN_AI_API_KEY }}
+          NEXT_PUBLIC_WHISPER_API_KEY: ${{ secrets.PRODUCTION_WHISPER_API_KEY }}
+          NEXT_PUBLIC_DEEPGRAM_API_KEY: ${{ secrets.PRODUCTION_DEEPGRAM_API_KEY }}
+          NEXT_PUBLIC_CARTESIA_API_KEY: ${{ secrets.PRODUCTION_CARTESIA_API_KEY }}
+          NEXT_PUBLIC_CARTESIA_VOICE_ID: ${{ vars.PRODUCTION_CARTESIA_VOICE_ID }}
+          NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID: ${{ vars.PRODUCTION_ELEVEN_LABS_VOICE_ID }}
+          NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN: ${{ vars.PRODUCTION_DIFY_CONSOLE_ORIGIN }}
+          NEXT_PUBLIC_DIFY_ADMIN_EMAIL: ${{ vars.PRODUCTION_DIFY_ADMIN_EMAIL }}
+          NEXT_PUBLIC_DIFY_ADMIN_PASSWORD: ${{ secrets.PRODUCTION_DIFY_ADMIN_PASSWORD }}
+          NEXT_PUBLIC_DIFY_WORKSPACE_ID: ${{ vars.PRODUCTION_DIFY_WORKSPACE_ID }}
+          NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY: ${{ secrets.PRODUCTION_MODEL_OPEN_AI_API_KEY }}
+          NEXT_PUBLIC_MODEL_GROQ_API_KEY: ${{ secrets.PRODUCTION_MODEL_GROQ_API_KEY }}
+          NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY: ${{ secrets.PRODUCTION_MODEL_ANTHROPIC_API_KEY }}
+          NEXT_PUBLIC_DIFY_BASE_URL: ${{ vars.PRODUCTION_DIFY_BASE_URL }}
         run: |
           # Use the specific registry name
           REPO="registry.digitalocean.com/xpectrum-main-app-dev/developer-release"
@@ -187,38 +187,40 @@ jobs:
           # Set region (required - from env variable)
           pulumi config set index:region ${{ env.DIGITALOCEAN_REGION }}
           
-          # Admin Panel secrets - using PROD_* secrets, storing in admin: namespace
-          pulumi config set admin:propelauthApiKey "${{ secrets.PROD_PROPELAUTH_API_KEY }}" --secret
-          pulumi config set admin:liveApiKey "${{ secrets.PROD_LIVE_API_KEY }}" --secret
-          pulumi config set admin:propelauthUrl "${{ vars.PROD_PROPELAUTH_URL }}"
-          pulumi config set admin:liveApiUrl "${{ vars.PROD_LIVE_API_URL }}"
-          pulumi config set admin:superAdminOrgId "${{ secrets.PROD_SUPER_ADMIN_ORG_ID }}"
+          # Admin Panel and Developer Dashboard share the same namespace (release:)
+          # Both use the same propelauthApiKey and propelauthUrl config keys
+          # Using Developer Dashboard values since they're more specific
+          pulumi config set release:propelauthApiKey "${{ secrets.PRODUCTION_PROPELAUTH_API_KEY }}" --secret
+          pulumi config set release:liveApiKey "${{ secrets.PRODUCTION_LIVE_API_KEY }}" --secret
+          pulumi config set release:propelauthUrl "${{ vars.PRODUCTION_DEVELOPMENT_PROPELAUTH_URL }}"
+          pulumi config set release:liveApiUrl "${{ vars.PRODUCTION_LIVE_API_URL }}"
+          pulumi config set release:superAdminOrgId "${{ secrets.PRODUCTION_SUPER_ADMIN_ORG_ID }}"
           
-          # Developer Dashboard secrets - using PROD_* secrets, storing in release: namespace
-          pulumi config set release:difyAdminPassword "${{ secrets.PROD_DIFY_ADMIN_PASSWORD }}" --secret
-          pulumi config set release:modelOpenAiApiKey "${{ secrets.PROD_MODEL_OPEN_AI_API_KEY }}" --secret
-          pulumi config set release:modelGroqApiKey "${{ secrets.PROD_MODEL_GROQ_API_KEY }}" --secret
-          pulumi config set release:modelAnthropicApiKey "${{ secrets.PROD_MODEL_ANTHROPIC_API_KEY }}" --secret
-          pulumi config set release:chatbotApiKey "${{ secrets.PROD_CHATBOT_API_KEY }}" --secret
-          pulumi config set release:elevenLabsApiKey "${{ secrets.PROD_ELEVEN_LABS_API_KEY }}" --secret
-          pulumi config set release:openAiApiKey "${{ secrets.PROD_OPEN_AI_API_KEY }}" --secret
-          pulumi config set release:whisperApiKey "${{ secrets.PROD_WHISPER_API_KEY }}" --secret
-          pulumi config set release:deepgramApiKey "${{ secrets.PROD_DEEPGRAM_API_KEY }}" --secret
-          pulumi config set release:cartesiaApiKey "${{ secrets.PROD_CARTESIA_API_KEY }}" --secret
-          pulumi config set release:mongodbUrl "${{ secrets.PROD_MONGODB_URL }}" --secret
+          # Developer Dashboard secrets - using PRODUCTION_* secrets, storing in release: namespace
+          pulumi config set release:difyAdminPassword "${{ secrets.PRODUCTION_DIFY_ADMIN_PASSWORD }}" --secret
+          pulumi config set release:modelOpenAiApiKey "${{ secrets.PRODUCTION_MODEL_OPEN_AI_API_KEY }}" --secret
+          pulumi config set release:modelGroqApiKey "${{ secrets.PRODUCTION_MODEL_GROQ_API_KEY }}" --secret
+          pulumi config set release:modelAnthropicApiKey "${{ secrets.PRODUCTION_MODEL_ANTHROPIC_API_KEY }}" --secret
+          pulumi config set release:chatbotApiKey "${{ secrets.PRODUCTION_CHATBOT_API_KEY }}" --secret
+          pulumi config set release:elevenLabsApiKey "${{ secrets.PRODUCTION_ELEVEN_LABS_API_KEY }}" --secret
+          pulumi config set release:openAiApiKey "${{ secrets.PRODUCTION_OPEN_AI_API_KEY }}" --secret
+          pulumi config set release:whisperApiKey "${{ secrets.PRODUCTION_WHISPER_API_KEY }}" --secret
+          pulumi config set release:deepgramApiKey "${{ secrets.PRODUCTION_DEEPGRAM_API_KEY }}" --secret
+          pulumi config set release:cartesiaApiKey "${{ secrets.PRODUCTION_CARTESIA_API_KEY }}" --secret
+         
           
-          # Developer Dashboard config values - using PROD_* vars, storing in release: namespace
-          pulumi config set release:propelauthUrl "${{ vars.PROD_DEVELOPER_PROPELAUTH_URL }}"
-          pulumi config set release:apiBaseUrl "${{ vars.PROD_MODEL_API_BASE_URL }}"
+          # Developer Dashboard config values - using PRODUCTION_* vars, storing in release: namespace
+          # Note: propelauthUrl already set above (shared with Admin Panel)
+          pulumi config set release:apiBaseUrl "${{ vars.PRODUCTION_MODEL_API_BASE_URL }}"
           pulumi config set release:enableEmailVerification "true"
-          pulumi config set release:difyConsoleOrigin "${{ vars.PROD_DIFY_CONSOLE_ORIGIN }}"
-          pulumi config set release:difyAdminEmail "${{ vars.PROD_DIFY_ADMIN_EMAIL }}"
-          pulumi config set release:difyWorkspaceId "${{ vars.PROD_DIFY_WORKSPACE_ID }}"
-          pulumi config set release:difyBaseUrl "${{ vars.PROD_DIFY_BASE_URL }}"
-          pulumi config set release:chatbotApiUrl "${{ vars.PROD_CHATBOT_API_URL }}"
-          pulumi config set release:cartesiaVoiceId "${{ vars.PROD_CARTESIA_VOICE_ID }}"
-          pulumi config set release:elevenLabsVoiceId "${{ vars.PROD_ELEVEN_LABS_VOICE_ID }}"
-          pulumi config set release:liveApiUrl "${{ vars.PROD_LIVE_API_URL }}"
+          pulumi config set release:difyConsoleOrigin "${{ vars.PRODUCTION_DIFY_CONSOLE_ORIGIN }}"
+          pulumi config set release:difyAdminEmail "${{ vars.PRODUCTION_DIFY_ADMIN_EMAIL }}"
+          pulumi config set release:difyWorkspaceId "${{ vars.PRODUCTION_DIFY_WORKSPACE_ID }}"
+          pulumi config set release:difyBaseUrl "${{ vars.PRODUCTION_DIFY_BASE_URL }}"
+          pulumi config set release:chatbotApiUrl "${{ vars.PRODUCTION_CHATBOT_API_URL }}"
+          pulumi config set release:cartesiaVoiceId "${{ vars.PRODUCTION_CARTESIA_VOICE_ID }}"
+          pulumi config set release:elevenLabsVoiceId "${{ vars.PRODUCTION_ELEVEN_LABS_VOICE_ID }}"
+          pulumi config set release:liveApiUrl "${{ vars.PRODUCTION_LIVE_API_URL }}"
           
           echo "✅ Pulumi config fully configured from GitHub secrets and variables"
 
