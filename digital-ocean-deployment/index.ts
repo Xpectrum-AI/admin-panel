@@ -21,7 +21,9 @@ const prodConfig = new pulumi.Config("prod");      // For both admin-panel and d
 function createAdminPanelApp(env: string, adminEnvConfig: pulumi.Config) {
     const appName = `admin-panel-app-${env}`;
     const serviceName = `admin-panel-${env}`;
-    const domain = `admin-${env}.xpectrum-ai.com`;
+    // For production, use admin.xpectrum-ai.com (no -prod suffix)
+    // For other environments, use admin-{env}.xpectrum-ai.com
+    const domain = env === "prod" ? "admin.xpectrum-ai.com" : `admin-${env}.xpectrum-ai.com`;
     const repository = `admin-${env}`;
 
     return new digitalocean.App(appName, {
@@ -90,7 +92,9 @@ function createAdminPanelApp(env: string, adminEnvConfig: pulumi.Config) {
 function createDeveloperDashboardApp(env: string, envConfig: pulumi.Config) {
     const appName = `developer-dashboard-app-${env}`;
     const serviceName = `developer-dashboard-${env}`;
-    const domain = `developer-${env}.xpectrum-ai.com`;
+    // For production, use developer.xpectrum-ai.com (no -prod suffix)
+    // For other environments, use developer-{env}.xpectrum-ai.com
+    const domain = env === "prod" ? "developer.xpectrum-ai.com" : `developer-${env}.xpectrum-ai.com`;
     const repository = `developer-${env}`;
 
     return new digitalocean.App(appName, {
