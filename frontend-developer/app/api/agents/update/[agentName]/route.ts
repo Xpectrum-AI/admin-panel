@@ -51,22 +51,41 @@ export async function POST(
     // Prepare the complete agent data for the backend
     // Handle TTS config - swap values if provided, or use swapped defaults
     let processedTtsConfig;
-    if (tts_config && tts_config.openai) {
-      // If TTS config is provided, swap the values to compensate for backend swapping
-      processedTtsConfig = {
-        ...tts_config,
-        openai: {
-          ...tts_config.openai,
-          voice: tts_config.openai.response_format,  // Swap: send response_format as voice
-          response_format: tts_config.openai.voice   // Swap: send voice as response_format
-        }
-      };
+    if (tts_config) {
+      // If TTS config is provided, process it based on provider
+      if (tts_config.openai) {
+        // If TTS config is provided, swap the values to compensate for backend swapping
+        // IMPORTANT: Preserve the api_key from the config
+        processedTtsConfig = {
+          ...tts_config,
+          openai: {
+            ...tts_config.openai,
+            api_key: tts_config.openai.api_key || '',  // Preserve API key
+            voice: tts_config.openai.response_format,  // Swap: send response_format as voice
+            response_format: tts_config.openai.voice   // Swap: send voice as response_format
+          }
+        };
+      } else {
+        // For other providers (elevenlabs, cartesian), pass through as-is but ensure API keys are preserved
+        processedTtsConfig = {
+          ...tts_config,
+          // Preserve API keys for all providers
+          elevenlabs: tts_config.elevenlabs ? {
+            ...tts_config.elevenlabs,
+            api_key: tts_config.elevenlabs.api_key || ''
+          } : null,
+          cartesian: tts_config.cartesian ? {
+            ...tts_config.cartesian,
+            tts_api_key: tts_config.cartesian.tts_api_key || ''
+          } : null
+        };
+      }
     } else {
       // Use swapped defaults
       processedTtsConfig = {
         provider: 'openai',
         openai: {
-          api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
+          api_key: '',
           voice: 'mp3',  // Swap: send mp3 as voice so backend swaps it to response_format
           response_format: 'alloy',  // Swap: send alloy as response_format so backend swaps it to voice
           quality: 'standard',
@@ -81,10 +100,21 @@ export async function POST(
       chatbot_api: chatbot_api !== undefined ? chatbot_api : (process.env.NEXT_PUBLIC_CHATBOT_API_URL || ''),
       chatbot_key: chatbot_key !== undefined ? chatbot_key : (process.env.NEXT_PUBLIC_CHATBOT_API_KEY || ''),
       tts_config: processedTtsConfig,
-      stt_config: stt_config || {
+      stt_config: stt_config ? {
+        ...stt_config,
+        // Preserve API keys for all transcriber providers
+        deepgram: stt_config.deepgram ? {
+          ...stt_config.deepgram,
+          api_key: stt_config.deepgram.api_key || ''
+        } : null,
+        openai: stt_config.openai ? {
+          ...stt_config.openai,
+          api_key: stt_config.openai.api_key || ''
+        } : null
+      } : {
         provider: 'deepgram',
         deepgram: {
-          api_key: process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY || '',
+          api_key: '',
           model: 'nova-2',
           language: 'en-US',
           punctuate: true,
@@ -155,6 +185,15 @@ Remember: You are the first point of contact for many patients. Your professiona
     };
 
     console.log('🚀 Sending complete agent data to backend service:', agentData);
+    console.log('🔑 TTS Config API Keys:', {
+      openai: processedTtsConfig?.openai?.api_key ? 'Present (' + processedTtsConfig.openai.api_key.substring(0, 10) + '...)' : 'Empty',
+      elevenlabs: processedTtsConfig?.elevenlabs?.api_key ? 'Present (' + processedTtsConfig.elevenlabs.api_key.substring(0, 10) + '...)' : 'Empty',
+      cartesian: processedTtsConfig?.cartesian?.tts_api_key ? 'Present (' + processedTtsConfig.cartesian.tts_api_key.substring(0, 10) + '...)' : 'Empty'
+    });
+    console.log('🔑 STT Config API Keys:', {
+      deepgram: agentData.stt_config?.deepgram?.api_key ? 'Present (' + agentData.stt_config.deepgram.api_key.substring(0, 10) + '...)' : 'Empty',
+      openai: agentData.stt_config?.openai?.api_key ? 'Present (' + agentData.stt_config.openai.api_key.substring(0, 10) + '...)' : 'Empty'
+    });
 
     // Call the real backend service
     const response = await fetch(`${backendUrl}/agents/update/${agentName}`, {

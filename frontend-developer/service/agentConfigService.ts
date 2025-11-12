@@ -98,7 +98,7 @@ export const agentConfigService = {
         tts_config: {
           provider: 'openai',
           openai: {
-            api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
+            api_key: '',
             model: 'gpt-4o-mini-tts',
             response_format: 'mp3',
             voice: 'alloy',
@@ -111,7 +111,7 @@ export const agentConfigService = {
           provider: 'openai',
           deepgram: null,
           openai: {
-            api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
+            api_key: '',
             model: 'gpt-4o-mini-transcribe',
             language: 'en'
           }
@@ -222,7 +222,7 @@ Remember: You are the first point of contact for many patients. Your professiona
         tts_config: config.tts_config || {
           provider: 'openai',
           openai: {
-            api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
+            api_key: '',
             model: 'gpt-4o-mini-tts',
             response_format: 'mp3',
             voice: 'alloy',
@@ -235,7 +235,7 @@ Remember: You are the first point of contact for many patients. Your professiona
           provider: 'openai',
           deepgram: null,
           openai: {
-            api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
+            api_key: '',
             model: 'gpt-4o-mini-transcribe',
             language: 'en'
           }
@@ -619,14 +619,14 @@ Remember: You are the first point of contact for many patients. Your professiona
   },
 
   // Get default API keys (masked for display)
+  // Now returns empty strings - API keys are handled by backend or user input
   getDefaultApiKeys() {
-    // Environment variables are accessed directly
     return {
-      ELEVEN_LABS_API_KEY: maskApiKey(process.env.NEXT_PUBLIC_ELEVEN_LABS_API_KEY || ''),
-      OPEN_AI_API_KEY: maskApiKey(process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || ''),
-      WHISPER_API_KEY: maskApiKey(process.env.NEXT_PUBLIC_WHISPER_API_KEY || ''),
-      DEEPGRAM_API_KEY: maskApiKey(process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY || ''),
-      CARTESIA_API_KEY: maskApiKey(process.env.NEXT_PUBLIC_CARTESIA_API_KEY || '')
+      ELEVEN_LABS_API_KEY: '',
+      OPEN_AI_API_KEY: '',
+      WHISPER_API_KEY: '',
+      DEEPGRAM_API_KEY: '',
+      CARTESIA_API_KEY: ''
     };
   },
 
@@ -640,13 +640,13 @@ Remember: You are the first point of contact for many patients. Your professiona
   },
 
   // Get full API keys (for actual API calls)
+  // Now returns empty strings - API keys are handled by backend or user input
   getFullApiKeys() {
-    // Environment variables are accessed directly
     return {
-      elevenlabs: process.env.NEXT_PUBLIC_ELEVEN_LABS_API_KEY || '',
-      openai: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
-      deepgram: process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY || '',
-      cartesia: process.env.NEXT_PUBLIC_CARTESIA_API_KEY || ''
+      elevenlabs: '',
+      openai: '',
+      deepgram: '',
+      cartesia: ''
     };
   },
 

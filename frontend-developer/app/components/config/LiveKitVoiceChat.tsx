@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   LiveKitRoom,
   RoomAudioRenderer,
@@ -94,8 +94,10 @@ export default function LiveKitVoiceChat({ agentName, isDarkMode, startCall, end
   const [connectionDetails, setConnectionDetails] = useState<TokenResponse | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const previousStartCallRef = useRef<boolean>(false);
+  const previousEndCallRef = useRef<boolean>(false);
 
-  const connectToAgent = async () => {
+  const connectToAgent = useCallback(async () => {
     // Configuration - Use environment variables
     const API_BASE_URL = process.env.NEXT_PUBLIC_LIVE_API_URL;
     if (!API_BASE_URL) {
@@ -169,26 +171,36 @@ export default function LiveKitVoiceChat({ agentName, isDarkMode, startCall, end
     } finally {
       setIsConnecting(false);
     }
-  };
+  }, [agentName]);
 
-  // Respond to startCall prop
+  // Respond to startCall prop - detect transition from false to true
   useEffect(() => {
-    if (startCall && !connectionDetails && !isConnecting) {
+    // Check if startCall transitioned from false to true
+    const startCallTriggered = startCall && !previousStartCallRef.current;
+    previousStartCallRef.current = startCall || false;
+
+    if (startCallTriggered && !connectionDetails && !isConnecting) {
+      console.log('🎤 startCall triggered, initiating connection...');
       void connectToAgent();
     }
-  }, [startCall, connectionDetails, isConnecting]);
+  }, [startCall, connectionDetails, isConnecting, connectToAgent]);
 
-  // Respond to endCall prop
-  useEffect(() => {
-    if (endCall && (connectionDetails || isConnecting)) {
-      disconnect();
-    }
-  }, [endCall, connectionDetails, isConnecting]);
-
-  const disconnect = () => {
+  const disconnect = useCallback(() => {
     setConnectionDetails(null);
     setError(null);
-  };
+  }, []);
+
+  // Respond to endCall prop - detect transition from false to true
+  useEffect(() => {
+    // Check if endCall transitioned from false to true
+    const endCallTriggered = endCall && !previousEndCallRef.current;
+    previousEndCallRef.current = endCall || false;
+
+    if (endCallTriggered && (connectionDetails || isConnecting)) {
+      console.log('🎤 endCall triggered, disconnecting...');
+      disconnect();
+    }
+  }, [endCall, connectionDetails, isConnecting, disconnect]);
 
   if (connectionDetails) {
     return (
