@@ -63,7 +63,7 @@ export async function GET(
       tts_config: {
         provider: "openai",
         openai: {
-          api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
+          api_key: '',
           model: "gpt-4o-mini-tts",
           response_format: "mp3",
           voice: "alloy",
@@ -76,7 +76,7 @@ export async function GET(
         provider: "openai",
         deepgram: null,
         openai: {
-          api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
+          api_key: '',
           model: "gpt-4o-mini-transcribe",
           language: "en"
         }

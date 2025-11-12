@@ -16,6 +16,9 @@ interface VoiceConfigProps {
   // Add these new props to receive centralized configuration
   voiceConfiguration?: any;
   transcriberConfiguration?: any;
+  // Agent's MongoDB config to check for saved API keys
+  agentTtsConfig?: any;
+  agentSttConfig?: any;
 }
 
 const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
@@ -24,7 +27,9 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
   onTranscriberConfigChange,
   isEditing = false,
   voiceConfiguration,    // Add this
-  transcriberConfiguration  // Add this
+  transcriberConfiguration,  // Add this
+  agentTtsConfig,  // MongoDB TTS config
+  agentSttConfig   // MongoDB STT config
 }, ref) => {
   const { isDarkMode } = useTheme();
   const { config: voiceConfig, updateConfig: updateVoiceConfig } = useVoiceConfig();
@@ -42,6 +47,11 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
   const [responseFormat, setResponseFormat] = useState('mp3');
   const [isUserChangingProvider, setIsUserChangingProvider] = useState(false);
   const [isUserChangingVoiceField, setIsUserChangingVoiceField] = useState(false);
+  const [isUserChangingApiKey, setIsUserChangingApiKey] = useState(false);
+  const [isUserChangingTranscriberApiKey, setIsUserChangingTranscriberApiKey] = useState(false);
+  const [isApiKeyFocused, setIsApiKeyFocused] = useState(false);
+  const [isTranscriberApiKeyFocused, setIsTranscriberApiKeyFocused] = useState(false);
+  const [selectedGender, setSelectedGender] = useState<string>(''); // Gender filter for 11Labs
   
   // ElevenLabs voices state
   const [availableVoices, setAvailableVoices] = useState<any[]>([]);
@@ -613,13 +623,21 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     });
 
     // Load from centralized configuration
-    if (voiceConfiguration && !isUserChangingProvider && !isUserChangingVoiceField) {
+    if (voiceConfiguration && !isUserChangingProvider && !isUserChangingVoiceField && !isUserChangingApiKey) {
       console.log('🔄 Loading voice state from centralized configuration:', voiceConfiguration);
       console.log('🔄 Current voiceId state:', voiceId, 'Configuration voiceId:', voiceConfiguration.voiceId);
 
-      if (voiceConfiguration.selectedVoiceProvider) {
-        console.log('🔄 Setting voice provider:', voiceConfiguration.selectedVoiceProvider);
-        setSelectedVoiceProvider(voiceConfiguration.selectedVoiceProvider);
+      // Handle provider - check both UI format and backend format
+      let provider = voiceConfiguration.selectedVoiceProvider;
+      if (!provider && voiceConfiguration.provider) {
+        // Map backend format to UI format
+        if (voiceConfiguration.provider === 'openai') provider = 'OpenAI';
+        else if (voiceConfiguration.provider === 'elevenlabs') provider = '11Labs';
+        else if (voiceConfiguration.provider === 'cartesian') provider = 'Cartesia';
+      }
+      if (provider) {
+        console.log('🔄 Setting voice provider:', provider);
+        setSelectedVoiceProvider(provider);
       }
       if (voiceConfiguration.selectedLanguage) {
         console.log('🔄 Setting language:', voiceConfiguration.selectedLanguage);
@@ -629,9 +647,46 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
         console.log('🔄 Setting speed:', voiceConfiguration.speedValue);
         setSpeedValue(voiceConfiguration.speedValue);
       }
-      if (voiceConfiguration.apiKey) {
-        console.log('🔄 Setting API key');
-        setApiKey(voiceConfiguration.apiKey);
+      // Load API key from configuration if it exists (from MongoDB)
+      // Check both UI format (apiKey) and backend format (nested objects)
+      // Also check MongoDB config (agentTtsConfig) which has the saved API keys
+      let apiKeyFromConfig = '';
+      
+      // First check MongoDB config (agentTtsConfig) - this has the saved API keys from MongoDB
+      if (agentTtsConfig) {
+        const currentProvider = provider || selectedVoiceProvider;
+        if (currentProvider === 'OpenAI' && agentTtsConfig.openai?.api_key) {
+          apiKeyFromConfig = agentTtsConfig.openai.api_key;
+          console.log('🔑 Loading OpenAI API key from MongoDB config');
+        } else if (currentProvider === '11Labs' && agentTtsConfig.elevenlabs?.api_key) {
+          apiKeyFromConfig = agentTtsConfig.elevenlabs.api_key;
+          console.log('🔑 Loading 11Labs API key from MongoDB config');
+        } else if (currentProvider === 'Cartesia' && agentTtsConfig.cartesian?.tts_api_key) {
+          apiKeyFromConfig = agentTtsConfig.cartesian.tts_api_key;
+          console.log('🔑 Loading Cartesia API key from MongoDB config');
+        }
+      }
+      
+      // Fallback to UI format (flattened) if not found in MongoDB
+      if (!apiKeyFromConfig && voiceConfiguration.apiKey) {
+        apiKeyFromConfig = voiceConfiguration.apiKey;
+      } else if (!apiKeyFromConfig) {
+        // Check backend format (nested objects) - check all providers
+        if (voiceConfiguration.openai?.api_key) {
+          apiKeyFromConfig = voiceConfiguration.openai.api_key;
+        } else if (voiceConfiguration.elevenlabs?.api_key) {
+          apiKeyFromConfig = voiceConfiguration.elevenlabs.api_key;
+        } else if (voiceConfiguration.cartesian?.tts_api_key) {
+          apiKeyFromConfig = voiceConfiguration.cartesian.tts_api_key;
+        }
+      }
+      
+      // Set API key from config if it exists and current field is empty
+      if (apiKeyFromConfig && !apiKey && !isUserChangingApiKey) {
+        setApiKey(apiKeyFromConfig);
+      } else if (!apiKeyFromConfig && !apiKey) {
+        // If no API key in config and field is empty, keep it empty
+        setApiKey('');
       }
       if (voiceConfiguration.voiceId !== undefined) {
         console.log('🔄 Setting voice ID:', voiceConfiguration.voiceId);
@@ -661,12 +716,19 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     }
 
     // Load transcriber configuration
-    if (transcriberConfiguration && !isUserChangingTranscriberProvider) {
+    if (transcriberConfiguration && !isUserChangingTranscriberProvider && !isUserChangingTranscriberApiKey) {
       console.log('🔄 Loading transcriber state from centralized configuration:', transcriberConfiguration);
 
-      if (transcriberConfiguration.selectedTranscriberProvider) {
-        console.log('🔄 Setting transcriber provider:', transcriberConfiguration.selectedTranscriberProvider);
-        setSelectedTranscriberProvider(transcriberConfiguration.selectedTranscriberProvider);
+      // Handle provider - check both UI format and backend format
+      let provider = transcriberConfiguration.selectedTranscriberProvider;
+      if (!provider && transcriberConfiguration.provider) {
+        // Map backend format to UI format
+        if (transcriberConfiguration.provider === 'deepgram') provider = 'Deepgram';
+        else if (transcriberConfiguration.provider === 'openai') provider = 'OpenAI';
+      }
+      if (provider) {
+        console.log('🔄 Setting transcriber provider:', provider);
+        setSelectedTranscriberProvider(provider);
       }
       if (transcriberConfiguration.selectedTranscriberLanguage) {
         console.log('🔄 Setting transcriber language:', transcriberConfiguration.selectedTranscriberLanguage);
@@ -676,22 +738,41 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
         console.log('🔄 Setting transcriber model:', transcriberConfiguration.selectedTranscriberModel);
         setSelectedTranscriberModel(transcriberConfiguration.selectedTranscriberModel);
       }
-      if (transcriberConfiguration.transcriberApiKey) {
-        console.log('🔄 Setting transcriber API key from configuration');
-        setTranscriberApiKey(transcriberConfiguration.transcriberApiKey);
-      } else {
-        // If no API key in config, load from service based on provider
-        console.log('🔄 No transcriber API key in config, loading from service for provider:', transcriberConfiguration.selectedTranscriberProvider);
-        const defaultApiKeys = agentConfigService.getFullApiKeys();
-
-        switch (transcriberConfiguration.selectedTranscriberProvider) {
-          case 'Deepgram':
-            setTranscriberApiKey(defaultApiKeys.deepgram || '');
-            break;
-          case 'OpenAI':
-            setTranscriberApiKey(defaultApiKeys.openai || '');
-            break;
+      // Load API key from configuration if it exists (from MongoDB)
+      // Check both UI format (transcriberApiKey) and backend format (nested objects)
+      // Also check MongoDB config (agentSttConfig) which has the saved API keys
+      let apiKeyFromConfig = '';
+      
+      // First check MongoDB config (agentSttConfig) - this has the saved API keys from MongoDB
+      if (agentSttConfig) {
+        const currentProvider = provider || selectedTranscriberProvider;
+        if (currentProvider === 'Deepgram' && agentSttConfig.deepgram?.api_key) {
+          apiKeyFromConfig = agentSttConfig.deepgram.api_key;
+          console.log('🔑 Loading Deepgram API key from MongoDB config');
+        } else if (currentProvider === 'OpenAI' && agentSttConfig.openai?.api_key) {
+          apiKeyFromConfig = agentSttConfig.openai.api_key;
+          console.log('🔑 Loading OpenAI transcriber API key from MongoDB config');
         }
+      }
+      
+      // Fallback to UI format (flattened) if not found in MongoDB
+      if (!apiKeyFromConfig && transcriberConfiguration.transcriberApiKey) {
+        apiKeyFromConfig = transcriberConfiguration.transcriberApiKey;
+      } else if (!apiKeyFromConfig) {
+        // Check backend format (nested objects) - check all providers
+        if (transcriberConfiguration.deepgram?.api_key) {
+          apiKeyFromConfig = transcriberConfiguration.deepgram.api_key;
+        } else if (transcriberConfiguration.openai?.api_key) {
+          apiKeyFromConfig = transcriberConfiguration.openai.api_key;
+        }
+      }
+      
+      // Set API key from config if it exists and current field is empty
+      if (apiKeyFromConfig && !transcriberApiKey && !isUserChangingTranscriberApiKey) {
+        setTranscriberApiKey(apiKeyFromConfig);
+      } else if (!apiKeyFromConfig && !transcriberApiKey) {
+        // If no API key in config and field is empty, keep it empty
+        setTranscriberApiKey('');
       }
       if (transcriberConfiguration.punctuateEnabled !== undefined) {
         console.log('🔄 Setting punctuate enabled:', transcriberConfiguration.punctuateEnabled);
@@ -706,7 +787,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
         setInterimResultEnabled(transcriberConfiguration.interimResultEnabled);
       }
     }
-  }, [voiceConfiguration, transcriberConfiguration, isUserChangingProvider, isUserChangingTranscriberProvider]);
+  }, [voiceConfiguration, transcriberConfiguration, isUserChangingProvider, isUserChangingTranscriberProvider, isUserChangingApiKey, isUserChangingTranscriberApiKey, apiKey, transcriberApiKey]);
 
   // Save state to centralized state whenever it changes
   const saveStateToCentralized = useCallback((updates: any = {}) => {
@@ -746,7 +827,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     try {
       const response = await fetch('https://api.elevenlabs.io/v1/voices', {
         headers: {
-          'xi-api-key': apiKey || process.env.NEXT_PUBLIC_ELEVEN_LABS_API_KEY || ''
+          'xi-api-key': apiKey || ''
         }
       });
       
@@ -773,23 +854,24 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
 
   // Load default values on component mount
   useEffect(() => {
-    const defaultApiKeys = agentConfigService.getFullApiKeys();
     const defaultVoiceIds = agentConfigService.getDefaultVoiceIds();
 
     // Only set defaults if we don't have existing configuration
     if (!voiceConfiguration) {
-      // Set default API key based on selected provider
+      // Set default API key to empty string (user can enter their own)
+      setApiKey('');
+      
+      // Set default voice ID based on provider
       switch (selectedVoiceProvider) {
         case 'OpenAI':
-          setApiKey(defaultApiKeys.openai || '');
+          // OpenAI doesn't use voice ID
+          setVoiceId('');
           break;
         case '11Labs':
-          setApiKey(defaultApiKeys.elevenlabs || '');
           // Set default voice ID for 11Labs
           setVoiceId('pNInz6obpgDQGcFmaJgB');
           break;
         case 'Cartesia':
-          setApiKey(defaultApiKeys.cartesia || '');
           setVoiceId(defaultVoiceIds.cartesia || '');
           break;
       }
@@ -838,16 +920,9 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
 
   // Load default transcriber API key when transcriber provider changes
   useEffect(() => {
-    const defaultApiKeys = agentConfigService.getFullApiKeys();
-
-    // Set default API key based on selected transcriber provider
-    switch (selectedTranscriberProvider) {
-      case 'Deepgram':
-        setTranscriberApiKey(defaultApiKeys.deepgram || '');
-        break;
-      case 'OpenAI':
-        setTranscriberApiKey(defaultApiKeys.openai || '');
-        break;
+    // API key defaults to empty (user can enter their own)
+    if (!transcriberConfiguration?.transcriberApiKey) {
+      setTranscriberApiKey('');
     }
   }, [selectedTranscriberProvider, transcriberConfiguration]);
 
@@ -900,10 +975,16 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     };
   }, []);
 
-  // Helper function to get display value for API key
-  const getApiKeyDisplayValue = (actualKey: string) => {
-    if (!actualKey) return '••••••••••••••••••••••••••••••••';
-    return maskApiKey(actualKey);
+  // Helper function to get display value for API key - show only first few characters
+  const getApiKeyDisplayValue = (actualKey: string, isFocused: boolean) => {
+    if (!actualKey) return '';
+    // If focused, show actual value for editing
+    if (isFocused) return actualKey;
+    // If not focused, show first 8 characters + masked rest
+    if (actualKey.length <= 8) return actualKey;
+    const firstChars = actualKey.substring(0, 8);
+    const masked = '•'.repeat(Math.min(actualKey.length - 8, 32));
+    return firstChars + masked;
   };
 
   // Get unique languages supported by a voice for the selected model
@@ -927,7 +1008,23 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       .sort();
   };
 
-  // Filter voices by selected language and model
+  // Get unique genders from available voices
+  const getAvailableGenders = () => {
+    if (selectedVoiceProvider !== '11Labs' || availableVoices.length === 0) {
+      return [];
+    }
+    
+    const genders = new Set<string>();
+    availableVoices.forEach((voice: any) => {
+      if (voice.labels?.gender) {
+        genders.add(voice.labels.gender);
+      }
+    });
+    
+    return Array.from(genders).sort();
+  };
+
+  // Filter voices by selected language, model, and gender
   const getFilteredVoices = () => {
     if (selectedVoiceProvider !== '11Labs' || availableVoices.length === 0) {
       return availableVoices;
@@ -937,8 +1034,13 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     const reverseMapping = getCurrentReverseLanguageMapping();
     const languageCode = reverseMapping[selectedLanguage] || 'en';
     
-    // Filter voices that support the selected language for the selected model
+    // Filter voices that support the selected language for the selected model and match gender
     return availableVoices.filter((voice: any) => {
+      // Filter by gender if selected
+      if (selectedGender && voice.labels?.gender !== selectedGender) {
+        return false;
+      }
+      
       if (!voice.verified_languages || !Array.isArray(voice.verified_languages)) {
         return false; // Skip voices without verified languages
       }
@@ -950,32 +1052,21 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     });
   };
 
-  // Format voice display name with language info
+  // Format voice display name (without gender and languages)
   const formatVoiceDisplayName = (voice: any) => {
     const { name, labels, description } = voice;
-    const gender = labels?.gender || '';
     const accent = labels?.accent || '';
     const descriptive = labels?.descriptive || '';
     const age = labels?.age || '';
     
-    // Get supported languages for the selected model
-    const supportedLanguages = getVoiceSupportedLanguages(voice, selectedModel);
-    const languagesText = supportedLanguages.length > 0 
-      ? `[${supportedLanguages.join(', ')}]`
-      : '';
+    // Build characteristics array (excluding gender), filtering out empty values
+    const characteristics = [accent, descriptive, age].filter(Boolean);
     
-    // Build characteristics array, filtering out empty values
-    const characteristics = [gender, accent, descriptive, age].filter(Boolean);
-    
-    // Build display string with languages
+    // Build display string (without languages)
     let displayParts = [name];
     
     if (characteristics.length > 0) {
       displayParts.push(characteristics.join(', '));
-    }
-    
-    if (languagesText) {
-      displayParts.push(languagesText);
     }
     
     // If we have parts, join them
@@ -1035,8 +1126,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       defaultVoice = 'alloy';
     }
 
-    // Load the correct API key and voice ID for the new provider
-    const defaultApiKeys = agentConfigService.getFullApiKeys();
+    // Load the correct voice ID for the new provider
     const defaultVoiceIds = agentConfigService.getDefaultVoiceIds();
 
     let newApiKey = '';
@@ -1045,19 +1135,52 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     // Check if there's already a voice ID in the centralized configuration
     const existingVoiceId = voiceConfiguration?.voiceId || '';
 
+    // Check if there's an API key in the configuration for the new provider
+    // Each provider should have its own API key, so we load the one for the new provider
+    // Check both the centralized UI config AND the MongoDB agent config
+    let apiKeyFromConfig = '';
+    
+    // First check MongoDB config (agentTtsConfig) - this has the saved API keys
+    if (agentTtsConfig) {
+      if (newProvider === 'OpenAI' && agentTtsConfig.openai?.api_key) {
+        apiKeyFromConfig = agentTtsConfig.openai.api_key;
+        console.log('🔑 Found OpenAI API key in MongoDB config');
+      } else if (newProvider === '11Labs' && agentTtsConfig.elevenlabs?.api_key) {
+        apiKeyFromConfig = agentTtsConfig.elevenlabs.api_key;
+        console.log('🔑 Found 11Labs API key in MongoDB config');
+      } else if (newProvider === 'Cartesia' && agentTtsConfig.cartesian?.tts_api_key) {
+        apiKeyFromConfig = agentTtsConfig.cartesian.tts_api_key;
+        console.log('🔑 Found Cartesia API key in MongoDB config');
+      }
+    }
+    
+    // Fallback to centralized UI config if not found in MongoDB
+    if (!apiKeyFromConfig && voiceConfiguration) {
+      if (newProvider === 'OpenAI' && voiceConfiguration.openai?.api_key) {
+        apiKeyFromConfig = voiceConfiguration.openai.api_key;
+      } else if (newProvider === '11Labs' && voiceConfiguration.elevenlabs?.api_key) {
+        apiKeyFromConfig = voiceConfiguration.elevenlabs.api_key;
+      } else if (newProvider === 'Cartesia' && voiceConfiguration.cartesian?.tts_api_key) {
+        apiKeyFromConfig = voiceConfiguration.cartesian.tts_api_key;
+      }
+    }
+
     switch (newProvider) {
       case 'OpenAI':
-        newApiKey = defaultApiKeys.openai || '';
+        // Load API key for the new provider from config, otherwise start empty
+        newApiKey = apiKeyFromConfig || '';
         // For OpenAI, we don't use voice ID, so clear it
         newVoiceId = '';
         break;
       case '11Labs':
-        newApiKey = defaultApiKeys.elevenlabs || '';
+        // Load API key for the new provider from config, otherwise start empty
+        newApiKey = apiKeyFromConfig || '';
         // Preserve existing voice ID if user has entered one, otherwise use default
         newVoiceId = existingVoiceId || '';
         break;
       case 'Cartesia':
-        newApiKey = defaultApiKeys.cartesia || '';
+        // Load API key for the new provider from config, otherwise start empty
+        newApiKey = apiKeyFromConfig || '';
         // Preserve existing voice ID if user has entered one, otherwise use default
         newVoiceId = existingVoiceId || defaultVoiceIds.cartesia || '';
         break;
@@ -1103,20 +1226,33 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       clearTimeout(transcriberProviderChangeTimeoutRef.current);
     }
 
-    // Load the correct API key for the new transcriber provider
-    const defaultApiKeys = agentConfigService.getFullApiKeys();
-    let newTranscriberApiKey = '';
-
-    switch (provider) {
-      case 'Deepgram':
-        newTranscriberApiKey = defaultApiKeys.deepgram || '';
-        break;
-      case 'OpenAI':
-        newTranscriberApiKey = defaultApiKeys.openai || '';
-        break;
-      default:
-        newTranscriberApiKey = '';
+    // Check if there's an API key in the configuration for the new provider
+    // Each provider should have its own API key, so we load the one for the new provider
+    // Check both the centralized UI config AND the MongoDB agent config
+    let apiKeyFromConfig = '';
+    
+    // First check MongoDB config (agentSttConfig) - this has the saved API keys
+    if (agentSttConfig) {
+      if (provider === 'Deepgram' && agentSttConfig.deepgram?.api_key) {
+        apiKeyFromConfig = agentSttConfig.deepgram.api_key;
+        console.log('🔑 Found Deepgram API key in MongoDB config');
+      } else if (provider === 'OpenAI' && agentSttConfig.openai?.api_key) {
+        apiKeyFromConfig = agentSttConfig.openai.api_key;
+        console.log('🔑 Found OpenAI transcriber API key in MongoDB config');
+      }
     }
+    
+    // Fallback to centralized UI config if not found in MongoDB
+    if (!apiKeyFromConfig && transcriberConfiguration) {
+      if (provider === 'Deepgram' && transcriberConfiguration.deepgram?.api_key) {
+        apiKeyFromConfig = transcriberConfiguration.deepgram.api_key;
+      } else if (provider === 'OpenAI' && transcriberConfiguration.openai?.api_key) {
+        apiKeyFromConfig = transcriberConfiguration.openai.api_key;
+      }
+    }
+    
+    // Load API key for the new provider from config, otherwise start empty
+    let newTranscriberApiKey = apiKeyFromConfig || '';
 
     // Reset model to first available model for the new provider
     const providerData = transcriberProviders[provider as keyof typeof transcriberProviders];
@@ -1168,13 +1304,26 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
               </label>
               <input
                 type="text"
-                value={getApiKeyDisplayValue(apiKey)}
-                readOnly
-                className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${isDarkMode
-                  ? 'border-gray-600 bg-gray-700/50 text-gray-400'
-                  : 'border-gray-200 bg-gray-100/50 text-gray-500'
+                value={getApiKeyDisplayValue(apiKey, isApiKeyFocused)}
+                onChange={(e) => {
+                  setIsUserChangingApiKey(true);
+                  setApiKey(e.target.value);
+                  saveStateToCentralized({ apiKey: e.target.value });
+                  // Reset flag after a short delay to allow state to settle
+                  setTimeout(() => setIsUserChangingApiKey(false), 500);
+                }}
+                onFocus={() => setIsApiKeyFocused(true)}
+                onBlur={() => setIsApiKeyFocused(false)}
+                disabled={!isEditing}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
+                  ? isDarkMode
+                    ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'bg-gray-700/50 border-gray-600 text-gray-200'
+                    : 'bg-gray-50 border-gray-200 text-gray-900'
                   }`}
-                placeholder="Default API key loaded"
+                placeholder="Enter API key"
               />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1243,14 +1392,59 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
               </label>
               <input
                 type="text"
-                value={getApiKeyDisplayValue(apiKey)}
-                readOnly
-                className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${isDarkMode
-                  ? 'border-gray-600 bg-gray-700/50 text-gray-400'
-                  : 'border-gray-200 bg-gray-100/50 text-gray-500'
+                value={getApiKeyDisplayValue(apiKey, isApiKeyFocused)}
+                onChange={(e) => {
+                  setIsUserChangingApiKey(true);
+                  setApiKey(e.target.value);
+                  saveStateToCentralized({ apiKey: e.target.value });
+                  // Reset flag after a short delay to allow state to settle
+                  setTimeout(() => setIsUserChangingApiKey(false), 500);
+                }}
+                onFocus={() => setIsApiKeyFocused(true)}
+                onBlur={() => setIsApiKeyFocused(false)}
+                disabled={!isEditing}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
+                  ? isDarkMode
+                    ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'bg-gray-700/50 border-gray-600 text-gray-200'
+                    : 'bg-gray-50 border-gray-200 text-gray-900'
                   }`}
-                placeholder="Default API key loaded"
+                placeholder="Enter API key"
               />
+            </div>
+            <div>
+              <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Gender
+              </label>
+              <select
+                value={selectedGender}
+                onChange={(e) => {
+                  setSelectedGender(e.target.value);
+                  // Clear voice selection when gender changes
+                  if (voiceId) {
+                    setVoiceId('');
+                    saveStateToCentralized({ voiceId: '' });
+                  }
+                }}
+                disabled={!isEditing || availableVoices.length === 0}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing || availableVoices.length === 0
+                  ? isDarkMode
+                    ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'bg-gray-700/50 border-gray-600 text-gray-200'
+                    : 'bg-gray-50 border-gray-200 text-gray-900'
+                  }`}
+              >
+                <option value="">All Genders</option>
+                {getAvailableGenders().map((gender) => (
+                  <option key={gender} value={gender}>
+                    {gender.charAt(0).toUpperCase() + gender.slice(1)}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -1309,7 +1503,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                       if (filteredVoices.length === 0) {
                         return availableVoices.length === 0 
                           ? 'No voices available' 
-                          : `No voices support ${selectedLanguage} for ${elevenLabsModelNames[selectedModel as keyof typeof elevenLabsModelNames] || selectedModel}`;
+                          : `No voices match the selected filters`;
                       }
                       return 'Select a voice...';
                     })()}
@@ -1387,13 +1581,26 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
               </label>
               <input
                 type="text"
-                value={getApiKeyDisplayValue(apiKey)}
-                readOnly
-                className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${isDarkMode
-                  ? 'border-gray-600 bg-gray-700/50 text-gray-400'
-                  : 'border-gray-200 bg-gray-100/50 text-gray-500'
+                value={getApiKeyDisplayValue(apiKey, isApiKeyFocused)}
+                onChange={(e) => {
+                  setIsUserChangingApiKey(true);
+                  setApiKey(e.target.value);
+                  saveStateToCentralized({ apiKey: e.target.value });
+                  // Reset flag after a short delay to allow state to settle
+                  setTimeout(() => setIsUserChangingApiKey(false), 500);
+                }}
+                onFocus={() => setIsApiKeyFocused(true)}
+                onBlur={() => setIsApiKeyFocused(false)}
+                disabled={!isEditing}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
+                  ? isDarkMode
+                    ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'bg-gray-700/50 border-gray-600 text-gray-200'
+                    : 'bg-gray-50 border-gray-200 text-gray-900'
                   }`}
-                placeholder="Default API key loaded"
+                placeholder="Enter API key"
               />
             </div>
             <div>
@@ -1801,13 +2008,26 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                 </label>
                 <input
                   type="text"
-                  value={getApiKeyDisplayValue(transcriberApiKey)}
-                  readOnly
-                  className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${isDarkMode
-                    ? 'border-gray-600 bg-gray-700/50 text-gray-400'
-                    : 'border-gray-200 bg-gray-100/50 text-gray-500'
+                  value={getApiKeyDisplayValue(transcriberApiKey, isTranscriberApiKeyFocused)}
+                  onChange={(e) => {
+                    setIsUserChangingTranscriberApiKey(true);
+                    setTranscriberApiKey(e.target.value);
+                    saveTranscriberStateToCentralized({ transcriberApiKey: e.target.value });
+                    // Reset flag after a short delay to allow state to settle
+                    setTimeout(() => setIsUserChangingTranscriberApiKey(false), 500);
+                  }}
+                  onFocus={() => setIsTranscriberApiKeyFocused(true)}
+                  onBlur={() => setIsTranscriberApiKeyFocused(false)}
+                  disabled={!isEditing}
+                  className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
+                    ? isDarkMode
+                      ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                    : isDarkMode
+                      ? 'bg-gray-700/50 border-gray-600 text-gray-200'
+                      : 'bg-gray-50 border-gray-200 text-gray-900'
                     }`}
-                  placeholder="Default API key loaded"
+                  placeholder="Enter API key"
                 />
               </div>
             </div>

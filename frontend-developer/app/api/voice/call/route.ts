@@ -28,12 +28,12 @@ export async function POST(request: NextRequest) {
     let voiceUrl: string;
 
     if (voiceProvider === 'elevenlabs') {
-      voiceApiKey = process.env.NEXT_PUBLIC_ELEVEN_LABS_API_KEY || '';
+      voiceApiKey = '';
       voiceId = process.env.NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID || '';
       voiceUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
     } else {
-      // Default to Cartesia - use the correct API key
-      voiceApiKey = process.env.NEXT_PUBLIC_CARTESIA_API_KEY || '';
+      // Default to Cartesia - API key handled by backend
+      voiceApiKey = '';
       voiceId = process.env.NEXT_PUBLIC_CARTESIA_VOICE_ID || '';
       voiceUrl = 'https://api.cartesia.ai/v1/tts';
     }

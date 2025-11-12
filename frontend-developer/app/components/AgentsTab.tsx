@@ -685,7 +685,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       voiceConfig: {
         provider: 'openai' as const,
         openai: {
-          api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
+          api_key: '',
           model: 'gpt-4o-mini-tts',
           response_format: 'mp3',
           voice: 'alloy',
@@ -699,7 +699,7 @@ Remember: You are the first point of contact for many patients. Your professiona
         provider: 'openai' as const,
         deepgram: null,
         openai: {
-          api_key: process.env.NEXT_PUBLIC_OPEN_AI_API_KEY || '',
+          api_key: '',
           model: 'gpt-4o-mini-transcribe',
           language: 'en'
         }
@@ -1148,6 +1148,27 @@ Remember: You are the first point of contact for many patients. Your professiona
       const backendVoiceConfig = voice ? convertUIVoiceConfigToBackend(voice) : undefined;
       const backendTranscriberConfig = transcriber ? convertUITranscriberConfigToBackend(transcriber) : undefined;
 
+      // Log API keys before sending
+      console.log('🔑 Voice config API key check:', {
+        voiceConfig: voice,
+        apiKey: voice?.apiKey ? 'Present (' + voice.apiKey.substring(0, 10) + '...)' : 'Empty',
+        provider: voice?.selectedVoiceProvider
+      });
+      console.log('🔑 Backend voice config API keys:', {
+        openai: backendVoiceConfig?.openai?.api_key ? 'Present (' + backendVoiceConfig.openai.api_key.substring(0, 10) + '...)' : 'Empty',
+        elevenlabs: backendVoiceConfig?.elevenlabs?.api_key ? 'Present (' + backendVoiceConfig.elevenlabs.api_key.substring(0, 10) + '...)' : 'Empty',
+        cartesian: backendVoiceConfig?.cartesian?.tts_api_key ? 'Present (' + backendVoiceConfig.cartesian.tts_api_key.substring(0, 10) + '...)' : 'Empty'
+      });
+      console.log('🔑 Transcriber config API key check:', {
+        transcriberConfig: transcriber,
+        apiKey: (transcriber as any)?.transcriberApiKey ? 'Present (' + (transcriber as any).transcriberApiKey.substring(0, 10) + '...)' : 'Empty',
+        provider: transcriber?.selectedTranscriberProvider
+      });
+      console.log('🔑 Backend transcriber config API keys:', {
+        deepgram: backendTranscriberConfig?.deepgram?.api_key ? 'Present (' + backendTranscriberConfig.deepgram.api_key.substring(0, 10) + '...)' : 'Empty',
+        openai: backendTranscriberConfig?.openai?.api_key ? 'Present (' + backendTranscriberConfig.openai.api_key.substring(0, 10) + '...)' : 'Empty'
+      });
+
       // Convert configurations to backend format
       const completeConfig = {
         organization_id: selectedAgent.organization_id || currentOrganizationId || organizationName,
@@ -1282,12 +1303,13 @@ Remember: You are the first point of contact for many patients. Your professiona
         chatbot_key: agent.chatbot_key // Include chatbot_key for proper identification
       },
       // Voice config data - only pass if it has actual configuration data
+      // Preserve API keys from MongoDB - they should be loaded if user saved them
       voiceConfig: agent.tts_config && (
         (agent.tts_config.cartesian && Object.values(agent.tts_config.cartesian).some(v => v !== null && v !== undefined)) ||
         (agent.tts_config.openai && Object.values(agent.tts_config.openai).some(v => v !== null && v !== undefined)) ||
         (agent.tts_config.elevenlabs && Object.values(agent.tts_config.elevenlabs).some(v => v !== null && v !== undefined))
       ) ? agent.tts_config : null,
-      // Transcriber config data - pass the raw backend config directly
+      // Transcriber config data - preserve API keys from MongoDB
       transcriberConfig: agent.stt_config || null,
       // Widget config data
       widgetConfig: {
@@ -1837,8 +1859,8 @@ Remember: You are the first point of contact for many patients. Your professiona
                             setStartVoiceCall(true);
                             setCallStartTime(new Date());
                             setIsMuted(false);
-                            // Reset start call flag after a brief delay
-                            setTimeout(() => setStartVoiceCall(false), 100);
+                            // Reset start call flag after a longer delay to ensure useEffect catches it
+                            setTimeout(() => setStartVoiceCall(false), 500);
 
                             // Show connecting for 3 seconds while call is active
                             setIsConnectingToAgent(true);
@@ -2000,6 +2022,9 @@ Remember: You are the first point of contact for many patients. Your professiona
                     // Add these props to pass centralized configuration
                     voiceConfiguration={configuration.voice}
                     transcriberConfiguration={configuration.transcriber}
+                    // Pass agent's MongoDB config to check for saved API keys
+                    agentTtsConfig={selectedAgent.tts_config}
+                    agentSttConfig={selectedAgent.stt_config}
                   />
                 )}
                 {activeConfigTab === 'widget' && (
