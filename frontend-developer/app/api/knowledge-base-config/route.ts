@@ -5,8 +5,6 @@ const DIFY_BASE_URL = process.env.NEXT_PUBLIC_DIFY_BASE_URL || '';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('📚 Configuring knowledge base:', body);
-    
     // Extract knowledge base IDs from the request
     const { selectedKnowledgeBases, chatbot_api_key } = body;
     
@@ -22,8 +20,6 @@ export async function POST(request: NextRequest) {
     
     // Use the Dify API key from the request body, fallback to environment variable
     const difyApiKey = chatbot_api_key || process.env.NEXT_PUBLIC_CHATBOT_API_KEY;
-    console.log('🔍 Dify API key:', difyApiKey ? 'Present' : 'Missing');
-    
     // Validate required configuration
     if (!DIFY_BASE_URL) {
       return NextResponse.json(
@@ -64,17 +60,6 @@ export async function POST(request: NextRequest) {
           }
         }
       };
-      
-      console.log('📤 Sending knowledge base config to Dify:', {
-        url: `${DIFY_BASE_URL}/apps/current/model-config`,
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${difyApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: configPayload
-      });
-
       const response = await fetch(`${DIFY_BASE_URL}/apps/current/model-config`, {
         method: 'POST',
         headers: {
@@ -83,18 +68,8 @@ export async function POST(request: NextRequest) {
         },
         body: JSON.stringify(configPayload),
       });
-
-      console.log('🔍 Dify knowledge base API response status:', response.status);
-      console.log('🔍 Dify knowledge base API response headers:', Object.fromEntries(response.headers.entries()));
-
-      if (!response.ok) {
+if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('❌ Failed to configure knowledge base:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorData
-        });
-        
         return NextResponse.json(
           { 
             success: false, 
@@ -105,8 +80,6 @@ export async function POST(request: NextRequest) {
       }
 
       const data = await response.json();
-      console.log('✅ Knowledge base configured successfully:', data);
-      
       return NextResponse.json({
         success: true,
         data,
@@ -114,7 +87,6 @@ export async function POST(request: NextRequest) {
       });
       
     } catch (difyError) {
-      console.error('❌ Dify knowledge base API call failed:', difyError);
       return NextResponse.json(
         { 
           success: false, 
@@ -126,7 +98,6 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('❌ Knowledge base config error:', error);
     return NextResponse.json(
       { 
         success: false, 

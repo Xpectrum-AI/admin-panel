@@ -6,7 +6,6 @@ export async function POST(request: NextRequest) {
     
     // Validate required fields
     if (!message || !model || !systemPrompt || !provider) {
-      console.error('🚨 Missing required fields:', { message: !!message, model: !!model, systemPrompt: !!systemPrompt, provider: !!provider });
       return NextResponse.json({ 
         error: 'Missing required fields: message, model, systemPrompt, provider' 
       }, { status: 400 });
@@ -21,17 +20,6 @@ export async function POST(request: NextRequest) {
         error: 'Missing required environment variables: NEXT_PUBLIC_CHATBOT_API_URL or NEXT_PUBLIC_CHATBOT_API_KEY' 
       }, { status: 500 });
     }
-    
-    console.log('🚀 Chat API - Making request to:', CHATBOT_API_URL);
-    console.log('🚀 Chat API - Using model:', model);
-    console.log('🚀 Chat API - Using provider:', provider);
-    console.log('🚀 Chat API - Request body:', {
-      message,
-      system_prompt: systemPrompt,
-      model,
-      provider
-    });
-    
     // Use your custom API service for chat messages
     let response;
     let endpoint = CHATBOT_API_URL;
@@ -51,14 +39,11 @@ export async function POST(request: NextRequest) {
         }),
       });
     } catch (fetchError) {
-      console.error('🚨 Fetch error:', fetchError);
       throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Unknown fetch error'}`);
     }
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('🚨 Chat API error response:', response.status, errorText);
-      
       // Try to provide more helpful error messages
       if (response.status === 404) {
         throw new Error(`Chat endpoint not found. Please check if /chat-messages endpoint exists on your API service.`);
@@ -72,11 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('✅ Chat API - Success response:', data);
-    console.log('✅ Chat API - Response status:', response.status);
-    console.log('✅ Chat API - Response headers:', Object.fromEntries(response.headers.entries()));
-    
-    // Extract the response content based on your API structure
+// Extract the response content based on your API structure
     let content = '';
     if (data.response) {
       content = data.response;
@@ -87,7 +68,6 @@ export async function POST(request: NextRequest) {
     } else if (data.choices && data.choices[0] && data.choices[0].message) {
       content = data.choices[0].message.content;
     } else {
-      console.warn('⚠️ Unexpected response structure:', data);
       content = data.response || data.message || data.content || 'I received your message but the response format was unexpected.';
     }
     
@@ -99,7 +79,6 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('🚨 Chat API error:', error);
     return NextResponse.json({ 
       error: 'Failed to get AI response',
       details: error instanceof Error ? error.message : 'Unknown error'

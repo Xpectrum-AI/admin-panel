@@ -34,7 +34,6 @@ export async function POST(request: NextRequest) {
         const { dify_api_url, app_id, api_key, organization_id } = app;
 
         if (!dify_api_url || !app_id || !api_key) {
-          console.error(`Skipping app ${app_id}: Missing required fields`);
           results.push({
             app_id,
             success: false,
@@ -60,7 +59,6 @@ export async function POST(request: NextRequest) {
           ...result,
         });
       } catch (error) {
-        console.error(`Error processing app ${app.app_id}:`, error);
         results.push({
           app_id: app.app_id,
           success: false,
@@ -79,7 +77,6 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error in POST /api/conversation-logs/scheduled:', error);
     return NextResponse.json(
       {
         success: false,

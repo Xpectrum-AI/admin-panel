@@ -59,36 +59,25 @@ export const useKnowledgeBase = () => {
   // Fetch knowledge bases
   const fetchKnowledgeBases = async () => {
     // Debug auth state
-    console.log('🔍 Auth State:', { 
-      hasAccessToken: !!accessToken, 
-      isLoggedIn, 
-      authLoading,
-      tokenPrefix: accessToken ? accessToken.substring(0, 20) + '...' : 'none'
-    });
-
-    // Wait for auth to finish loading
+// Wait for auth to finish loading
     if (authLoading) {
-      console.log('⏳ PropelAuth is still loading...');
       return;
     }
 
     // Check if user is logged in
     if (!isLoggedIn) {
-      console.error('❌ User is not logged in');
       alert('You are not logged in. Please login to access Knowledge Bases.');
       return;
     }
 
     // Wait for access token to be available
     if (!accessToken) {
-      console.error('❌ No access token available despite being logged in');
       alert('Authentication error. Please refresh the page and try again.');
       return;
     }
 
     setLoading(true);
     try {
-      console.log('📡 Fetching knowledge bases with token...');
       const response = await fetch('/api/knowledge-bases', {
         headers: {
           'Authorization': `Bearer ${accessToken}`
@@ -97,20 +86,15 @@ export const useKnowledgeBase = () => {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Knowledge bases fetched:', data.length);
         setKnowledgeBases(data);
       } else if (response.status === 401) {
-        console.error('❌ Authentication failed - 401 Unauthorized');
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('Error details:', errorData);
         alert('Your session has expired. Please refresh the page and login again.');
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('❌ Failed to fetch knowledge bases:', errorData);
         alert(`Failed to fetch knowledge bases: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('❌ Network error:', error);
       alert('Failed to connect to the server. Please check your internet connection.');
     } finally {
       setLoading(false);
@@ -127,7 +111,6 @@ export const useKnowledgeBase = () => {
         setDocuments(data);
       }
     } catch (error) {
-      console.error('Error fetching documents:', error);
     } finally {
       setLoading(false);
     }
@@ -143,7 +126,6 @@ export const useKnowledgeBase = () => {
         setApiKeys(data);
       }
     } catch (error) {
-      console.error('Error fetching API keys:', error);
     } finally {
       setLoading(false);
     }
@@ -161,7 +143,6 @@ export const useKnowledgeBase = () => {
         setDocumentSegments(data);
       }
     } catch (error) {
-      console.error('Error fetching document segments:', error);
     } finally {
       setLoading(false);
     }
@@ -170,14 +151,12 @@ export const useKnowledgeBase = () => {
   // Create knowledge base
   const createKnowledgeBase = async () => {
     if (!accessToken) {
-      console.error('❌ No access token available for creating knowledge base');
       alert('Authentication error. Please refresh the page and try again.');
       return;
     }
 
     setLoading(true);
     try {
-      console.log('📝 Creating knowledge base with auth token...');
       const response = await fetch('/api/knowledge-bases', {
         method: 'POST',
         headers: {
@@ -188,7 +167,6 @@ export const useKnowledgeBase = () => {
       });
       
       if (response.ok) {
-        console.log('✅ Knowledge base created successfully');
         await fetchKnowledgeBases();
         setActiveSection('list');
         setCreateForm({ 
@@ -209,11 +187,9 @@ export const useKnowledgeBase = () => {
         });
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('❌ Failed to create knowledge base:', errorData);
         alert(`Failed to create knowledge base: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('❌ Error creating knowledge base:', error);
       alert('Failed to connect to the server. Please check your internet connection.');
     } finally {
       setLoading(false);
@@ -296,8 +272,6 @@ export const useKnowledgeBase = () => {
           });
         } else {
           const error = await response.json();
-          console.error('URL upload failed:', error);
-          
           // Show formatted error message
           if (error.configurationRequired) {
             alert(`⚠️ Configuration Required\n\n${error.error}`);
@@ -336,7 +310,6 @@ export const useKnowledgeBase = () => {
         }
       }
     } catch (error) {
-      console.error('Error uploading document:', error);
     } finally {
       setLoading(false);
     }
@@ -345,9 +318,6 @@ export const useKnowledgeBase = () => {
   // Toggle document enabled status
   const toggleDocumentStatus = async (docId: string, enabled: boolean) => {
     if (!selectedKnowledgeBase) return;
-    
-    console.log('Toggling document:', docId, 'to enabled:', enabled);
-    
     try {
       const action = enabled ? 'enable' : 'disable';
       const response = await fetch(`/api/knowledge-bases/${selectedKnowledgeBase.id}/documents/${docId}/${action}`, {
@@ -358,7 +328,6 @@ export const useKnowledgeBase = () => {
       });
       
       if (response.ok) {
-        console.log('Document toggle successful, updating state');
         // Update local state
         setDocuments(prev => 
           prev.map(doc => 
@@ -366,19 +335,14 @@ export const useKnowledgeBase = () => {
           )
         );
       } else {
-        console.error('Document toggle failed:', response.status, response.statusText);
       }
     } catch (error) {
-      console.error('Error toggling document status:', error);
     }
   };
 
   // Toggle segment enabled status
   const toggleSegmentStatus = async (segmentId: string, enabled: boolean) => {
     if (!selectedKnowledgeBase || !selectedDocument) return;
-    
-    console.log('Toggling segment:', segmentId, 'to enabled:', enabled);
-    
     try {
       const response = await fetch(`/api/knowledge-bases/${selectedKnowledgeBase.id}/documents/${selectedDocument.id}/segments/${segmentId}`, {
         method: 'PATCH',
@@ -389,7 +353,6 @@ export const useKnowledgeBase = () => {
       });
       
       if (response.ok) {
-        console.log('Toggle successful, updating state');
         // Update local state
         setDocumentSegments(prev => 
           prev.map(segment => 
@@ -397,10 +360,8 @@ export const useKnowledgeBase = () => {
           )
         );
       } else {
-        console.error('Toggle failed:', response.status, response.statusText);
       }
     } catch (error) {
-      console.error('Error toggling segment status:', error);
     }
   };
 
@@ -423,7 +384,6 @@ export const useKnowledgeBase = () => {
         setTestResults(data.records || []);
       }
     } catch (error) {
-      console.error('Error testing retrieval:', error);
     } finally {
       setLoading(false);
     }
@@ -447,7 +407,6 @@ export const useKnowledgeBase = () => {
         await fetchApiKeys(selectedKnowledgeBase.id);
       }
     } catch (error) {
-      console.error('Error creating API key:', error);
     } finally {
       setLoading(false);
     }
@@ -469,7 +428,6 @@ export const useKnowledgeBase = () => {
         await fetchKnowledgeBases();
       }
     } catch (error) {
-      console.error('Error deleting knowledge base:', error);
     } finally {
       setLoading(false);
     }
@@ -493,7 +451,6 @@ export const useKnowledgeBase = () => {
         await fetchDocuments(selectedKnowledgeBase.id);
       }
     } catch (error) {
-      console.error('Error deleting document:', error);
     } finally {
       setLoading(false);
     }
@@ -601,7 +558,6 @@ export const useKnowledgeBase = () => {
   // Auto-fetch knowledge bases when authentication is ready
   useEffect(() => {
     if (!authLoading && isLoggedIn && accessToken && knowledgeBases.length === 0 && !loading) {
-      console.log('✅ Authentication ready, fetching knowledge bases...');
       fetchKnowledgeBases();
     }
   }, [accessToken, isLoggedIn, authLoading]);

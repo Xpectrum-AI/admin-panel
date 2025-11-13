@@ -23,13 +23,10 @@ const COLORS = {
 };
 
 function log(color: keyof typeof COLORS, message: string) {
-  console.log(`${COLORS[color]}${message}${COLORS.reset}`);
 }
 
 function section(title: string) {
-  console.log('\n' + '='.repeat(60));
-  log('cyan', `  ${title}`);
-  console.log('='.repeat(60) + '\n');
+log('cyan', `  ${title}`);
 }
 
 async function testConversationLogsSystem() {
@@ -50,10 +47,7 @@ async function testConversationLogsSystem() {
   try {
     const summary = ConversationLogService.getLogsSummary();
     log('green', '✓ Logs summary retrieved successfully');
-    console.log(`  Total Files: ${summary.total_files}`);
-    console.log(`  Total Size: ${(summary.total_size_bytes / 1024 / 1024).toFixed(2)} MB`);
-    console.log(`  Directories: ${summary.directories.length}`);
-  } catch (error) {
+} catch (error) {
     log('red', `✗ Failed to get logs summary: ${error}`);
   }
 
@@ -92,20 +86,13 @@ async function testConversationLogsSystem() {
       );
 
       log('green', `✓ Successfully connected to Dify API`);
-      console.log(`  Found ${conversations.length} conversations`);
-
       if (conversations.length > 0) {
         log('blue', '\nSample conversation:');
         const sample = conversations[0];
-        console.log(`  ID: ${sample.id}`);
-        console.log(`  Name: ${sample.name}`);
-        console.log(`  Status: ${sample.status}`);
-        console.log(`  Created: ${sample.created_at}`);
       }
     } catch (error) {
       log('red', `✗ Failed to connect to Dify API`);
-      console.error(`  Error: ${error instanceof Error ? error.message : String(error)}`);
-    }
+}
 
     // Test 5: Test saving a single log (dry run with mock data)
     section('TEST 5: Test Log Saving (Mock Data)');
@@ -140,8 +127,6 @@ async function testConversationLogsSystem() {
       );
 
       log('green', '✓ Successfully saved mock conversation log');
-      console.log(`  File: ${filePath}`);
-
       // Verify the file exists
       const fs = require('fs');
       if (fs.existsSync(filePath)) {
@@ -154,8 +139,7 @@ async function testConversationLogsSystem() {
       }
     } catch (error) {
       log('red', `✗ Failed to save test log`);
-      console.error(`  Error: ${error instanceof Error ? error.message : String(error)}`);
-    }
+}
   } else {
     section('TEST 4-5: Skipped (API Credentials Not Configured)');
     log('yellow', 'To test API functionality, configure these environment variables:');
@@ -178,11 +162,9 @@ async function testConversationLogsSystem() {
     );
 
     log('green', '✓ Export functionality works');
-    console.log(`  Found ${logs.length} conversations in the last 24 hours`);
   } catch (error) {
     log('red', `✗ Export test failed`);
-    console.error(`  Error: ${error instanceof Error ? error.message : String(error)}`);
-  }
+}
 
   // Final summary
   section('TEST SUMMARY');
@@ -197,14 +179,7 @@ async function testConversationLogsSystem() {
   } else {
     log('green', '\n✅ All tests passed! System is ready to use.');
   }
-
-  console.log('\n' + '='.repeat(60) + '\n');
-  
-  log('blue', '📚 Next Steps:');
-  console.log('  1. Use the UI component in your app');
-  console.log('  2. Set up automated backups: npm run logs:scheduler');
-  console.log('  3. Or use system cron: npm run logs:backup');
-  console.log('  4. Read CONVERSATION_LOGS_GUIDE.md for detailed usage\n');
+log('blue', '📚 Next Steps:');
 }
 
 // Run tests

@@ -14,30 +14,19 @@ export async function getUserFromRequest(request: NextRequest): Promise<Authenti
     const authHeader = request.headers.get('authorization');
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.error('❌ No authorization header found');
       return null;
     }
-
-    console.log('🔑 Validating access token with PropelAuth...');
-    
     // Validate the access token with PropelAuth
     // The correct method is validateAccessTokenAndGetUser and it expects the full "Bearer token" string
     const user = await auth.validateAccessTokenAndGetUser(authHeader);
     
     if (!user) {
-      console.error('❌ Invalid token - PropelAuth validation failed');
       return null;
     }
-
-    console.log('✅ Token validated successfully. User ID:', user.userId);
-
     // Get the user's organization - PropelAuth returns orgIdToOrgMemberInfo
     const orgId = user.orgIdToOrgMemberInfo 
       ? Object.keys(user.orgIdToOrgMemberInfo)[0] 
       : user.userId; // Fallback to userId if no org
-
-    console.log('📋 Organization ID:', orgId);
-
     return {
       userId: user.userId,
       orgId: orgId,
@@ -45,7 +34,6 @@ export async function getUserFromRequest(request: NextRequest): Promise<Authenti
       email: user.email
     };
   } catch (error) {
-    console.error('❌ Error getting user from request:', error);
     return null;
   }
 }

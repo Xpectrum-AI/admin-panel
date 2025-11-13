@@ -79,7 +79,6 @@ export async function POST(request: NextRequest) {
     let startDate = new Date(now);
     
     // First, let's check when conversations were actually created
-    console.log('🔍 Checking actual conversation dates...');
     try {
       const convsResponse = await fetch(
         `${CONSOLE_ORIGIN}/console/api/apps/${appId}/chat-conversations?page=1&limit=10`,
@@ -98,38 +97,20 @@ export async function POST(request: NextRequest) {
           const dates = conversations.map((c: any) => new Date(c.created_at * 1000));
           const oldestDate = new Date(Math.min(...dates.map(d => d.getTime())));
           const newestDate = new Date(Math.max(...dates.map(d => d.getTime())));
-          
-          console.log('📅 Conversation date range:');
-          console.log('  - Oldest:', oldestDate.toISOString());
-          console.log('  - Newest:', newestDate.toISOString());
-          
-          // Use actual conversation dates (extend by 1 day on each side for safety)
+// Use actual conversation dates (extend by 1 day on each side for safety)
           startDate = new Date(oldestDate);
           startDate.setDate(startDate.getDate() - 1);
           endDate = new Date(newestDate);
           endDate.setDate(endDate.getDate() + 1);
-          
-          console.log('✅ Using actual conversation date range for monitoring');
         } else {
-          console.log('⚠️ No conversations found, using default date range');
           startDate.setDate(startDate.getDate() - period);
         }
       }
     } catch (error) {
-      console.error('⚠️ Could not fetch conversation dates, using default range:', error);
       startDate.setDate(startDate.getDate() - period);
     }
-    
-    console.log('📅 Date calculation:');
-    console.log('  - Current date:', now.toISOString());
-    console.log('  - Current year:', now.getFullYear());
-    console.log('  - Start date (raw):', startDate.toISOString());
-    console.log('  - End date (raw):', endDate.toISOString());
-    
-    // WARNING: Check if system date is correct!
+// WARNING: Check if system date is correct!
     if (now.getFullYear() > 2024) {
-      console.warn('⚠️ WARNING: System date appears to be in the future!');
-      console.warn('⚠️ If conversations were created in 2024, no data will be found!');
     }
     
     // Format dates as Dify expects: YYYY-MM-DD HH:MM (use 23:59 for end date)
@@ -143,10 +124,6 @@ export async function POST(request: NextRequest) {
     
     const start = formatDate(startDate, false);
     const end = formatDate(endDate, true);
-
-    console.log(`📊 Fetching monitoring data for app ${appId}`);
-    console.log(`  - Date range: ${start} to ${end}`);
-
     const headers = {
       'Authorization': `Bearer ${token}`,
       'X-Workspace-Id': WS_ID,
@@ -172,17 +149,14 @@ export async function POST(request: NextRequest) {
       // 1. Daily conversations
       fetch(`${CONSOLE_ORIGIN}/console/api/apps/${appId}/statistics/daily-conversations?start=${startEncoded}&end=${endEncoded}`, { headers })
         .then(async r => {
-          console.log('📡 Daily conversations status:', r.status);
           if (!r.ok) {
             const errorText = await r.text();
-            console.log('❌ Daily conversations error:', errorText);
             return { data: [] };
           }
           const json = await r.json();
-          console.log('✅ Daily conversations response:', json);
           return json;
         })
-        .catch(e => { console.error('❌ Daily conversations fetch error:', e); return { data: [] }; }),
+        .catch(e => {  return { data: [] }; }),
       
       // 2. Daily terminals
       fetch(`${CONSOLE_ORIGIN}/console/api/apps/${appId}/statistics/daily-end-users?start=${startEncoded}&end=${endEncoded}`, { headers })
@@ -229,18 +203,7 @@ export async function POST(request: NextRequest) {
         .then(r => r.ok ? r.json() : { data: [] })
         .catch(() => ({ data: [] })),
     ]);
-
-    console.log('✅ All Dify endpoints fetched');
-    console.log('📊 RAW API RESPONSES:');
-    console.log('1. Daily Conversations:', JSON.stringify(dailyConversations, null, 2));
-    console.log('2. Daily Terminals:', JSON.stringify(dailyTerminals, null, 2));
-    console.log('3. Daily Messages:', JSON.stringify(dailyMessages, null, 2));
-    console.log('4. Token Costs:', JSON.stringify(tokenCosts, null, 2));
-    console.log('5. Avg Interactions:', JSON.stringify(avgSessionInteractions, null, 2));
-    console.log('6. Token Speed:', JSON.stringify(tokenOutputSpeed, null, 2));
-    console.log('7. Satisfaction:', JSON.stringify(userSatisfactionRate, null, 2));
-
-    // Extract data EXACTLY as Dify does (no custom calculations)
+// Extract data EXACTLY as Dify does (no custom calculations)
     const conversationsData = dailyConversations.data || [];
     const terminalsData = dailyTerminals.data || [];
     const messagesData = dailyMessages.data || [];
@@ -248,12 +211,6 @@ export async function POST(request: NextRequest) {
     const avgInteractionsData = avgSessionInteractions.data || [];
     const tokenSpeedData = tokenOutputSpeed.data || [];
     const satisfactionData = userSatisfactionRate.data || [];
-
-    console.log('📊 EXTRACTED DATA ARRAYS:');
-    console.log('Conversations array length:', conversationsData.length);
-    console.log('Terminals array length:', terminalsData.length);
-    console.log('Messages array length:', messagesData.length);
-
     // Calculate totals EXACTLY as Dify does
     const totalConversations = conversationsData.reduce((sum: number, item: any) => 
       sum + (item.conversation_count || 0), 0);
@@ -341,12 +298,9 @@ export async function POST(request: NextRequest) {
         })),
       }
     };
-
-    console.log('📊 Final statistics:', result.statistics);
     return NextResponse.json(result);
 
   } catch (error) {
-    console.error('❌ Monitoring error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch monitoring data', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }

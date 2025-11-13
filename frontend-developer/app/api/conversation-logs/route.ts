@@ -51,7 +51,6 @@ export async function GET(request: NextRequest) {
       { status: 400 }
     );
   } catch (error) {
-    console.error('Error in GET /api/conversation-logs:', error);
     return NextResponse.json(
       {
         success: false,
@@ -104,7 +103,6 @@ export async function POST(request: NextRequest) {
       ...result,
     });
   } catch (error) {
-    console.error('Error in POST /api/conversation-logs:', error);
     return NextResponse.json(
       {
         success: false,
@@ -141,7 +139,6 @@ export async function DELETE(request: NextRequest) {
       ...result,
     });
   } catch (error) {
-    console.error('Error in DELETE /api/conversation-logs:', error);
     return NextResponse.json(
       {
         success: false,

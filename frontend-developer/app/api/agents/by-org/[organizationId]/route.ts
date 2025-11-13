@@ -14,13 +14,9 @@ export async function GET(
 
     const { organizationId } = await params;
 
-    console.log('🔍 Fetching agents for organization:', organizationId);
-    console.log('🔗 NEXT_PUBLIC_LIVE_API_URL:', process.env.NEXT_PUBLIC_LIVE_API_URL);
-
     // Try to fetch real agents data from backend first
     const baseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
     const backendUrl = `${baseUrl}/agents/by-org/${organizationId}`;
-    console.log('🌐 Making backend request to:', backendUrl);
     
     try {
       const response = await fetch(backendUrl, {
@@ -35,18 +31,16 @@ export async function GET(
 
       if (response.ok) {
         const backendData = await response.json();
-        console.log('🔍 Backend agents response:', backendData);
         return NextResponse.json({
           success: true,
           data: backendData,
           message: `Found agents for organization ${organizationId}`
         });
       } else {
-        const errorText = await response.text();
-        console.log('❌ Backend error response:', errorText);
+        await response.text();
       }
     } catch (backendError) {
-      console.log('⚠️ Backend API not available, using mock data:', backendError);
+      // Backend API not available, using mock data
     }
 
     // Fallback to mock data when backend is not available
@@ -110,15 +104,12 @@ export async function GET(
       }
     ];
 
-    console.log('✅ Returning mock agents for organization:', organizationId);
-
     return NextResponse.json({
       success: true,
       data: mockAgents,
       message: `Found ${mockAgents.length} mock agents for organization ${organizationId}`
     });
   } catch (error) {
-    console.error('Agent API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

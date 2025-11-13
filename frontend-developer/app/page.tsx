@@ -146,8 +146,6 @@ export default function DeveloperDashboard() {
         const orgs = userClass.getOrgs?.() || [];
         if (orgs.length > 0) {
           const currentOrg = orgs[0]; // Get the first organization
-          console.log('🔍 Current organization:', currentOrg);
-
           const organizationInfo: OrganizationInfo = {
             orgId: currentOrg.orgId,
             orgName: (currentOrg as any).orgName || (currentOrg as any).name
@@ -164,7 +162,6 @@ export default function DeveloperDashboard() {
               setDashboardStats(result.data);
             }
           } catch (error) {
-            console.error('Error fetching dashboard stats:', error);
           } finally {
             setStatsLoading(false);
           }
@@ -472,7 +469,6 @@ export default function DeveloperDashboard() {
               // Redirect to login page
               window.location.href = '/login';
             } catch (error) {
-              console.error('Logout error:', error);
               setLoggingOut(false);
               // Force redirect even if logout fails
               window.location.href = '/login';
@@ -496,7 +492,6 @@ export default function DeveloperDashboard() {
               // Redirect to login page
               window.location.href = '/login';
             } catch (error) {
-              console.error('Logout error:', error);
               setLoggingOut(false);
               // Force redirect even if logout fails
               window.location.href = '/login';

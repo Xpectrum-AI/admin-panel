@@ -10,9 +10,6 @@ export async function GET(request: NextRequest) {
       NEXT_PUBLIC_CHATBOT_API_KEY: process.env.NEXT_PUBLIC_CHATBOT_API_KEY,
       NODE_ENV: process.env.NODE_ENV,
     };
-
-    console.log('🔍 Environment variables debug:', envVars);
-
     return NextResponse.json({
       success: true,
       environment: envVars,
@@ -20,7 +17,6 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Debug environment error:', error);
     return NextResponse.json(
       { 
         success: false, 

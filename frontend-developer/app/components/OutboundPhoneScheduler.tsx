@@ -109,42 +109,30 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
   }, [getOrganizationId]);
 
   const loadScheduledEvents = useCallback(async () => {
-    console.log('🔄 Loading scheduled events...');
     setLoadingScheduledEvents(true);
     try {
       const orgId = getOrganizationId();
-      console.log('📋 Organization ID:', orgId);
-      
       if (!orgId) {
-        console.log('❌ No organization ID, setting empty events');
         setScheduledEvents([]);
         return;
       }
 
       const response: ApiResponse<{ scheduled_events: ScheduledEvent[] }> = await getScheduledEventsByOrganization(orgId);
-      console.log('📡 API Response:', response);
-      
       if (response.success && response.data) {
         const eventsData = response.data;
-        console.log('📊 Events data:', eventsData);
         if (eventsData.scheduled_events && Array.isArray(eventsData.scheduled_events)) {
-          console.log('✅ Setting scheduled events:', eventsData.scheduled_events.length, 'events');
           setScheduledEvents(eventsData.scheduled_events);
         } else {
-          console.log('⚠️ No scheduled_events array, setting empty');
           setScheduledEvents([]);
         }
       } else {
-        console.log('❌ API response not successful, setting empty events');
         setScheduledEvents([]);
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('❌ Error loading scheduled events:', errorMessage);
       setScheduledEvents([]);
     } finally {
       setLoadingScheduledEvents(false);
-      console.log('✅ Finished loading scheduled events');
     }
   }, [getOrganizationId]);
 
@@ -181,7 +169,6 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('Error loading agents:', errorMessage);
       setAgents([]);
     } finally {
       setLoadingAgents(false);
@@ -198,14 +185,9 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
         setPhoneNumbers([]);
         return;
       }
-      
-      console.log('📞 Loading organization phone numbers for org:', orgId);
-      
       const response: ApiResponse<any> = await getPhoneNumbersByOrganization(orgId);
       
       if (response.success && response.data) {
-        console.log('📞 Organization Phone Numbers API Response:', response.data);
-        
         // Handle different possible response structures
         let phoneNumbersList = [];
         if (Array.isArray(response.data)) {
@@ -215,16 +197,12 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
         } else if (response.data.assigned && Array.isArray(response.data.assigned)) {
           phoneNumbersList = response.data.assigned;
         }
-        
-        console.log('📞 Phone Numbers List:', phoneNumbersList);
         setPhoneNumbers(phoneNumbersList);
       } else {
-        console.log('📞 Organization Phone Numbers API failed:', response);
         setPhoneNumbers([]);
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('Error loading phone numbers:', errorMessage);
       setPhoneNumbers([]);
     } finally {
       setLoadingPhoneNumbers(false);
@@ -238,19 +216,12 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
       const orgId = getOrganizationId();
       
       if (!orgId) {
-        console.log('❌ No organization ID, setting empty trunks');
         setTrunks([]);
         return;
       }
 
       const baseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
       const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
-      
-      console.log('🔍 Loading trunks for org:', orgId);
-      console.log('🌐 API URL:', baseUrl);
-      console.log('🔑 API Key:', apiKey ? 'Present' : 'Missing');
-      console.log('📡 Full API URL:', `${baseUrl}/outbound/trunks/organization/${orgId}`);
-      
       const response = await fetch(`${baseUrl}/outbound/trunks/organization/${orgId}`, {
         method: 'GET',
         headers: {
@@ -260,27 +231,19 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Trunks API Error Response:', errorText);
         throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('✅ Trunks API Response:', result);
-      
       if (result.success && result.trunks) {
-        console.log('📞 Setting trunks from result.trunks:', result.trunks);
         setTrunks(Array.isArray(result.trunks) ? result.trunks : []);
       } else if (result.success && result.data) {
-        console.log('📞 Setting trunks from result.data:', result.data);
         setTrunks(Array.isArray(result.data) ? result.data : []);
       } else {
-        console.log('⚠️ No trunks data in response, setting empty');
-        console.log('🔍 Available keys in result:', Object.keys(result));
-        setTrunks([]);
+setTrunks([]);
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('❌ Error loading trunks:', errorMessage);
       setTrunks([]);
     } finally {
       setLoadingTrunks(false);
@@ -308,18 +271,10 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
 
       const baseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
       const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
-      
-      console.log('🔍 Creating trunk for org:', orgId);
-      console.log('🌐 API URL:', baseUrl);
-      console.log('📞 Original phone number:', trunkForm.phone_number);
-      console.log('🚚 Transport:', trunkForm.transport);
-      console.log('📡 Full Create API URL:', `${baseUrl}/outbound/trunks/create`);
-      
       // Ensure phone number is in E.164 format (add + if missing)
       let formattedPhoneNumber = trunkForm.phone_number;
       if (formattedPhoneNumber && !formattedPhoneNumber.startsWith('+')) {
         formattedPhoneNumber = '+' + formattedPhoneNumber;
-        console.log('📞 Formatted phone number:', formattedPhoneNumber);
       }
       
       const trunkData = {
@@ -327,9 +282,6 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
         phone_number: formattedPhoneNumber,
         transport: trunkForm.transport
       };
-      
-      console.log('📤 Trunk data being sent:', trunkData);
-      
       const response = await fetch(`${baseUrl}/outbound/trunks/create`, {
         method: 'POST',
         headers: {
@@ -341,13 +293,10 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Create Trunk API Error:', errorText);
         throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('✅ Create Trunk API Response:', result);
-      
       if (result.success) {
         setTrunkSuccess('Trunk created successfully!');
         setTrunkForm({ phone_number: '', transport: 'udp' });
@@ -358,7 +307,6 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
         setTrunkError(result.message || 'Failed to create trunk');
       }
     } catch (error: any) {
-      console.error('❌ Error creating trunk:', error);
       setTrunkError('Failed to create trunk: ' + error.message);
     } finally {
       setCreatingTrunk(false);
@@ -374,18 +322,9 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
       const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
-      
-      console.log('🗑️ Deleting trunk:', trunkId);
-      console.log('🌐 API URL:', baseUrl);
-      console.log('📡 Full Delete API URL:', `${baseUrl}/outbound/trunks/${trunkId}`);
-      
       // Find the trunk object to get the name field
       const trunk = trunks.find(t => (t.trunk_id || t.id) === trunkId);
       const trunkName = trunk?.name || trunkId;
-      
-      console.log('🔍 Found trunk object:', trunk);
-      console.log('📝 Using trunk name for deletion:', trunkName);
-      
       // Try different delete endpoint patterns using the name field
       const deleteEndpoints = [
         `${baseUrl}/outbound/trunks/${trunkName}`,  // Pattern 1: Direct name
@@ -398,8 +337,6 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
       
       for (const endpoint of deleteEndpoints) {
         try {
-          console.log(`🔄 Trying delete endpoint: ${endpoint}`);
-          
           const response = await fetch(endpoint, {
             method: 'DELETE',
             headers: {
@@ -409,8 +346,6 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
 
           if (response.ok) {
             const result = await response.json();
-            console.log('✅ Delete Trunk API Response:', result);
-            
             if (result.success) {
               setTrunkSuccess('Trunk deleted successfully!');
               await loadTrunks();
@@ -421,11 +356,9 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
             }
           } else {
             const errorText = await response.text();
-            console.log(`❌ ${endpoint} failed:`, errorText);
             lastError = `HTTP error! status: ${response.status} - ${errorText}`;
           }
         } catch (endpointError) {
-          console.log(`❌ ${endpoint} failed with error:`, endpointError);
           lastError = endpointError instanceof Error ? endpointError.message : 'Unknown error';
         }
       }
@@ -434,7 +367,6 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
         throw new Error(`All delete endpoints failed. Last error: ${lastError}`);
       }
     } catch (error: any) {
-      console.error('❌ Error deleting trunk:', error);
       setTrunkError('Failed to delete trunk: ' + error.message);
     } finally {
       setDeletingTrunk(null);
@@ -487,9 +419,6 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
   }, [schedulerForm]);
 
   const handleSelectScheduledEvent = (event: ScheduledEvent) => {
-    console.log('📋 Selected Event Data:', event);
-    console.log('🔄 Flexible Time Minutes:', event.flexible_time_minutes);
-    console.log('🔄 Retry Interval Minutes:', event.retry_interval_minutes);
     setSelectedScheduledEvent(event);
   };
 
@@ -500,10 +429,7 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
     setDeletingEvent(eventId);
 
     try {
-      console.log('🗑️ Deleting scheduled event:', eventId);
       const result = await deleteScheduledEvent(eventId);
-      console.log('📡 Delete API response:', result);
-      
       if (result.success) {
         setDeleteSuccess('Scheduled event deleted successfully!');
         
@@ -516,14 +442,11 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
         }
         
         // Reload scheduled events
-        console.log('🔄 Reloading scheduled events after delete...');
         await loadScheduledEvents();
-        console.log('✅ Scheduled events reloaded successfully');
       } else {
         setDeleteError(result.message || 'Failed to delete scheduled event');
       }
     } catch (error: any) {
-      console.error('❌ Error deleting scheduled event:', error);
       setDeleteError('Failed to delete scheduled event: ' + error.message);
     } finally {
       setDeletingEvent(null);
@@ -607,7 +530,6 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setSchedulerError('Failed to schedule outbound call: ' + errorMessage);
-      console.error('Error scheduling outbound call:', err);
     } finally {
       setScheduling(false);
     }

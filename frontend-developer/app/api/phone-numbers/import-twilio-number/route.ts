@@ -84,8 +84,6 @@ export async function POST(request: NextRequest) {
     };
 
     // In a real implementation, this would save to the database
-    console.log('✅ Twilio phone number import simulated:', importedPhoneNumber);
-
     // Return success response
     return NextResponse.json({
       status: 'success',
@@ -102,7 +100,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Twilio phone number import API error:', error);
     return NextResponse.json({ 
       status: 'error',
       message: 'Internal server error' 

@@ -3,8 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('🧪 Testing knowledge base configuration:', body);
-    
     // Test payload
     const testPayload = {
       provider: 'langgenius/openai/openai',
@@ -25,9 +23,6 @@ export async function POST(request: NextRequest) {
         }
       }
     };
-    
-    console.log('📤 Sending test config to Dify:', testPayload);
-    
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
     if (!baseUrl) {
       return NextResponse.json({ error: 'NEXT_PUBLIC_BASE_URL is not configured' }, { status: 500 });
@@ -53,7 +48,6 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('❌ Test error:', error);
     return NextResponse.json(
       { 
         success: false, 

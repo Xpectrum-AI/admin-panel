@@ -5,12 +5,8 @@ const DIFY_BASE_URL = process.env.NEXT_PUBLIC_DIFY_BASE_URL || '';
 export async function GET(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
-    console.log('📖 Getting agent config:', body);
-    
     // Use the Dify API key from the request body, fallback to environment variable
     const difyApiKey = body.chatbot_api_key || request.headers.get('authorization')?.replace('Bearer ', '') || process.env.NEXT_PUBLIC_CHATBOT_API_KEY;
-    console.log('🔍 Dify API key:', difyApiKey ? 'Present' : 'Missing');
-    
     // Validate required configuration
     if (!DIFY_BASE_URL) {
       return NextResponse.json(
@@ -35,15 +31,6 @@ export async function GET(request: NextRequest) {
     try {
       // Try to get app details which might contain configuration
       // Note: Dify doesn't have a direct GET for model-config, so we try app details
-      console.log('🔍 Making request to Dify API:', {
-        url: `${DIFY_BASE_URL}/apps/current`,
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${difyApiKey}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
       const response = await fetch(`${DIFY_BASE_URL}/apps/current`, {
         method: 'GET',
         headers: {
@@ -51,18 +38,8 @@ export async function GET(request: NextRequest) {
           'Content-Type': 'application/json',
         },
       });
-
-      console.log('🔍 Dify API response status:', response.status);
-      console.log('🔍 Dify API response headers:', Object.fromEntries(response.headers.entries()));
-
-      if (!response.ok) {
+if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('❌ Failed to get agent config:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorData
-        });
-        
         return NextResponse.json(
           { 
             success: false, 
@@ -73,8 +50,6 @@ export async function GET(request: NextRequest) {
       }
 
       const data = await response.json();
-      console.log('✅ Agent config retrieved successfully:', data);
-      
       return NextResponse.json({
         success: true,
         data,
@@ -82,7 +57,6 @@ export async function GET(request: NextRequest) {
       });
       
     } catch (difyError) {
-      console.error('❌ Dify API call failed:', difyError);
       return NextResponse.json(
         { 
           success: false, 
@@ -94,7 +68,6 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('❌ Agent config error:', error);
     return NextResponse.json(
       { 
         success: false, 

@@ -7,10 +7,7 @@ export async function POST(request: NextRequest) {
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
-
-    console.log('🎤 Voice call request:', { message: message.substring(0, 50) + '...', agentName, voiceProvider });
-
-    // Use the new API credentials from environment variables
+// Use the new API credentials from environment variables
     const apiBaseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
     if (!apiBaseUrl) {
       return NextResponse.json({ error: 'NEXT_PUBLIC_LIVE_API_URL is not configured' }, { status: 500 });
@@ -19,9 +16,6 @@ export async function POST(request: NextRequest) {
     if (!apiKey) {
       return NextResponse.json({ error: 'NEXT_PUBLIC_LIVE_API_KEY is not configured' }, { status: 500 });
     }
-    
-    console.log('🎤 Using API credentials:', { apiBaseUrl, apiKey: apiKey ? '***' : 'NOT_SET' });
-
     // Get voice configuration based on provider
     let voiceApiKey: string;
     let voiceId: string;
@@ -44,8 +38,6 @@ export async function POST(request: NextRequest) {
 
     try {
       // First, try to use the new API endpoint for voice calls
-      console.log('🎤 Trying new API endpoint for voice call');
-      
       const newApiResponse = await fetch(`${apiBaseUrl}/api/voice/tts`, {
         method: 'POST',
         headers: {
@@ -63,7 +55,6 @@ export async function POST(request: NextRequest) {
         const newApiData = await newApiResponse.json();
         if (newApiData.audio) {
           audioBase64 = newApiData.audio;
-          console.log('🎤 Voice generation successful via new API');
         } else {
           throw new Error('No audio data in new API response');
         }
@@ -71,8 +62,6 @@ export async function POST(request: NextRequest) {
         throw new Error(`New API error: ${newApiResponse.status}`);
       }
     } catch (newApiError) {
-      console.log('🎤 New API failed, falling back to direct voice providers:', newApiError);
-      
       // Fallback to direct voice provider APIs
       if (!voiceApiKey || !voiceId) {
         return NextResponse.json({ 
@@ -106,9 +95,6 @@ export async function POST(request: NextRequest) {
           speed: 1.0
         };
       }
-
-      console.log('🎤 Making direct voice API request to:', voiceUrl);
-
       const response = await fetch(voiceUrl, {
         method: 'POST',
         headers,
@@ -117,7 +103,6 @@ export async function POST(request: NextRequest) {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('🎤 Direct voice API error:', response.status, errorText);
         return NextResponse.json({ 
           error: `Voice API error: ${response.status} - ${errorText}` 
         }, { status: response.status });
@@ -126,7 +111,6 @@ export async function POST(request: NextRequest) {
       // Get the audio data
       const audioBuffer = await response.arrayBuffer();
       audioBase64 = Buffer.from(audioBuffer).toString('base64');
-      console.log('🎤 Direct voice generation successful, audio size:', audioBuffer.byteLength, 'bytes');
     }
 
     return NextResponse.json({
@@ -138,7 +122,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('🎤 Voice call error:', error);
     return NextResponse.json({ 
       error: error instanceof Error ? error.message : 'Voice generation failed' 
     }, { status: 500 });

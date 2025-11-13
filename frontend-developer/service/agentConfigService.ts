@@ -85,11 +85,7 @@ export const agentConfigService = {
   // Create a new agent
   async createAgent(agentData: { name: string; status: string; description: string; model: string; provider: string; organization_id: string }): Promise<AgentConfigResponse> {
     try {
-      console.log('🚀 Creating new agent...');
-      
       // Using local API - no need to validate external environment variables
-      console.log('🔍 Using local API for agent creation');
-
       // Create a basic agent configuration with defaults
       const basicConfig: AgentConfigRequest = {
         organization_id: agentData.organization_id,
@@ -188,14 +184,12 @@ Remember: You are the first point of contact for many patients. Your professiona
       }
 
       const result = await response.json();
-      console.log('✅ Agent creation response:', result);
       return {
         success: true,
         data: { ...agentData, ...result },
         message: 'Agent created successfully'
       };
     } catch (error) {
-      console.error('Agent creation error:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to create agent'
@@ -206,14 +200,10 @@ Remember: You are the first point of contact for many patients. Your professiona
   // Configure agent with complete configuration
   async configureAgent(agentName: string, config: Partial<AgentConfigRequest>): Promise<AgentConfigResponse> {
     try {
-      console.log('🚀 Starting agent configuration...');
       // Environment variables are accessed directly
       
       // Use local API instead of external API - no need to validate external env vars
-      console.log('🔍 Using local API for agent configuration');
       const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
-      console.log('🔑 API Key being used:', apiKey ? 'Present' : 'Missing');
-
       // Fill in missing fields with defaults
       const completeConfig: AgentConfigRequest = {
         organization_id: config.organization_id,
@@ -313,14 +303,12 @@ Remember: You are the first point of contact for many patients. Your professiona
       }
 
       const result = await response.json();
-      console.log('✅ Agent creation response:', result);
       return {
         success: true,
         data: result,
         message: 'Agent configured successfully'
       };
     } catch (error) {
-      console.error('Agent configuration error:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to configure agent'
@@ -336,8 +324,6 @@ Remember: You are the first point of contact for many patients. Your professiona
       // Using local API - no need to validate external environment variables
 
       // Use local API for getting agent info
-      console.log('🚀 Fetching agent info for:', agentName);
-      
       const response = await fetch(`/api/agents/info/${agentName}`, {
         method: 'GET',
         headers: {
@@ -352,14 +338,12 @@ Remember: You are the first point of contact for many patients. Your professiona
       }
 
       const result = await response.json();
-      console.log('✅ Successfully fetched agent info for:', agentName);
       return {
         success: true,
         data: result,
         message: 'Agent configuration retrieved successfully'
       };
     } catch (error) {
-      console.error('Get agent configuration error:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to get agent configuration'
@@ -371,8 +355,6 @@ Remember: You are the first point of contact for many patients. Your professiona
   async getAllAgents(organizationId: string, signal?: AbortSignal): Promise<{ success: boolean; data?: any[]; message: string }> {
     try {
       // Use local API instead of external API
-      console.log('🚀 Fetching agents for organization:', organizationId);
-      
       const response = await fetch(`/api/agents/by-org/${organizationId}`, {
         method: 'GET',
         headers: {
@@ -388,7 +370,6 @@ Remember: You are the first point of contact for many patients. Your professiona
         
         // If endpoint doesn't exist, return empty array
         if (response.status === 404 || response.status === 405) {
-          console.log('Backend does not support listing agents by organization. This is normal if the API only supports individual agent operations.');
           return {
             success: true,
             data: [],
@@ -400,36 +381,23 @@ Remember: You are the first point of contact for many patients. Your professiona
       }
 
       const result = await response.json();
-      
-      console.log('🔍 Raw API response:', result);
-      console.log('🔍 Response type:', typeof result);
-      console.log('🔍 Is array:', Array.isArray(result));
-      
-      // Handle different response formats
+// Handle different response formats
       let agents = [];
       if (Array.isArray(result)) {
         agents = result;
-        console.log('🔍 Using result as direct array');
       } else if (result.agents && typeof result.agents === 'object') {
         // Convert object of agents to array format
         agents = Object.entries(result.agents).map(([agentName, agentData]: [string, any]) => ({
           name: agentName,
           ...agentData
         }));
-        console.log('🔍 Using result.agents object, converted to array');
       } else if (result.agents && Array.isArray(result.agents)) {
         agents = result.agents;
-        console.log('🔍 Using result.agents array');
       } else if (result.data && Array.isArray(result.data)) {
         agents = result.data;
-        console.log('🔍 Using result.data array');
       } else {
         agents = [];
-        console.log('🔍 No valid agents array found, using empty array');
       }
-
-      console.log('✅ Successfully fetched agents for organization:', organizationId, agents.length);
-      console.log('🔍 Agents data:', agents);
       return {
         success: true,
         data: agents,
@@ -438,20 +406,16 @@ Remember: You are the first point of contact for many patients. Your professiona
     } catch (error) {
       // Abort is expected during rapid refresh/changes
       if (error instanceof DOMException && error.name === 'AbortError') {
-        console.log('Fetch aborted for getAllAgents');
         return { success: true, data: [], message: 'Aborted' };
       }
       // Don't log 405 errors as they are expected
       if (error instanceof Error && error.message.includes('405')) {
-        console.log('Backend does not support listing agents by organization. This is normal.');
         return {
           success: true,
           data: [],
           message: 'No agents found. Create your first agent!'
         };
       }
-      
-      console.error('Get all agents error:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to get agents'
@@ -463,9 +427,6 @@ Remember: You are the first point of contact for many patients. Your professiona
   async getAgentsByOrg(organizationId: string, signal?: AbortSignal): Promise<{ success: boolean; data?: any[]; message: string }> {
     try {
       // Environment variables are accessed directly
-      
-      console.log('🚀 Fetching agents for organization:', organizationId);
-      
       const response = await fetch(`/api/agents/by-org/${organizationId}`, {
         method: 'GET',
         headers: {
@@ -496,8 +457,6 @@ Remember: You are the first point of contact for many patients. Your professiona
       } else if (result.data && Array.isArray(result.data)) {
         agents = result.data;
       }
-
-      console.log('✅ Successfully fetched agents for organization:', organizationId, agents.length);
       return {
         success: true,
         data: agents,
@@ -505,10 +464,8 @@ Remember: You are the first point of contact for many patients. Your professiona
       };
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
-        console.log('Fetch aborted for getAgentsByOrg');
         return { success: true, data: [], message: 'Aborted' };
       }
-      console.error('Get agents by organization error:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to get agents by organization'
@@ -519,8 +476,6 @@ Remember: You are the first point of contact for many patients. Your professiona
   // Delete agent by organization
   async deleteAgent(agentName: string, organizationId: string): Promise<{ success: boolean; message: string }> {
     try {
-      console.log('🚀 Deleting agent:', agentName, 'from organization:', organizationId);
-      
       const response = await fetch(`/api/agents/delete-by-org/${organizationId}`, {
         method: 'DELETE',
         headers: {
@@ -534,14 +489,11 @@ Remember: You are the first point of contact for many patients. Your professiona
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
-
-      console.log('✅ Successfully deleted agent:', agentName, 'from organization:', organizationId);
       return {
         success: true,
         message: 'Agent deleted successfully'
       };
     } catch (error) {
-      console.error('Delete agent error:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to delete agent'
@@ -553,9 +505,6 @@ Remember: You are the first point of contact for many patients. Your professiona
   async deleteAgentByOrg(agentName: string, organizationId: string): Promise<{ success: boolean; message: string }> {
     try {
       // Environment variables are accessed directly
-      
-      console.log('🚀 Deleting agent:', agentName, 'from organization:', organizationId);
-      
       const response = await fetch(`/api/agents/delete-by-org/${organizationId}`, {
         method: 'DELETE',
         headers: {
@@ -569,14 +518,11 @@ Remember: You are the first point of contact for many patients. Your professiona
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
-
-      console.log('✅ Successfully deleted agent:', agentName, 'from organization:', organizationId);
       return {
         success: true,
         message: 'Agent deleted successfully'
       };
     } catch (error) {
-      console.error('Delete agent by organization error:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to delete agent by organization'
@@ -587,8 +533,6 @@ Remember: You are the first point of contact for many patients. Your professiona
   // Delete agent by name using FastAPI endpoint
   async deleteAgentByName(agentName: string): Promise<{ success: boolean; message: string }> {
     try {
-      console.log('🚀 Deleting agent by name:', agentName);
-      
       const response = await fetch(`/api/agents/delete/${agentName}`, {
         method: 'DELETE',
         headers: {
@@ -603,14 +547,11 @@ Remember: You are the first point of contact for many patients. Your professiona
       }
 
       const result = await response.json();
-      console.log('✅ Successfully deleted agent by name:', agentName, 'Response:', result);
-      
       return {
         success: true,
         message: result.message || 'Agent deleted successfully'
       };
     } catch (error) {
-      console.error('Delete agent by name error:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to delete agent by name'

@@ -118,7 +118,6 @@ export default function OutboundWhatsappScheduler({ refreshTrigger }: OutboundWh
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setSchedulerError('Failed to send WhatsApp message: ' + errorMessage);
-      console.error('Error sending WhatsApp message:', err);
     } finally {
       setSending(false);
     }

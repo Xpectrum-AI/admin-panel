@@ -150,16 +150,13 @@ Remember: You are the first point of contact for many patients. Your professiona
         setModelApiKey(config.modelApiKey || process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '');
         setModelLiveUrl(config.modelLiveUrl || process.env.NEXT_PUBLIC_DIFY_BASE_URL || '');
         // Don't load agentUrl and agentApiKey from localStorage - keep them from existingConfig only
-        console.log('✅ Loaded model config from localStorage:', config);
       }
 
       if (savedPrompt) {
         const promptData = JSON.parse(savedPrompt);
         setSystemPrompt(promptData.prompt || systemPrompt);
-        console.log('✅ Loaded prompt from localStorage:', promptData);
       }
     } catch (error) {
-      console.warn('Failed to load from localStorage:', error);
     }
   }, [agentName, getStorageKey, systemPrompt]);
 
@@ -168,20 +165,12 @@ Remember: You are the first point of contact for many patients. Your professiona
     try {
       const key = getStorageKey(type);
       localStorage.setItem(key, JSON.stringify(data));
-      console.log('✅ Saved to localStorage:', key, data);
     } catch (error) {
-      console.warn('Failed to save to localStorage:', error);
     }
   }, [getStorageKey]);
 
   // Load state from centralized configuration when component mounts or when configuration changes
   useEffect(() => {
-    console.log('🔄 ModelConfig useEffect triggered:', {
-      existingConfig,
-      isUserChangingProvider,
-      isUserChangingModel
-    });
-
     // Reset user change flags when existingConfig changes (tab switch)
     if (existingConfig) {
       setIsUserChangingProvider(false);
@@ -190,44 +179,29 @@ Remember: You are the first point of contact for many patients. Your professiona
 
     // Load from centralized configuration
     if (existingConfig && !isUserChangingProvider && !isUserChangingModel) {
-      console.log('🔄 Loading model state from centralized configuration:', existingConfig);
-      console.log('🔍 existingConfig.chatbot_api:', existingConfig.chatbot_api);
-      console.log('🔍 existingConfig.chatbot_key:', existingConfig.chatbot_key);
-      console.log('🔍 existingConfig.agentUrl:', existingConfig.agentUrl);
-      console.log('🔍 existingConfig.agentApiKey:', existingConfig.agentApiKey);
-
       if (existingConfig.selectedModelProvider) {
-        console.log('🔄 Setting model provider:', existingConfig.selectedModelProvider);
         setSelectedModelProvider(existingConfig.selectedModelProvider);
       }
       if (existingConfig.selectedModel) {
-        console.log('🔄 Setting selected model:', existingConfig.selectedModel);
         setSelectedModel(existingConfig.selectedModel);
       }
       if (existingConfig.modelLiveUrl) {
-        console.log('🔄 Setting model live URL:', existingConfig.modelLiveUrl);
         setModelLiveUrl(existingConfig.modelLiveUrl);
       }
       if (existingConfig.modelApiKey) {
-        console.log('🔄 Setting model API key');
         setModelApiKey(existingConfig.modelApiKey);
       }
       if (existingConfig.chatbot_api) {
-        console.log('🔄 Setting agent URL from chatbot_api:', existingConfig.chatbot_api);
         setAgentUrl(existingConfig.chatbot_api);
       } else if (existingConfig.agentUrl) {
-        console.log('🔄 Setting agent URL from agentUrl:', existingConfig.agentUrl);
         setAgentUrl(existingConfig.agentUrl);
       }
       if (existingConfig.chatbot_key) {
-        console.log('🔄 Setting agent API key from chatbot_key:', existingConfig.chatbot_key);
         setLocalAgentApiKey(existingConfig.chatbot_key);
       } else if (existingConfig.agentApiKey) {
-        console.log('🔄 Setting agent API key from agentApiKey:', existingConfig.agentApiKey);
         setLocalAgentApiKey(existingConfig.agentApiKey);
       }
       if (existingConfig.systemPrompt) {
-        console.log('🔄 Setting system prompt');
         setSystemPrompt(existingConfig.systemPrompt);
       }
 
@@ -245,32 +219,25 @@ Remember: You are the first point of contact for many patients. Your professiona
 
   // Update state when props change
   useEffect(() => {
-    console.log('🔧 ModelConfig props changed:', { agentApiKey, agentApiUrl });
     if (agentApiKey) {
-      console.log('🔧 Setting agentApiKey from props:', agentApiKey.substring(0, 10) + '...');
-      setLocalAgentApiKey(agentApiKey);
+setLocalAgentApiKey(agentApiKey);
     } else {
-      console.log('⚠️ No agentApiKey provided from props');
     }
     if (agentApiUrl) {
-      console.log('🔧 Setting agentUrl from props:', agentApiUrl);
       setAgentUrl(agentApiUrl);
     }
   }, [agentApiKey, agentApiUrl]);
 
   // Debug: Watch for changes to agentApiKey
   useEffect(() => {
-    console.log('🔍 agentApiKey state changed to:', localAgentApiKey);
   }, [localAgentApiKey]);
 
   // Debug: Watch for changes to agentUrl
   useEffect(() => {
-    console.log('🔍 agentUrl state changed to:', agentUrl);
   }, [agentUrl]);
 
   // Debug: Watch for changes to selectedModelProvider
   useEffect(() => {
-    console.log('🔍 selectedModelProvider state changed to:', selectedModelProvider);
   }, [selectedModelProvider]);
 
   // Consolidated auto-save configuration when values change
@@ -374,18 +341,10 @@ Remember: You are the first point of contact for many patients. Your professiona
         chatbot_key: localAgentApiKey,
         ...updates
       };
-
-      console.log('📤 ModelConfig: Saving state to centralized config:', currentState);
-      console.log('🔍 agentUrl being saved:', agentUrl);
-      console.log('🔍 agentApiKey being saved:', localAgentApiKey);
-      console.log('🔍 chatbot_api being saved:', agentUrl);
-      console.log('🔍 chatbot_key being saved:', localAgentApiKey);
-
       if (onConfigChange) {
         onConfigChange(currentState);
       }
     } catch (error) {
-      console.error('❌ Error saving state to centralized config:', error);
     }
   }, [selectedModelProvider, selectedModel, modelLiveUrl, modelApiKey, agentUrl, localAgentApiKey, systemPrompt, onConfigChange]);
 
@@ -398,7 +357,6 @@ Remember: You are the first point of contact for many patients. Your professiona
     promptSaveTimeoutRef.current = setTimeout(async () => {
       // Prevent multiple simultaneous saves
       if (saveInProgress) {
-        console.log('🔄 Prompt save already in progress, skipping...');
         return;
       }
 
@@ -431,7 +389,6 @@ Remember: You are the first point of contact for many patients. Your professiona
 
         const result = await response.json();
         if (result.success) {
-          console.log('✅ Prompt auto-saved to Dify');
           // Only show success message if enough time has passed since last save
           const now = Date.now();
           if (now - lastSaveTime > 2000) { // 2 second cooldown
@@ -439,11 +396,9 @@ Remember: You are the first point of contact for many patients. Your professiona
             setLastSaveTime(now);
           }
         } else {
-          console.error('❌ Failed to auto-save prompt:', result.message);
           setErrorMessage(`Failed to save prompt: ${result.message}`);
         }
       } catch (error) {
-        console.error('❌ Failed to auto-save prompt:', error);
         setErrorMessage(`Failed to save prompt: ${error instanceof Error ? error.message : 'Unknown error'}`);
       } finally {
         setIsSaving(false);
@@ -467,7 +422,6 @@ Remember: You are the first point of contact for many patients. Your professiona
     modelSaveTimeoutRef.current = setTimeout(async () => {
       // Prevent multiple simultaneous saves
       if (saveInProgress) {
-        console.log('🔄 Save already in progress, skipping...');
         return;
       }
 
@@ -484,9 +438,6 @@ Remember: You are the first point of contact for many patients. Your professiona
           modelLiveUrl,
           agentApiKey: localAgentApiKey
         };
-
-        console.log('🔄 Starting model save with provider:', stateToUse.selectedModelProvider);
-
         // Save to localStorage first (always works) - only model config, not agent URL/API key
         const modelConfig = {
           selectedModelProvider: stateToUse.selectedModelProvider,
@@ -500,33 +451,22 @@ Remember: You are the first point of contact for many patients. Your professiona
         const provider = modelProviders[stateToUse.selectedModelProvider as keyof typeof modelProviders];
         const apiModel = modelApiMapping[stateToUse.selectedModel] || stateToUse.selectedModel.toLowerCase().replace(/\s+/g, '-');
         const chatbotApiKey = stateToUse.agentApiKey || existingConfig?.chatbot_key || process.env.NEXT_PUBLIC_CHATBOT_API_KEY;
-
-        console.log('🔍 Debug Model Save:');
-        console.log('🔍 selectedModelProvider:', stateToUse.selectedModelProvider);
-        console.log('🔍 provider object:', provider);
-        console.log('🔍 provider.apiProvider:', provider?.apiProvider);
-        console.log('🔍 selectedModel:', stateToUse.selectedModel);
-        console.log('🔍 apiModel:', apiModel);
-
         // Get app_id from localStorage using the chatbot API key
         let appId: string | null = null;
         if (chatbotApiKey) {
           appId = localStorage.getItem(`dify_app_id_${chatbotApiKey}`);
-          console.log('🔍 Retrieved app_id from localStorage:', appId ? `${appId.substring(0, 8)}...` : 'not found');
-        }
+}
 
         // If not found in localStorage, try to get from existingConfig
         if (!appId && existingConfig?.dify_app_id) {
           appId = existingConfig.dify_app_id;
-          console.log('🔍 Retrieved app_id from existingConfig:', appId ? `${appId.substring(0, 8)}...` : 'not found');
-          // Store for future use
+// Store for future use
           if (chatbotApiKey && appId) {
             localStorage.setItem(`dify_app_id_${chatbotApiKey}`, appId);
           }
         }
 
         if (!appId) {
-          console.warn('⚠️ App ID not found. Model configuration may fail. Please ensure the agent was created properly.');
           setErrorMessage('App ID not found. Please ensure the agent was created properly.');
           return;
         }
@@ -558,7 +498,6 @@ Remember: You are the first point of contact for many patients. Your professiona
 
         const result = await response.json();
         if (result.success) {
-          console.log('✅ Model config auto-saved to Dify');
           // Only show success message if enough time has passed since last save
           const now = Date.now();
           if (now - lastSaveTime > 2000) { // 2 second cooldown
@@ -570,11 +509,9 @@ Remember: You are the first point of contact for many patients. Your professiona
             setLastSaveTime(now);
           }
         } else {
-          console.error('❌ Failed to auto-save model config:', result.message);
           setErrorMessage(`Failed to save model config: ${result.message}`);
         }
       } catch (error) {
-        console.error('❌ Failed to auto-save model config:', error);
         setErrorMessage(`Failed to save model config: ${error instanceof Error ? error.message : 'Unknown error'}`);
       } finally {
         setIsSaving(false);
@@ -676,10 +613,6 @@ Remember: You are the first point of contact for many patients. Your professiona
   };
 
   const handleProviderChange = (provider: string) => {
-    console.log('🔄 Provider changing from', selectedModelProvider, 'to', provider);
-    console.log('🔍 Provider change debug - new provider:', provider);
-    console.log('🔍 Provider change debug - modelProviders[provider]:', modelProviders[provider as keyof typeof modelProviders]);
-
     // Set flag to prevent existingConfig from overriding user selection
     setIsUserChangingProvider(true);
 
@@ -691,7 +624,6 @@ Remember: You are the first point of contact for many patients. Your professiona
     // Cancel any pending model saves to prevent conflicts
     if (modelSaveTimeoutRef.current) {
       clearTimeout(modelSaveTimeoutRef.current);
-      console.log('🔄 Cancelled pending model save due to provider change');
     }
 
     // Update the model API key based on the selected provider
@@ -719,9 +651,6 @@ Remember: You are the first point of contact for many patients. Your professiona
     if (providerData && providerData.models.length > 0) {
       defaultModel = providerData.models[0];
     }
-
-    console.log('✅ Provider changed to', provider, 'with reset model and API key');
-
     // Update state with new values
     setSelectedModelProvider(provider);
     setModelApiKey(newApiKey);
@@ -744,7 +673,6 @@ Remember: You are the first point of contact for many patients. Your professiona
     });
 
     // Trigger auto-save with current state to avoid stale closure
-    console.log('🔄 Triggering model save with current state:', currentState);
     debouncedModelSave(currentState);
 
     // Reset the flag after a delay
@@ -768,7 +696,6 @@ Remember: You are the first point of contact for many patients. Your professiona
   // Fetch knowledge bases
   const fetchKnowledgeBases = useCallback(async () => {
     if (!accessToken) {
-      console.error('❌ No access token available for fetching knowledge bases');
       return;
     }
 
@@ -784,10 +711,8 @@ Remember: You are the first point of contact for many patients. Your professiona
         const data = await response.json();
         setKnowledgeBases(data || []);
       } else {
-        console.error('Failed to fetch knowledge bases:', response.statusText);
       }
     } catch (error) {
-      console.error('Error fetching knowledge bases:', error);
     } finally {
       setLoadingKnowledgeBases(false);
     }
@@ -812,7 +737,6 @@ Remember: You are the first point of contact for many patients. Your professiona
       const invalidSelections = selectedKnowledgeBases.filter(id => !validKnowledgeBaseIds.includes(id));
       
       if (invalidSelections.length > 0) {
-        console.log('🧹 Removing invalid knowledge base selections:', invalidSelections);
         const validSelections = selectedKnowledgeBases.filter(id => validKnowledgeBaseIds.includes(id));
         setSelectedKnowledgeBases(validSelections);
         saveStateToCentralized({ selectedKnowledgeBases: validSelections });
@@ -835,7 +759,6 @@ Remember: You are the first point of contact for many patients. Your professiona
   const loadAgentConfig = useCallback(() => {
     // Load knowledge base selections from existing config if available
     if (existingConfig && existingConfig.selectedKnowledgeBases) {
-      console.log('📚 Restoring knowledge base selections from existing config:', existingConfig.selectedKnowledgeBases);
       setSelectedKnowledgeBases(existingConfig.selectedKnowledgeBases);
     } else {
       // Fallback: load from localStorage using agent API key as ID
@@ -845,12 +768,10 @@ Remember: You are the first point of contact for many patients. Your professiona
           const savedKnowledgeBases = localStorage.getItem(storageKey);
           if (savedKnowledgeBases) {
             const knowledgeBaseIds = JSON.parse(savedKnowledgeBases);
-            console.log('📚 Restoring knowledge base selections from localStorage:', knowledgeBaseIds);
             setSelectedKnowledgeBases(knowledgeBaseIds);
             saveStateToCentralized({ selectedKnowledgeBases: knowledgeBaseIds });
           }
         } catch (error) {
-          console.error('❌ Failed to parse saved knowledge bases from localStorage:', error);
         }
       }
     }
@@ -871,37 +792,17 @@ Remember: You are the first point of contact for many patients. Your professiona
       
       // Get the correct model API name
       const apiModel = modelApiMapping[selectedModel] || 'gpt-4o';
-      
-      console.log('💾 Saving knowledge base configuration:', {
-        provider: apiProvider,
-        model: apiModel,
-        knowledgeBaseCount: knowledgeBaseIds.length,
-        knowledgeBaseIds
-      });
-      
       // Get the app ID from localStorage
       let appId = localStorage.getItem(`dify_app_id_${localAgentApiKey}`);
-      
-      console.log('🔍 Debug - Looking for app ID:', {
-        localAgentApiKey,
-        storageKey: `dify_app_id_${localAgentApiKey}`,
-        appId,
-        allLocalStorageKeys: Object.keys(localStorage).filter(k => k.includes('dify_app_id'))
-      });
-      
-      if (!appId) {
+if (!appId) {
         // Fallback: Try to get the app ID from the current agent list
-        console.warn('⚠️ No app ID found in localStorage, trying to fetch from agent data...');
-        
         // Try to get from existingConfig if available
         if (existingConfig && existingConfig.dify_app_id) {
           appId = existingConfig.dify_app_id;
-          console.log('✅ Found app ID in existingConfig:', appId);
           // Store for future use
           localStorage.setItem(`dify_app_id_${localAgentApiKey}`, appId);
         } else {
           // Last resort: Search Dify for the app by API key
-          console.warn('⚠️ Attempting to find app ID by searching Dify...');
           try {
             const searchResponse = await fetch('/api/dify/get-app-by-key', {
               method: 'POST',
@@ -912,16 +813,13 @@ Remember: You are the first point of contact for many patients. Your professiona
             if (searchResponse.ok) {
               const searchData = await searchResponse.json();
               appId = searchData.appId;
-              console.log('✅ Found app ID by searching Dify:', appId);
               // Store for future use
               localStorage.setItem(`dify_app_id_${localAgentApiKey}`, appId);
             } else {
-              console.error('❌ No app ID found for this agent');
               alert('⚠️ App ID not found in storage. This agent might have been created before the app ID tracking was implemented. Please create a new agent or contact support.');
               return false;
             }
           } catch (searchError) {
-            console.error('❌ Failed to search for app:', searchError);
             alert('⚠️ App ID not found in storage. This agent might have been created before the app ID tracking was implemented. Please create a new agent or contact support.');
             return false;
           }
@@ -931,13 +829,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       // Validate app ID format (should be a UUID)
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(appId)) {
-        console.error('❌ Invalid app ID format:', appId);
-        console.error('🔍 Stored App ID:', appId);
-        console.error('🔍 Expected format: UUID (e.g., 661d95ae-77ee-4cfd-88e3-e6f3ef8d638b)');
-        console.error('🔍 Agent API Key:', localAgentApiKey);
-        
-        // Try to fetch the correct app ID from Dify by searching with API key
-        console.warn('⚠️ Attempting to find correct app ID by searching Dify...');
+// Try to fetch the correct app ID from Dify by searching with API key
         try {
           const searchResponse = await fetch('/api/dify/get-app-by-key', {
             method: 'POST',
@@ -948,7 +840,6 @@ Remember: You are the first point of contact for many patients. Your professiona
           if (searchResponse.ok) {
             const searchData = await searchResponse.json();
             appId = searchData.appId;
-            console.log('✅ Found correct app ID by searching Dify:', appId);
             // Store the corrected app ID
             localStorage.setItem(`dify_app_id_${localAgentApiKey}`, appId);
             alert(`✅ App ID Fixed!\n\nFound the correct App ID: ${appId}\n\nThe configuration will now be saved.`);
@@ -957,7 +848,6 @@ Remember: You are the first point of contact for many patients. Your professiona
             return false;
           }
         } catch (searchError) {
-          console.error('❌ Failed to search for app:', searchError);
           alert(`⚠️ Invalid App ID Detected\n\nStored App ID: ${appId}\n\nThis agent was created with an incorrect App ID format. The App ID should be a UUID (e.g., 661d95ae-77ee-4cfd-88e3-e6f3ef8d638b).\n\n✅ Solution: Delete this agent and create a new one. The app ID tracking has been fixed in the latest version.`);
           return false;
         }
@@ -992,15 +882,8 @@ Remember: You are the first point of contact for many patients. Your professiona
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Failed to save knowledge base configuration:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorText
-        });
-        
         // If we get a 404 "app_not_found", try to find the correct app ID
         if (response.status === 404 && errorText.includes('app_not_found')) {
-          console.warn('⚠️ App not found in Dify, attempting to find correct app ID...');
           try {
             const searchResponse = await fetch('/api/dify/get-app-by-key', {
               method: 'POST',
@@ -1011,8 +894,6 @@ Remember: You are the first point of contact for many patients. Your professiona
             if (searchResponse.ok) {
               const searchData = await searchResponse.json();
               const correctAppId = searchData.appId;
-              console.log('✅ Found correct app ID:', correctAppId);
-              
               // Update localStorage with correct app ID
               localStorage.setItem(`dify_app_id_${localAgentApiKey}`, correctAppId);
               
@@ -1025,7 +906,6 @@ Remember: You are the first point of contact for many patients. Your professiona
               return false;
             }
           } catch (searchError) {
-            console.error('❌ Failed to search for correct app:', searchError);
             alert(`Failed to save: ${response.status} ${response.statusText}\n${errorText.substring(0, 200)}`);
             return false;
           }
@@ -1036,18 +916,14 @@ Remember: You are the first point of contact for many patients. Your professiona
       }
 
       const data = await response.json();
-      console.log('✅ Knowledge base configuration saved:', data);
-      
       // Also save to localStorage for persistence across refreshes
       if (typeof window !== 'undefined' && localAgentApiKey) {
         const storageKey = getAgentStorageKey(localAgentApiKey);
         localStorage.setItem(storageKey, JSON.stringify(knowledgeBaseIds));
-        console.log('💾 Knowledge base selection saved to localStorage');
       }
       
       return true;
     } catch (error) {
-      console.error('❌ Error saving knowledge base configuration:', error);
       return false;
     }
   }, [selectedModelProvider, selectedModel, modelApiKey, localAgentApiKey]);
@@ -1584,8 +1460,6 @@ Remember: You are the first point of contact for many patients. Your professiona
                         try {
                           // Get the app ID from localStorage
                           const appId = localStorage.getItem(`dify_app_id_${localAgentApiKey}`);
-                          console.log('🔍 Retrieved app ID for publishing:', appId);
-                          
                           if (!appId) {
                             alert('⚠️ Could not find app ID. The configuration has been saved but may require manual publishing.');
                             setPublishingAgent(false);
@@ -1605,14 +1479,11 @@ Remember: You are the first point of contact for many patients. Your professiona
                           
                           if (response.ok) {
                             const result = await response.json();
-                            console.log('✅ Agent published successfully:', result);
                           } else {
                             const error = await response.json();
-                            console.error('❌ Failed to publish agent:', error);
                             alert('❌ Failed to publish agent: ' + (error.error || error.message || 'Unknown error'));
                           }
                         } catch (error) {
-                          console.error('❌ Error publishing agent:', error);
                           alert('❌ Error publishing agent: ' + (error instanceof Error ? error.message : 'Unknown error'));
                         }
                       }

@@ -14,7 +14,6 @@ export async function GET() {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Error checking auth config:", error);
     return NextResponse.json(
       { error: "Failed to check auth configuration" },
       { status: 500 }

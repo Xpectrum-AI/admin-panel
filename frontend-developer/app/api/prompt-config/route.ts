@@ -9,8 +9,6 @@ export async function POST(request: NextRequest) {
     // Authentication removed to fix 401 error - API key validation handled in frontend
 
     const body = await request.json();
-    console.log('⚙️ Configuring prompt:', body);
-    
     // Clean the prompt - remove any first message that might be included
     let cleanPrompt = body.prompt;
     if (typeof cleanPrompt === 'string') {
@@ -33,8 +31,6 @@ export async function POST(request: NextRequest) {
     
     // Use the Dify API key from the request body, fallback to environment variable
     const difyApiKey = body.chatbot_api_key || process.env.NEXT_PUBLIC_CHATBOT_API_KEY;
-    console.log('🔍 Dify API key:', difyApiKey ? 'Present' : 'Missing');
-    
     // Validate required configuration
     if (!DIFY_BASE_URL) {
       return NextResponse.json(
@@ -55,9 +51,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
-    console.log('📤 Sending prompt config payload to Dify:', configPayload);
-    
     try {
       const response = await fetch(`${DIFY_BASE_URL}/apps/current/prompt`, {
         method: 'POST',
@@ -70,8 +63,6 @@ export async function POST(request: NextRequest) {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('❌ Failed to configure prompt:', errorData);
-        
         return NextResponse.json(
           { 
             success: false, 
@@ -82,8 +73,6 @@ export async function POST(request: NextRequest) {
       }
 
       const data = await response.json();
-      console.log('✅ Prompt configured successfully:', data);
-      
       return NextResponse.json({
         success: true,
         data,
@@ -91,7 +80,6 @@ export async function POST(request: NextRequest) {
       });
       
     } catch (difyError) {
-      console.error('❌ Dify API call failed:', difyError);
       return NextResponse.json(
         { 
           success: false, 
@@ -103,7 +91,6 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('❌ Prompt config error:', error);
     return NextResponse.json(
       { 
         success: false, 

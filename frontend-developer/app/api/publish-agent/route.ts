@@ -5,8 +5,6 @@ const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN || '';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('🚀 Publishing agent:', body);
-    
     const { chatbot_api_key, app_id } = body;
     
     if (!chatbot_api_key) {
@@ -23,7 +21,6 @@ export async function POST(request: NextRequest) {
     let appId = app_id;
     
     if (!appId) {
-      console.log('🔍 App ID not provided, need to fetch from client side storage');
       return NextResponse.json(
         { 
           success: false, 
@@ -45,11 +42,6 @@ export async function POST(request: NextRequest) {
     // the agent is already "published" with the updated config.
     // 
     // This API endpoint is essentially a confirmation that the publish happened.
-    
-    console.log('✅ Agent configuration already published via model-config API');
-    console.log('🔍 App ID:', appId);
-    console.log('🔍 You can verify in Dify Studio at:', `${CONSOLE_ORIGIN}/app/${appId}/configuration`);
-    
     return NextResponse.json({
       success: true,
       message: 'Agent published successfully',
@@ -61,7 +53,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ Publish agent error:', error);
     return NextResponse.json(
       { 
         success: false, 

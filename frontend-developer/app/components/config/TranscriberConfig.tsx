@@ -37,101 +37,71 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
     try {
       // Don't override user selections if they're actively changing the provider
       if (isUserChangingProvider) {
-        console.log('🚫 Skipping initial config load - user is changing provider');
         return;
       }
 
       // Additional safety check - if we just changed the provider, don't override
       if (providerChangeTimeoutRef.current) {
-        console.log('🚫 Skipping initial config load - provider change timeout still active');
         return;
       }
 
       // If we have existing config from agent, use that
       if (existingConfig) {
-        console.log('Loading existing transcriber config:', existingConfig);
-
         // Handle STT config from backend
         if (existingConfig.provider) {
           // Set provider (convert backend format to UI format)
           let provider = existingConfig.provider;
           if (provider === 'deepgram') provider = 'Deepgram';
           if (provider === 'whisper') provider = 'Whisper';
-
-          console.log('Backend transcriber provider:', existingConfig.provider, '-> UI provider:', provider);
           setSelectedTranscriberProvider(provider);
 
           // Set language - check provider-specific object first, then fallback to root level
           if (existingConfig[provider.toLowerCase()]?.language) {
-            console.log('Backend language from provider object:', existingConfig[provider.toLowerCase()].language);
-            setSelectedLanguage(existingConfig[provider.toLowerCase()].language);
+setSelectedLanguage(existingConfig[provider.toLowerCase()].language);
           } else if (existingConfig.language) {
-            console.log('Backend language from root:', existingConfig.language);
             setSelectedLanguage(existingConfig.language);
           }
 
           // Set model - check provider-specific object first, then fallback to root level
           if (existingConfig[provider.toLowerCase()]?.model) {
-            console.log('Backend model from provider object:', existingConfig[provider.toLowerCase()].model);
-            setSelectedModel(existingConfig[provider.toLowerCase()].model);
+setSelectedModel(existingConfig[provider.toLowerCase()].model);
           } else if (existingConfig.model) {
-            console.log('Backend model from root:', existingConfig.model);
             setSelectedModel(existingConfig.model);
           }
 
           // Set API key - check provider-specific object first, then fallback to root level
           if (existingConfig[provider.toLowerCase()]?.api_key) {
-            console.log('Backend API key from provider object:', maskApiKey(existingConfig[provider.toLowerCase()].api_key));
-            setApiKey(existingConfig[provider.toLowerCase()].api_key);
+setApiKey(existingConfig[provider.toLowerCase()].api_key);
           } else if (existingConfig.api_key) {
-            console.log('Backend API key from root:', maskApiKey(existingConfig.api_key));
-            setApiKey(existingConfig.api_key);
+setApiKey(existingConfig.api_key);
           }
 
           // Set punctuate - check provider-specific object first, then fallback to root level
           if (existingConfig[provider.toLowerCase()]?.punctuate !== undefined) {
-            console.log('Backend punctuate from provider object:', existingConfig[provider.toLowerCase()].punctuate);
-            setPunctuateEnabled(existingConfig[provider.toLowerCase()].punctuate);
+setPunctuateEnabled(existingConfig[provider.toLowerCase()].punctuate);
           } else if (existingConfig.punctuate !== undefined) {
-            console.log('Backend punctuate from root:', existingConfig.punctuate);
             setPunctuateEnabled(existingConfig.punctuate);
           }
 
           // Set smart format - check provider-specific object first, then fallback to root level
           if (existingConfig[provider.toLowerCase()]?.smart_format !== undefined) {
-            console.log('Backend smart_format from provider object:', existingConfig[provider.toLowerCase()].smart_format);
-            setSmartFormatEnabled(existingConfig[provider.toLowerCase()].smart_format);
+setSmartFormatEnabled(existingConfig[provider.toLowerCase()].smart_format);
           } else if (existingConfig.smart_format !== undefined) {
-            console.log('Backend smart_format from root:', existingConfig.smart_format);
             setSmartFormatEnabled(existingConfig.smart_format);
           }
 
           // Set interim results - check provider-specific object first, then fallback to root level
           if (existingConfig[provider.toLowerCase()]?.interim_results !== undefined) {
-            console.log('Backend interim_results from provider object:', existingConfig[provider.toLowerCase()].interim_results);
-            setInterimResultEnabled(existingConfig[provider.toLowerCase()].interim_results);
+setInterimResultEnabled(existingConfig[provider.toLowerCase()].interim_results);
           } else if (existingConfig.interim_results !== undefined) {
-            console.log('Backend interim_results from root:', existingConfig.interim_results);
             setInterimResultEnabled(existingConfig.interim_results);
           }
-
-          console.log('Final UI state after loading backend config:', {
-            provider: existingConfig.provider,
-            language: existingConfig[provider.toLowerCase()]?.language || existingConfig.language || 'en-US',
-            model: existingConfig[provider.toLowerCase()]?.model || existingConfig.model || 'nova-2',
-            apiKey: maskApiKey(existingConfig[provider.toLowerCase()]?.api_key || existingConfig.api_key || ''),
-            punctuate: existingConfig[provider.toLowerCase()]?.punctuate ?? existingConfig.punctuate ?? true,
-            smartFormat: existingConfig[provider.toLowerCase()]?.smart_format ?? existingConfig.smart_format ?? true,
-            interimResults: existingConfig[provider.toLowerCase()]?.interim_results ?? existingConfig.interim_results ?? false
-          });
-        }
+}
       } else {
         // Load from centralized state if available
         // Note: TranscriberConfig should use centralized state through parent component
-        console.log('📂 TranscriberConfig: No existing config, using defaults');
       }
     } catch (error) {
-      console.warn('Failed to load transcriber config state:', error);
     }
   }, [existingConfig, isUserChangingProvider]);
 
@@ -227,12 +197,9 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       setConfigStatus('success');
-      console.log('Transcriber configuration saved to localStorage:', config);
-
       // Clear success message after 3 seconds
       setTimeout(() => setConfigStatus('idle'), 3000);
     } catch (error) {
-      console.error('Failed to configure transcriber:', error);
       setConfigStatus('error');
 
       // Clear error message after 3 seconds
@@ -244,7 +211,6 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
 
   // Manual refresh function
   const handleRefreshConfig = () => {
-    console.log('🔄 Manually refreshing transcriber configuration from existingConfig');
     if (existingConfig) {
       // Force a refresh by temporarily clearing the flag
       setIsUserChangingProvider(false);
@@ -253,8 +219,6 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
   };
 
   const handleProviderChange = (provider: string) => {
-    console.log('🔄 Transcriber provider changing from', selectedTranscriberProvider, 'to', provider);
-
     // Set flag to prevent existingConfig from overriding user selection
     setIsUserChangingProvider(true);
 
@@ -271,9 +235,6 @@ const TranscriberConfig = forwardRef<HTMLDivElement, TranscriberConfigProps>(({ 
       setSelectedModel(providerData[0]);
       // Note: Removed localStorage usage - now uses centralized state only
     }
-
-    console.log('✅ Transcriber provider changed to', provider, 'with reset model');
-
     // Reset the flag after a delay
     providerChangeTimeoutRef.current = setTimeout(() => {
       setIsUserChangingProvider(false);

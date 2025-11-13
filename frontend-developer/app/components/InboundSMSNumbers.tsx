@@ -83,30 +83,20 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
                 setOrganizationPhoneNumbers([]);
                 return;
             }
-
-            console.log('🚀 Loading organization phone numbers for SMS...');
             const response = await getPhoneNumbersByOrganization(orgId);
-            console.log('🚀 API response received:', response);
-
             if (response.success && response.data) {
                 const phoneNumbersData = response.data;
-                console.log('✅ Phone numbers data:', phoneNumbersData);
-
                 // Check if we have phone_numbers array in the response
                 if (phoneNumbersData.phone_numbers && Array.isArray(phoneNumbersData.phone_numbers) && phoneNumbersData.phone_numbers.length > 0) {
-                    console.log('✅ Found phone_numbers array:', phoneNumbersData.phone_numbers);
                     setOrganizationPhoneNumbers(phoneNumbersData.phone_numbers);
                 } else {
-                    console.log('❌ No phone numbers found in response');
                     setOrganizationPhoneNumbers([]);
                 }
             } else {
-                console.log('❌ API response failed:', response);
                 setOrganizationPhoneNumbers([]);
             }
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-            console.error('❌ Error loading organization phone numbers:', errorMessage);
             setOrganizationPhoneNumbers([]);
         } finally {
             setLoadingOrgPhoneNumbers(false);
@@ -115,37 +105,27 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
 
     const loadAgentMappings = useCallback(async () => {
         try {
-            console.log('🚀 Loading SMS agent mappings...');
             const response = await SMSService.getReceivingNumberAgentMappings();
-            console.log('🚀 Agent mappings response:', response);
-
             if (response.success && response.data) {
                 const mappingsData = response.data;
-                console.log('✅ Agent mappings data:', mappingsData);
-
                 if (mappingsData.receiving_number_mappings) {
-                    console.log('✅ Found receiving number mappings:', mappingsData.receiving_number_mappings);
                     // Store the mappings to use when converting phone numbers to assignments
                     setAgentMappings(mappingsData.receiving_number_mappings);
                 } else {
-                    console.log('❌ No agent mappings found in response');
                     setAgentMappings({});
                 }
 
                 // Store total mappings count for filtering logic
                 const mappingsCount = mappingsData.total_mappings || 0;
-                console.log('✅ Total mappings count:', mappingsCount);
                 setTotalMappings(mappingsCount);
                 setMappingsLoaded(true);
             } else {
-                console.log('❌ Agent mappings API response failed:', response);
                 setAgentMappings({});
                 setTotalMappings(0);
                 setMappingsLoaded(true);
             }
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-            console.error('❌ Error loading SMS agent mappings:', errorMessage);
             setAgentMappings({});
             setTotalMappings(0);
             setMappingsLoaded(true);
@@ -161,11 +141,7 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
                 setAgents([]);
                 return;
             }
-
-            console.log('🚀 Loading agents for org:', orgId);
             const response: ApiResponse<{ agents: Record<string, unknown> }> = await getAgentsByOrganization(orgId);
-            console.log('🚀 Agents API response:', response);
-
             if (response.success && response.data) {
                 const agentsData = response.data;
 
@@ -181,20 +157,15 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
                             ...agentData
                         };
                     });
-
-                    console.log('✅ Agents loaded:', agentList);
                     setAgents(agentList);
                 } else {
-                    console.log('❌ No agents found in response');
                     setAgents([]);
                 }
             } else {
-                console.log('❌ Agents API response failed:', response);
                 setAgents([]);
             }
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-            console.error('❌ Error loading agents:', errorMessage);
             setAgents([]);
         } finally {
             setLoadingAgents(false);
@@ -203,9 +174,7 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
 
     const loadAvailablePhoneNumbers = useCallback(async () => {
         try {
-            console.log('🚀 Loading available phone numbers (backend inventory)...');
-            const response = await getAvailablePhoneNumbersFromBackend();
-            console.log('🚀 Available numbers response:', response);
+const response = await getAvailablePhoneNumbersFromBackend();
             if (response.success && response.data) {
                 let phoneNumbersArray: PhoneNumber[] = [];
                 const raw = (response.data as any);
@@ -230,7 +199,6 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
                 setAvailablePhoneNumbers([]);
             }
         } catch (err) {
-            console.error('❌ Error loading available phone numbers:', err);
             setAvailablePhoneNumbers([]);
         }
     }, []);
@@ -239,23 +207,18 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
     useEffect(() => {
         if (userClass) {
             const orgs = userClass.getOrgs?.() || [];
-            console.log('🔍 Available organizations from userClass:', orgs);
             if (orgs.length > 0) {
                 const org = orgs[0] as any;
                 const orgName = org.orgName || org.name || '';
-                console.log('🔍 Setting organization name:', orgName);
                 setOrganizationName(orgName);
             } else {
-                console.log('⚠️ No organizations found in userClass');
             }
         } else {
-            console.log('⚠️ userClass is not available');
         }
     }, [userClass]);
 
     // Load data on component mount
     useEffect(() => {
-        console.log('🔍 useEffect triggered, loading phone numbers, agents, and mappings');
         loadPhoneNumbers();
         loadAgents();
         loadAgentMappings();
@@ -266,7 +229,6 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
     // Reload data when refreshTrigger changes
     useEffect(() => {
         if (refreshTrigger && refreshTrigger > 0) {
-            console.log('🔄 Refresh trigger activated, reloading data');
             loadPhoneNumbers();
             loadAgents();
             loadAgentMappings();
@@ -291,12 +253,6 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
 
     // Convert organization and available phone numbers to assignments format
     useEffect(() => {
-        console.log('🔄 Converting phone numbers to SMS assignments', {
-            orgCount: organizationPhoneNumbers.length,
-            availableCount: availablePhoneNumbers.length,
-            agentsCount: agents.length
-        });
-
         const isAgentFromCurrentOrg = (candidate: string | null | undefined): boolean => {
             if (!candidate) return false;
             return agents.some(a => a.agent_prefix === candidate || a.name === candidate || a.agent_prefix === (candidate as string).trim());
@@ -356,7 +312,6 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
             });
 
         const finalList = orgAssignedForCurrentOrg.length > 0 ? orgAssignedForCurrentOrg : availableSmsAssignments;
-        console.log('✅ Final SMS list count:', finalList.length, { showing: orgAssignedForCurrentOrg.length > 0 ? 'assigned_for_current_org' : 'available' });
         setAssignments(finalList);
     }, [organizationPhoneNumbers, availablePhoneNumbers, agents]);
 
@@ -369,8 +324,6 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
 
         setIsAssigning(true);
         try {
-            console.log('🚀 Assigning agent:', { agent, phoneNumber: selectedPhoneNumber });
-
             // Find the phone number ID for the selected phone number
             const selectedPhoneDataOrg = organizationPhoneNumbers.find(
                 phone => (phone.number || phone.phone_number) === selectedPhoneNumber
@@ -416,14 +369,10 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
                 setShowAssignModal(false);
                 setSelectedAgent('');
                 setSelectedPhoneNumber('');
-
-                console.log('✅ Agent assigned successfully:', result);
             } else {
-                console.error('❌ Failed to assign agent:', result.message);
                 alert(`Failed to assign agent: ${result.message}`);
             }
         } catch (error) {
-            console.error('❌ Error assigning agent:', error);
             alert(`Error assigning agent: ${error instanceof Error ? error.message : 'Unknown error'}`);
         } finally {
             setIsAssigning(false);
@@ -436,8 +385,6 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
 
         setIsUnassigning(assignmentId);
         try {
-            console.log('🚀 Unassigning agent for phone number:', assignment.phone_number);
-
             // Find the phone number ID for the assignment
             const selectedPhoneData = organizationPhoneNumbers.find(
                 phone => (phone.number || phone.phone_number) === assignment.phone_number
@@ -477,14 +424,10 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
                     return assignment;
                 });
                 setAssignments(updatedAssignments);
-
-                console.log('✅ Agent unassigned successfully:', result);
             } else {
-                console.error('❌ Failed to unassign agent:', result.message);
                 alert(`Failed to unassign agent: ${result.message}`);
             }
         } catch (error) {
-            console.error('❌ Error unassigning agent:', error);
             alert(`Error unassigning agent: ${error instanceof Error ? error.message : 'Unknown error'}`);
         } finally {
             setIsUnassigning(null);
@@ -506,20 +449,9 @@ export default function InboundSMSNumbers({ refreshTrigger }: InboundSMSNumbersP
         // Show all SMS-enabled numbers (both assigned and unassigned)
         // This matches the InboundPhoneNumbers behavior
         const matchesAssignmentFilter = true;
-
-        console.log(`🔍 Filtering assignment ${assignment.phone_number}:`, {
-            status: assignment.status,
-            matchesAssignmentFilter,
-            matchesSearch,
-            matchesAgent
-        });
-
         return matchesSearch && matchesAgent && matchesAssignmentFilter;
     });
-
-    console.log(`📊 Filtering results: totalAssignments=${assignments.length}, filteredAssignments=${filteredAssignments.length}, hasAnyAssignedAgents=${assignments.some(a => a.status === 'assigned' && a.agent_id && a.agent_id !== 'unassigned' && a.agent_id !== null)}`);
-
-    // Check if any agents are assigned in the filtered assignments
+// Check if any agents are assigned in the filtered assignments
     const hasAssignedAgents = filteredAssignments.some(assignment =>
         assignment.status === 'assigned' &&
         assignment.agent_id &&

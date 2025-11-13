@@ -24,8 +24,6 @@ function getModelApiKey(provider: string): string | null {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('⚙️ Configuring model:', body);
-    
     // Extract required fields
     const provider = body.provider;
     const model = body.model;
@@ -65,12 +63,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
-    console.log('🔍 Using app ID:', appId);
-    
     try {
       // Login to Dify console to get auth token
-      console.log('🔐 Logging into Dify console...');
       const loginResponse = await fetch(`${CONSOLE_ORIGIN}/console/api/login`, {
         method: 'POST',
         headers: {
@@ -92,9 +86,6 @@ export async function POST(request: NextRequest) {
       if (!token) {
         throw new Error('No access token received from login');
       }
-
-      console.log('✅ Logged in successfully');
-      
       // Get the current system prompt from the agent (if not provided in request)
       const systemPrompt = body.pre_prompt || `# Appointment Scheduling Agent Prompt
 
@@ -196,12 +187,6 @@ Remember: You are the first point of contact for many patients. Your professiona
           reranking_enable: false
         }
       };
-      
-      console.log('🔍 Sending configuration to Dify console API:', {
-        url: `${CONSOLE_ORIGIN}/console/api/apps/${appId}/model-config`,
-        hasDatasets: configPayload.dataset_configs.datasets.datasets.length > 0
-      });
-
       // POST to the console API (this is what Dify Studio does)
       const response = await fetch(`${CONSOLE_ORIGIN}/console/api/apps/${appId}/model-config`, {
         method: 'POST',
@@ -211,13 +196,8 @@ Remember: You are the first point of contact for many patients. Your professiona
         },
         body: JSON.stringify(configPayload),
       });
-
-      console.log('🔍 Dify API response status:', response.status);
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Failed to configure model:', response.status, errorText);
-        
         return NextResponse.json(
           { 
             success: false, 
@@ -229,8 +209,6 @@ Remember: You are the first point of contact for many patients. Your professiona
       }
 
       const data = await response.json();
-      console.log('✅ Model configured successfully via console API:', data);
-      
       return NextResponse.json({
         success: true,
         data,
@@ -238,7 +216,6 @@ Remember: You are the first point of contact for many patients. Your professiona
       });
       
     } catch (difyError) {
-      console.error('❌ Dify API call failed:', difyError);
       return NextResponse.json(
         { 
           success: false, 
@@ -250,7 +227,6 @@ Remember: You are the first point of contact for many patients. Your professiona
     }
 
   } catch (error) {
-    console.error('❌ Model config error:', error);
     return NextResponse.json(
       { 
         success: false, 

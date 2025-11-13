@@ -70,36 +70,25 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
 
   // Update state when props change
   useEffect(() => {
-    console.log('🔧 WidgetConfig props changed:', { difyApiUrl, difyApiKey });
     if (difyApiUrl) {
-      console.log('🔧 Setting difyApiUrl from props:', difyApiUrl);
       setLocalDifyApiUrl(difyApiUrl);
     }
     if (difyApiKey) {
-      console.log('🔧 Setting difyApiKey from props:', difyApiKey.substring(0, 10) + '...');
-      setLocalDifyApiKey(difyApiKey);
+setLocalDifyApiKey(difyApiKey);
     } else {
-      console.log('⚠️ No difyApiKey provided from props');
     }
   }, [difyApiUrl, difyApiKey]);
 
   // Load existing configuration
   useEffect(() => {
     if (existingConfig) {
-      console.log('🔧 WidgetConfig loading existing config:', existingConfig);
       if (existingConfig.difyApiUrl) {
         // Remove /chat-messages endpoint if present to get base URL
         const baseUrl = existingConfig.difyApiUrl.replace('/chat-messages', '');
         setLocalDifyApiUrl(baseUrl);
       }
       if (existingConfig.difyApiKey) {
-        console.log('🔧 WidgetConfig setting API key from existingConfig:', {
-          apiKey: existingConfig.difyApiKey,
-          apiKeyLength: existingConfig.difyApiKey.length,
-          startsWithApp: existingConfig.difyApiKey.startsWith('app-'),
-          startsWithSk: existingConfig.difyApiKey.startsWith('sk-')
-        });
-        setLocalDifyApiKey(existingConfig.difyApiKey);
+setLocalDifyApiKey(existingConfig.difyApiKey);
       }
     }
   }, [existingConfig]);
@@ -107,7 +96,6 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
   // Handle missing API key - show warning
   useEffect(() => {
     if (!localDifyApiKey && !difyApiKey) {
-      console.log('⚠️ WidgetConfig: No API key available from props or existingConfig');
     }
   }, [localDifyApiKey, difyApiKey]);
 
@@ -134,7 +122,6 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
       setCopiedScript(true);
       setTimeout(() => setCopiedScript(false), 2000);
     } catch (err) {
-      console.error('Failed to copy script:', err);
     }
   };
 
@@ -144,7 +131,6 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
       setCopiedVoiceScript(true);
       setTimeout(() => setCopiedVoiceScript(false), 2000);
     } catch (err) {
-      console.error('Failed to copy voice script:', err);
     }
   };
 
@@ -154,7 +140,6 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
       setCopiedUrl(true);
       setTimeout(() => setCopiedUrl(false), 2000);
     } catch (err) {
-      console.error('Failed to copy URL:', err);
     }
   };
 
@@ -166,7 +151,6 @@ const WidgetConfig = forwardRef<HTMLDivElement, WidgetConfigProps>(({
       setCopiedKey(true);
       setTimeout(() => setCopiedKey(false), 2000);
     } catch (err) {
-      console.error('Failed to copy API key:', err);
     }
   };
 

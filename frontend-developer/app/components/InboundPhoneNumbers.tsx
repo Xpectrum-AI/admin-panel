@@ -102,7 +102,6 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
       
       try {
         // Always load both assigned and available phone numbers
-        console.log('📞 Loading assigned and available phone numbers...');
         await Promise.all([
           loadOrganizationPhoneNumbers(),
           loadAvailablePhoneNumbers()
@@ -120,17 +119,13 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
   useEffect(() => {
     if (userClass) {
       const orgs = userClass.getOrgs?.() || [];
-      console.log('🔍 Available organizations from userClass:', orgs);
       if (orgs.length > 0) {
         const org = orgs[0] as any;
         const orgName = org.orgName || org.name || '';
-        console.log('🔍 Setting organization name:', orgName);
         setOrganizationName(orgName);
       } else {
-        console.log('⚠️ No organizations found in userClass');
       }
     } else {
-      console.log('⚠️ userClass is not available');
     }
   }, [userClass]);
 
@@ -184,7 +179,6 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('Error loading organization phone numbers:', errorMessage);
       setOrganizationPhoneNumbers([]);
       return false; // Error occurred, no assigned phone numbers
     } finally {
@@ -244,7 +238,6 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('Error loading agents:', errorMessage);
       setAgents([]);
     } finally {
       setLoadingAgents(false);
@@ -288,7 +281,6 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('Error loading available phone numbers:', errorMessage);
       setAvailablePhoneNumbers([]);
     } finally {
       setLoadingPhoneNumbers(false);
@@ -442,9 +434,7 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
         // Unassigning - refresh organization numbers immediately, available numbers in background
         setSuccess(`Phone number ${selectedPhoneForUnassign.phone_number} unassigned successfully!`);
         await loadOrganizationPhoneNumbers();
-        loadAvailablePhoneNumbers().catch(err =>
-          console.warn('Background refresh of available numbers failed:', err)
-        );
+        loadAvailablePhoneNumbers().catch(() => {});
       } else {
         // Assigning - only refresh organization numbers for immediate display
         setSuccess(`Phone number ${selectedPhoneForUnassign.phone_number} assigned successfully!`);
@@ -455,7 +445,6 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
       const action = !unassigningAgent.trim() || unassigningAgent.trim() === 'None' ? 'unassign' : 'assign';
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(`Error ${action}ing phone number: ` + errorMessage);
-      console.error(`Error ${action}ing phone number:`, err);
     } finally {
       setUnassigning(false);
     }
@@ -481,14 +470,11 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
         await loadOrganizationPhoneNumbers();
 
         // Refresh available numbers in the background (non-blocking)
-        loadAvailablePhoneNumbers().catch(err =>
-          console.warn('Background refresh of available numbers failed:', err)
-        );
+        loadAvailablePhoneNumbers().catch(() => {});
       } else {
         setError(response.message || 'Failed to unassign phone number.');
       }
     } catch (error) {
-      console.error('Error unassigning phone number:', error);
       setError('An error occurred while unassigning the phone number.');
     } finally {
       setUnassigningPhoneId(null);
@@ -572,7 +558,6 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
       const action = !assigningAgent.trim() || assigningAgent.trim() === 'None' ? 'unassign' : 'assign';
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(`Error ${action}ing phone number: ` + errorMessage);
-      console.error(`Error ${action}ing phone number:`, err);
     } finally {
       setAssigning(false);
     }
@@ -580,8 +565,6 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
 
   // Handle successful Twilio import
   const handleTwilioImportSuccess = async (importedPhone: any) => {
-    console.log('Phone imported from Twilio:', importedPhone);
-    
     // Refresh both phone number lists to show the newly imported number
     await Promise.all([
       loadOrganizationPhoneNumbers(),

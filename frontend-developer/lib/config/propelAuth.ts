@@ -27,7 +27,6 @@ export function getAuth() {
         apiKey,
       });
     } catch (error) {
-      console.error("PropelAuth initialization error:", error);
       throw new Error("PropelAuth initialization failed");
     }
   }

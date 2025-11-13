@@ -59,17 +59,13 @@ export function extractUserFriendlyName(fullAgentId: string): string {
  * @returns The display name to show in UI
  */
 export function getAgentDisplayName(agent: { name?: string; id?: string }): string {
-  console.log('🔍 getAgentDisplayName called with:', { name: agent.name, id: agent.id });
-  
   // If agent.name exists and is not the same as the full ID, use it
   if (agent.name && agent.name !== agent.id) {
-    console.log('✅ Using agent.name:', agent.name);
     return agent.name;
   }
   
   // Otherwise, extract the user-friendly name from the ID
   const userFriendlyName = extractUserFriendlyName(agent.id || '');
-  console.log('✅ Extracted user-friendly name:', userFriendlyName);
   return userFriendlyName;
 }
 

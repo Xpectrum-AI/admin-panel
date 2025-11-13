@@ -39,7 +39,6 @@ const makeApiRequest = async (
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('API request failed:', error);
     throw error;
   }
 };
@@ -241,14 +240,7 @@ export class GmailService {
     const liveApiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
     
     const url = `${baseUrl}/mail/mongodb/agent-mappings`;
-    
-    console.log('🚀 Fetching Gmail accounts from MongoDB:', {
-      fullUrl: url,
-      baseUrl,
-      apiKey: liveApiKey ? `${liveApiKey.substring(0, 10)}...` : 'No API key'
-    });
-
-    try {
+try {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -259,15 +251,12 @@ export class GmailService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('🚨 Gmail MongoDB agent mappings error response:', response.status, errorText);
         throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}: ${errorText}`);
       }
 
       const data = await response.json();
-      console.log('✅ Gmail MongoDB agent mappings fetched successfully:', data);
       return data;
     } catch (error) {
-      console.error('❌ Failed to fetch Gmail MongoDB agent mappings:', error);
       throw error;
     }
   }
@@ -293,7 +282,6 @@ export class GmailService {
         status: 'active'
       }));
     } catch (error) {
-      console.error('Failed to fetch available agents:', error);
       // Fallback to mock agents for development
       return [
         { id: 'agent_1', name: 'AI Support Agent', status: 'active' },
@@ -344,16 +332,7 @@ export class GmailService {
     });
     
     const url = `${baseUrl}/mail/mongodb/agent-mapping?${params.toString()}`;
-    
-    console.log('🚀 Creating Gmail agent mapping (MongoDB):', {
-      emailAddress,
-      agentId,
-      fullUrl: url,
-      baseUrl,
-      apiKey: liveApiKey ? `${liveApiKey.substring(0, 10)}...` : 'No API key'
-    });
-
-    try {
+try {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -364,11 +343,8 @@ export class GmailService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('🚨 Gmail agent mapping error response:', response.status, errorText);
-        
         // If MongoDB endpoint doesn't exist (405 Method Not Allowed), try fallback to existing endpoint
         if (response.status === 405) {
-          console.log('🔄 MongoDB endpoint not available, trying fallback to existing endpoint...');
           return await this.createAgentMappingFallback(emailAddress, agentId);
         }
         
@@ -376,15 +352,8 @@ export class GmailService {
       }
 
       const data = await response.json();
-      console.log('✅ Gmail agent mapping created successfully:', {
-        status: data.status,
-        message: data.message,
-        timestamp: data.timestamp,
-        fullResponse: data
-      });
       return data;
     } catch (error) {
-      console.error('❌ Failed to create Gmail agent mapping:', error);
       throw error;
     }
   }
@@ -394,8 +363,6 @@ export class GmailService {
     emailAddress: string,
     agentId: string
   ): Promise<{status: string, message: string, timestamp: string}> {
-    console.log('🔄 Using fallback endpoint for Gmail agent mapping');
-    
     // Use the existing working endpoint with minimal required parameters
     const params = new URLSearchParams({
       email_address: emailAddress,
@@ -405,8 +372,6 @@ export class GmailService {
     const data = await makeApiRequest(`/mail/agent-mapping?${params.toString()}`, {
       method: 'POST'
     });
-    
-    console.log('✅ Gmail agent mapping created via fallback:', data);
     return data;
   }
 
@@ -435,20 +400,15 @@ export class GmailService {
 
   // Unassign email agent
   static async unassignEmailAgent(emailAddress: string): Promise<{ success: boolean; message: string }> {
-    console.log('🚀 Unassigning Gmail email agent:', { emailAddress });
-
     try {
       const result = await makeApiRequest(`/mail/unassign-email-agent/${encodeURIComponent(emailAddress)}`, {
         method: 'DELETE'
       });
-      
-      console.log('✅ Gmail email agent unassigned successfully:', result);
       return {
         success: true,
         message: result.message || 'Gmail email agent unassigned successfully!'
       };
     } catch (error) {
-      console.error('❌ Failed to unassign Gmail email agent:', error);
       throw error;
     }
   }
@@ -459,15 +419,7 @@ export class GmailService {
     const liveApiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
     
     const url = `${baseUrl}/mail/mongodb/agent-mapping/${encodeURIComponent(emailAddress)}`;
-    
-    console.log('🚀 Unassigning Gmail agent (MongoDB):', {
-      emailAddress,
-      fullUrl: url,
-      baseUrl,
-      apiKey: liveApiKey ? `${liveApiKey.substring(0, 10)}...` : 'No API key'
-    });
-
-    try {
+try {
       const response = await fetch(url, {
         method: 'DELETE',
         headers: {
@@ -478,19 +430,16 @@ export class GmailService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('🚨 Gmail unassign error response:', response.status, errorText);
         throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}: ${errorText}`);
       }
 
       const data = await response.json();
-      console.log('✅ Gmail agent unassigned successfully:', data);
       return {
         success: true,
         message: data.message || 'Agent unassigned successfully',
         data: data
       };
     } catch (error) {
-      console.error('❌ Failed to unassign Gmail agent:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to unassign agent'
@@ -505,14 +454,7 @@ export class GmailService {
     message: string,
     fromEmail: string
   ): Promise<{ success: boolean; message?: string; data?: any }> {
-    console.log('🚀 Sending test email:', {
-      toEmail,
-      subject: subject.substring(0, 50) + '...',
-      message: message.substring(0, 50) + '...',
-      fromEmail
-    });
-
-    // Build query parameters
+// Build query parameters
     const queryParams = new URLSearchParams({
       to_email: toEmail,
       subject: subject,
@@ -524,15 +466,12 @@ export class GmailService {
       const result = await makeApiRequest(`/mail/send-test-email?${queryParams.toString()}`, {
         method: 'POST'
       });
-      
-      console.log('✅ Test email sent successfully:', result);
       return {
         success: true,
         message: result.message || 'Test email sent successfully!',
         data: result.data
       };
     } catch (error: any) {
-      console.error('❌ Failed to send test email:', error);
       return {
         success: false,
         message: error.message || 'Failed to send test email'
