@@ -36,21 +36,16 @@ export default function Navbar({
 
     // Get organization name from user context
     useEffect(() => {
-        console.log('🔍 Navbar: Fetching organization name...');
         if (userClass) {
             const orgs = userClass.getOrgs?.() || [];
-            console.log('🔍 Navbar: Organizations found:', orgs);
             if (orgs.length > 0) {
                 const org = orgs[0] as any;
                 const orgName = org.orgName || org.name || '';
-                console.log('🔍 Navbar: Setting organization name to:', orgName);
                 setOrganizationName(orgName);
             } else {
-                console.log('⚠️ Navbar: No organizations found, using fallback');
                 setOrganizationName('My Organization');
             }
         } else {
-            console.log('⚠️ Navbar: userClass not available, using fallback');
             setOrganizationName('My Organization');
         }
     }, [userClass]);

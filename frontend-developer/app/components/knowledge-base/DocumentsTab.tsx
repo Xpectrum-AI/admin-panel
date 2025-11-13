@@ -113,7 +113,6 @@ export default function DocumentsTab({
         alert(`Failed to reindex: ${error.error || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Error reindexing document:', error);
       alert('Failed to reindex document');
     } finally {
       setReindexing(false);
@@ -168,7 +167,6 @@ export default function DocumentsTab({
                               type="checkbox" 
                               checked={segment.enabled}
                               onChange={(e) => {
-                                console.log('Checkbox clicked for segment:', segment.id, 'new value:', e.target.checked);
                                 onToggleSegment(segment.id, e.target.checked);
                               }}
                               className="sr-only"

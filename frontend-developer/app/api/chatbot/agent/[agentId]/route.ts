@@ -24,13 +24,6 @@ export async function GET(
         );
         
         if (realAgent) {
-          console.log('🎯 Found real agent for chatbot:', {
-            agent_prefix: realAgent.agent_prefix,
-            name: realAgent.name,
-            chatbot_api: realAgent.chatbot_api,
-            has_chatbot_key: !!realAgent.chatbot_key,
-            chatbot_key_preview: realAgent.chatbot_key ? realAgent.chatbot_key.substring(0, 10) + '...' : 'NO KEY'
-          });
           return NextResponse.json({
             success: true,
             data: realAgent,
@@ -39,19 +32,12 @@ export async function GET(
         }
       }
     } catch (fetchError) {
-      console.log('⚠️ Could not fetch real agent data, using fallback:', fetchError);
+      // Could not fetch real agent data, using fallback
     }
 
     // Fallback to mock agent data if real agent not found
     const fallbackChatbotApi = process.env.NEXT_PUBLIC_CHATBOT_API_URL || (process.env.NEXT_PUBLIC_DIFY_BASE_URL ? `${process.env.NEXT_PUBLIC_DIFY_BASE_URL}/chat-messages` : '');
     const fallbackChatbotKey = process.env.NEXT_PUBLIC_CHATBOT_API_KEY || '';
-    
-    console.log('🔄 Using fallback agent configuration:', {
-      agentId,
-      chatbot_api: fallbackChatbotApi,
-      has_chatbot_key: !!fallbackChatbotKey,
-      chatbot_key_preview: fallbackChatbotKey ? fallbackChatbotKey.substring(0, 10) + '...' : 'NO KEY'
-    });
     
     const agent = {
       _id: `agent_${Date.now()}`,
@@ -97,7 +83,6 @@ export async function GET(
       message: 'Agent information retrieved successfully'
     });
   } catch (error) {
-    console.error('Chatbot Agent API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -112,7 +112,6 @@ export function useAuth(): UseAuthReturn {
           });
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
         setAuthStateLocal({
           isAuthenticated: false,
           user: null,

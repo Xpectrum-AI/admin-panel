@@ -19,7 +19,6 @@ export function getCurrentOrganization(request: NextRequest): string | null {
     if (authHeader) {
       // This is a placeholder - in a real implementation, you might decode a JWT
       // or make a call to PropelAuth to get the user's organization
-      console.log('🔍 Authorization header found, but organization extraction not implemented yet');
     }
 
     // For now, return a default organization name from environment
@@ -27,7 +26,6 @@ export function getCurrentOrganization(request: NextRequest): string | null {
     return process.env.NEXT_PUBLIC_DEFAULT_ORG_NAME || 'Xpectrum_AI'; // Default organization name
     
   } catch (error) {
-    console.error('Error extracting current organization:', error);
     return process.env.NEXT_PUBLIC_DEFAULT_ORG_NAME || 'Xpectrum_AI'; // Fallback organization
   }
 }

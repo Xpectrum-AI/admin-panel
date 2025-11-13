@@ -53,7 +53,6 @@ export const createOrg = async (name: string, description?: string): Promise<Org
     const result = await response.json();
     return result.data;
   } catch (error) {
-    console.error('Error creating organization:', error);
     throw error;
   }
 };
@@ -75,7 +74,6 @@ export const updateOrg = async (orgId: string, updates: UpdateOrgRequest): Promi
     const result = await response.json();
     return result.data;
   } catch (error) {
-    console.error('Error updating organization:', error);
     throw error;
   }
 };
@@ -97,7 +95,6 @@ export const addUserToOrg = async (orgId: string, userId: string, role: string =
     const result = await response.json();
     return result.data;
   } catch (error) {
-    console.error('Error adding user to organization:', error);
     throw error;
   }
 };
@@ -121,7 +118,6 @@ export const getOrg = async (orgId: string): Promise<Organization> => {
     const result = await response.json();
     return result.data;
   } catch (error) {
-    console.error('Error fetching organization:', error);
     throw error;
   }
 };
@@ -143,7 +139,6 @@ export const getUserOrgs = async (): Promise<Organization[]> => {
     const result = await response.json();
     return result.data || result.orgs || [];
   } catch (error) {
-    console.error('Error fetching user organizations:', error);
     throw error;
   }
 };

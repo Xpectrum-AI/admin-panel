@@ -69,8 +69,6 @@ export default function ConversationLogsTab({ organizationId }: ConversationLogs
       }
 
       const data = await response.json();
-      console.log('📦 Raw API response:', data);
-
       let agentsList: Agent[] = [];
 
       // Handle backend response: {status: 'success', agents: {...}}
@@ -80,8 +78,6 @@ export default function ConversationLogsTab({ organizationId }: ConversationLogs
         } else if (typeof data.agents === 'object' && data.agents !== null) {
           // Backend returns agents as object with agent names as keys
           // Example: { "test1_uuid": { id: "uuid", chatbot_api: "...", ... } }
-          console.log('📦 Agents data is object, converting to array...');
-
           // Use Object.entries to preserve the key (agent name) and extract it
           agentsList = Object.entries(data.agents).map(([key, value]: [string, any]) => {
             // Extract agent name from key (e.g., "test1_2f1c9c6e..." -> "test1")
@@ -99,8 +95,6 @@ export default function ConversationLogsTab({ organizationId }: ConversationLogs
         if (Array.isArray(data.data)) {
           agentsList = data.data;
         } else if (typeof data.data === 'object' && data.data !== null) {
-          console.log('📦 Data is object, converting to array...');
-
           // Use Object.entries to preserve the key (agent name)
           agentsList = Object.entries(data.data).map(([key, value]: [string, any]) => {
             const namePart = key.split('_')[0];
@@ -115,13 +109,8 @@ export default function ConversationLogsTab({ organizationId }: ConversationLogs
       } else if (Array.isArray(data)) {
         agentsList = data;
       }
-
-      console.log('📦 Processed agents list:', agentsList);
-
       if (agentsList.length > 0) {
-        console.log('📋 First agent details:', agentsList[0]);
-        console.log('📋 Agent fields:', Object.keys(agentsList[0]));
-        setAgents(agentsList);
+setAgents(agentsList);
         setMessage(`✅ Found ${agentsList.length} agent(s)`);
         setMessageType('success');
       } else {
@@ -129,7 +118,6 @@ export default function ConversationLogsTab({ organizationId }: ConversationLogs
         setMessageType('info');
       }
     } catch (error) {
-      console.error('❌ Error fetching agents:', error);
       setMessage(`Failed to fetch agents: ${error instanceof Error ? error.message : String(error)}`);
       setMessageType('error');
     } finally {
@@ -143,25 +131,14 @@ export default function ConversationLogsTab({ organizationId }: ConversationLogs
       setLoading(true);
       setMessage('📡 Fetching conversations...');
       setMessageType('info');
-
-      console.log('🎯 Agent clicked:', agent);
-      console.log('🎯 Agent name:', agent.name);
-      console.log('🎯 Agent chatbot_api:', agent.chatbot_api);
-      console.log('🎯 Agent chatbot_key:', agent.chatbot_key ? '***' + agent.chatbot_key.slice(-4) : 'NOT SET');
-      console.log('🎯 All agent keys:', Object.keys(agent));
-
-      const apiKey = agent.chatbot_key || '';
+const apiKey = agent.chatbot_key || '';
 
       if (!apiKey) {
-        console.error('❌ No API key found for agent:', agent);
         setMessage('❌ Agent does not have an API key configured.');
         setMessageType('error');
         return;
       }
-
-      console.log('🔍 Fetching conversations via backend API (Console API for all users)...');
-
-      // Use our backend API to get ALL conversations (uses Console API which doesn't filter by user)
+// Use our backend API to get ALL conversations (uses Console API which doesn't filter by user)
       const response = await fetch('/api/dify/all-conversations', {
         method: 'POST',
         headers: {
@@ -172,13 +149,10 @@ export default function ConversationLogsTab({ organizationId }: ConversationLogs
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Backend API error response:', errorText);
         throw new Error(`Failed to fetch conversations: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log('✅ Conversations response:', data);
-
       const convList = data.conversations || [];
 
       // Sort conversations by updated_at descending (latest first)
@@ -199,7 +173,6 @@ export default function ConversationLogsTab({ organizationId }: ConversationLogs
         fetchMonitoringData(agent);
       }
     } catch (error) {
-      console.error('❌ Error fetching conversations:', error);
       setMessage(`Failed to fetch conversations: ${error instanceof Error ? error.message : String(error)}`);
       setMessageType('error');
     } finally {
@@ -210,14 +183,11 @@ export default function ConversationLogsTab({ organizationId }: ConversationLogs
   // Fetch monitoring data
   const fetchMonitoringData = async (agent: Agent, isRefresh = false) => {
     if (!agent.chatbot_key) {
-      console.warn('⚠️ No API key for monitoring');
       return;
     }
 
     try {
       setLoadingMonitoring(true);
-      console.log(isRefresh ? '🔄 Refreshing monitoring data...' : '📊 Fetching monitoring data...');
-
       const response = await fetch('/api/dify/monitoring', {
         method: 'POST',
         headers: {
@@ -231,20 +201,10 @@ export default function ConversationLogsTab({ organizationId }: ConversationLogs
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Monitoring API error:', errorText);
         throw new Error(`Failed to fetch monitoring data: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('✅ Monitoring data received:', {
-        conversations: data.statistics?.total_conversations,
-        users: data.statistics?.total_end_users,
-        messages: data.statistics?.total_messages,
-        tokens: data.statistics?.total_tokens,
-        avgInteractions: data.statistics?.avg_session_interactions,
-        tokenSpeed: data.statistics?.token_output_speed,
-      });
-
       setMonitoringData(data);
       setLastMonitoringUpdate(new Date());
 
@@ -254,7 +214,6 @@ export default function ConversationLogsTab({ organizationId }: ConversationLogs
         setTimeout(() => setMessage(''), 3000);
       }
     } catch (error) {
-      console.error('❌ Error fetching monitoring data:', error);
       if (isRefresh) {
         setMessage('⚠️ Failed to refresh monitoring data');
         setMessageType('error');
@@ -268,21 +227,16 @@ export default function ConversationLogsTab({ organizationId }: ConversationLogs
   // Auto-refresh monitoring data every 30 seconds when monitoring tab is active
   useEffect(() => {
     if (activeTab === 'monitoring' && selectedAgent && view === 'conversations') {
-      console.log('🔄 Starting auto-refresh for monitoring (every 30s)...');
-
-      // Fetch immediately if no data exists
+// Fetch immediately if no data exists
       if (!monitoringData) {
-        console.log('📊 No monitoring data, fetching immediately...');
         fetchMonitoringData(selectedAgent, false);
       }
 
       const interval = setInterval(() => {
-        console.log('⏰ Auto-refresh triggered');
         fetchMonitoringData(selectedAgent, true);
       }, 30000); // 30 seconds
 
       return () => {
-        console.log('🛑 Stopping auto-refresh');
         clearInterval(interval);
       };
     }
@@ -302,21 +256,13 @@ export default function ConversationLogsTab({ organizationId }: ConversationLogs
         setMessageType('error');
         return;
       }
-
-      console.log('🔍 Fetching messages via App API...');
-      console.log('📝 Conversation user_id:', conversation.user_id);
-
       // Extract base URL from chatbot_api
       const baseUrl = selectedAgent?.chatbot_api?.replace(/\/chat-messages$/, '') || process.env.NEXT_PUBLIC_DIFY_BASE_URL;
       if (!baseUrl) {
         throw new Error('Chatbot API URL or NEXT_PUBLIC_DIFY_BASE_URL is not configured');
       }
-      console.log('🔗 Base URL:', baseUrl);
-
       // Use the user_id from the conversation (fetched via Console API)
       const userId = conversation.user_id || 'preview-user';
-      console.log('👤 Using user ID:', userId);
-
       // Call App API directly: GET /v1/messages
       const response = await fetch(`${baseUrl}/messages?user=${encodeURIComponent(userId)}&conversation_id=${encodeURIComponent(conversation.id)}&limit=100`, {
         method: 'GET',
@@ -328,18 +274,11 @@ export default function ConversationLogsTab({ organizationId }: ConversationLogs
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ API error response:', errorText);
         throw new Error(`Failed to fetch messages: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
       const messages = data.data || [];
-
-      console.log('✅ Messages response:', data);
-      console.log('✅ Messages array:', messages);
-      console.log('✅ Messages count:', messages.length);
-      console.log('✅ First message:', messages[0]);
-
       // Update conversation with messages
       const updatedConversation = {
         ...conversation,
@@ -347,15 +286,11 @@ export default function ConversationLogsTab({ organizationId }: ConversationLogs
         created_at: conversation.created_at * 1000, // Convert to milliseconds for Date
         updated_at: (conversation.updated_at || conversation.created_at) * 1000,
       };
-
-      console.log('✅ Updated conversation:', updatedConversation);
-
       setSelectedConversation(updatedConversation);
       setView('chat');
       setMessage(`✅ Loaded ${messages.length} messages`);
       setMessageType('success');
     } catch (error) {
-      console.error('❌ Error fetching conversation:', error);
       setMessage(`Failed to load conversation: ${error instanceof Error ? error.message : String(error)}`);
       setMessageType('error');
     } finally {

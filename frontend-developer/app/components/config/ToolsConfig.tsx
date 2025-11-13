@@ -98,7 +98,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
     // Only sync on initial load or when external props actually change
     // Don't sync if user has manually cleared fields (empty strings)
     if (!isSynchronizedRef.current) {
-      console.log('🔄 Initial sync - loading configuration from props.');
       setInitialMessage(latestConfig.initialMessage);
       setNudgeText(latestConfig.nudgeText);
       setNudgeInterval(latestConfig.nudgeInterval);
@@ -125,7 +124,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
         });
 
         if (currentKey !== latestKey) {
-          console.log('🔄 External config change detected. Updating local state.');
           setInitialMessage(latestConfig.initialMessage);
           setNudgeText(latestConfig.nudgeText);
           setNudgeInterval(latestConfig.nudgeInterval);
@@ -160,15 +158,11 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
           maxCallDuration,
           ...updates
         };
-
-        console.log('📤 ToolsConfig: Saving state to centralized config:', currentState);
-
         // Call parent's onConfigChange
         if (onConfigChange) {
           onConfigChange(currentState);
         }
       } catch (error) {
-        console.warn('Failed to save tools config state to centralized state:', error);
       }
     }, 2000); // 2 seconds debounce - enough time to write a full sentence
   }, [onConfigChange]); // Only depend on onConfigChange, not the state values
@@ -266,7 +260,6 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
         setConfigStatus('error');
       }
     } catch (error) {
-      console.error('❌ Dify test error:', error);
       setErrorMessage(`❌ Dify integration test error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setConfigStatus('error');
     } finally {

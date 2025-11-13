@@ -97,18 +97,11 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
                 setOrganizationPhoneNumbers([]);
                 return;
             }
-
-            console.log('🚀 Loading organization phone numbers...');
             const response: ApiResponse<OrganizationData> = await getPhoneNumbersByOrganization(orgId);
-            console.log('🚀 API response received:', response);
-
             if (response.success && response.data) {
                 const orgData = response.data;
-                console.log('✅ Organization data:', orgData);
-
                 // Check if we have phone_numbers in the response
                 if (orgData.phone_numbers && Array.isArray(orgData.phone_numbers) && orgData.phone_numbers.length > 0) {
-                    console.log('✅ Found phone_numbers array:', orgData.phone_numbers);
                     setOrganizationPhoneNumbers(orgData.phone_numbers);
                 } else {
                     // Try alternative data extraction methods (same as inbound phone numbers)
@@ -128,20 +121,16 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
                     }
 
                     if (phoneNumbersData && phoneNumbersData.length > 0) {
-                        console.log('✅ Found phone numbers via alternative method:', phoneNumbersData);
                         setOrganizationPhoneNumbers(phoneNumbersData);
                     } else {
-                        console.log('❌ No phone numbers found in response');
                         setOrganizationPhoneNumbers([]);
                     }
                 }
             } else {
-                console.log('❌ API response failed:', response);
                 setOrganizationPhoneNumbers([]);
             }
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-            console.error('❌ Error loading organization phone numbers:', errorMessage);
             setOrganizationPhoneNumbers([]);
         } finally {
             setLoadingOrgPhoneNumbers(false);
@@ -152,10 +141,7 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
     const loadAvailablePhoneNumbers = useCallback(async () => {
         setLoadingPhoneNumbers(true);
         try {
-            console.log('🚀 Loading available phone numbers...');
             const response: ApiResponse<{ phone_numbers: PhoneNumber[] }> = await getAvailablePhoneNumbersFromBackend();
-            console.log('🚀 Available phone numbers response:', response);
-
             if (response.success && response.data) {
                 let phoneNumbersArray: PhoneNumber[] = [];
 
@@ -176,16 +162,12 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
                         };
                     });
                 }
-
-                console.log('✅ Available phone numbers:', phoneNumbersArray);
                 setAvailablePhoneNumbers(phoneNumbersArray);
             } else {
-                console.log('❌ Available phone numbers API response failed:', response);
                 setAvailablePhoneNumbers([]);
             }
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-            console.error('❌ Error loading available phone numbers:', errorMessage);
             setAvailablePhoneNumbers([]);
         } finally {
             setLoadingPhoneNumbers(false);
@@ -202,30 +184,22 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
                 setAgents([]);
                 return;
             }
-
-            console.log('🚀 Loading agents for org:', orgId);
             const response: ApiResponse<{ agents: Record<string, unknown> }> = await getAgentsByOrganization(orgId);
-            console.log('🚀 Agents API response:', response);
-
             if (response.success && response.data) {
                 const agentsData = response.data;
 
                 // Extract agent names from the agents object
                 if (agentsData.agents && typeof agentsData.agents === 'object') {
                     const agentNames = Object.keys(agentsData.agents);
-                    console.log('✅ Agents loaded:', agentNames);
                     setAgents(agentNames);
                 } else {
-                    console.log('❌ No agents found in response');
                     setAgents([]);
                 }
             } else {
-                console.log('❌ Agents API response failed:', response);
                 setAgents([]);
             }
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-            console.error('❌ Error loading agents:', errorMessage);
             setAgents([]);
         } finally {
             setLoadingAgents(false);
@@ -280,16 +254,8 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
     // Filter for WhatsApp-enabled numbers and process them
     const whatsappNumbers = allPhoneNumbers.filter((phone: any) => {
         const isWhatsappEnabled = phone.whatsapp_enabled === true || phone.whatsapp_enabled === 'true' || phone.whatsapp_enabled === 1;
-        console.log(`Phone ${phone.phone_number}: whatsapp_enabled=${phone.whatsapp_enabled}, isWhatsappEnabled=${isWhatsappEnabled}, agent_id=${phone.agent_id}, status=${phone.status}`);
         return isWhatsappEnabled;
     });
-
-    console.log('📊 WhatsApp Numbers Summary:');
-    console.log(`- Total allPhoneNumbers: ${allPhoneNumbers.length}`);
-    console.log(`- WhatsApp-enabled: ${whatsappNumbers.length}`);
-    console.log(`- Organization phone numbers: ${organizationPhoneNumbers.length}`);
-    console.log(`- Available phone numbers: ${availablePhoneNumbers.length}`);
-
     // Process WhatsApp numbers for display
     const processedNumbers = whatsappNumbers.map((phone: any) => {
         const agentId = phone.agent_id;
@@ -340,7 +306,6 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
 
     // Load data on component mount
     useEffect(() => {
-        console.log('🔍 useEffect triggered, loading data');
         loadOrganizationPhoneNumbers();
         loadAgents();
         loadAvailablePhoneNumbers(); // Always load available numbers
@@ -349,7 +314,6 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
     // Reload data when refreshTrigger changes
     useEffect(() => {
         if (refreshTrigger && refreshTrigger > 0) {
-            console.log('🔄 Refresh trigger activated, reloading data');
             loadOrganizationPhoneNumbers();
             loadAvailablePhoneNumbers();
         }
@@ -361,15 +325,12 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
 
     // Refresh data function
     const refreshData = async () => {
-        console.log('🔄 Refreshing WhatsApp data...');
         try {
             await Promise.all([
                 loadOrganizationPhoneNumbers(),
                 loadAvailablePhoneNumbers()
             ]);
-            console.log('✅ WhatsApp data refreshed successfully');
         } catch (error) {
-            console.error('❌ Error refreshing data:', error);
         }
     };
 
@@ -378,8 +339,6 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
 
         setIsAssigning(true);
         try {
-            console.log('🚀 Assigning agent:', { agent: selectedAgent, phoneNumber: selectedPhoneNumber });
-
             // Find the phone number data
             const phoneData = phoneNumbers.find(phone => phone.number === selectedPhoneNumber);
             if (!phoneData) {
@@ -400,14 +359,10 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
                 setShowAssignModal(false);
                 setSelectedAgent('');
                 setSelectedPhoneNumber('');
-
-                console.log('✅ Agent assigned successfully:', result);
             } else {
-                console.error('❌ Failed to assign agent:', result.message);
                 alert(`Failed to assign agent: ${result.message}`);
             }
         } catch (error) {
-            console.error('❌ Error assigning agent:', error);
             alert(`Error assigning agent: ${error instanceof Error ? error.message : 'Unknown error'}`);
         } finally {
             setIsAssigning(false);
@@ -422,19 +377,15 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
         setUnassigningAgentId(agentId);
 
         try {
-            console.log('🚀 Unassigning phone:', phoneId, 'from agent:', agentId);
             const result = await unassignPhoneNumberFromAgent(phoneId, agentId);
 
             if (result.success) {
-                console.log('✅ Successfully unassigned phone number');
                 // Refresh data after successful unassignment
                 await refreshData();
             } else {
-                console.error('❌ Failed to unassign agent:', result.message);
                 alert(`Failed to unassign agent: ${result.message}`);
             }
         } catch (error) {
-            console.error('❌ Error unassigning agent:', error);
             alert(`Error unassigning agent: ${error instanceof Error ? error.message : 'Unknown error'}`);
         } finally {
             setIsUnassigning(false);

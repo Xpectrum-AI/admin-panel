@@ -122,7 +122,6 @@ export default function OutboundSMSScheduler({ refreshTrigger }: OutboundSMSSche
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setSchedulerError('Failed to send SMS message: ' + errorMessage);
-      console.error('Error sending SMS message:', err);
     } finally {
       setSending(false);
     }

@@ -101,7 +101,6 @@ export const useLocationData = () => {
           loading: false,
         }));
       } catch (cityError: any) {
-        console.error('Both states and cities failed for', country, ':', cityError.message);
         setLocationData(prev => ({
           ...prev,
           error: `Location data not available for ${country}. Please try another country.`,
@@ -144,7 +143,6 @@ export const useLocationData = () => {
         loading: false,
       }));
     } catch (error: any) {
-      console.error('Cities API failed for', targetCountry, state, ':', error.message);
       setLocationData(prev => ({
         ...prev,
         error: `Cities not available for ${state}, ${targetCountry}. Please try another state.`,

@@ -24,8 +24,6 @@ async function createDifyAgentDirectly(
   agentType: string = 'Knowledge Agent (RAG)'
 ): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
-    console.log('🔄 Creating Dify agent using direct API calls...');
-    
     const consoleOrigin = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN;
     const adminEmail = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL;
     const adminPassword = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD;
@@ -36,7 +34,6 @@ async function createDifyAgentDirectly(
     }
 
     // Step 1: Login to get token
-    console.log('🔐 Logging into Dify console...');
     const loginResponse = await fetch(`${consoleOrigin}/console/api/login`, {
       method: 'POST',
       headers: {
@@ -61,11 +58,7 @@ async function createDifyAgentDirectly(
     if (!token) {
       throw new Error('No access token received from login');
     }
-
-    console.log('✅ Successfully logged into Dify console');
-
     // Step 2: Create app using YAML import
-    console.log('📝 Creating app via YAML import...');
     const yamlContent = `version: "0.3.0"
 kind: "app"
 app:
@@ -104,11 +97,7 @@ model_config:
     if (!appId) {
       throw new Error('No app ID received from import');
     }
-
-    console.log(`✅ App created with ID: ${appId}`);
-
     // Step 3: Create API key
-    console.log('🔑 Creating API key...');
     const keyResponse = await fetch(`${consoleOrigin}/console/api/apps/${appId}/api-keys`, {
       method: 'POST',
       headers: {
@@ -132,11 +121,7 @@ model_config:
     if (!appKey) {
       throw new Error('No API key received');
     }
-
-    console.log('✅ API key created successfully');
-
     // Step 4: Get service origin
-    console.log('🌐 Getting service origin...');
     const appDetailResponse = await fetch(`${consoleOrigin}/console/api/apps/${appId}`, {
       method: 'GET',
       headers: {
@@ -153,9 +138,6 @@ model_config:
         serviceOrigin = serviceOrigin.replace('/v1', '');
       }
     }
-
-    console.log('✅ Dify agent created successfully via direct API calls');
-
     return {
       success: true,
       data: {
@@ -170,7 +152,6 @@ model_config:
     };
 
   } catch (error) {
-    console.error('❌ Direct API creation failed:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -194,9 +175,6 @@ export async function POST(request: NextRequest) {
         error: 'Missing required fields: agentName and organizationId' 
       }, { status: 400 });
     }
-
-    console.log('🚀 Creating Dify agent:', { agentName, organizationId, modelProvider, modelName, agentType });
-
     // Determine the correct script path based on the operating system
     const isWindows = process.platform === 'win32';
     const scriptPath = isWindows 
@@ -214,19 +192,14 @@ export async function POST(request: NextRequest) {
         const stats = fs.statSync(scriptPath);
         const isExecutable = (stats.mode & parseInt('111', 8)) !== 0;
         if (!isExecutable) {
-          console.log('⚠️ Script is not executable, attempting to make it executable...');
           fs.chmodSync(scriptPath, '755');
         }
       } catch (chmodError) {
-        console.log('⚠️ Could not check/modify script permissions:', chmodError);
       }
     }
 
     try {
       // Execute the script
-      console.log('🔧 Executing Dify agent creation script...');
-      console.log('📁 Script path:', scriptPath);
-      
       // Check if environment variables are properly set
       const requiredEnvVars = {
         NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN: process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN,
@@ -234,14 +207,6 @@ export async function POST(request: NextRequest) {
         NEXT_PUBLIC_DIFY_ADMIN_PASSWORD: process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD,
         NEXT_PUBLIC_DIFY_WORKSPACE_ID: process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID,
       };
-      
-      console.log('🔧 Environment variables for script:', {
-        CONSOLE_ORIGIN: requiredEnvVars.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN ? 'Set' : 'Missing',
-        ADMIN_EMAIL: requiredEnvVars.NEXT_PUBLIC_DIFY_ADMIN_EMAIL ? 'Set' : 'Missing',
-        ADMIN_PASSWORD: requiredEnvVars.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD ? 'Set' : 'Missing',
-        WORKSPACE_ID: requiredEnvVars.NEXT_PUBLIC_DIFY_WORKSPACE_ID ? 'Set' : 'Missing',
-      });
-      
       // Check if all required environment variables are set
       const missingVars = Object.entries(requiredEnvVars)
         .filter(([key, value]) => !value)
@@ -261,42 +226,26 @@ export async function POST(request: NextRequest) {
       const command = isWindows 
         ? `powershell -ExecutionPolicy Bypass -File "${scriptPath}" -AgentName "${agentName}" -AgentType "${agentType}" -ModelProvider "${modelProvider}" -ModelName "${modelName}"`
         : `bash "${scriptPath}" "${agentName}" "${agentType}" "${modelProvider}" "${modelName}"`;
-      
-      console.log('🔧 Executing command:', command);
-      console.log('🔧 Platform:', process.platform);
-      
       // Check if required tools are available (for debugging)
       try {
         const { stdout: curlCheck } = await execAsync('which curl', { timeout: 5000 });
-        console.log('✅ curl available:', curlCheck.trim());
-      } catch (curlError) {
-        console.log('⚠️ curl not available:', curlError);
+} catch (curlError) {
       }
       
       try {
         const { stdout: jqCheck } = await execAsync('which jq', { timeout: 5000 });
-        console.log('✅ jq available:', jqCheck.trim());
-      } catch (jqError) {
-        console.log('⚠️ jq not available:', jqError);
+} catch (jqError) {
       }
-      
-      console.log('🚀 Starting script execution...');
       const { stdout, stderr } = await execAsync(command, {
         timeout: 60000, // 60 second timeout
         maxBuffer: 1024 * 1024 * 10, // 10MB buffer
         env: envVars // Pass environment variables to the script
       });
-
-      console.log('📝 Script stdout:', stdout);
       if (stderr) {
-        console.log('⚠️ Script stderr:', stderr);
       }
       
       // Additional debugging for environment issues
       if (stdout.includes('Error:') || stderr.includes('Error:')) {
-        console.log('❌ Script execution failed with errors');
-        console.log('🔍 Full stdout:', stdout);
-        console.log('🔍 Full stderr:', stderr);
         throw new Error(`Script execution failed: ${stderr || stdout}`);
       }
 
@@ -313,9 +262,6 @@ export async function POST(request: NextRequest) {
       }
 
       if (!jsonOutput) {
-        console.error('❌ No JSON output found in script result');
-        console.error('📝 Full stdout:', stdout);
-        console.error('📝 Full stderr:', stderr);
         throw new Error(`No JSON output found in script result. Stdout: ${stdout}, Stderr: ${stderr}`);
       }
 
@@ -323,23 +269,12 @@ export async function POST(request: NextRequest) {
       try {
         result = JSON.parse(jsonOutput);
       } catch (parseError) {
-        console.error('❌ Failed to parse JSON output:', jsonOutput);
         throw new Error(`Failed to parse JSON output: ${parseError instanceof Error ? parseError.message : 'Unknown parse error'}`);
       }
       
       if (!result.success || !result.app_key) {
-        console.error('❌ Script execution failed or no API key generated');
-        console.error('📝 Result:', result);
         throw new Error(`Script execution failed or no API key generated. Result: ${JSON.stringify(result)}`);
       }
-
-      console.log('✅ Dify agent created successfully:', {
-        appId: result.app_id,
-        appName: result.app_name,
-        hasApiKey: !!result.app_key,
-        serviceOrigin: result.service_origin
-      });
-
       return NextResponse.json({
         success: true,
         data: {
@@ -355,20 +290,10 @@ export async function POST(request: NextRequest) {
       });
 
     } catch (execError) {
-      console.error('❌ Script execution error:', execError);
-      console.error('❌ Error details:', {
-        message: execError instanceof Error ? execError.message : 'Unknown error',
-        code: (execError as any)?.code,
-        signal: (execError as any)?.signal,
-        cmd: (execError as any)?.cmd
-      });
-
-      // Try fallback method using direct API calls
-      console.log('🔄 Attempting fallback method using direct API calls...');
+// Try fallback method using direct API calls
       try {
         const fallbackResult = await createDifyAgentDirectly(agentName, organizationId, modelProvider, modelName, agentType);
         if (fallbackResult.success) {
-          console.log('✅ Fallback method succeeded');
           return NextResponse.json({
             success: true,
             data: fallbackResult.data,
@@ -376,7 +301,6 @@ export async function POST(request: NextRequest) {
           });
         }
       } catch (fallbackError) {
-        console.error('❌ Fallback method also failed:', fallbackError);
       }
 
       return NextResponse.json({
@@ -389,7 +313,6 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('❌ Create Dify agent error:', error);
     return NextResponse.json({
       success: false,
       error: 'Internal server error',

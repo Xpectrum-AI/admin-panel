@@ -30,14 +30,12 @@ const makeApiRequest = async (
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('API Error:', response.status, errorText);
       throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}: ${errorText}`);
     }
 
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('API Request failed:', error);
     throw error;
   }
 };
@@ -71,14 +69,12 @@ const makeSmsApiRequest = async (
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('SMS API Error:', response.status, errorText);
       throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}: ${errorText}`);
     }
 
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('SMS API Request failed:', error);
     throw error;
   }
 };
@@ -137,10 +133,8 @@ export class SMSService {
       const data = await makeApiRequest('/phone-numbers/available', {
         method: 'GET',
       });
-      console.log('🚀 All phone numbers fetched successfully:', data);
       return { success: true, data };
     } catch (error: any) {
-      console.error('Error fetching all phone numbers:', error);
       return { success: false, message: error.message };
     }
   };
@@ -148,22 +142,13 @@ export class SMSService {
   // Get SMS-enabled phone numbers with filtering logic
   static async getSmsEnabledPhoneNumbers(): Promise<PhoneNumberResponse> {
     try {
-      console.log('🚀 Loading SMS-enabled phone numbers...');
       const response = await this.getAllPhoneNumbers();
-      console.log('🚀 API response received:', response);
-
       if (response.success && response.data) {
         const phoneNumbersData = response.data;
-        console.log('✅ Phone numbers data:', phoneNumbersData);
-
         // Check if we have phone_numbers array in the response
         if (phoneNumbersData.phone_numbers && Array.isArray(phoneNumbersData.phone_numbers) && phoneNumbersData.phone_numbers.length > 0) {
-          console.log('✅ Found phone_numbers array:', phoneNumbersData.phone_numbers);
-
           // Filter to show only SMS-enabled phone numbers
           const smsEnabledNumbers = phoneNumbersData.phone_numbers.filter((phone: any) => phone.sms_enabled === true);
-          console.log('✅ SMS-enabled numbers after filtering:', smsEnabledNumbers);
-
           return { 
             success: true, 
             data: { 
@@ -172,7 +157,6 @@ export class SMSService {
             } 
           };
         } else {
-          console.log('❌ No phone numbers found in response');
           return { 
             success: true, 
             data: { 
@@ -182,7 +166,6 @@ export class SMSService {
           };
         }
       } else {
-        console.log('❌ API response failed:', response);
         return { 
           success: false, 
           message: response.message || 'Failed to fetch phone numbers',
@@ -194,7 +177,6 @@ export class SMSService {
       }
     } catch (error: any) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('❌ Error loading SMS-enabled phone numbers:', errorMessage);
       return { 
         success: false, 
         message: errorMessage,
@@ -212,14 +194,7 @@ export class SMSService {
   ): Promise<SMSMappingResponse> {
     // Use the provided agentUrl, fallback to environment variable
     const finalAgentUrl = process.env.NEXT_PUBLIC_CHATBOT_API_URL;
-    
-    console.log('🚀 Mapping SMS receiving number to agent:', {
-      receivingNumber,
-      agentUrl: finalAgentUrl,
-      usingApiKey: agentApiKey.substring(0, 10) + '...'
-    });
-
-    const formData = {
+const formData = {
       receiving_number: receivingNumber,
       agent_url: finalAgentUrl,
       agent_api_key: agentApiKey
@@ -227,8 +202,6 @@ export class SMSService {
 
     try {
       const result = await makeSmsApiRequest('/sms/map-receiving-number-agent', formData);
-      
-      console.log('✅ SMS mapping created successfully:', result);
       return {
         success: true,
         message: result.message || 'SMS mapping created successfully!',
@@ -236,7 +209,6 @@ export class SMSService {
         timestamp: result.timestamp || new Date().toISOString()
       };
     } catch (error) {
-      console.error('❌ Failed to create SMS mapping:', error);
       throw error;
     }
   }
@@ -245,50 +217,35 @@ export class SMSService {
 
   // Get all SMS phone numbers
   static async getPhoneNumbers(): Promise<SMSPhoneNumber[]> {
-    console.log('🚀 Fetching SMS phone numbers');
-
     try {
       const result = await makeApiRequest('/sms/phone-numbers');
-      
-      console.log('✅ SMS phone numbers fetched successfully:', result);
       return result.data || result;
     } catch (error) {
-      console.error('❌ Failed to fetch SMS phone numbers:', error);
       throw error;
     }
   }
 
   // Get SMS mappings
   static async getMappings(): Promise<any[]> {
-    console.log('🚀 Fetching SMS mappings');
-
     try {
       const result = await makeApiRequest('/sms/mappings');
-      
-      console.log('✅ SMS mappings fetched successfully:', result);
       return result.data || result;
     } catch (error) {
-      console.error('❌ Failed to fetch SMS mappings:', error);
       throw error;
     }
   }
 
   // Delete SMS mapping
   static async deleteMapping(mappingId: string): Promise<{ success: boolean; message: string }> {
-    console.log('🚀 Deleting SMS mapping:', mappingId);
-
     try {
       const result = await makeApiRequest(`/sms/mappings/${mappingId}`, {
         method: 'DELETE'
       });
-      
-      console.log('✅ SMS mapping deleted successfully:', result);
       return {
         success: true,
         message: result.message || 'SMS mapping deleted successfully!'
       };
     } catch (error) {
-      console.error('❌ Failed to delete SMS mapping:', error);
       throw error;
     }
   }
@@ -300,15 +257,7 @@ export class SMSService {
     agentApiKey: string
   ): Promise<SMSMappingResponse> {
     const agentUrl = process.env.NEXT_PUBLIC_CHATBOT_API_URL || '';
-    
-    console.log('🚀 Updating SMS mapping:', {
-      mappingId,
-      receivingNumber,
-      agentUrl,
-      usingApiKey: agentApiKey.substring(0, 10) + '...'
-    });
-
-    const formData = {
+const formData = {
       receiving_number: receivingNumber,
       agent_url: agentUrl,
       agent_api_key: agentApiKey
@@ -316,8 +265,6 @@ export class SMSService {
 
     try {
       const result = await makeSmsApiRequest(`/sms/mappings/${mappingId}`, formData);
-      
-      console.log('✅ SMS mapping updated successfully:', result);
       return {
         success: true,
         message: result.message || 'SMS mapping updated successfully!',
@@ -325,7 +272,6 @@ export class SMSService {
         timestamp: result.timestamp || new Date().toISOString()
       };
     } catch (error) {
-      console.error('❌ Failed to update SMS mapping:', error);
       throw error;
     }
   }
@@ -341,14 +287,11 @@ export class SMSService {
       const result = await makeApiRequest(`/sms/unassign-receiving-number-agent/${encodeURIComponent(cleanNumber)}`, {
         method: 'DELETE'
       });
-      
-      console.log('✅ Receiving number unassigned successfully:', result);
       return {
         success: true,
         message: result.message || 'Receiving number unassigned successfully!'
       };
     } catch (error) {
-      console.error('❌ Failed to unassign receiving number:', error);
       throw error;
     }
   }
@@ -356,16 +299,11 @@ export class SMSService {
   // Get SMS receiving number agent mappings
   static async getReceivingNumberAgentMappings(): Promise<PhoneNumberResponse> {
     try {
-      console.log('🚀 Fetching SMS receiving number agent mappings...');
-      
       const data = await makeApiRequest('/sms/list-receiving-number-agents', {
         method: 'GET',
       });
-      
-      console.log('✅ SMS receiving number agent mappings fetched successfully:', data);
       return { success: true, data };
     } catch (error: any) {
-      console.error('❌ Error fetching SMS receiving number agent mappings:', error);
       return { success: false, message: error.message };
     }
   }
@@ -377,14 +315,7 @@ export class SMSService {
     messageText: string,
     context?: string
   ): Promise<{ success: boolean; message?: string; data?: any }> {
-    console.log('🚀 Sending SMS message:', {
-      fromNumber,
-      toNumber,
-      messageText: messageText.substring(0, 50) + '...',
-      context
-    });
-
-    const formData = {
+const formData = {
       from_number: fromNumber,
       to_number: toNumber,
       message_text: messageText,
@@ -393,15 +324,12 @@ export class SMSService {
 
     try {
       const result = await makeSmsApiRequest('/sms/send-message', formData);
-      
-      console.log('✅ SMS message sent successfully:', result);
       return {
         success: true,
         message: result.message || 'SMS message sent successfully!',
         data: result.data
       };
     } catch (error: any) {
-      console.error('❌ Failed to send SMS message:', error);
       return {
         success: false,
         message: error.message || 'Failed to send SMS message'
@@ -418,8 +346,6 @@ export class SMSService {
     agentId: string
   ): Promise<PhoneNumberResponse> {
     try {
-      console.log('🚀 Assigning SMS phone number to agent:', { phoneId, agentId });
-      
       const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/phone-numbers/${encodeURIComponent(phoneId)}/assign/${encodeURIComponent(agentId)}`, {
         method: 'POST',
         headers: {
@@ -433,10 +359,8 @@ export class SMSService {
       }
 
       const data = await response.json();
-      console.log('✅ SMS phone number assigned successfully:', data);
       return { success: true, data };
     } catch (error: any) {
-      console.error('❌ Failed to assign SMS phone number to agent:', error);
       return { success: false, message: `Failed to assign SMS phone number to agent: ${error.message}` };
     }
   }
@@ -450,8 +374,6 @@ export class SMSService {
     agentId: string
   ): Promise<PhoneNumberResponse> {
     try {
-      console.log('🚀 Unassigning SMS phone number from agent:', { phoneId, agentId });
-      
       // Try different endpoint patterns and methods
       const endpoints = [
         // Pattern 1: POST /phone-numbers/{phone_id}/unassign/{agent_id}
@@ -466,8 +388,6 @@ export class SMSService {
 
       for (const endpoint of endpoints) {
         try {
-          console.log(`Trying SMS unassign endpoint: ${endpoint.method} ${endpoint.url}`);
-          
           const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}${endpoint.url}`, {
             method: endpoint.method,
             headers: {
@@ -479,13 +399,10 @@ export class SMSService {
 
           if (response.ok) {
             const data = await response.json();
-            console.log(`✅ SMS unassign successful with ${endpoint.method} ${endpoint.url}`);
             return { success: true, data };
           } else {
-            console.log(`❌ ${endpoint.method} ${endpoint.url} failed with status: ${response.status}`);
           }
         } catch (endpointError) {
-          console.log(`❌ ${endpoint.method} ${endpoint.url} failed with error:`, endpointError);
           continue;
         }
       }
@@ -493,7 +410,6 @@ export class SMSService {
       // If all endpoints fail, throw an error
       throw new Error('All SMS unassign endpoint patterns failed');
     } catch (error: any) {
-      console.error('❌ Failed to unassign SMS phone number from agent:', error);
       return { success: false, message: `Failed to unassign SMS phone number from agent: ${error.message}` };
     }
   }

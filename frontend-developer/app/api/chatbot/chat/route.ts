@@ -14,23 +14,14 @@ export async function POST(request: NextRequest) {
 
     // Validate API key format
     if (!difyApiKey.startsWith('app-') && !difyApiKey.startsWith('sk-')) {
-      console.log('❌ Invalid API key format:', {
-        apiKey: difyApiKey,
-        apiKeyLength: difyApiKey.length,
-        startsWithApp: difyApiKey.startsWith('app-'),
-        startsWithSk: difyApiKey.startsWith('sk-')
-      });
-      
-      // For development/testing, allow empty or invalid keys with a warning
+// For development/testing, allow empty or invalid keys with a warning
       if (process.env.NODE_ENV === 'development' && (!difyApiKey || difyApiKey.trim() === '')) {
-        console.log('⚠️ Development mode: Using fallback API key for testing');
         // Use a fallback API key for development
         const fallbackApiKey = process.env.NEXT_PUBLIC_DIFY_API_KEY;
         if (!fallbackApiKey) {
           throw new Error('NEXT_PUBLIC_DIFY_API_KEY is not configured');
         }
         if (fallbackApiKey) {
-          console.log('🔄 Using fallback API key from environment');
           // Continue with fallback key
         } else {
           return NextResponse.json(
@@ -56,7 +47,6 @@ export async function POST(request: NextRequest) {
     // If the agent is using an old URL or no URL, use the environment variable
     if (!difyServiceUrl || !difyServiceUrl.includes('/chat-messages')) {
       if (envDifyUrl) {
-        console.log('🔄 Agent using invalid Dify URL, switching to environment URL');
         difyServiceUrl = envDifyUrl;
       } else if (difyServiceUrl && !difyServiceUrl.includes('/chat-messages')) {
         // Only append /chat-messages if it's not already in the URL
@@ -77,18 +67,7 @@ export async function POST(request: NextRequest) {
       user: 'preview-user',
       files: []
     };
-    
-    console.log('🚀 Making request to Dify API:', {
-      originalDifyApiUrl: difyApiUrl,
-      constructedDifyServiceUrl: difyServiceUrl,
-      apiKey: difyApiKey ? difyApiKey.substring(0, 10) + '...' : 'NO API KEY',
-      apiKeyLength: difyApiKey ? difyApiKey.length : 0,
-      message: message.substring(0, 50) + '...',
-      requestBody,
-      responseMode
-    });
-    
-    const response = await fetch(difyServiceUrl, {
+const response = await fetch(difyServiceUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -99,12 +78,8 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Dify API error:', response.status, errorText);
-      
       // If streaming mode fails with 400 error, try blocking mode as fallback
       if (response.status === 400 && responseMode === 'streaming' && errorText.includes('blocking mode')) {
-        console.log('🔄 Streaming mode failed, trying blocking mode as fallback');
-        
         const fallbackRequestBody = {
           ...requestBody,
           response_mode: 'blocking'
@@ -120,10 +95,7 @@ export async function POST(request: NextRequest) {
         });
         
         if (fallbackResponse.ok) {
-          console.log('✅ Fallback to blocking mode successful');
           const fallbackResponseText = await fallbackResponse.text();
-          console.log('📡 Fallback response:', fallbackResponseText);
-          
           try {
             const fallbackData = JSON.parse(fallbackResponseText);
             if (fallbackData.answer) {
@@ -133,7 +105,6 @@ export async function POST(request: NextRequest) {
               });
             }
           } catch (e) {
-            console.log('📡 Fallback response not JSON, continuing with error');
           }
         }
       }
@@ -159,49 +130,33 @@ export async function POST(request: NextRequest) {
 
     // Handle response based on mode
     const responseText = await response.text();
-    console.log('📡 Raw Dify response length:', responseText.length);
-    console.log('📡 Response mode:', responseMode);
-    console.log('📡 Raw Dify response (first 500 chars):', responseText.substring(0, 500));
-    
-    if (responseMode === 'blocking') {
+if (responseMode === 'blocking') {
       // Handle blocking mode (for widget preview)
       try {
         // Parse as JSON (blocking mode should return JSON directly)
         const data = JSON.parse(responseText);
-        console.log('📡 Parsed JSON data:', data);
-        
         // Extract answer from various possible fields
         let answer = '';
         let conversationIdFromResponse = conversationId;
         
         if (data.answer) {
           answer = data.answer;
-          console.log('📡 Found answer field:', answer);
         } else if (data.message) {
           answer = data.message;
-          console.log('📡 Found message field:', answer);
         } else if (data.text) {
           answer = data.text;
-          console.log('📡 Found text field:', answer);
         } else if (data.data && data.data.answer) {
           answer = data.data.answer;
-          console.log('📡 Found data.answer field:', answer);
         } else if (data.data && data.data.message) {
           answer = data.data.message;
-          console.log('📡 Found data.message field:', answer);
         } else if (data.response) {
           answer = data.response;
-          console.log('📡 Found response field:', answer);
         } else {
           // If no direct answer field, try to extract from the entire response
-          console.log('📡 No direct answer field found, checking full response structure');
-          console.log('📡 Full response keys:', Object.keys(data));
-          
-          // Look for any field that might contain the answer
+// Look for any field that might contain the answer
           for (const [key, value] of Object.entries(data)) {
             if (typeof value === 'string' && value.length > 0 && key.toLowerCase().includes('answer')) {
               answer = value;
-              console.log(`📡 Found answer in field ${key}:`, answer);
               break;
             }
           }
@@ -210,21 +165,16 @@ export async function POST(request: NextRequest) {
         // Extract conversation ID
         if (data.conversation_id) {
           conversationIdFromResponse = data.conversation_id;
-          console.log('📡 Found conversation_id:', conversationIdFromResponse);
         } else if (data.conversationId) {
           conversationIdFromResponse = data.conversationId;
-          console.log('📡 Found conversationId:', conversationIdFromResponse);
         }
         
         if (answer) {
-          console.log('📡 Returning answer:', answer);
-          console.log('📡 Answer length:', answer.length);
           return NextResponse.json({ 
             answer: answer,
             conversationId: conversationIdFromResponse
           });
         } else {
-          console.log('📡 No answer found in response, returning debug info');
           return NextResponse.json(
             { 
               error: 'No answer found in response', 
@@ -236,14 +186,10 @@ export async function POST(request: NextRequest) {
           );
         }
       } catch (parseError) {
-        console.log('📡 Failed to parse JSON response:', parseError);
-        console.log('📡 Raw response text:', responseText);
-        
         // Try to extract answer from raw text using regex
         const answerMatch = responseText.match(/"answer":\s*"([^"]+)"/);
         if (answerMatch) {
           const extractedAnswer = answerMatch[1];
-          console.log('📡 Extracted answer from raw response:', extractedAnswer);
           return NextResponse.json({ 
             answer: extractedAnswer,
             conversationId: conversationId
@@ -262,14 +208,9 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // Handle streaming mode (for full chatbot page)
-      console.log('📡 Processing streaming response');
-      console.log('📡 Full streaming response:', responseText);
-      
       // Try to parse as JSON first (some streaming responses might be JSON)
       try {
         const jsonData = JSON.parse(responseText);
-        console.log('📡 Streaming response is JSON:', jsonData);
-        
         if (jsonData.answer) {
           return NextResponse.json({ 
             answer: jsonData.answer,
@@ -277,7 +218,6 @@ export async function POST(request: NextRequest) {
           });
         }
       } catch (e) {
-        console.log('📡 Not JSON, processing as streaming format');
       }
       
       // Process as Server-Sent Events
@@ -286,120 +226,93 @@ export async function POST(request: NextRequest) {
       let accumulatedAnswer = '';
       let conversationIdFromStream = conversationId;
       let foundValidData = false;
-      
-      console.log('📡 Total lines to process:', lines.length);
-      console.log('📡 All lines:', lines);
-      
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         if (line.trim() === '') continue; // Skip empty lines
-        
-        console.log(`📡 Processing line ${i}:`, line);
-        
         if (line.startsWith('data: ')) {
           try {
             const jsonStr = line.substring(6).trim();
             if (jsonStr === '[DONE]') {
-              console.log('📡 Found [DONE] marker');
               continue;
             }
             
             const data = JSON.parse(jsonStr);
-            console.log('📡 Parsed streaming data:', data);
             foundValidData = true;
             
             // Handle different event types - prioritize complete answers
             if (data.event === 'message_end' && data.answer) {
-              console.log('📡 Found message_end with answer:', data.answer);
               finalAnswer = data.answer;
               if (data.conversation_id) {
                 conversationIdFromStream = data.conversation_id;
               }
               break; // This is the final answer
             } else if (data.event === 'agent_message' && data.answer) {
-              console.log('📡 Found agent_message with answer chunk:', data.answer);
               // Accumulate answer chunks instead of replacing
               accumulatedAnswer += data.answer;
               if (data.conversation_id) {
                 conversationIdFromStream = data.conversation_id;
               }
             } else if (data.event === 'message' && data.answer) {
-              console.log('📡 Found message with answer chunk:', data.answer);
               // Accumulate answer chunks instead of replacing
               accumulatedAnswer += data.answer;
               if (data.conversation_id) {
                 conversationIdFromStream = data.conversation_id;
               }
             } else if (data.event === 'workflow_finished' && data.data && data.data.answer) {
-              console.log('📡 Found workflow_finished with answer:', data.data.answer);
               finalAnswer = data.data.answer;
               if (data.conversation_id) {
                 conversationIdFromStream = data.conversation_id;
               }
             } else if (data.event === 'message_replace' && data.answer) {
-              console.log('📡 Found message_replace with answer:', data.answer);
               finalAnswer = data.answer;
               if (data.conversation_id) {
                 conversationIdFromStream = data.conversation_id;
               }
             } else if (data.answer && !data.event) {
               // Direct answer without event
-              console.log('📡 Found direct answer:', data.answer);
               finalAnswer = data.answer;
               if (data.conversation_id) {
                 conversationIdFromStream = data.conversation_id;
               }
             } else if (data.answer && data.event !== 'agent_message') {
               // Accumulate answer chunks (but not for agent_message events, already handled above)
-              console.log('📡 Found answer chunk:', data.answer);
               accumulatedAnswer += data.answer;
               if (data.conversation_id) {
                 conversationIdFromStream = data.conversation_id;
               }
             } else if (data.text) {
-              console.log('📡 Found text chunk:', data.text);
               accumulatedAnswer += data.text;
               if (data.conversation_id) {
                 conversationIdFromStream = data.conversation_id;
               }
             } else if (data.event === 'message_append' && data.answer) {
-              console.log('📡 Found message_append with answer:', data.answer);
               accumulatedAnswer += data.answer;
               if (data.conversation_id) {
                 conversationIdFromStream = data.conversation_id;
               }
             } else if (data.event === 'agent_thought') {
-              console.log('📡 Found agent_thought, skipping');
               continue;
             } else if (data.event === 'message_file') {
-              console.log('📡 Found message_file, skipping');
               continue;
             } else {
-              console.log('📡 Unhandled event/data:', data);
             }
           } catch (parseError) {
-            console.log('📡 Failed to parse line:', line, parseError);
             continue;
           }
         } else if (line.startsWith('event: ')) {
-          console.log('📡 Found event type line:', line);
           continue;
         } else if (line.trim().length > 0) {
           // Try to parse as direct JSON (non-SSE format)
           try {
             const data = JSON.parse(line);
-            console.log('📡 Parsed direct JSON:', data);
             foundValidData = true;
             
             if (data.answer) {
               finalAnswer = data.answer;
-              console.log('📡 Direct JSON answer:', finalAnswer);
             } else if (data.text) {
               finalAnswer = data.text;
-              console.log('📡 Direct JSON text:', finalAnswer);
             } else if (data.message) {
               finalAnswer = data.message;
-              console.log('📡 Direct JSON message:', finalAnswer);
             }
             
             if (data.conversation_id) {
@@ -407,25 +320,14 @@ export async function POST(request: NextRequest) {
             }
           } catch (directParseError) {
             // Not JSON, might be plain text response
-            console.log('📡 Line is not JSON, treating as plain text:', line);
             if (line.trim().length > 0) {
               accumulatedAnswer += line.trim() + ' ';
             }
           }
         }
       }
-      
-      console.log('📡 Final parsing results:', {
-        finalAnswer,
-        accumulatedAnswer,
-        foundValidData,
-        conversationIdFromStream
-      });
-      
       const answer = finalAnswer || accumulatedAnswer.trim();
       if (answer) {
-        console.log('📡 Returning answer:', answer);
-        console.log('📡 Answer length:', answer.length);
         return NextResponse.json({ 
           answer: answer,
           conversationId: conversationIdFromStream
@@ -434,12 +336,10 @@ export async function POST(request: NextRequest) {
       
       // If we have no answer but found valid data, try to extract from raw response
       if (foundValidData && responseText.trim()) {
-        console.log('📡 No structured answer found, trying to extract from raw response');
         // Try to find any text that looks like a response
         const textMatch = responseText.match(/"answer":\s*"([^"]+)"/);
         if (textMatch) {
           const extractedAnswer = textMatch[1];
-          console.log('📡 Extracted answer from raw response:', extractedAnswer);
           return NextResponse.json({ 
             answer: extractedAnswer,
             conversationId: conversationIdFromStream
@@ -448,7 +348,6 @@ export async function POST(request: NextRequest) {
       }
       
       // Final fallback - return the raw response for debugging
-      console.log('📡 No answer found, returning error with debug info');
       return NextResponse.json(
         { 
           error: 'No answer found in streaming response', 
@@ -462,7 +361,6 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Chatbot API error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

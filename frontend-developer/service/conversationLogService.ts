@@ -86,7 +86,6 @@ export class ConversationLogService {
       const data = await response.json();
       return data.data || [];
     } catch (error) {
-      console.error('Error fetching conversations:', error);
       throw error;
     }
   }
@@ -118,7 +117,6 @@ export class ConversationLogService {
       const data = await response.json();
       return data.data || [];
     } catch (error) {
-      console.error('Error fetching messages:', error);
       throw error;
     }
   }
@@ -196,7 +194,6 @@ export class ConversationLogService {
         filePaths.push(filePath);
         savedCount++;
       } catch (error) {
-        console.error(`Failed to save conversation ${conversation.id}:`, error);
         failedCount++;
       }
     }
@@ -246,7 +243,6 @@ export class ConversationLogService {
             messages,
           });
         } catch (error) {
-          console.error(`Failed to fetch messages for conversation ${conversation.id}:`, error);
           // Continue with empty messages array
           conversationsWithMessages.push({
             ...conversation,
@@ -266,7 +262,6 @@ export class ConversationLogService {
         file_paths: result.file_paths,
       };
     } catch (error) {
-      console.error('Error saving conversations with messages:', error);
       throw error;
     }
   }
@@ -366,7 +361,6 @@ export class ConversationLogService {
               conversations.push(conversation);
             }
           } catch (error) {
-            console.error(`Error reading log file ${itemPath}:`, error);
           }
         }
       }
@@ -429,7 +423,6 @@ export class ConversationLogService {
               deletedFiles++;
             }
           } catch (error) {
-            console.error(`Error processing log file ${itemPath}:`, error);
           }
         }
       }

@@ -33,9 +33,6 @@ export async function POST(
       model_live_url
     } = body;
 
-    console.log('🔍 Creating/updating agent:', { agentName, organization_id, body });
-    console.log('🔍 Chatbot API values received:', { chatbot_api, chatbot_key });
-
     // Call the real backend service to save to MongoDB
     const backendUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
     if (!backendUrl) {
@@ -44,7 +41,6 @@ export async function POST(
     const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
 
     if (!apiKey) {
-      console.error('❌ Missing API key configuration');
       return NextResponse.json({ error: 'API key configuration missing' }, { status: 500 });
     }
 
@@ -184,17 +180,6 @@ Remember: You are the first point of contact for many patients. Your professiona
       updated_at: Date.now() / 1000
     };
 
-    console.log('🚀 Sending complete agent data to backend service:', agentData);
-    console.log('🔑 TTS Config API Keys:', {
-      openai: processedTtsConfig?.openai?.api_key ? 'Present (' + processedTtsConfig.openai.api_key.substring(0, 10) + '...)' : 'Empty',
-      elevenlabs: processedTtsConfig?.elevenlabs?.api_key ? 'Present (' + processedTtsConfig.elevenlabs.api_key.substring(0, 10) + '...)' : 'Empty',
-      cartesian: processedTtsConfig?.cartesian?.tts_api_key ? 'Present (' + processedTtsConfig.cartesian.tts_api_key.substring(0, 10) + '...)' : 'Empty'
-    });
-    console.log('🔑 STT Config API Keys:', {
-      deepgram: agentData.stt_config?.deepgram?.api_key ? 'Present (' + agentData.stt_config.deepgram.api_key.substring(0, 10) + '...)' : 'Empty',
-      openai: agentData.stt_config?.openai?.api_key ? 'Present (' + agentData.stt_config.openai.api_key.substring(0, 10) + '...)' : 'Empty'
-    });
-
     // Call the real backend service
     const response = await fetch(`${backendUrl}/agents/update/${agentName}`, {
       method: 'POST',
@@ -207,16 +192,10 @@ Remember: You are the first point of contact for many patients. Your professiona
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Backend service error:', response.status, errorData);
       throw new Error(`Backend service error: ${response.status} - ${errorData.error || response.statusText}`);
     }
 
     const result = await response.json();
-    console.log('✅ Agent saved to backend service (MongoDB):', result);
-    console.log('✅ Chatbot API values saved to MongoDB:', { 
-      chatbot_api: agentData.chatbot_api, 
-      chatbot_key: agentData.chatbot_key 
-    });
 
     return NextResponse.json({
       success: true,
@@ -224,7 +203,6 @@ Remember: You are the first point of contact for many patients. Your professiona
       message: 'Agent created/updated successfully in MongoDB'
     });
   } catch (error) {
-    console.error('Agent API error:', error);
     return NextResponse.json({ 
       error: error instanceof Error ? error.message : 'Internal server error' 
     }, { status: 500 });

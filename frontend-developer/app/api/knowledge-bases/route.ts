@@ -10,13 +10,6 @@ async function getAuthToken() {
   if (!CONSOLE_ORIGIN || !ADMIN_EMAIL || !ADMIN_PASSWORD) {
     throw new Error('NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN, NEXT_PUBLIC_DIFY_ADMIN_EMAIL, or NEXT_PUBLIC_DIFY_ADMIN_PASSWORD is not configured');
   }
-
-  console.log('🔐 Attempting authentication with:', {
-    url: `${CONSOLE_ORIGIN}/console/api/login`,
-    email: ADMIN_EMAIL,
-    password: ADMIN_PASSWORD ? 'Present' : 'Missing'
-  });
-
   const loginResponse = await fetch(`${CONSOLE_ORIGIN}/console/api/login`, {
     method: 'POST',
     headers: {
@@ -27,17 +20,12 @@ async function getAuthToken() {
       password: ADMIN_PASSWORD
     })
   });
-
-  console.log('🔐 Login response status:', loginResponse.status);
-
   if (!loginResponse.ok) {
     const errorText = await loginResponse.text();
-    console.error('❌ Authentication failed:', errorText);
     throw new Error(`Failed to authenticate: ${loginResponse.status} - ${errorText}`);
   }
 
   const loginData = await loginResponse.json();
-  console.log('✅ Authentication successful');
   return loginData.data?.access_token || loginData.access_token || loginData.data?.token;
 }
 
@@ -67,9 +55,7 @@ export async function GET(request: NextRequest) {
 
     const userOrgId = user.orgId;
     const userOrgShortId = userOrgId.substring(0, 8); // Use first 8 chars for filtering
-    console.log('📋 Fetching knowledge bases for org:', userOrgId, `(prefix: ${userOrgShortId})`);
-
-    const token = await getAuthToken();
+const token = await getAuthToken();
     
     const response = await fetch(`${CONSOLE_ORIGIN}/console/api/datasets?page=1&limit=100`, {
       headers: {
@@ -103,12 +89,8 @@ export async function GET(request: NextRequest) {
         indexingTechnique: kb.indexing_technique || 'high_quality',
         permission: kb.permission || 'only_me'
       }));
-    
-    console.log(`✅ Found ${knowledgeBases.length} knowledge bases for org ${userOrgId} [${userOrgShortId}] (${allKnowledgeBases.length} total)`);
-
-    return NextResponse.json(knowledgeBases);
+return NextResponse.json(knowledgeBases);
   } catch (error) {
-    console.error('Error fetching knowledge bases:', error);
     return NextResponse.json(
       { error: 'Failed to fetch knowledge bases' },
       { status: 500 }
@@ -119,8 +101,6 @@ export async function GET(request: NextRequest) {
 // POST - Create a new knowledge base
 export async function POST(request: NextRequest) {
   try {
-    console.log('📝 POST /api/knowledge-bases - Starting...');
-    
     // Validate environment variables at runtime
     const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN;
     const WS_ID = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID;
@@ -134,11 +114,7 @@ export async function POST(request: NextRequest) {
     
     // Get the authenticated user's organization
     const user = await getUserFromRequest(request);
-    
-    console.log('📝 getUserFromRequest result:', user ? `User ID: ${user.userId}, Org ID: ${user.orgId}` : 'null');
-    
     if (!user) {
-      console.error('❌ POST /api/knowledge-bases - Authentication failed: user is null');
       return NextResponse.json(
         { error: 'Unauthorized - Please login' },
         { status: 401 }
@@ -146,8 +122,6 @@ export async function POST(request: NextRequest) {
     }
 
     const userOrgId = user.orgId;
-    console.log('📝 Creating knowledge base for org:', userOrgId);
-
     const body = await request.json();
     const { name, description, indexingTechnique, permission } = body;
 
@@ -156,10 +130,7 @@ export async function POST(request: NextRequest) {
     // Format: [8-char-hash]Name (e.g., [4f91b0f8]MyKB)
     const orgShortId = userOrgId.substring(0, 8);
     const orgPrefixedName = `[${orgShortId}]${name}`.substring(0, 40); // Ensure max 40 chars
-
-    console.log(`📝 Original name: "${name}", Org-prefixed: "${orgPrefixedName}" (${orgPrefixedName.length} chars)`);
-
-    const token = await getAuthToken();
+const token = await getAuthToken();
     
     // Create knowledge base without chunk settings (they will be set per-document)
     const createResponse = await fetch(`${CONSOLE_ORIGIN}/console/api/datasets`, {
@@ -180,15 +151,7 @@ export async function POST(request: NextRequest) {
 
     if (!createResponse.ok) {
       const errorData = await createResponse.json();
-      console.error('❌ API error response:', JSON.stringify(errorData, null, 2));
-      console.error('❌ Request payload was:', JSON.stringify({
-        name: orgPrefixedName,
-        description: description || '',
-        indexing_technique: indexingTechnique || 'high_quality',
-        permission: permission || 'only_me',
-        provider: 'vendor'
-      }, null, 2));
-      throw new Error(errorData.message || 'Failed to create knowledge base');
+throw new Error(errorData.message || 'Failed to create knowledge base');
     }
 
     const data = await createResponse.json();
@@ -205,12 +168,8 @@ export async function POST(request: NextRequest) {
       indexingTechnique: data.indexing_technique || 'high_quality',
       permission: data.permission || 'only_me'
     };
-
-    console.log('✅ Knowledge base created:', knowledgeBase.id);
-
     return NextResponse.json(knowledgeBase, { status: 201 });
   } catch (error) {
-    console.error('Error creating knowledge base:', error);
     return NextResponse.json(
       { error: 'Failed to create knowledge base' },
       { status: 500 }

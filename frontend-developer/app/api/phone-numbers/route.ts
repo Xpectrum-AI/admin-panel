@@ -9,9 +9,6 @@ export async function GET(request: NextRequest) {
     if (!authResult.success) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    console.log('🔍 Fetching phone numbers from backend...');
-
     // Fetch available phone numbers
     const availableResponse = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}/phone-numbers/status/available`, {
       method: 'GET',
@@ -42,16 +39,12 @@ export async function GET(request: NextRequest) {
       ...(availableData.phone_numbers || []),
       ...(assignedData.phone_numbers || [])
     ];
-
-    console.log('✅ Fetched phone numbers from backend:', allPhoneNumbers.length);
-
     return NextResponse.json({
       success: true,
       data: allPhoneNumbers,
       message: `Retrieved ${allPhoneNumbers.length} phone numbers successfully`
     });
   } catch (error) {
-    console.error('Phone numbers API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -90,7 +83,6 @@ export async function POST(request: NextRequest) {
       message: 'Phone number created successfully'
     }, { status: 201 });
   } catch (error) {
-    console.error('Phone numbers API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -21,7 +21,6 @@ const QrCodeContent: React.FC<{ agent: Agent }> = ({ agent }) => {
         const agentUrl = `${window.location.origin}/chatbot/${agent.id}`;
         setQrUrl(agentUrl);
       } catch (error) {
-        console.error('Error creating QR code URL:', error);
         setQrUrl(window.location.origin);
       } finally {
         setIsQrLoading(false);
@@ -113,6 +112,7 @@ interface AgentCardsProps {
   isLoadingAgents: boolean;
   isRefreshingAgents: boolean;
   agentsError?: string;
+  agentsLoaded?: boolean;
 }
 
 export default function AgentCards({
@@ -123,7 +123,8 @@ export default function AgentCards({
   onRefreshAgents,
   isLoadingAgents,
   isRefreshingAgents,
-  agentsError
+  agentsError,
+  agentsLoaded = false
 }: AgentCardsProps) {
   const { isDarkMode } = useTheme();
 
@@ -142,7 +143,6 @@ export default function AgentCards({
 
   // Function to show the QR code modal
   const showQrCodeModal = (agent: Agent) => {
-    console.log('showQrCodeModal called with agent:', agent.name);
     setQrAgent(agent);
     setShowQrModal(true);
   };
@@ -154,7 +154,6 @@ export default function AgentCards({
       // In the future, we can create a session-based URL like in CHAT-APP
       return `${window.location.origin}/chatbot/${agent.id}`;
     } catch (error) {
-      console.error('Error creating QR code URL:', error);
       return window.location.origin;
     }
   };
@@ -171,8 +170,6 @@ export default function AgentCards({
 
     setIsDeletingAgent(true);
     try {
-      console.log('Deleting agent:', agentToDelete.id, 'Name:', agentToDelete.name);
-
       // Optimistic UI: close the modal immediately
       setShowDeleteModal(false);
       const deletedAgentName = agentToDelete.name;
@@ -182,10 +179,8 @@ export default function AgentCards({
       // Helper: fire-and-forget Dify deletion with timeout, do not block UX
       const difyCleanup = (async () => {
         if (!agentToDelete.chatbot_key) {
-          console.log('⚠️ No chatbot_key found, skipping Dify deletion');
           return { success: true } as { success: boolean; error?: unknown };
         }
-        console.log('🗑️ Deleting Dify agent for:', agentId);
         try {
           const { difyAgentService } = await import('../../service/difyAgentService');
           const organizationId = agentToDelete.organization_id || agentId.split('_')[0] || 'default';
@@ -202,11 +197,9 @@ export default function AgentCards({
             difyAgentService.deleteDifyAgent({ agentName: agentId, organizationId }),
             5000
           );
-          console.log('🔍 Dify deletion result:', res);
           return res as { success: boolean; error?: unknown };
         } catch (e) {
-          console.warn('⚠️ Dify agent deletion error (non-blocking):', e);
-          return { success: false, error: e } as { success: boolean; error?: unknown };
+return { success: false, error: e } as { success: boolean; error?: unknown };
         }
       })();
 
@@ -216,16 +209,13 @@ export default function AgentCards({
       const [backendResult] = await Promise.allSettled([backendDeletion, difyCleanup]);
 
       if (backendResult.status === 'fulfilled' && backendResult.value?.success) {
-        console.log(`Agent "${deletedAgentName}" deleted successfully`);
         onRefreshAgents();
       } else {
         const message = backendResult.status === 'fulfilled'
           ? backendResult.value?.message || 'Unknown error'
           : (backendResult.reason as Error)?.message || 'Unknown error';
-        console.error('Failed to delete agent:', message);
       }
     } catch (error) {
-      console.error('Error deleting agent:', error);
     } finally {
       setIsDeletingAgent(false);
     }
@@ -256,28 +246,36 @@ export default function AgentCards({
     }
   };
 
+  // Combined loading state: show loading if either initial load or refresh is in progress
+  const isLoading = isLoadingAgents || isRefreshingAgents;
+
+  // 1. Error State (show first, before loading check)
   if (agentsError) {
     return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-red-900/20 border border-red-700/50' : 'bg-red-50 border border-red-200'}`}>
-          <p className={`text-sm ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>{agentsError}</p>
-          <button
-            onClick={onRefreshAgents}
-            className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
-          >
-            Retry
-          </button>
+      <div className="w-full h-full flex flex-col">
+        <div className="flex-1 p-6 overflow-y-auto">
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-red-900/20 border border-red-700/50' : 'bg-red-50 border border-red-200'}`}>
+              <p className={`text-sm ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>{agentsError}</p>
+              <button
+                onClick={onRefreshAgents}
+                className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="w-full h-full flex flex-col">
-
-      {/* Agent Cards Grid */}
-      <div className="flex-1 p-6 overflow-y-auto">
-        {isLoadingAgents && agents.length === 0 ? (
+  // 2. Loading State (show loading spinner when loading AND no agents to display)
+  // OR when we haven't loaded yet (agentsLoaded is false) and have no agents
+  if ((isLoading && agents.length === 0) || (!agentsLoaded && agents.length === 0)) {
+    return (
+      <div className="w-full h-full flex flex-col">
+        <div className="flex-1 p-6 overflow-y-auto">
           <div className="flex items-center justify-center py-12">
             <div className="flex items-center gap-3">
               <RefreshCw className="h-6 w-6 text-green-500 animate-spin" />
@@ -286,7 +284,17 @@ export default function AgentCards({
               </span>
             </div>
           </div>
-        ) : agents.length === 0 ? (
+        </div>
+      </div>
+    );
+  }
+
+  // 3. No Agents Found (only show when loading is complete AND agents array is empty)
+  // This prevents flickering by ensuring we've actually finished loading
+  if (agentsLoaded && !isLoading && agents.length === 0) {
+    return (
+      <div className="w-full h-full flex flex-col">
+        <div className="flex-1 p-6 overflow-y-auto">
           <div className="flex flex-col items-center justify-center py-12">
             <div className={`p-6 rounded-2xl ${isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50'}`}>
               <div className={`p-4 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
@@ -308,77 +316,86 @@ export default function AgentCards({
               </button>
             </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Create New Agent Card */}
-            <div
-              onClick={onCreateAgent}
-              className={`group rounded-2xl shadow-lg hover:shadow-2xl border overflow-hidden transition-all duration-300 transform hover:-translate-y-2 cursor-pointer ${isDarkMode
-                ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700 hover:border-blue-500/50'
-                : 'bg-gradient-to-br from-white to-gray-50 border-gray-200 hover:border-blue-300'
-                }`}
-            >
-              {/* Header with professional icon */}
-              <div className={`p-8 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-                <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-lg bg-gradient-to-br from-blue-600 to-blue-700 group-hover:from-blue-700 group-hover:to-blue-800 transition-all duration-300">
-                    <Plus className="h-10 w-10" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className={`text-2xl font-bold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                      Create New Agent
-                    </h3>
-                    <p className={`text-base mt-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                      Deploy intelligent AI assistants
-                    </p>
-                  </div>
-                </div>
-              </div>
+        </div>
+      </div>
+    );
+  }
 
-              {/* Content */}
-              <div className={`p-8 ${isDarkMode ? 'bg-gray-800/50' : 'bg-white/50'}`}>
-                <div className={`p-6 rounded-xl ${isDarkMode ? 'bg-gray-700/30 border border-gray-600/50' : 'bg-gray-50 border border-gray-200'}`}>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${isDarkMode ? 'bg-blue-400' : 'bg-blue-600'}`}></div>
-                      <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                        Choose from Knowledge or Action agents
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${isDarkMode ? 'bg-green-400' : 'bg-green-600'}`}></div>
-                      <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                        Configure advanced AI capabilities
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${isDarkMode ? 'bg-purple-400' : 'bg-purple-600'}`}></div>
-                      <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                        Deploy with enterprise-grade security
-                      </p>
-                    </div>
-                  </div>
+  // 4. Normal View (show agents - during refresh, old agents remain visible until new ones load)
+  return (
+    <div className="w-full h-full flex flex-col">
+      <div className="flex-1 p-6 overflow-y-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Create New Agent Card */}
+          <div
+            onClick={onCreateAgent}
+            className={`group rounded-2xl shadow-lg hover:shadow-2xl border overflow-hidden transition-all duration-300 transform hover:-translate-y-2 cursor-pointer ${isDarkMode
+              ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700 hover:border-blue-500/50'
+              : 'bg-gradient-to-br from-white to-gray-50 border-gray-200 hover:border-blue-300'
+              }`}
+          >
+            {/* Header with professional icon */}
+            <div className={`p-8 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-lg bg-gradient-to-br from-blue-600 to-blue-700 group-hover:from-blue-700 group-hover:to-blue-800 transition-all duration-300">
+                  <Plus className="h-10 w-10" />
                 </div>
-              </div>
-
-              {/* Actions */}
-              <div className={`p-4 border-t ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-                <div className="grid grid-cols-4 gap-3">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onCreateAgent();
-                    }}
-                    className="col-span-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-2.5 px-4 rounded-xl transition-all duration-200 shadow-sm font-medium text-sm flex items-center justify-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Create Agent
-                  </button>
+                <div className="flex-1 min-w-0">
+                  <h3 className={`text-2xl font-bold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    Create New Agent
+                  </h3>
+                  <p className={`text-base mt-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    Deploy intelligent AI assistants
+                  </p>
                 </div>
               </div>
             </div>
 
-            {agents.map((agent) => (
+            {/* Content */}
+            <div className={`p-8 ${isDarkMode ? 'bg-gray-800/50' : 'bg-white/50'}`}>
+              <div className={`p-6 rounded-xl ${isDarkMode ? 'bg-gray-700/30 border border-gray-600/50' : 'bg-gray-50 border border-gray-200'}`}>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full ${isDarkMode ? 'bg-blue-400' : 'bg-blue-600'}`}></div>
+                    <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                      Choose from Knowledge or Action agents
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full ${isDarkMode ? 'bg-green-400' : 'bg-green-600'}`}></div>
+                    <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                      Configure advanced AI capabilities
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full ${isDarkMode ? 'bg-purple-400' : 'bg-purple-600'}`}></div>
+                    <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                      Deploy with enterprise-grade security
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className={`p-4 border-t ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+              <div className="grid grid-cols-4 gap-3">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCreateAgent();
+                  }}
+                  className="col-span-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-2.5 px-4 rounded-xl transition-all duration-200 shadow-sm font-medium text-sm flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create Agent
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Render actual agents */}
+          {agents.map((agent) => (
               <div
                 key={agent.id}
                 className={`rounded-2xl shadow-md hover:shadow-xl border overflow-hidden transition-all duration-300 transform hover:-translate-y-1 ${isDarkMode
@@ -506,8 +523,7 @@ export default function AgentCards({
               </div>
             ))}
           </div>
-        )}
-
+        </div>
 
         {/* QR Code Modal */}
         {showQrModal && qrAgent && (
@@ -539,10 +555,9 @@ export default function AgentCards({
         )}
 
         {/* Success modal removed */}
-      </div>
 
-      {/* Delete Confirmation Modal - Outside main container */}
-      {showDeleteModal && agentToDelete && (
+        {/* Delete Confirmation Modal */}
+        {showDeleteModal && agentToDelete && (
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200"
           style={{
@@ -641,7 +656,7 @@ export default function AgentCards({
             </div>
           </div>
         </div>
-      )}
-    </div>
+        )}
+      </div>
   );
 }

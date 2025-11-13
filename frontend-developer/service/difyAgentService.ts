@@ -28,8 +28,6 @@ export const difyAgentService = {
   // Create a new Dify agent and get API key
   async createDifyAgent(request: DifyAgentRequest): Promise<DifyAgentResponse> {
     try {
-      console.log('🚀 Creating Dify agent via service:', request);
-
       const response = await fetch('/api/dify/create-agent', {
         method: 'POST',
         headers: {
@@ -45,11 +43,8 @@ export const difyAgentService = {
       }
 
       const result = await response.json();
-      console.log('✅ Dify agent creation response:', result);
-      
       return result;
     } catch (error) {
-      console.error('❌ Dify agent creation error:', error);
       return {
         success: false,
         error: 'Failed to create Dify agent',
@@ -61,8 +56,6 @@ export const difyAgentService = {
   // Test the generated chatbot API key
   async testDifyApiKey(appKey: string, serviceOrigin?: string): Promise<{ success: boolean; message: string }> {
     try {
-      console.log('🧪 Testing Dify chatbot API key...');
-      
       const baseUrl = serviceOrigin || process.env.NEXT_PUBLIC_DIFY_BASE_URL || '';
       const testUrl = `${baseUrl}/chat-messages`;
       
@@ -84,21 +77,18 @@ export const difyAgentService = {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ Dify chatbot API key test successful:', result);
         return {
           success: true,
           message: 'Chatbot API key is working correctly'
         };
       } else {
         const errorData = await response.json().catch(() => ({}));
-        console.log('⚠️ Dify chatbot API key test failed:', errorData);
         return {
           success: false,
           message: `Chatbot API key test failed: ${errorData.error || response.statusText}`
         };
       }
     } catch (error) {
-      console.error('❌ Dify chatbot API key test error:', error);
       return {
         success: false,
         message: `Chatbot API key test error: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -109,8 +99,6 @@ export const difyAgentService = {
   // Delete a Dify agent
   async deleteDifyAgent(request: { agentName: string; organizationId: string; appId?: string }): Promise<{ success: boolean; message?: string; error?: string; details?: string }> {
     try {
-      console.log('🗑️ Deleting Dify agent via service:', request);
-
       const response = await fetch('/api/dify/delete-agent', {
         method: 'DELETE',
         headers: {
@@ -126,11 +114,8 @@ export const difyAgentService = {
       }
 
       const result = await response.json();
-      console.log('✅ Dify agent deletion response:', result);
-      
       return result;
     } catch (error) {
-      console.error('❌ Dify agent deletion error:', error);
       return {
         success: false,
         error: 'Failed to delete Dify agent',

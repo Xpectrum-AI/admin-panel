@@ -128,7 +128,6 @@ export async function fetchUsersInOrg(request: NextRequest) {
       total: data.length
     });
   } catch (error) {
-    console.error('fetchUsersInOrg error:', error);
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -163,7 +162,6 @@ export async function fetchPendingInvites(request: NextRequest) {
       total: data.length
     });
   } catch (error) {
-    console.error('fetchPendingInvites error:', error);
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -199,7 +197,6 @@ export async function removeUserFromOrg(request: NextRequest) {
       data: data
     });
   } catch (error) {
-    console.error('removeUserFromOrg error:', error);
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -235,7 +232,6 @@ export async function changeUserRoleInOrg(request: NextRequest) {
       data: data
     });
   } catch (error) {
-    console.error('changeUserRoleInOrg error:', error);
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -275,7 +271,6 @@ export async function updateOrg(request: NextRequest) {
       data: data
     });
   } catch (error) {
-    console.error('updateOrg error:', error);
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -310,7 +305,6 @@ export async function fetchOrgDetails(request: NextRequest) {
       data: data
     });
   } catch (error) {
-    console.error('fetchOrgDetails error:', error);
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -358,7 +352,6 @@ export async function fetchOrgByQuery(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('fetchOrgByQuery error:', error);
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'

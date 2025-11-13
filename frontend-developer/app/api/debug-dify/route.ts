@@ -22,15 +22,7 @@ export async function POST(request: NextRequest) {
       user: 'debug-user',
       files: []
     };
-
-    console.log('🔍 Debug: Making direct request to Dify API:', {
-      url: difyServiceUrl,
-      apiKey: difyApiKey.substring(0, 10) + '...',
-      message: message.substring(0, 50) + '...',
-      requestBody
-    });
-
-    const response = await fetch(difyServiceUrl, {
+const response = await fetch(difyServiceUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -40,11 +32,6 @@ export async function POST(request: NextRequest) {
     });
 
     const responseText = await response.text();
-    
-    console.log('🔍 Debug: Dify API response status:', response.status);
-    console.log('🔍 Debug: Dify API response text:', responseText);
-    console.log('🔍 Debug: Response length:', responseText.length);
-
     return NextResponse.json({
       status: response.status,
       responseText: responseText,
@@ -53,7 +40,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('🔍 Debug: Error:', error);
     return NextResponse.json(
       { error: 'Debug request failed', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

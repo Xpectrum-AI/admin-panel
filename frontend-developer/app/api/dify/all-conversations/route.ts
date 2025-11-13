@@ -6,7 +6,6 @@ const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD || '';
 const WS_ID = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID || '';
 
 async function getAuthToken() {
-  console.log('🔐 Authenticating with Console API...');
   const loginResponse = await fetch(`${CONSOLE_ORIGIN}/console/api/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -15,19 +14,15 @@ async function getAuthToken() {
 
   if (!loginResponse.ok) {
     const errorText = await loginResponse.text();
-    console.error('❌ Login failed:', errorText);
     throw new Error('Failed to authenticate with Console API');
   }
 
   const loginData = await loginResponse.json();
   const token = loginData.data?.access_token || loginData.access_token || loginData.data?.token;
-  console.log('✅ Successfully authenticated');
   return token;
 }
 
 async function findAppIdByApiKey(token: string, apiKey: string): Promise<string | null> {
-  console.log('🔍 Searching for app with API key...');
-  
   // Fetch all apps
   const response = await fetch(`${CONSOLE_ORIGIN}/console/api/apps?page=1&limit=100`, {
     headers: {
@@ -42,9 +37,6 @@ async function findAppIdByApiKey(token: string, apiKey: string): Promise<string 
 
   const data = await response.json();
   const apps = data.data || [];
-
-  console.log(`📋 Found ${apps.length} total apps`);
-
   // For each app, fetch its API keys and check if any match
   for (const app of apps) {
     try {
@@ -66,12 +58,10 @@ async function findAppIdByApiKey(token: string, apiKey: string): Promise<string 
         });
 
         if (matchingKey) {
-          console.log('✅ Found matching app:', app.id);
           return app.id;
         }
       }
     } catch (error) {
-      console.error(`⚠️ Error checking app ${app.id}:`, error);
     }
   }
 
@@ -86,10 +76,7 @@ export async function POST(request: NextRequest) {
     if (!apiKey) {
       return NextResponse.json({ error: 'API key is required' }, { status: 400 });
     }
-
-    console.log('🚀 Fetching ALL conversations (all users) for API key:', apiKey.substring(0, 10) + '...');
-
-    // Get auth token
+// Get auth token
     const token = await getAuthToken();
 
     // Find app ID by API key
@@ -101,9 +88,6 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
-
-    console.log('📡 Fetching ALL conversations for app:', appId);
-
     // Try multiple possible Console API endpoints
     let conversationsResponse;
     let conversationsData;
@@ -116,7 +100,6 @@ export async function POST(request: NextRequest) {
     
     for (const endpoint of endpoints) {
       try {
-        console.log(`🔍 Trying endpoint: ${CONSOLE_ORIGIN}${endpoint}`);
         conversationsResponse = await fetch(
           `${CONSOLE_ORIGIN}${endpoint}?page=1&limit=100`,
           {
@@ -129,19 +112,14 @@ export async function POST(request: NextRequest) {
         
         if (conversationsResponse.ok) {
           conversationsData = await conversationsResponse.json();
-          console.log(`✅ Success with endpoint: ${endpoint}`);
           break;
         } else {
-          console.log(`⚠️ Endpoint ${endpoint} failed with status: ${conversationsResponse.status}`);
         }
       } catch (error) {
-        console.log(`⚠️ Endpoint ${endpoint} error:`, error);
       }
     }
     
     if (!conversationsResponse || !conversationsResponse.ok) {
-      console.error('❌ All Console API endpoints failed. Falling back to App API with multiple users...');
-      
             // Fallback: Use App API with multiple common user types
             const userTypes = ['preview-user', 'voice-session-abc123', 'admin', 'user', 'test-user'];
             const allConversations: any[] = [];
@@ -178,16 +156,10 @@ export async function POST(request: NextRequest) {
                 });
               }
             });
-            
-            console.log(`✅ App API: Found ${conversations.length} conversations for user: ${userId}`);
           }
         } catch (error) {
-          console.log(`⚠️ App API failed for user ${userId}:`, error);
         }
       }
-      
-      console.log(`✅ Total conversations via App API fallback: ${allConversations.length}`);
-      
       return NextResponse.json({
         success: true,
         appId,
@@ -198,11 +170,7 @@ export async function POST(request: NextRequest) {
     }
 
     const conversations = conversationsData.data || [];
-
-    console.log(`✅ Found ${conversations.length} conversations (all users) via Console API`);
-    console.log('⚠️ Note: Matching user IDs for message retrieval...');
-
-    // Console API gives us UUIDs, but we need user strings for App API
+// Console API gives us UUIDs, but we need user strings for App API
     // Try to match each conversation with the correct user string
     const conversationsWithUser = await Promise.all(conversations.map(async (conv: any) => {
       const baseUrl = process.env.NEXT_PUBLIC_DIFY_BASE_URL;
@@ -225,7 +193,6 @@ export async function POST(request: NextRequest) {
           );
           
           if (testResponse.ok) {
-            console.log(`✅ Found working user ID for conversation ${conv.id}: ${userId}`);
             return {
               ...conv,
               user_id: userId,
@@ -238,7 +205,6 @@ export async function POST(request: NextRequest) {
       }
       
       // If no user type worked, default to preview-user
-      console.log(`⚠️ No working user ID found for conversation ${conv.id}, defaulting to preview-user`);
       return {
         ...conv,
         user_id: 'preview-user',
@@ -254,7 +220,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ Error fetching conversations:', error);
     return NextResponse.json(
       { 
         error: 'Failed to fetch conversations', 

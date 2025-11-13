@@ -18,7 +18,6 @@ export async function GET() {
       }
     });
   } catch (error) {
-    console.error('Developer dashboard health check failed:', error);
     return NextResponse.json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),

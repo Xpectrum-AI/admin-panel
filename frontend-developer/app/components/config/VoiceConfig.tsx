@@ -517,7 +517,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
 
       // If current selected language is not available for the new model, reset to first available
       if (availableLanguages.length > 0 && !availableLanguages.includes(selectedLanguage)) {
-        console.log('🔄 Resetting language for 11Labs model change');
         setSelectedLanguage(availableLanguages[0]);
       }
     }
@@ -530,17 +529,12 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     } else if (selectedVoiceProvider === '11Labs') {
       // Get supported languages for the selected model (not voice)
       const supportedLanguages = elevenLabsModelLanguages[selectedModel as keyof typeof elevenLabsModelLanguages] || [];
-      console.log('🔍 11Labs - Selected Model:', selectedModel);
-      console.log('🔍 11Labs - Supported Languages:', supportedLanguages);
-
       const filteredMapping: { [key: string]: string } = {};
       supportedLanguages.forEach(langCode => {
         if (elevenLabsLanguageMapping[langCode as keyof typeof elevenLabsLanguageMapping]) {
           filteredMapping[langCode] = elevenLabsLanguageMapping[langCode as keyof typeof elevenLabsLanguageMapping];
         }
       });
-
-      console.log('🔍 11Labs - Filtered Language Mapping:', filteredMapping);
       return filteredMapping;
     }
     return openaiLanguageMapping;
@@ -560,8 +554,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
           reverseMapping[languageName] = langCode;
         }
       });
-
-      console.log('🔍 11Labs - Reverse Language Mapping:', reverseMapping);
       return reverseMapping;
     }
     return openaiReverseLanguageMapping;
@@ -614,19 +606,8 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
 
   // Load state from centralized configuration when component mounts or when configuration changes
   useEffect(() => {
-    console.log('🔄 VoiceConfig useEffect triggered:', {
-      voiceConfiguration,
-      transcriberConfiguration,
-      isUserChangingProvider,
-      isUserChangingTranscriberProvider,
-      isUserChangingVoiceField
-    });
-
     // Load from centralized configuration
     if (voiceConfiguration && !isUserChangingProvider && !isUserChangingVoiceField && !isUserChangingApiKey) {
-      console.log('🔄 Loading voice state from centralized configuration:', voiceConfiguration);
-      console.log('🔄 Current voiceId state:', voiceId, 'Configuration voiceId:', voiceConfiguration.voiceId);
-
       // Handle provider - check both UI format and backend format
       let provider = voiceConfiguration.selectedVoiceProvider;
       if (!provider && voiceConfiguration.provider) {
@@ -636,15 +617,12 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
         else if (voiceConfiguration.provider === 'cartesian') provider = 'Cartesia';
       }
       if (provider) {
-        console.log('🔄 Setting voice provider:', provider);
         setSelectedVoiceProvider(provider);
       }
       if (voiceConfiguration.selectedLanguage) {
-        console.log('🔄 Setting language:', voiceConfiguration.selectedLanguage);
         setSelectedLanguage(voiceConfiguration.selectedLanguage);
       }
       if (voiceConfiguration.speedValue !== undefined) {
-        console.log('🔄 Setting speed:', voiceConfiguration.speedValue);
         setSpeedValue(voiceConfiguration.speedValue);
       }
       // Load API key from configuration if it exists (from MongoDB)
@@ -657,13 +635,10 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
         const currentProvider = provider || selectedVoiceProvider;
         if (currentProvider === 'OpenAI' && agentTtsConfig.openai?.api_key) {
           apiKeyFromConfig = agentTtsConfig.openai.api_key;
-          console.log('🔑 Loading OpenAI API key from MongoDB config');
         } else if (currentProvider === '11Labs' && agentTtsConfig.elevenlabs?.api_key) {
           apiKeyFromConfig = agentTtsConfig.elevenlabs.api_key;
-          console.log('🔑 Loading 11Labs API key from MongoDB config');
         } else if (currentProvider === 'Cartesia' && agentTtsConfig.cartesian?.tts_api_key) {
           apiKeyFromConfig = agentTtsConfig.cartesian.tts_api_key;
-          console.log('🔑 Loading Cartesia API key from MongoDB config');
         }
       }
       
@@ -689,36 +664,28 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
         setApiKey('');
       }
       if (voiceConfiguration.voiceId !== undefined) {
-        console.log('🔄 Setting voice ID:', voiceConfiguration.voiceId);
         setVoiceId(voiceConfiguration.voiceId);
         lastVoiceIdRef.current = voiceConfiguration.voiceId;
       }
       if (voiceConfiguration.selectedVoice) {
-        console.log('🔄 Setting selected voice:', voiceConfiguration.selectedVoice);
         setSelectedVoice(voiceConfiguration.selectedVoice);
       }
       if (voiceConfiguration.stability !== undefined) {
-        console.log('🔄 Setting stability:', voiceConfiguration.stability);
         setStability(voiceConfiguration.stability);
       }
       if (voiceConfiguration.similarityBoost !== undefined) {
-        console.log('🔄 Setting similarity boost:', voiceConfiguration.similarityBoost);
         setSimilarityBoost(voiceConfiguration.similarityBoost);
       }
       if (voiceConfiguration.responseFormat) {
-        console.log('🔄 Setting response format:', voiceConfiguration.responseFormat);
         setResponseFormat(voiceConfiguration.responseFormat);
       }
       if (voiceConfiguration.selectedModel) {
-        console.log('🔄 Setting selected model:', voiceConfiguration.selectedModel);
         setSelectedModel(voiceConfiguration.selectedModel);
       }
     }
 
     // Load transcriber configuration
     if (transcriberConfiguration && !isUserChangingTranscriberProvider && !isUserChangingTranscriberApiKey) {
-      console.log('🔄 Loading transcriber state from centralized configuration:', transcriberConfiguration);
-
       // Handle provider - check both UI format and backend format
       let provider = transcriberConfiguration.selectedTranscriberProvider;
       if (!provider && transcriberConfiguration.provider) {
@@ -727,15 +694,12 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
         else if (transcriberConfiguration.provider === 'openai') provider = 'OpenAI';
       }
       if (provider) {
-        console.log('🔄 Setting transcriber provider:', provider);
         setSelectedTranscriberProvider(provider);
       }
       if (transcriberConfiguration.selectedTranscriberLanguage) {
-        console.log('🔄 Setting transcriber language:', transcriberConfiguration.selectedTranscriberLanguage);
         setSelectedTranscriberLanguage(transcriberConfiguration.selectedTranscriberLanguage);
       }
       if (transcriberConfiguration.selectedTranscriberModel) {
-        console.log('🔄 Setting transcriber model:', transcriberConfiguration.selectedTranscriberModel);
         setSelectedTranscriberModel(transcriberConfiguration.selectedTranscriberModel);
       }
       // Load API key from configuration if it exists (from MongoDB)
@@ -748,10 +712,8 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
         const currentProvider = provider || selectedTranscriberProvider;
         if (currentProvider === 'Deepgram' && agentSttConfig.deepgram?.api_key) {
           apiKeyFromConfig = agentSttConfig.deepgram.api_key;
-          console.log('🔑 Loading Deepgram API key from MongoDB config');
         } else if (currentProvider === 'OpenAI' && agentSttConfig.openai?.api_key) {
           apiKeyFromConfig = agentSttConfig.openai.api_key;
-          console.log('🔑 Loading OpenAI transcriber API key from MongoDB config');
         }
       }
       
@@ -775,15 +737,12 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
         setTranscriberApiKey('');
       }
       if (transcriberConfiguration.punctuateEnabled !== undefined) {
-        console.log('🔄 Setting punctuate enabled:', transcriberConfiguration.punctuateEnabled);
         setPunctuateEnabled(transcriberConfiguration.punctuateEnabled);
       }
       if (transcriberConfiguration.smartFormatEnabled !== undefined) {
-        console.log('🔄 Setting smart format enabled:', transcriberConfiguration.smartFormatEnabled);
         setSmartFormatEnabled(transcriberConfiguration.smartFormatEnabled);
       }
       if (transcriberConfiguration.interimResultEnabled !== undefined) {
-        console.log('🔄 Setting interim result enabled:', transcriberConfiguration.interimResultEnabled);
         setInterimResultEnabled(transcriberConfiguration.interimResultEnabled);
       }
     }
@@ -805,15 +764,11 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
         selectedModel,
         ...updates
       };
-
-      console.log('📤 VoiceConfig: Saving state to centralized config:', currentState);
-
       // Call parent's onConfigChange
       if (onConfigChange) {
         onConfigChange(currentState);
       }
     } catch (error) {
-      console.warn('Failed to save voice config state to centralized state:', error);
     }
   }, [selectedVoiceProvider, selectedLanguage, speedValue, apiKey, voiceId, selectedVoice, stability, similarityBoost, responseFormat, selectedModel, onConfigChange]);
 
@@ -837,15 +792,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       
       const data = await response.json();
       setAvailableVoices(data.voices || []);
-      console.log('✅ Fetched ElevenLabs voices:', data.voices?.length || 0);
-      console.log('🔍 Voice details:', data.voices?.map(v => ({
-        name: v.name,
-        hasLabels: Object.keys(v.labels || {}).length > 0,
-        labels: v.labels,
-        description: v.description?.substring(0, 50) + '...'
-      })));
-    } catch (error) {
-      console.error('❌ Error fetching ElevenLabs voices:', error);
+} catch (error) {
       setVoicesError(error instanceof Error ? error.message : 'Failed to fetch voices');
     } finally {
       setIsLoadingVoices(false);
@@ -899,7 +846,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       );
       
       if (!isSupported) {
-        console.log('⚠️ Current voice does not support selected language/model, clearing selection');
         setVoiceId('');
         saveStateToCentralized({ voiceId: '' });
       }
@@ -933,7 +879,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
 
     // If current selected language is not available for the new model, reset to first available
     if (availableLanguages.length > 0 && !availableLanguages.includes(selectedTranscriberLanguage)) {
-      console.log('🔄 Resetting transcriber language for model change');
       setSelectedTranscriberLanguage(availableLanguages[0]);
     }
   }, [selectedTranscriberModel, selectedTranscriberProvider, selectedTranscriberLanguage]);
@@ -951,15 +896,11 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
         interimResultEnabled,
         ...updates
       };
-
-      console.log('📤 TranscriberConfig: Saving state to centralized config:', currentState);
-
       // Call parent's onTranscriberConfigChange
       if (onTranscriberConfigChange) {
         onTranscriberConfigChange(currentState);
       }
     } catch (error) {
-      console.warn('Failed to save transcriber config state to centralized state:', error);
     }
   }, [selectedTranscriberProvider, selectedTranscriberLanguage, selectedTranscriberModel, transcriberApiKey, punctuateEnabled, smartFormatEnabled, interimResultEnabled, onTranscriberConfigChange]);
 
@@ -1101,8 +1042,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
 
   // Handle provider changes with proper state management
   const handleProviderChange = (newProvider: string) => {
-    console.log('🔄 Provider changing from', selectedVoiceProvider, 'to', newProvider);
-
     // Set flag to prevent existingConfig from overriding user selection
     setIsUserChangingProvider(true);
 
@@ -1144,13 +1083,10 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     if (agentTtsConfig) {
       if (newProvider === 'OpenAI' && agentTtsConfig.openai?.api_key) {
         apiKeyFromConfig = agentTtsConfig.openai.api_key;
-        console.log('🔑 Found OpenAI API key in MongoDB config');
       } else if (newProvider === '11Labs' && agentTtsConfig.elevenlabs?.api_key) {
         apiKeyFromConfig = agentTtsConfig.elevenlabs.api_key;
-        console.log('🔑 Found 11Labs API key in MongoDB config');
       } else if (newProvider === 'Cartesia' && agentTtsConfig.cartesian?.tts_api_key) {
         apiKeyFromConfig = agentTtsConfig.cartesian.tts_api_key;
-        console.log('🔑 Found Cartesia API key in MongoDB config');
       }
     }
     
@@ -1192,9 +1128,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     setSelectedVoice(defaultVoice);
     setApiKey(newApiKey);
     setVoiceId(newVoiceId);
-
-    console.log('🔄 Reset model to:', defaultModel, 'voice to:', defaultVoice, 'API key updated');
-
     // Save to centralized state with correct API key
     saveStateToCentralized({
       selectedVoiceProvider: newProvider,
@@ -1203,9 +1136,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       apiKey: newApiKey,
       voiceId: newVoiceId
     });
-
-    console.log('✅ Provider changed to', newProvider, 'with correct API key');
-
     // Reset the flag after a delay
     providerChangeTimeoutRef.current = setTimeout(() => {
       setIsUserChangingProvider(false);
@@ -1216,8 +1146,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
 
   // Handle transcriber provider changes
   const handleTranscriberProviderChange = (provider: string) => {
-    console.log('🔄 Transcriber provider changing from', selectedTranscriberProvider, 'to', provider);
-
     // Set flag to prevent existingConfig from overriding user selection
     setIsUserChangingTranscriberProvider(true);
 
@@ -1235,10 +1163,8 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     if (agentSttConfig) {
       if (provider === 'Deepgram' && agentSttConfig.deepgram?.api_key) {
         apiKeyFromConfig = agentSttConfig.deepgram.api_key;
-        console.log('🔑 Found Deepgram API key in MongoDB config');
       } else if (provider === 'OpenAI' && agentSttConfig.openai?.api_key) {
         apiKeyFromConfig = agentSttConfig.openai.api_key;
-        console.log('🔑 Found OpenAI transcriber API key in MongoDB config');
       }
     }
     
@@ -1274,9 +1200,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     setSelectedTranscriberModel(defaultModel);
     setTranscriberApiKey(newTranscriberApiKey);
     setSelectedTranscriberLanguage(defaultLanguage);
-
-    console.log('🔄 Reset transcriber model to:', defaultModel, 'language to:', defaultLanguage, 'API key updated');
-
     // Save to centralized state with correct API key
     saveTranscriberStateToCentralized({
       selectedTranscriberProvider: provider,
@@ -1284,9 +1207,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       selectedTranscriberLanguage: defaultLanguage,
       transcriberApiKey: newTranscriberApiKey
     });
-
-    console.log('✅ Transcriber provider changed to', provider, 'with correct API key');
-
     // Reset the flag after a delay
     transcriberProviderChangeTimeoutRef.current = setTimeout(() => {
       setIsUserChangingTranscriberProvider(false);
@@ -1751,9 +1671,6 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                   } else if (selectedVoiceProvider === 'Cartesia') {
                     models = voiceProviders['Cartesia'];
                   }
-
-                  console.log('🔍 Available models for', selectedVoiceProvider, ':', models);
-
                   return models.map((model) => (
                     <option key={model} value={model}>
                       {selectedVoiceProvider === '11Labs' ? elevenLabsModelNames[model as keyof typeof elevenLabsModelNames] : model}
@@ -1802,13 +1719,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
               >
                 {(() => {
                   const languageMapping = getCurrentLanguageMapping();
-                  console.log('🔍 Language Mapping for dropdown:', languageMapping);
-                  console.log('🔍 Selected Language:', selectedLanguage);
-                  console.log('🔍 Selected Model:', selectedModel);
-                  console.log('🔍 Selected Voice Provider:', selectedVoiceProvider);
-
                   if (Object.keys(languageMapping).length === 0) {
-                    console.warn('⚠️ No languages available for current model/provider combination');
                     return <option value="">No languages available</option>;
                   }
 

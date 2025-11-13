@@ -106,7 +106,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
   // Success modal state - removed
-  const [isLoadingAgents, setIsLoadingAgents] = useState(true);
+  const [isLoadingAgents, setIsLoadingAgents] = useState(false);
   const [agentsError, setAgentsError] = useState('');
   const [currentOrganizationId, setCurrentOrganizationId] = useState<string>('');
   const [organizationName, setOrganizationName] = useState<string>('');
@@ -148,39 +148,26 @@ export default function AgentsTab({ }: AgentsTabProps) {
 
   // Initialize organization ID from user context
   useEffect(() => {
-    console.log('🔍 Setting organization ID from user context:', { user, userClass });
-    console.log('🔍 Full user object:', JSON.stringify(user, null, 2));
-    console.log('🔍 User orgIdToOrgMemberInfo:', (user as any)?.orgIdToOrgMemberInfo);
-    console.log('🔍 UserClass object:', JSON.stringify(userClass, null, 2));
-
     const orgId = (user as any)?.orgIdToOrgMemberInfo ?
       Object.keys((user as any).orgIdToOrgMemberInfo)[0] :
       null;
 
     if (orgId && orgId !== currentOrganizationId) {
-      console.log('✅ Setting organization ID from user.orgIdToOrgMemberInfo:', orgId);
       setCurrentOrganizationId(orgId);
     } else if (userClass && !orgId) {
       // Fallback: get organization ID from userClass
       const orgs = userClass.getOrgs?.() || [];
-      console.log('🔍 Available organizations from userClass:', orgs);
-      console.log('🔍 Organization details:', orgs.map((org: any) => ({ orgId: org.orgId, id: org.id, name: org.name })));
       if (orgs.length > 0) {
         const org = orgs[0] as any;
         const orgIdFromClass = org.orgId || org.id || '';
-        console.log('🔍 First org details:', org);
-        console.log('🔍 Extracted orgIdFromClass:', orgIdFromClass);
         if (orgIdFromClass && orgIdFromClass !== currentOrganizationId) {
-          console.log('✅ Setting organization ID from userClass:', orgIdFromClass);
           setCurrentOrganizationId(orgIdFromClass);
         }
       }
     } else {
-      console.log('❌ No organization ID found! OrgId:', orgId, 'UserClass:', userClass?.getOrgs?.());
       // Temporary workaround: use userId as organizationId for users without organizations
       if (user && (user as any).userId && !currentOrganizationId) {
         const userIdAsOrgId = (user as any).userId;
-        console.log('🔧 Temporary workaround: using userId as organizationId:', userIdAsOrgId);
         setCurrentOrganizationId(userIdAsOrgId);
         setOrganizationName('Single User Workspace');
       }
@@ -196,13 +183,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
 
   // Debug function to log current state
   const logCurrentState = useCallback(() => {
-    console.log('=== Current AgentsTab State ===');
-    console.log('Selected Agent:', selectedAgent);
-    console.log('Configuration:', configuration);
-    console.log('Has Unsaved Changes:', hasUnsavedChanges);
-    console.log('Auto Save Status:', autoSaveStatus);
-    console.log('Active Config Tab:', activeConfigTab);
-    console.log('================================');
+    // State logging removed
   }, [selectedAgent, configuration, hasUnsavedChanges, autoSaveStatus, activeConfigTab]);
 
   // Call duration timer
@@ -252,53 +233,34 @@ export default function AgentsTab({ }: AgentsTabProps) {
 
   // Debug function to check localStorage state
   const logLocalStorageState = useCallback(() => {
-    console.log('=== localStorage State ===');
-    console.log('Agent Configuration:', localStorage.getItem('agentConfiguration'));
-    console.log('Session Configuration:', sessionStorage.getItem('agentConfiguration'));
-    console.log('==========================');
-  }, []);
+}, []);
   // Removed analysis, advanced section refs
 
   // Fetch agents from backend with debouncing and duplicate call prevention
   const fetchAgents = useCallback(async (signal?: AbortSignal) => {
     // Prevent multiple simultaneous calls
     if (isFetchingRef.current) {
-      console.log('🔄 fetchAgents already in progress, skipping...');
       return;
     }
-
-    console.log('🔄 Starting fetchAgents...', { currentOrganizationId, organizationName });
     isFetchingRef.current = true;
     setAgentsError('');
-    const shouldShowFullLoader = !(agents && agents.length > 0 && agentsLoaded);
-    if (shouldShowFullLoader) {
-      setIsLoadingAgents(true);
+    // Better check for initial load: only show full loader if we haven't loaded yet AND have no agents
+    const isInitialLoad = !agentsLoaded && agents.length === 0;
+    if (isInitialLoad) {
+      setIsLoadingAgents(true); // Full screen spinner on initial load only
     } else {
-      setIsRefreshingAgents(true);
+      setIsRefreshingAgents(true); // Small spinner on refresh button
     }
 
     try {
       const orgName = organizationName || currentOrganizationId || 'Unknown Organization';
-      console.log('🔍 Using organization name for fetchAgents:', orgName);
       const result = await agentConfigService.getAllAgents(orgName, signal);
-      console.log('📊 getAllAgents result:', result);
-
       if (result.success) {
         if (result.data && result.data.length > 0) {
-          console.log('🔍 Raw agent data from API:', result.data);
           // Transform backend data to match our Agent interface
           const transformedAgents: Agent[] = result.data.map((agent: any) => {
             // Get agent_prefix from backend (could be in name, agent_prefix, or id field)
             const agentPrefix = agent.agent_prefix || agent.name || agent.id || '';
-            console.log('🔍 Processing agent:', agent.name || agent.agent_prefix, 'with data:', {
-              agent_prefix: agentPrefix,
-              initial_message: agent.initial_message,
-              nudge_text: agent.nudge_text,
-              nudge_interval: agent.nudge_interval,
-              max_nudges: agent.max_nudges,
-              typing_volume: agent.typing_volume,
-              max_call_duration: agent.max_call_duration
-            });
             return {
               id: agentPrefix || `agent_${Date.now()}`, // Use agent_prefix as ID (full UUID format)
               name: getDisplayName(agent.name || agent.agent_prefix || agent.id || 'Unnamed Agent'), // Display only the agent name
@@ -339,14 +301,14 @@ export default function AgentsTab({ }: AgentsTabProps) {
             }
           }
         } else {
-          // No agents found - normal for new setup
+          // No agents found - update agents array to match backend
+          // The loading state will prevent flickering by keeping loading spinner visible
           setAgents([]);
           setSelectedAgent(null);
         }
       } else {
         // Don't show error for 405 Method Not Allowed - it's expected
         if (result.message.includes('405') || result.message.includes('Method Not Allowed')) {
-          console.log('Backend does not support listing all agents. This is normal.');
           setAgents([]);
           setSelectedAgent(null);
         } else {
@@ -360,16 +322,13 @@ export default function AgentsTab({ }: AgentsTabProps) {
     } catch (error) {
       // Handle abort errors gracefully
       if (error instanceof DOMException && error.name === 'AbortError') {
-        console.log('Fetch aborted for fetchAgents');
         return;
       }
       // Don't show 405 errors as they are expected
       if (error instanceof Error && error.message.includes('405')) {
-        console.log('Backend does not support listing all agents. This is normal.');
         setAgents([]);
         setSelectedAgent(null);
       } else {
-        console.error('Error fetching agents:', error);
         setAgentsError('Failed to load agents from server');
         setAgents(fallbackAgents);
         if (fallbackAgents.length > 0 && !selectedAgentIdRef.current) {
@@ -377,28 +336,25 @@ export default function AgentsTab({ }: AgentsTabProps) {
         }
       }
     } finally {
+      // Clear loading states immediately - React batches state updates so agents will be set first
       setIsLoadingAgents(false);
       setIsRefreshingAgents(false);
       setAgentsLoaded(true);
       loadedOrganizationRef.current = currentOrganizationId || organizationName || '';
       isFetchingRef.current = false;
-      console.log('🏁 fetchAgents completed');
     }
   }, [currentOrganizationId, organizationName]);
 
   // Load configuration from selected agent
   const loadAgentConfiguration = useCallback((agent: Agent) => {
     if (agent) {
-      console.log('📥 Loading configuration from agent:', agent.name);
       loadConfigurationFromAgent(agent);
-      console.log('📥 Loaded configuration from agent:', agent.name);
     }
   }, [loadConfigurationFromAgent]);
 
   // Load agent configuration when agent is selected
   useEffect(() => {
     if (selectedAgent) {
-      console.log('🔄 selectedAgent changed, loading configuration:', selectedAgent.name);
       loadAgentConfiguration(selectedAgent);
     }
   }, [selectedAgent, loadAgentConfiguration]);
@@ -407,7 +363,6 @@ export default function AgentsTab({ }: AgentsTabProps) {
   useEffect(() => {
     const currentOrg = currentOrganizationId || organizationName;
     if (currentOrg && !agentsLoaded && !isLoadingAgents) {
-      console.log('🔄 Initial fetch for organization:', currentOrg);
       fetchAgents();
     }
   }, [currentOrganizationId, organizationName, agentsLoaded, isLoadingAgents, fetchAgents]);
@@ -418,7 +373,6 @@ export default function AgentsTab({ }: AgentsTabProps) {
     const loadedOrg = loadedOrganizationRef.current;
 
     if (currentOrg && !isLoadingAgents && currentOrg !== loadedOrg && agentsLoaded) {
-      console.log('🔄 Organization changed, fetching agents:', { currentOrg, loadedOrg });
       setAgentsLoaded(false);
       fetchAgents();
     }
@@ -428,27 +382,21 @@ export default function AgentsTab({ }: AgentsTabProps) {
   useEffect(() => {
     if (userClass) {
       const orgs = userClass.getOrgs?.() || [];
-      console.log('🔍 Available organizations from userClass:', orgs);
       if (orgs.length > 0) {
         const org = orgs[0] as any;
         const orgName = org.orgName || org.name || '';
         if (orgName && orgName !== organizationName) {
-          console.log('🔍 Setting organization name:', orgName);
           setOrganizationName(orgName);
         }
       } else {
-        console.log('⚠️ No organizations found in userClass');
       }
     } else {
-      console.log('⚠️ userClass is not available');
     }
   }, [userClass, organizationName]);
 
   // Refresh configuration when selectedAgent changes
   useEffect(() => {
     if (selectedAgent) {
-      console.log('🔄 Selected agent changed, refreshing configuration:', selectedAgent);
-
       // Load configuration from selected agent using centralized state
       loadAgentConfiguration(selectedAgent);
     }
@@ -478,21 +426,17 @@ export default function AgentsTab({ }: AgentsTabProps) {
     // Create new abort controller
     abortControllerRef.current = new AbortController();
 
-    // Reset states and fetch
-    setAgentsLoaded(false);
-    loadedOrganizationRef.current = '';
+    // Don't reset agentsLoaded or clear agents - just trigger refresh
+    // This keeps existing agents visible during refresh (no flickering)
     fetchAgents(abortControllerRef.current.signal);
   }, [fetchAgents]);
 
   // Handle creating a new agent
   const handleCreateNewAgent = useCallback(() => {
-    console.log('🎯 Create New Agent clicked!');
-    console.log('🎯 Current state:', { showAgentPrefixModal, agentPrefix, isCreatingAgent });
     // Show agent prefix modal first
     setShowAgentPrefixModal(true);
     setAgentPrefix('');
     setIsCreatingAgent(false); // Reset loading state when opening modal
-    console.log('🎯 Modal should be opening now...');
   }, [showAgentPrefixModal, agentPrefix, isCreatingAgent]);
 
   // Handle agent prefix submission
@@ -525,17 +469,10 @@ export default function AgentsTab({ }: AgentsTabProps) {
 
     // Generate UUID for the agent
     const agentNameUuid = generateAgentUuid(agentPrefix.trim());
-    console.log('🆔 Generated agent UUID:', agentNameUuid);
-    console.log('🔍 Debug - currentOrganizationId:', currentOrganizationId);
-    console.log('🔍 Debug - organizationName:', organizationName);
-
     // Create Dify agent and get API key immediately
-    console.log('🚀 Creating Dify agent for new agent:', agentNameUuid);
     let difyApiKey = '';
 
     const orgId = currentOrganizationId || organizationName;
-    console.log('🔍 Final organizationId being used:', orgId);
-
     if (!orgId) {
       alert('Organization ID is not available. Please refresh the page and try again.');
       setIsCreatingAgent(false);
@@ -550,26 +487,17 @@ export default function AgentsTab({ }: AgentsTabProps) {
         modelName: 'gpt-4o',
         agentType: agentType
       });
-
-      console.log('📋 Dify creation result:', difyResult);
-
       if (difyResult.success && difyResult.data?.appKey) {
         difyApiKey = difyResult.data.appKey;
         const difyAppId = difyResult.data.appId; // Extract app ID
         setGeneratedDifyApiKey(difyApiKey);
-        console.log('✅ Dify agent created successfully with API key:', difyApiKey.substring(0, 10) + '...');
-        console.log('✅ Dify app ID:', difyAppId);
-
-        // Store the app ID mapping in localStorage for later use
+// Store the app ID mapping in localStorage for later use
         if (difyAppId && difyApiKey) {
           localStorage.setItem(`dify_app_id_${difyApiKey}`, difyAppId);
-          console.log('💾 Stored app ID mapping:', { apiKey: difyApiKey.substring(0, 10) + '...', appId: difyAppId });
-        }
+}
       } else {
-        console.warn('⚠️ Dify agent creation failed, continuing with fallback:', difyResult.error);
       }
     } catch (difyError) {
-      console.error('❌ Dify agent creation error:', difyError);
     }
 
     // Get organization name
@@ -643,35 +571,21 @@ Remember: You are the first point of contact for many patients. Your professiona
     let currentChatbotApi = process.env.NEXT_PUBLIC_DIFY_BASE_URL || '';
 
     // Try to get current configuration from ModelConfig component
-    console.log('🔍 modelSectionRef.current:', modelSectionRef.current);
     if (modelSectionRef.current) {
       try {
         const modelConfig = (modelSectionRef.current as any).getCurrentConfig?.();
-        console.log('🔍 Retrieved modelConfig from ModelConfig component:', modelConfig);
         if (modelConfig) {
           currentSystemPrompt = modelConfig.systemPrompt || currentSystemPrompt;
           currentModelProvider = modelConfig.selectedModelProvider || currentModelProvider;
           currentModel = modelConfig.selectedModel || currentModel;
           currentModelApiKey = modelConfig.modelApiKey || currentModelApiKey;
           currentChatbotApi = modelConfig.modelLiveUrl || currentChatbotApi;
-          console.log('✅ Updated configuration from ModelConfig component');
         } else {
-          console.log('⚠️ No configuration returned from ModelConfig component');
         }
       } catch (error) {
-        console.warn('⚠️ Could not get current configuration from ModelConfig:', error);
       }
     } else {
-      console.log('⚠️ modelSectionRef.current is null - ModelConfig component not mounted');
     }
-
-    console.log('🔍 Using current configuration for agent creation:');
-    console.log('🔍 System Prompt:', currentSystemPrompt);
-    console.log('🔍 Model Provider:', currentModelProvider);
-    console.log('🔍 Model:', currentModel);
-    console.log('🔍 Model API Key:', currentModelApiKey ? 'Present' : 'Missing');
-    console.log('🔍 Chatbot API:', currentChatbotApi);
-
     const defaultConfig = {
       // Model Configuration
       modelConfig: {
@@ -735,26 +649,18 @@ Remember: You are the first point of contact for many patients. Your professiona
       model_api_key: defaultConfig.modelConfig.modelApiKey,
       model_live_url: defaultConfig.modelConfig.modelLiveUrl
     };
-
-    console.log('🔧 Creating agent with complete configuration:', completeAgentConfig);
-
     try {
       // Create the agent with all default configurations using UUID
       const result = await agentConfigService.configureAgent(agentNameUuid, completeAgentConfig);
 
       if (result.success) {
-        console.log('✅ Agent created successfully with default configurations');
-
         // Now POST model and prompt configurations to Dify
         if (difyApiKey) {
           try {
             // Get app_id from localStorage (stored earlier when Dify agent was created)
             const appId = localStorage.getItem(`dify_app_id_${difyApiKey}`);
             if (!appId) {
-              console.warn('⚠️ App ID not found for model configuration. The model config may fail.');
             }
-            
-            console.log('🔧 Posting model configuration to Dify...');
             const modelConfigResponse = await fetch('/api/model-config', {
               method: 'POST',
               headers: {
@@ -771,12 +677,8 @@ Remember: You are the first point of contact for many patients. Your professiona
             });
 
             if (modelConfigResponse.ok) {
-              console.log('✅ Model configuration posted to Dify successfully');
             } else {
-              console.warn('⚠️ Failed to post model configuration to Dify');
             }
-
-            console.log('🔧 Posting prompt configuration to Dify...');
             const promptConfigResponse = await fetch('/api/prompt-config', {
               method: 'POST',
               headers: {
@@ -790,8 +692,6 @@ Remember: You are the first point of contact for many patients. Your professiona
             });
 
             if (promptConfigResponse.ok) {
-              console.log('✅ Prompt configuration posted to Dify successfully');
-
               // Save the prompt to localStorage so it can be retrieved later
               try {
                 const promptData = {
@@ -799,15 +699,11 @@ Remember: You are the first point of contact for many patients. Your professiona
                   timestamp: new Date().toISOString()
                 };
                 localStorage.setItem(`difyPrompt_${agentPrefix.trim()}`, JSON.stringify(promptData));
-                console.log('✅ Prompt saved to localStorage for agent:', agentPrefix.trim());
-              } catch (error) {
-                console.warn('⚠️ Failed to save prompt to localStorage:', error);
+} catch (error) {
               }
             } else {
-              console.warn('⚠️ Failed to post prompt configuration to Dify');
             }
           } catch (configError) {
-            console.error('❌ Error posting configurations to Dify:', configError);
           }
         }
 
@@ -817,10 +713,8 @@ Remember: You are the first point of contact for many patients. Your professiona
           const storedDifyConfig = localStorage.getItem(`difyConfig_${agentPrefix.trim()}`);
           if (storedDifyConfig) {
             difyConfig = JSON.parse(storedDifyConfig);
-            console.log('✅ Retrieved Dify config for agent creation:', difyConfig);
           }
         } catch (error) {
-          console.warn('⚠️ Failed to retrieve Dify config for agent creation:', error);
         }
 
         // Create the agent object for UI
@@ -852,26 +746,17 @@ Remember: You are the first point of contact for many patients. Your professiona
         };
 
         // Log the final agent configuration
-        console.log('🔍 Final agent configuration for UI:', {
-          chatbot_api: newAgent.chatbot_api,
-          chatbot_key: newAgent.chatbot_key ? newAgent.chatbot_key.substring(0, 10) + '...' : 'NO KEY',
-          difyConfig_used: !!difyConfig,
-          difyApiKey_used: !!difyApiKey
-        });
-
-        // Get the actual prompt from localStorage (saved when posted to Dify)
+// Get the actual prompt from localStorage (saved when posted to Dify)
         try {
           const savedPromptData = localStorage.getItem(`difyPrompt_${agentPrefix.trim()}`);
           if (savedPromptData) {
             const promptData = JSON.parse(savedPromptData);
             if (promptData.prompt) {
-              console.log('✅ Actual prompt retrieved from localStorage:', promptData.prompt);
               // Update the agent's systemPrompt with the actual prompt
               newAgent.systemPrompt = promptData.prompt;
             }
           }
         } catch (error) {
-          console.warn('⚠️ Failed to retrieve prompt from localStorage:', error);
         }
 
         // Add the new agent to the agents list
@@ -883,10 +768,8 @@ Remember: You are the first point of contact for many patients. Your professiona
         // Refresh agents list to get the actual chatbot_key from backend
         setTimeout(async () => {
           try {
-            console.log('🔄 Refreshing agents list to get updated chatbot_key...');
             await fetchAgents();
           } catch (error) {
-            console.warn('⚠️ Failed to refresh agents after creation:', error);
           }
         }, 2000); // Wait 2 seconds for backend to process
 
@@ -900,11 +783,9 @@ Remember: You are the first point of contact for many patients. Your professiona
         setActiveConfigTab('model');
 
       } else {
-        console.error('❌ Failed to create agent:', result.message);
         alert(`❌ Failed to create agent: ${result.message}`);
       }
     } catch (error) {
-      console.error('❌ Error creating agent:', error);
       alert(`❌ Error creating agent: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
@@ -914,8 +795,6 @@ Remember: You are the first point of contact for many patients. Your professiona
 
   // Handle selecting an agent (view mode)
   const handleSelectAgent = useCallback((agent: Agent) => {
-    console.log('Selecting agent for viewing:', agent);
-
     // Reset configuration context before loading new agent
     resetConfiguration();
 
@@ -929,7 +808,6 @@ Remember: You are the first point of contact for many patients. Your professiona
 
   // Handle editing an existing agent
   const handleEditAgent = useCallback((agent: Agent) => {
-    console.log('Editing agent:', agent);
     setSelectedAgent(agent);
     setIsEditing(true);
     setIsCreating(false);
@@ -942,11 +820,6 @@ Remember: You are the first point of contact for many patients. Your professiona
 
   // Handle opening agent in new tab
   const handleOpenAgent = useCallback((agent: Agent) => {
-    console.log('Opening agent in new tab:', agent);
-    console.log('Agent ID:', agent.id);
-    console.log('Agent chatbot_key:', agent.chatbot_key);
-    console.log('Agent chatbot_api:', agent.chatbot_api);
-
     // Pass agent configuration through URL parameters
     const params = new URLSearchParams();
     if (agent.chatbot_api) {
@@ -963,7 +836,6 @@ Remember: You are the first point of contact for many patients. Your professiona
     }
 
     const chatbotUrl = `/chatbot/${agent.id}?${params.toString()}`;
-    console.log('Opening URL with config:', chatbotUrl);
     window.open(chatbotUrl, '_blank');
   }, []);
 
@@ -1023,7 +895,6 @@ Remember: You are the first point of contact for many patients. Your professiona
         setChatMessages(prev => [...prev, errorMessage]);
       }
     } catch (error) {
-      console.error('Chat error:', error);
       const errorMessage = {
         id: (Date.now() + 1).toString(),
         type: 'bot' as const,
@@ -1148,27 +1019,6 @@ Remember: You are the first point of contact for many patients. Your professiona
       const backendVoiceConfig = voice ? convertUIVoiceConfigToBackend(voice) : undefined;
       const backendTranscriberConfig = transcriber ? convertUITranscriberConfigToBackend(transcriber) : undefined;
 
-      // Log API keys before sending
-      console.log('🔑 Voice config API key check:', {
-        voiceConfig: voice,
-        apiKey: voice?.apiKey ? 'Present (' + voice.apiKey.substring(0, 10) + '...)' : 'Empty',
-        provider: voice?.selectedVoiceProvider
-      });
-      console.log('🔑 Backend voice config API keys:', {
-        openai: backendVoiceConfig?.openai?.api_key ? 'Present (' + backendVoiceConfig.openai.api_key.substring(0, 10) + '...)' : 'Empty',
-        elevenlabs: backendVoiceConfig?.elevenlabs?.api_key ? 'Present (' + backendVoiceConfig.elevenlabs.api_key.substring(0, 10) + '...)' : 'Empty',
-        cartesian: backendVoiceConfig?.cartesian?.tts_api_key ? 'Present (' + backendVoiceConfig.cartesian.tts_api_key.substring(0, 10) + '...)' : 'Empty'
-      });
-      console.log('🔑 Transcriber config API key check:', {
-        transcriberConfig: transcriber,
-        apiKey: (transcriber as any)?.transcriberApiKey ? 'Present (' + (transcriber as any).transcriberApiKey.substring(0, 10) + '...)' : 'Empty',
-        provider: transcriber?.selectedTranscriberProvider
-      });
-      console.log('🔑 Backend transcriber config API keys:', {
-        deepgram: backendTranscriberConfig?.deepgram?.api_key ? 'Present (' + backendTranscriberConfig.deepgram.api_key.substring(0, 10) + '...)' : 'Empty',
-        openai: backendTranscriberConfig?.openai?.api_key ? 'Present (' + backendTranscriberConfig.openai.api_key.substring(0, 10) + '...)' : 'Empty'
-      });
-
       // Convert configurations to backend format
       const completeConfig = {
         organization_id: selectedAgent.organization_id || currentOrganizationId || organizationName,
@@ -1184,26 +1034,16 @@ Remember: You are the first point of contact for many patients. Your professiona
         chatbot_key: model?.chatbot_key || selectedAgent.chatbot_key,
         system_prompt: model?.systemPrompt || model?.firstMessage || selectedAgent.systemPrompt || selectedAgent.initial_message
       } as any;
-
-      console.log('💾 Updating agent with centralized config:', completeConfig);
-      console.log('🔍 Configuration state:', configuration);
-      console.log('🔍 Backend voice config:', backendVoiceConfig);
-      console.log('🔍 Backend transcriber config:', backendTranscriberConfig);
-
       const result = await agentConfigService.configureAgent(selectedAgent.id, completeConfig);
 
       if (result.success) {
-        console.log('✅ Agent updated successfully');
         // Save configuration to backend
         await saveConfiguration();
         // Refresh list to reflect latest server state
         await fetchAgents();
-        console.log('✅ Agent updated successfully');
       } else {
-        console.error('❌ Failed to update agent:', result.message);
       }
     } catch (err) {
-      console.error('❌ Error updating agent:', err);
     } finally {
       setIsUpdatingAgent(false);
     }
@@ -1219,7 +1059,6 @@ Remember: You are the first point of contact for many patients. Your professiona
 
   // Handle successful agent creation/update - reset edit mode
   const handleAgentCreated = useCallback(async () => {
-    console.log('Agent created/updated successfully, resetting edit mode');
     setIsEditing(false);
     setIsCreating(false);
 
@@ -1227,7 +1066,6 @@ Remember: You are the first point of contact for many patients. Your professiona
     try {
       await fetchAgents();
     } catch (error) {
-      console.warn('Failed to refresh agents list:', error);
     }
   }, [fetchAgents]);
 
@@ -1248,12 +1086,10 @@ Remember: You are the first point of contact for many patients. Your professiona
           JSON.stringify(updatedAgent.stt_config) !== JSON.stringify(selectedAgent.stt_config);
 
         if (hasChanges) {
-          console.log('🔄 Updating selected agent with fresh data from agents list:', updatedAgent);
           setSelectedAgent(updatedAgent);
 
           // Configuration will be updated automatically by the centralized state
         } else {
-          console.log('ℹ️ Selected agent data unchanged, no update needed');
         }
       }
     }
@@ -1261,8 +1097,6 @@ Remember: You are the first point of contact for many patients. Your professiona
 
   // Refresh agent configuration after updates
   const refreshAgentConfiguration = useCallback((agent: Agent) => {
-    console.log('🔄 Refreshing agent configuration:', agent);
-
     // Update the selected agent
     setSelectedAgent(agent);
 
@@ -1345,29 +1179,18 @@ Remember: You are the first point of contact for many patients. Your professiona
     try {
       // First, try to delete the Dify agent if it has a chatbot_key
       if (agentToDelete.chatbot_key) {
-        console.log('🗑️ Deleting Dify agent for:', agentToDelete.id);
-        console.log('🔍 Agent chatbot_key:', agentToDelete.chatbot_key);
-        console.log('🔍 Current organizationId:', currentOrganizationId);
-
         try {
           const difyResult = await difyAgentService.deleteDifyAgent({
             agentName: agentToDelete.id, // Use UUID for Dify deletion
             organizationId: currentOrganizationId,
             // Note: We don't have the appId stored, but the script can still attempt cleanup
           });
-
-          console.log('🔍 Dify deletion result:', difyResult);
-
           if (difyResult.success) {
-            console.log('✅ Dify agent deleted successfully');
           } else {
-            console.warn('⚠️ Dify agent deletion failed, continuing with backend deletion:', difyResult.error);
           }
         } catch (difyError) {
-          console.warn('⚠️ Dify agent deletion error, continuing with backend deletion:', difyError);
         }
       } else {
-        console.log('⚠️ No chatbot_key found, skipping Dify deletion');
       }
 
       // Delete the agent from the backend
@@ -1378,12 +1201,9 @@ Remember: You are the first point of contact for many patients. Your professiona
         if (selectedAgent?.id === agentToDelete.id) {
           setSelectedAgent(null);
         }
-        console.log(`Agent "${agentToDelete.name}" deleted successfully`);
       } else {
-        console.error('Failed to delete agent:', result.message);
       }
     } catch (error) {
-      console.error('Error deleting agent:', error);
     } finally {
       setDeletingAgentId(null);
       setAgentToDelete(null);
@@ -1398,8 +1218,6 @@ Remember: You are the first point of contact for many patients. Your professiona
 
   // Function to handle tab clicks and scroll to section
   const handleTabClick = useCallback((tabId: string) => {
-    console.log('🔄 Switching to tab:', tabId, 'from:', activeConfigTab);
-
     setActiveConfigTab(tabId);
     setIsDropdownOpen(false); // Close dropdown on mobile
 
@@ -1447,15 +1265,14 @@ Remember: You are the first point of contact for many patients. Your professiona
     };
   }, []);
 
-  // Fallback timeout to prevent infinite loading
+  // Fallback timeout to prevent infinite loading (increased to prevent premature clearing)
   useEffect(() => {
     if (isLoadingAgents) {
       const fallbackTimeout = setTimeout(() => {
-        console.log('⚠️ Loading timeout reached, stopping loading state');
         setIsLoadingAgents(false);
         setAgentsLoaded(true);
         isFetchingRef.current = false;
-      }, 200); // 10 second timeout
+      }, 10000); // 10 second timeout - increased from 200ms to prevent flickering
 
       return () => clearTimeout(fallbackTimeout);
     }
@@ -1464,8 +1281,6 @@ Remember: You are the first point of contact for many patients. Your professiona
   // Manual refresh function for agent configuration
   const refreshSelectedAgentConfig = useCallback(async () => {
     if (!selectedAgent) return;
-
-    console.log('🔄 Manually refreshing selected agent configuration:', selectedAgent.name);
     setIsRefreshingAgents(true);
 
     try {
@@ -1474,8 +1289,6 @@ Remember: You are the first point of contact for many patients. Your professiona
       if (result.success && result.data) {
         const updatedAgent = result.data.find((a: any) => a.name === selectedAgent.name);
         if (updatedAgent) {
-          console.log('✅ Found updated agent, refreshing configuration:', updatedAgent);
-
           // Transform the agent data
           const agentPrefix = updatedAgent.agent_prefix || updatedAgent.name || updatedAgent.id || '';
           const transformedAgent: Agent = {
@@ -1514,13 +1327,10 @@ Remember: You are the first point of contact for many patients. Your professiona
 
           // Configuration will be updated automatically by the centralized state
         } else {
-          console.warn('⚠️ Agent not found in refresh response:', selectedAgent.name);
         }
       } else {
-        console.warn('⚠️ Failed to fetch agents for refresh:', result.message);
       }
     } catch (error) {
-      console.error('Error manually refreshing agent configuration:', error);
     } finally {
       setIsRefreshingAgents(false);
     }
@@ -1546,6 +1356,7 @@ Remember: You are the first point of contact for many patients. Your professiona
             isLoadingAgents={isLoadingAgents}
             isRefreshingAgents={isRefreshingAgents}
             agentsError={agentsError}
+            agentsLoaded={agentsLoaded}
           />
         </div>
 
@@ -1994,12 +1805,6 @@ Remember: You are the first point of contact for many patients. Your professiona
               <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 lg:p-8">
                 {activeConfigTab === 'model' && (
                   <>
-                    {console.log('🔧 Passing agent data to ModelConfig:', {
-                      agentId: selectedAgent.id,
-                      agentName: selectedAgent.name,
-                      chatbot_api: selectedAgent.chatbot_api,
-                      chatbot_key: selectedAgent.chatbot_key ? selectedAgent.chatbot_key.substring(0, 10) + '...' : 'NO KEY'
-                    })}
                     <ModelConfig
                       ref={modelSectionRef}
                       agentName={selectedAgent.name}
@@ -2029,11 +1834,6 @@ Remember: You are the first point of contact for many patients. Your professiona
                 )}
                 {activeConfigTab === 'widget' && (
                   <>
-                    {console.log('🔧 Passing agent data to WidgetConfig:', {
-                      agentId: selectedAgent.id,
-                      chatbot_api: selectedAgent.chatbot_api,
-                      chatbot_key: selectedAgent.chatbot_key ? selectedAgent.chatbot_key.substring(0, 10) + '...' : 'NO KEY'
-                    })}
                     <WidgetConfig
                       ref={widgetSectionRef}
                       agentName={selectedAgent.id}

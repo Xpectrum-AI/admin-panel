@@ -127,7 +127,6 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setSchedulerError('Failed to send Gmail message: ' + errorMessage);
-      console.error('Error sending Gmail message:', err);
     } finally {
       setSending(false);
     }

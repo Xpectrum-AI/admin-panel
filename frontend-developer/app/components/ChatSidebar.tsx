@@ -30,7 +30,6 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
         }));
       }
     } catch (error) {
-      console.error('Error loading chat messages:', error);
     }
 
     // Default welcome message if no saved messages
@@ -52,7 +51,6 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
     try {
       localStorage.setItem('chatMessages', JSON.stringify(messages));
     } catch (error) {
-      console.error('Error saving chat messages:', error);
     }
   }, [messages]);
 
@@ -74,39 +72,24 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
         const allKeys = Object.keys(localStorage);
         const modelConfigKeys = allKeys.filter(key => key.startsWith('modelConfig_'));
         const promptConfigKeys = allKeys.filter(key => key.startsWith('promptConfig_'));
-
-        console.log('🔍 ChatSidebar - Checking localStorage for agent configs:');
-        console.log('🔍 All localStorage keys:', allKeys);
-        console.log('🔍 Model config keys:', modelConfigKeys);
-        console.log('🔍 Prompt config keys:', promptConfigKeys);
-
         // Find the first agent that has both model and prompt configured
         let foundConfiguredAgent = false;
         for (const modelKey of modelConfigKeys) {
           const agentName = modelKey.replace('modelConfig_', '');
           const promptKey = `promptConfig_${agentName}`;
-
-          console.log(`🔍 Checking agent: ${agentName}`);
-          console.log(`🔍 Model config:`, localStorage.getItem(modelKey));
-          console.log(`🔍 Prompt config:`, localStorage.getItem(promptKey));
-
-          if (localStorage.getItem(promptKey)) {
+if (localStorage.getItem(promptKey)) {
             // Found a configured agent
             foundConfiguredAgent = true;
-            console.log(`🔍 Found configured agent: ${agentName}`);
             break;
           }
         }
 
         if (foundConfiguredAgent) {
           setAgentStatus('configured');
-          console.log('🔍 Agent status set to: configured');
         } else {
           setAgentStatus('not-configured');
-          console.log('🔍 Agent status set to: not-configured');
         }
       } catch (error) {
-        console.error('Error checking agent status:', error);
         setAgentStatus('not-configured');
       }
     };
@@ -194,7 +177,6 @@ export default function ChatSidebar({ onClose }: ChatSidebarProps) {
 
       setMessages(prev => [...prev, agentMessage]);
     } catch (error) {
-      console.error('Error sending message:', error);
       let errorContent = 'Sorry, I encountered an error. Please try again.';
 
       if (error instanceof Error) {

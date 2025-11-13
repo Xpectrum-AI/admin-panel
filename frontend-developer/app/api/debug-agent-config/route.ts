@@ -30,8 +30,6 @@ async function getAuthToken() {
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('🔍 Debug: Getting agent configuration from Dify');
-    
     // Validate environment variables at runtime
     const DIFY_BASE_URL = process.env.NEXT_PUBLIC_DIFY_BASE_URL;
     const WS_ID = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID;
@@ -58,12 +56,8 @@ export async function GET(request: NextRequest) {
         'Content-Type': 'application/json',
       },
     });
-
-    console.log('🔍 Config response status:', configResponse.status);
-
     if (!configResponse.ok) {
       const errorData = await configResponse.text();
-      console.error('❌ Failed to get agent config:', errorData);
       return NextResponse.json(
         { 
           success: false, 
@@ -75,8 +69,6 @@ export async function GET(request: NextRequest) {
     }
 
     const configData = await configResponse.json();
-    console.log('✅ Agent config from Dify:', configData);
-    
     return NextResponse.json({
       success: true,
       data: configData,
@@ -84,7 +76,6 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('❌ Debug agent config error:', error);
     return NextResponse.json(
       { 
         success: false, 

@@ -30,14 +30,12 @@ const makeApiRequest = async (
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('API Error:', response.status, errorText);
       throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}: ${errorText}`);
     }
 
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('API Request failed:', error);
     throw error;
   }
 };
@@ -71,14 +69,12 @@ const makeWhatsAppApiRequest = async (
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('WhatsApp API Error:', response.status, errorText);
       throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}: ${errorText}`);
     }
 
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('WhatsApp API Request failed:', error);
     throw error;
   }
 };
@@ -144,10 +140,8 @@ export class WhatsAppService {
       const data = await makeApiRequest('/phone-numbers/available', {
         method: 'GET',
       });
-      console.log('🚀 All phone numbers fetched successfully:', data);
       return { success: true, data };
     } catch (error: any) {
-      console.error('Error fetching all phone numbers:', error);
       return { success: false, message: error.message };
     }
   }
@@ -157,22 +151,13 @@ export class WhatsAppService {
    */
   static async getWhatsAppEnabledPhoneNumbers(): Promise<PhoneNumberResponse> {
     try {
-      console.log('🚀 Loading WhatsApp-enabled phone numbers...');
       const response = await this.getAllPhoneNumbers();
-      console.log('🚀 API response received:', response);
-
       if (response.success && response.data) {
         const phoneNumbersData = response.data;
-        console.log('✅ Phone numbers data:', phoneNumbersData);
-
         // Check if we have phone_numbers array in the response
         if (phoneNumbersData.phone_numbers && Array.isArray(phoneNumbersData.phone_numbers) && phoneNumbersData.phone_numbers.length > 0) {
-          console.log('✅ Found phone_numbers array:', phoneNumbersData.phone_numbers);
-
           // Filter to show only WhatsApp-enabled phone numbers
           const whatsappEnabledNumbers = phoneNumbersData.phone_numbers.filter((phone: any) => phone.whatsapp_enabled === true);
-          console.log('✅ WhatsApp-enabled numbers after filtering:', whatsappEnabledNumbers);
-
           return { 
             success: true, 
             data: { 
@@ -181,7 +166,6 @@ export class WhatsAppService {
             } 
           };
         } else {
-          console.log('❌ No phone numbers found in response');
           return { 
             success: true, 
             data: { 
@@ -191,7 +175,6 @@ export class WhatsAppService {
           };
         }
       } else {
-        console.log('❌ API response failed:', response);
         return { 
           success: false, 
           message: response.message || 'Failed to fetch phone numbers',
@@ -203,7 +186,6 @@ export class WhatsAppService {
       }
     } catch (error: any) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('❌ Error loading WhatsApp-enabled phone numbers:', errorMessage);
       return { 
         success: false, 
         message: errorMessage,
@@ -224,13 +206,7 @@ export class WhatsAppService {
     agentApiKey: string,
     phoneNumberId: string
   ): Promise<WhatsAppMappingResponse> {
-    console.log('🚀 Mapping WhatsApp receiving number to agent:', {
-      receivingNumber,
-      phoneNumberId,
-      usingApiKey: agentApiKey.substring(0, 10) + '...'
-    });
-
-    const formData = {
+const formData = {
       receiving_number: receivingNumber,
       agent_url: process.env.NEXT_PUBLIC_CHATBOT_API_URL,
       agent_api_key: agentApiKey,
@@ -239,8 +215,6 @@ export class WhatsAppService {
 
     try {
       const result = await makeWhatsAppApiRequest('/whatsapp/map-receiving-number-agent', formData);
-      
-      console.log('✅ WhatsApp mapping created successfully:', result);
       return {
         success: true,
         message: result.message || 'WhatsApp mapping created successfully!',
@@ -248,7 +222,6 @@ export class WhatsAppService {
         timestamp: result.timestamp || new Date().toISOString()
       };
     } catch (error) {
-      console.error('❌ Failed to create WhatsApp mapping:', error);
       throw error;
     }
   }
@@ -258,15 +231,10 @@ export class WhatsAppService {
    * GET /whatsapp/phone-numbers
    */
   static async getPhoneNumbers(): Promise<WhatsAppPhoneNumber[]> {
-    console.log('🚀 Fetching WhatsApp phone numbers');
-
     try {
       const result = await makeApiRequest('/whatsapp/phone-numbers');
-      
-      console.log('✅ WhatsApp phone numbers fetched successfully:', result);
       return result.data || result;
     } catch (error) {
-      console.error('❌ Failed to fetch WhatsApp phone numbers:', error);
       throw error;
     }
   }
@@ -276,15 +244,10 @@ export class WhatsAppService {
    * GET /whatsapp/mappings
    */
   static async getMappings(): Promise<any[]> {
-    console.log('🚀 Fetching WhatsApp mappings');
-
     try {
       const result = await makeApiRequest('/whatsapp/mappings');
-      
-      console.log('✅ WhatsApp mappings fetched successfully:', result);
       return result.data || result;
     } catch (error) {
-      console.error('❌ Failed to fetch WhatsApp mappings:', error);
       throw error;
     }
   }
@@ -313,15 +276,10 @@ export class WhatsAppService {
     total_mappings: number;
     message: string;
   }> {
-    console.log('🚀 Listing WhatsApp receiving number agents');
-
     try {
       const result = await makeApiRequest('/whatsapp/list-receiving-number-agents', {
         method: 'GET'
       });
-      
-      console.log('✅ WhatsApp receiving number agents listed successfully:', result);
-      
       // Return the result directly as it matches the API response structure
       return {
         success: result.success,
@@ -330,7 +288,6 @@ export class WhatsAppService {
         message: result.message || 'WhatsApp receiving number agents listed successfully!'
       };
     } catch (error) {
-      console.error('❌ Failed to list WhatsApp receiving number agents:', error);
       throw error;
     }
   }
@@ -344,21 +301,15 @@ export class WhatsAppService {
   ): Promise<{ success: boolean; message: string }> {
     // Remove + prefix if present as API doesn't expect it
     const cleanNumber = receivingNumber.startsWith('+') ? receivingNumber.slice(1) : receivingNumber;
-    
-    console.log('🚀 Unassigning WhatsApp receiving number from agent:', { original: receivingNumber, cleaned: cleanNumber });
-
     try {
       const result = await makeApiRequest(`/whatsapp/unassign-receiving-number-agent/${encodeURIComponent(cleanNumber)}`, {
         method: 'DELETE'
       });
-      
-      console.log('✅ WhatsApp receiving number unassigned successfully:', result);
       return {
         success: true,
         message: result.message || 'WhatsApp receiving number unassigned successfully!'
       };
     } catch (error) {
-      console.error('❌ Failed to unassign WhatsApp receiving number:', error);
       throw error;
     }
   }
@@ -366,16 +317,11 @@ export class WhatsAppService {
   // Get WhatsApp receiving number agent mappings
   static async getReceivingNumberAgentMappings(): Promise<PhoneNumberResponse> {
     try {
-      console.log('🚀 Fetching WhatsApp receiving number agent mappings...');
-      
       const data = await makeApiRequest('/whatsapp/list-receiving-number-agents', {
         method: 'GET',
       });
-      
-      console.log('✅ WhatsApp receiving number agent mappings fetched successfully:', data);
       return { success: true, data };
     } catch (error: any) {
-      console.error('❌ Error fetching WhatsApp receiving number agent mappings:', error);
       return { success: false, message: error.message };
     }
   }
@@ -391,15 +337,7 @@ export class WhatsAppService {
     context?: string,
     receivingNumber?: string
   ): Promise<{ success: boolean; message: string; data?: any }> {
-    console.log('🚀 Sending WhatsApp message:', {
-      toNumber,
-      messageText: messageText.substring(0, 50) + '...',
-      messageType,
-      context,
-      receivingNumber
-    });
-
-    const formData = {
+const formData = {
       to_number: toNumber,
       message_text: messageText,
       message_type: messageType,
@@ -409,15 +347,12 @@ export class WhatsAppService {
 
     try {
       const result = await makeWhatsAppApiRequest('/whatsapp/send-message', formData);
-      
-      console.log('✅ WhatsApp message sent successfully:', result);
       return {
         success: true,
         message: result.message || 'WhatsApp message sent successfully!',
         data: result.data
       };
     } catch (error) {
-      console.error('❌ Failed to send WhatsApp message:', error);
       throw error;
     }
   }
@@ -431,8 +366,6 @@ export class WhatsAppService {
     agentName: string
   ): Promise<PhoneNumberResponse> {
     try {
-      console.log('🚀 Assigning WhatsApp phone number to agent:', { phoneId, agentName });
-      
       const apiBaseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
       if (!apiBaseUrl) {
         throw new Error('NEXT_PUBLIC_LIVE_API_URL is not configured');
@@ -450,10 +383,8 @@ export class WhatsAppService {
       }
 
       const data = await response.json();
-      console.log('✅ WhatsApp phone number assigned successfully:', data);
       return { success: true, data };
     } catch (error: any) {
-      console.error('❌ Failed to assign WhatsApp phone number to agent:', error);
       return { success: false, message: `Failed to assign WhatsApp phone number to agent: ${error.message}` };
     }
   }
@@ -467,8 +398,6 @@ export class WhatsAppService {
     agentName: string
   ): Promise<PhoneNumberResponse> {
     try {
-      console.log('🚀 Unassigning WhatsApp phone number from agent:', { phoneId, agentName });
-      
       // Try different endpoint patterns and methods
       const endpoints = [
         // Pattern 1: POST /phone-numbers/{phone_id}/unassign/{agent_name}
@@ -483,8 +412,6 @@ export class WhatsAppService {
 
       for (const endpoint of endpoints) {
         try {
-          console.log(`Trying WhatsApp unassign endpoint: ${endpoint.method} ${endpoint.url}`);
-          
           const apiBaseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
           if (!apiBaseUrl) {
             throw new Error('NEXT_PUBLIC_LIVE_API_URL is not configured');
@@ -500,13 +427,10 @@ export class WhatsAppService {
 
           if (response.ok) {
             const data = await response.json();
-            console.log(`✅ WhatsApp unassign successful with ${endpoint.method} ${endpoint.url}`);
             return { success: true, data };
           } else {
-            console.log(`❌ ${endpoint.method} ${endpoint.url} failed with status: ${response.status}`);
           }
         } catch (endpointError) {
-          console.log(`❌ ${endpoint.method} ${endpoint.url} failed with error:`, endpointError);
           continue;
         }
       }
@@ -514,7 +438,6 @@ export class WhatsAppService {
       // If all endpoints fail, throw an error
       throw new Error('All WhatsApp unassign endpoint patterns failed');
     } catch (error: any) {
-      console.error('❌ Failed to unassign WhatsApp phone number from agent:', error);
       return { success: false, message: `Failed to unassign WhatsApp phone number from agent: ${error.message}` };
     }
   }

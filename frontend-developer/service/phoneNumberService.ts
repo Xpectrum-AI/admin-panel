@@ -109,7 +109,6 @@ const makeApiRequest = async (
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('API request failed:', error);
     throw error;
   }
 };
@@ -129,7 +128,6 @@ export const getAllPhoneNumbers = async (): Promise<PhoneNumberResponse> => {
     });
     return { success: true, data };
   } catch (error: any) {
-    console.error('Error fetching all phone numbers:', error);
     return { success: false, message: error.message };
   }
 };
@@ -145,7 +143,6 @@ export const getAvailablePhoneNumbers = async (): Promise<PhoneNumberResponse> =
     });
     return { success: true, data };
   } catch (error: any) {
-    console.error('Error fetching available phone numbers:', error);
     return { success: false, message: error.message };
   }
 };
@@ -161,7 +158,6 @@ export const getAssignedPhoneNumbers = async (): Promise<PhoneNumberResponse> =>
     });
     return { success: true, data };
   } catch (error: any) {
-    console.error('Error fetching assigned phone numbers:', error);
     return { success: false, message: error.message };
   }
 };
@@ -328,8 +324,6 @@ export const unassignPhoneNumberFromAgent = async (
 
     for (const endpoint of endpoints) {
       try {
-        console.log(`Trying unassign endpoint: ${endpoint.method} ${endpoint.url}`);
-        
         const response = await fetch(`${process.env.NEXT_PUBLIC_LIVE_API_URL}${endpoint.url}`, {
           method: endpoint.method,
           headers: {
@@ -341,13 +335,10 @@ export const unassignPhoneNumberFromAgent = async (
 
         if (response.ok) {
           const data = await response.json();
-          console.log(`✅ Unassign successful with ${endpoint.method} ${endpoint.url}`);
           return { success: true, data };
         } else {
-          console.log(`❌ ${endpoint.method} ${endpoint.url} failed with status: ${response.status}`);
         }
       } catch (endpointError) {
-        console.log(`❌ ${endpoint.method} ${endpoint.url} failed with error:`, endpointError);
         continue;
       }
     }
@@ -468,10 +459,6 @@ export const scheduleOutboundCall = async (
     // Use live API URL directly for scheduled events
     const baseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
     const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
-    
-    console.log('🔍 Creating scheduled event:', schedulerData);
-    console.log('🌐 API URL:', baseUrl);
-    
     const response = await fetch(`${baseUrl}/scheduled/create`, {
       method: 'POST',
       headers: {
@@ -483,15 +470,12 @@ export const scheduleOutboundCall = async (
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Schedule API Error:', errorText);
       throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('✅ Schedule API Response:', data);
     return { success: true, data, message: 'Outbound call scheduled successfully!' };
   } catch (error: any) {
-    console.error('Error scheduling outbound call:', error);
     return { success: false, message: `Failed to schedule outbound call: ${error.message}` };
   }
 };
@@ -620,8 +604,7 @@ export const deleteScheduledEvent = async (scheduleId: string): Promise<Schedule
  * Get All Agents Phone Numbers - Legacy function
  */
 export const getAllAgentsPhoneNumbers = async (): Promise<PhoneNumberResponse> => {
-  console.warn('getAllAgentsPhoneNumbers is deprecated. Use getAllPhoneNumbers() instead.');
-  return getAllPhoneNumbers();
+return getAllPhoneNumbers();
 };
 
 /**
@@ -629,8 +612,7 @@ export const getAllAgentsPhoneNumbers = async (): Promise<PhoneNumberResponse> =
  * Get Available Phone Numbers by Organization - Legacy function
  */
 export const getAvailablePhoneNumbersByOrg = async (organizationId: string): Promise<PhoneNumberResponse> => {
-  console.warn('getAvailablePhoneNumbersByOrg is deprecated. Use getScheduledEventsByOrganization() instead.');
-  try {
+try {
     // Try to get phone numbers for the organization
     const result = await getScheduledEventsByOrganization(organizationId);
     return { success: result.success, data: result.data || [], message: result.message };
@@ -647,9 +629,7 @@ export const addUpdateAgentPhoneNumber = async (
   agentPrefix: string,
   phoneNumber: string | PhoneNumberRequest
 ): Promise<PhoneNumberResponse> => {
-  console.warn('addUpdateAgentPhoneNumber is deprecated. Use assignPhoneNumber() instead.');
-  
-  const phoneNumberStr = typeof phoneNumber === 'string' ? phoneNumber : phoneNumber.phone_number;
+const phoneNumberStr = typeof phoneNumber === 'string' ? phoneNumber : phoneNumber.phone_number;
   const organizationId = typeof phoneNumber === 'object' ? phoneNumber.organization_id : undefined;
   
   if (!organizationId) {

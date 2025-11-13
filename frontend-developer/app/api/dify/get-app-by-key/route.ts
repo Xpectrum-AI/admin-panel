@@ -28,10 +28,7 @@ export async function POST(request: NextRequest) {
     if (!apiKey) {
       return NextResponse.json({ error: 'API key is required' }, { status: 400 });
     }
-
-    console.log('🔍 Searching for app with API key:', apiKey.substring(0, 10) + '...');
-
-    const token = await getAuthToken();
+const token = await getAuthToken();
 
     // Fetch all apps from Dify
     const response = await fetch(`${CONSOLE_ORIGIN}/console/api/apps?page=1&limit=100`, {
@@ -47,9 +44,6 @@ export async function POST(request: NextRequest) {
 
     const data = await response.json();
     const apps = data.data || [];
-
-    console.log(`📋 Found ${apps.length} total apps in Dify`);
-
     // For each app, fetch its API keys and check if any match
     for (const app of apps) {
       try {
@@ -71,12 +65,6 @@ export async function POST(request: NextRequest) {
           });
 
           if (matchingKey) {
-            console.log('✅ Found matching app:', {
-              appId: app.id,
-              appName: app.name,
-              mode: app.mode
-            });
-
             return NextResponse.json({
               success: true,
               appId: app.id,
@@ -86,19 +74,15 @@ export async function POST(request: NextRequest) {
           }
         }
       } catch (error) {
-        console.error(`⚠️ Error fetching keys for app ${app.id}:`, error);
         // Continue to next app
       }
     }
-
-    console.error('❌ No app found with the provided API key');
     return NextResponse.json(
       { error: 'No app found with the provided API key' },
       { status: 404 }
     );
 
   } catch (error) {
-    console.error('❌ Error searching for app:', error);
     return NextResponse.json(
       { error: 'Failed to search for app', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

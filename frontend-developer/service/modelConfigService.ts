@@ -39,18 +39,10 @@ export const modelConfigService = {
       if (!env.DIFY_BASE_URL) {
         throw new Error('Missing required environment variable: NEXT_PUBLIC_DIFY_BASE_URL');
       }
-
-      console.log('⚙️ Making API call to model configuration endpoint');
-      
       // Debug API key loading
       const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
-      console.log('🔑 API Key from env:', apiKey ? 'Present' : 'Missing');
-      console.log('🔑 API Key value:', apiKey);
-      
       // Fallback API key if environment variable is not loaded
       const finalApiKey = apiKey || 'xpectrum-ai@123';
-      console.log('🔑 Final API Key being used:', finalApiKey);
-
       // Use our new model-config API endpoint
       const response = await fetch('/api/model-config', {
         method: 'POST',
@@ -73,7 +65,6 @@ export const modelConfigService = {
         message: 'Model configured successfully'
       };
     } catch (error) {
-      console.error('Model configuration error:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to configure model'
@@ -84,25 +75,16 @@ export const modelConfigService = {
   // Configure prompt
   async configurePrompt(config: PromptConfigRequest): Promise<ModelConfigResponse> {
     try {
-      console.log('🚀 Starting prompt configuration...');
       const env = getEnvironmentVariables();
       
       // Only validate DIFY_BASE_URL, chatbot_api_key comes from the request
       if (!env.DIFY_BASE_URL) {
         throw new Error('Missing required environment variable: NEXT_PUBLIC_DIFY_BASE_URL');
       }
-
-      console.log('⚙️ Making API call to prompt configuration endpoint');
-      
       // Debug API key loading
       const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
-      console.log('🔑 API Key from env:', apiKey ? 'Present' : 'Missing');
-      console.log('🔑 API Key value:', apiKey);
-      
       // Fallback API key if environment variable is not loaded
       const finalApiKey = apiKey || 'xpectrum-ai@123';
-      console.log('🔑 Final API Key being used:', finalApiKey);
-
       // Use our new prompt-config API endpoint
       const response = await fetch('/api/prompt-config', {
         method: 'POST',
@@ -125,7 +107,6 @@ export const modelConfigService = {
         message: 'Prompt configured successfully'
       };
     } catch (error) {
-      console.error('Prompt configuration error:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to configure prompt'

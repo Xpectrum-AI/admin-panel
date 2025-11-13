@@ -27,17 +27,13 @@ export default function SMSTab({ }: SMSTabProps) {
     useEffect(() => {
         if (userClass) {
             const orgs = userClass.getOrgs?.() || [];
-            console.log('🔍 Available organizations from userClass:', orgs);
             if (orgs.length > 0) {
                 const org = orgs[0] as any;
                 const orgName = org.orgName || org.name || '';
-                console.log('🔍 Setting organization name:', orgName);
                 setOrganizationName(orgName);
             } else {
-                console.log('⚠️ No organizations found in userClass');
             }
         } else {
-            console.log('⚠️ userClass is not available');
         }
     }, [userClass]);
 

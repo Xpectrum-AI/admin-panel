@@ -58,8 +58,6 @@ export function createErrorResponse(error: string | Error, statusCode: number = 
 }
 
 export function handleApiError(error: any, context: string = 'API'): NextResponse<ApiResponse> {
-  console.error(`Error in ${context}:`, error);
-  
   let errorMessage = error.message || 'Internal server error';
   
   // Try to parse JSON error messages

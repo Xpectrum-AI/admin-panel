@@ -99,7 +99,6 @@ export async function POST(
 
     return NextResponse.json({ records: results });
   } catch (error) {
-    console.error('Error testing retrieval:', error);
     return NextResponse.json(
       { error: 'Failed to test retrieval' },
       { status: 500 }

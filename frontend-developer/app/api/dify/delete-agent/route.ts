@@ -29,9 +29,6 @@ export async function DELETE(request: NextRequest) {
         error: 'Missing required fields: agentName and organizationId' 
       }, { status: 400 });
     }
-
-    console.log('🗑️ Deleting Dify agent:', { agentName, organizationId, appId });
-
     // For now, we'll try to delete using the Dify Console API directly
     // Since we don't have a delete script, we'll use curl commands
     try {
@@ -41,7 +38,6 @@ export async function DELETE(request: NextRequest) {
       const workspaceId = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID;
 
       if (!consoleOrigin || !adminEmail || !adminPassword || !workspaceId) {
-        console.warn('⚠️ Dify environment variables not configured, skipping Dify deletion');
         return NextResponse.json({
           success: true,
           message: 'Dify deletion skipped - environment not configured',
@@ -50,7 +46,6 @@ export async function DELETE(request: NextRequest) {
       }
 
       // Step 1: Login to get token
-      console.log('🔐 Logging into Dify console...');
       const loginResponse = await fetch(`${consoleOrigin}/console/api/login`, {
         method: 'POST',
         headers: {
@@ -75,11 +70,7 @@ export async function DELETE(request: NextRequest) {
       if (!token) {
         throw new Error('No access token received from login');
       }
-
-      console.log('✅ Successfully logged into Dify console');
-
       // Step 2: List apps to find the agent by name
-      console.log('🔍 Searching for agent app...');
       const appsResponse = await fetch(`${consoleOrigin}/console/api/apps`, {
         method: 'GET',
         headers: {
@@ -104,7 +95,6 @@ export async function DELETE(request: NextRequest) {
       );
 
       if (!targetApp) {
-        console.warn(`⚠️ Agent app "${agentName}" not found in Dify workspace`);
         return NextResponse.json({
           success: true,
           message: 'Agent not found in Dify workspace (may have been already deleted)',
@@ -113,10 +103,7 @@ export async function DELETE(request: NextRequest) {
       }
 
       const appIdToDelete = targetApp.id || targetApp.app_id;
-      console.log(`🎯 Found agent app with ID: ${appIdToDelete}`);
-
       // Step 3: Delete the app
-      console.log('🗑️ Deleting agent app from Dify...');
       const deleteResponse = await fetch(`${consoleOrigin}/console/api/apps/${appIdToDelete}`, {
         method: 'DELETE',
         headers: {
@@ -128,10 +115,8 @@ export async function DELETE(request: NextRequest) {
 
       if (!deleteResponse.ok) {
         const errorText = await deleteResponse.text();
-        console.warn(`⚠️ Failed to delete app from Dify: ${deleteResponse.status} ${deleteResponse.statusText} - ${errorText}`);
         // Don't throw error here, just log it as the app might not exist
       } else {
-        console.log('✅ Successfully deleted agent app from Dify');
       }
 
       return NextResponse.json({
@@ -145,7 +130,6 @@ export async function DELETE(request: NextRequest) {
       });
 
     } catch (difyError) {
-      console.error('❌ Dify deletion error:', difyError);
       // Don't fail the entire request if Dify deletion fails
       return NextResponse.json({
         success: true,
@@ -156,7 +140,6 @@ export async function DELETE(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('❌ Delete Dify agent error:', error);
     return NextResponse.json({
       success: false,
       error: 'Internal server error',
