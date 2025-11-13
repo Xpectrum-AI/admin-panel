@@ -25,6 +25,8 @@ function createAdminPanelApp(env: string, adminEnvConfig: pulumi.Config) {
     // For other environments, use admin-{env}.xpectrum-ai.com
     const domain = env === "prod" ? "admin.xpectrum-ai.com" : `admin-${env}.xpectrum-ai.com`;
     const repository = `admin-${env}`;
+    // Get image tag from config, fallback to "latest" if not set
+    const imageTag = adminEnvConfig.get("adminImageTag") || "latest";
 
     return new digitalocean.App(appName, {
         spec: {
@@ -36,7 +38,7 @@ function createAdminPanelApp(env: string, adminEnvConfig: pulumi.Config) {
                 image: {
                     registryType: "DOCR",
                     repository: repository,
-                    tag: "latest"
+                    tag: imageTag
                 },
                 httpPort: 3000,
                 instanceCount: 1,
@@ -96,6 +98,8 @@ function createDeveloperDashboardApp(env: string, envConfig: pulumi.Config) {
     // For other environments, use developer-{env}.xpectrum-ai.com
     const domain = env === "prod" ? "developer.xpectrum-ai.com" : `developer-${env}.xpectrum-ai.com`;
     const repository = `developer-${env}`;
+    // Get image tag from config, fallback to "latest" if not set
+    const imageTag = envConfig.get("developerImageTag") || "latest";
 
     return new digitalocean.App(appName, {
         spec: {
@@ -107,7 +111,7 @@ function createDeveloperDashboardApp(env: string, envConfig: pulumi.Config) {
                 image: {
                     registryType: "DOCR",
                     repository: repository,
-                    tag: "latest"
+                    tag: imageTag
                 },
                 httpPort: 3000,
                 instanceCount: 1,
