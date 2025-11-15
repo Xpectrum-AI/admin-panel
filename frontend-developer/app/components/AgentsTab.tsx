@@ -684,7 +684,8 @@ Remember: You are the first point of contact for many patients. Your professiona
               },
               body: JSON.stringify({
                 prompt: currentSystemPrompt,
-                chatbot_api_key: difyApiKey
+                chatbot_api_key: difyApiKey,
+                app_id: appId || undefined
               })
             });
 

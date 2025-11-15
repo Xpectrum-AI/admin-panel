@@ -42,7 +42,16 @@ export async function POST(request: NextRequest) {
     let difyServiceUrl = difyApiUrl;
     
     // Use environment variable for Dify service URL if available
-    const envDifyUrl = process.env.NEXT_PUBLIC_CHATBOT_API_URL || (process.env.NEXT_PUBLIC_DIFY_BASE_URL ? `${process.env.NEXT_PUBLIC_DIFY_BASE_URL}/chat-messages` : '');
+    let envDifyUrl = process.env.NEXT_PUBLIC_CHATBOT_API_URL || (process.env.NEXT_PUBLIC_DIFY_BASE_URL ? `${process.env.NEXT_PUBLIC_DIFY_BASE_URL}/chat-messages` : '');
+    
+    // Fix URL pattern: if URL has /v1/chat-messages but missing /api before /v1, add /api
+    // This handles cases where the URL structure is /v1/chat-messages instead of /api/v1/chat-messages
+    if (envDifyUrl && envDifyUrl.includes('/v1/chat-messages') && !envDifyUrl.includes('/api/v1/chat-messages')) {
+      envDifyUrl = envDifyUrl.replace('/v1/chat-messages', '/api/v1/chat-messages');
+    }
+    if (difyServiceUrl && difyServiceUrl.includes('/v1/chat-messages') && !difyServiceUrl.includes('/api/v1/chat-messages')) {
+      difyServiceUrl = difyServiceUrl.replace('/v1/chat-messages', '/api/v1/chat-messages');
+    }
     
     // If the agent is using an old URL or no URL, use the environment variable
     if (!difyServiceUrl || !difyServiceUrl.includes('/chat-messages')) {
