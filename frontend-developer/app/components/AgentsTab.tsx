@@ -944,12 +944,58 @@ Remember: You are the first point of contact for many patients. Your professiona
     };
 
     if (provider === 'Cartesia') {
+      // Convert language name to code (same logic as 11Labs)
+      const cartesiaReverseLanguageMapping: { [key: string]: string } = {
+        'Arabic': 'ar',
+        'Bengali': 'bn',
+        'Bulgarian': 'bg',
+        'Chinese': 'zh',
+        'Croatian': 'hr',
+        'Czech': 'cs',
+        'Danish': 'da',
+        'Dutch': 'nl',
+        'English': 'en',
+        'Finnish': 'fi',
+        'French': 'fr',
+        'German': 'de',
+        'Greek': 'el',
+        'Gujarati': 'gu',
+        'Hebrew': 'he',
+        'Hindi': 'hi',
+        'Hungarian': 'hu',
+        'Indonesian': 'id',
+        'Italian': 'it',
+        'Japanese': 'ja',
+        'Kannada': 'kn',
+        'Korean': 'ko',
+        'Malay': 'ms',
+        'Malayalam': 'ml',
+        'Marathi': 'mr',
+        'Norwegian': 'no',
+        'Polish': 'pl',
+        'Portuguese': 'pt',
+        'Punjabi': 'pa',
+        'Romanian': 'ro',
+        'Russian': 'ru',
+        'Slovak': 'sk',
+        'Spanish': 'es',
+        'Swedish': 'sv',
+        'Tagalog': 'tl',
+        'Tamil': 'ta',
+        'Telugu': 'te',
+        'Thai': 'th',
+        'Turkish': 'tr',
+        'Ukrainian': 'uk',
+        'Vietnamese': 'vi'
+      };
+      const languageCode = cartesiaReverseLanguageMapping[uiConfig.selectedLanguage] || 'en';
+      
       backendConfig.cartesian = {
         voice_id: uiConfig.voiceId || '',
         tts_api_key: uiConfig.apiKey || '',
-        model: uiConfig.selectedModel || 'sonic-2', // Use selectedModel instead of selectedVoice
+        model: uiConfig.selectedModel || 'sonic-2',
         speed: uiConfig.speedValue || 1.0,
-        language: uiConfig.selectedLanguage === 'English' ? 'en' : 'en' // Add proper language mapping if needed
+        language: languageCode
       };
     } else if (provider === 'OpenAI') {
       backendConfig.openai = {

@@ -10,12 +10,10 @@ import {
   ChevronRight,
   Phone,
   MessageSquare,
-  Globe,
   Mail,
   BookOpen,
   Settings,
-  Bot,
-  Building2
+  Bot
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuthInfo } from '@propelauth/react';

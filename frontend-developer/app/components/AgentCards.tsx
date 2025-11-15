@@ -324,27 +324,27 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
   // 4. Normal View (show agents - during refresh, old agents remain visible until new ones load)
   return (
     <div className="w-full h-full flex flex-col">
-      <div className="flex-1 p-6 overflow-y-auto">
+        <div className="flex-1 p-6 overflow-y-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Create New Agent Card */}
           <div
             onClick={onCreateAgent}
-            className={`group rounded-2xl shadow-lg hover:shadow-2xl border overflow-hidden transition-all duration-300 transform hover:-translate-y-2 cursor-pointer ${isDarkMode
+            className={`group rounded-xl shadow-md hover:shadow-lg border overflow-hidden transition-all duration-300 transform hover:-translate-y-1 cursor-pointer flex flex-col ${isDarkMode
               ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700 hover:border-blue-500/50'
               : 'bg-gradient-to-br from-white to-gray-50 border-gray-200 hover:border-blue-300'
               }`}
           >
             {/* Header with professional icon */}
-            <div className={`p-8 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+            <div className={`p-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
               <div className="flex items-center gap-4">
-                <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-lg bg-gradient-to-br from-blue-600 to-blue-700 group-hover:from-blue-700 group-hover:to-blue-800 transition-all duration-300">
-                  <Plus className="h-10 w-10" />
+                <div className="w-16 h-16 rounded-xl flex items-center justify-center text-white shadow-md bg-gradient-to-br from-blue-600 to-blue-700 group-hover:from-blue-700 group-hover:to-blue-800 transition-all duration-300 flex-shrink-0">
+                  <Plus className="h-8 w-8" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className={`text-2xl font-bold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  <h3 className={`text-xl font-semibold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                     Create New Agent
                   </h3>
-                  <p className={`text-base mt-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  <p className={`text-sm mt-1.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     Deploy intelligent AI assistants
                   </p>
                 </div>
@@ -352,24 +352,24 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
             </div>
 
             {/* Content */}
-            <div className={`p-8 ${isDarkMode ? 'bg-gray-800/50' : 'bg-white/50'}`}>
-              <div className={`p-6 rounded-xl ${isDarkMode ? 'bg-gray-700/30 border border-gray-600/50' : 'bg-gray-50 border border-gray-200'}`}>
-                <div className="space-y-4">
+            <div className={`p-6 flex-1 ${isDarkMode ? 'bg-gray-800/50' : 'bg-white/50'}`}>
+              <div className={`p-5 rounded-lg ${isDarkMode ? 'bg-gray-700/30 border border-gray-600/50' : 'bg-gray-50 border border-gray-200'}`}>
+                <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full ${isDarkMode ? 'bg-blue-400' : 'bg-blue-600'}`}></div>
-                    <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isDarkMode ? 'bg-blue-400' : 'bg-blue-600'}`}></div>
+                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                       Choose from Knowledge or Action agents
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full ${isDarkMode ? 'bg-green-400' : 'bg-green-600'}`}></div>
-                    <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isDarkMode ? 'bg-green-400' : 'bg-green-600'}`}></div>
+                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                       Configure advanced AI capabilities
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full ${isDarkMode ? 'bg-purple-400' : 'bg-purple-600'}`}></div>
-                    <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isDarkMode ? 'bg-purple-400' : 'bg-purple-600'}`}></div>
+                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                       Deploy with enterprise-grade security
                     </p>
                   </div>
@@ -378,19 +378,17 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
             </div>
 
             {/* Actions */}
-            <div className={`p-4 border-t ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-              <div className="grid grid-cols-4 gap-3">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onCreateAgent();
-                  }}
-                  className="col-span-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-2.5 px-4 rounded-xl transition-all duration-200 shadow-sm font-medium text-sm flex items-center justify-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Create Agent
-                </button>
-              </div>
+            <div className={`p-5 border-t ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCreateAgent();
+                }}
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-2.5 px-4 rounded-lg transition-all duration-200 shadow-sm font-medium text-sm flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Create Agent
+              </button>
             </div>
           </div>
 
@@ -398,7 +396,7 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
           {agents.map((agent) => (
               <div
                 key={agent.id}
-                className={`rounded-2xl shadow-md hover:shadow-xl border overflow-hidden transition-all duration-300 transform hover:-translate-y-1 ${isDarkMode
+                className={`rounded-xl shadow-md hover:shadow-lg border overflow-hidden transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full ${isDarkMode
                   ? 'bg-gray-800 border-gray-700 hover:border-gray-600'
                   : 'bg-white border-gray-200 hover:border-gray-300'
                   }`}
@@ -407,57 +405,40 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
                 <div className={`p-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
                   <div className="flex items-center gap-4">
                     <div
-                      className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-medium shadow-md overflow-hidden"
+                      className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-semibold shadow-md overflow-hidden flex-shrink-0"
                       style={{ backgroundColor: getAvatarColor(agent.name) }}
                     >
                       {agent.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className={`text-xl font-semibold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      <h3 className={`text-lg font-semibold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                         {getAgentDisplayName(agent)}
                       </h3>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(agent.status)}`}>
-                          {agent.status}
-                        </span>
-                        {agent.chatbot_key && (
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isDarkMode ? 'bg-purple-900/30 text-purple-300' : 'bg-purple-100 text-purple-800'
-                            }`}>
-                            Custom API
-                          </span>
-                        )}
-                        {agent.chatbot_api && (
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isDarkMode ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-100 text-blue-800'
-                            }`}>
-                            Custom URL
-                          </span>
-                        )}
-                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Description preview */}
-                <div className={`px-6 py-4 min-h-[100px] flex items-center ${isDarkMode ? 'bg-gray-900/50' : 'bg-gray-50'
+                <div className={`px-6 py-5 flex-1 min-h-[100px] flex items-start ${isDarkMode ? 'bg-gray-900/50' : 'bg-gray-50'
                   }`}>
-                  <p className={`text-sm line-clamp-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  <p className={`text-sm line-clamp-3 leading-relaxed ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     {agent.initial_message || agent.description || "No description available."}
                   </p>
                 </div>
 
                 {/* Actions */}
-                <div className={`p-4 border-t ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-                  <div className="grid grid-cols-5 gap-2">
+                <div className={`p-5 border-t ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+                  <div className="grid grid-cols-5 gap-2.5">
                     <button
                       onClick={() => onOpenAgent(agent)}
-                      className="col-span-2 bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-700 hover:to-blue-600 text-white py-2.5 px-4 rounded-xl transition-all duration-200 shadow-sm font-medium text-sm flex items-center justify-center gap-2"
+                      className="col-span-2 bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-700 hover:to-blue-600 text-white py-2.5 px-4 rounded-lg transition-all duration-200 shadow-sm font-medium text-sm flex items-center justify-center gap-2"
                     >
                       <MessageCircle className="w-4 h-4" />
                       Open Agent
                     </button>
                     <button
                       onClick={() => onEditAgent(agent)}
-                      className={`p-2.5 rounded-xl transition-colors flex items-center justify-center ${isDarkMode
+                      className={`p-2.5 rounded-lg transition-colors flex items-center justify-center ${isDarkMode
                         ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
                         : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                         }`}
@@ -467,7 +448,7 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
                     </button>
                     <button
                       onClick={() => showQrCodeModal(agent)}
-                      className={`p-2.5 rounded-xl transition-colors flex items-center justify-center ${isDarkMode
+                      className={`p-2.5 rounded-lg transition-colors flex items-center justify-center ${isDarkMode
                         ? 'bg-green-900/30 hover:bg-green-800/30 text-green-300'
                         : 'bg-green-100 hover:bg-green-200 text-green-700'
                         }`}
@@ -477,7 +458,7 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
                     </button>
                     <button
                       onClick={() => showDeleteConfirmation(agent)}
-                      className={`p-2.5 rounded-xl transition-colors flex items-center justify-center ${isDarkMode
+                      className={`p-2.5 rounded-lg transition-colors flex items-center justify-center ${isDarkMode
                         ? 'bg-red-900/30 hover:bg-red-800/30 text-red-300'
                         : 'bg-red-100 hover:bg-red-200 text-red-700'
                         }`}
@@ -485,39 +466,6 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
-                  </div>
-
-                  {/* Footer links */}
-                  <div className={`mt-4 pt-3 border-t flex justify-between items-center ${isDarkMode ? 'border-gray-700' : 'border-gray-100'
-                    }`}>
-                    <div className="flex items-center gap-2">
-                      <button
-                        className={`text-xs flex items-center gap-1.5 font-medium py-1 px-2 rounded hover:bg-opacity-20 transition-colors ${isDarkMode
-                          ? 'text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500'
-                          : 'text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50'
-                          }`}
-                      >
-                        <BarChart3 className="w-3.5 h-3.5" />
-                        Analytics
-                      </button>
-
-                      {agent.chatbot_api && (
-                        <button
-                          className={`text-xs flex items-center gap-1.5 font-medium py-1 px-2 rounded hover:bg-opacity-20 transition-colors ${isDarkMode
-                            ? 'text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500'
-                            : 'text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50'
-                            }`}
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                          API endpoints
-                        </button>
-                      )}
-                    </div>
-
-                    <span className={`text-xs rounded-full px-2.5 py-1 font-mono ${isDarkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600'
-                      }`}>
-                      {agent.id.substring(0, 8)}
-                    </span>
                   </div>
                 </div>
               </div>
@@ -559,33 +507,33 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
         {/* Delete Confirmation Modal */}
         {showDeleteModal && agentToDelete && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200"
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: '100vw',
-            height: '100vh',
-            margin: 0,
-            padding: '1rem',
-            zIndex: 9999
+          className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[9999] p-4"
+          onClick={() => {
+            if (!isDeletingAgent) {
+              setShowDeleteModal(false);
+              setAgentToDelete(null);
+            }
           }}
         >
-          <div className={`relative p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all duration-300 scale-100 ${isDarkMode
-            ? 'bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50'
-            : 'bg-gradient-to-br from-white to-gray-50 border border-gray-200/50'
-            }`}>
+          <div 
+            className={`relative p-6 rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all duration-300 ${isDarkMode
+              ? 'bg-gray-800 border border-gray-700'
+              : 'bg-white border border-gray-200'
+              }`}
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Close button */}
             <button
               onClick={() => {
-                setShowDeleteModal(false);
-                setAgentToDelete(null);
+                if (!isDeletingAgent) {
+                  setShowDeleteModal(false);
+                  setAgentToDelete(null);
+                }
               }}
-              className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${isDarkMode
-                ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
-                : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
+              disabled={isDeletingAgent}
+              className={`absolute top-4 right-4 p-1.5 rounded-lg transition-all ${isDarkMode
+                ? 'hover:bg-gray-700 text-gray-400 hover:text-white disabled:opacity-50'
+                : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700 disabled:opacity-50'
                 }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -593,27 +541,30 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
               </svg>
             </button>
 
-            <div className="text-center">
-              {/* Warning icon with animation */}
-              <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
-                <Trash2 className="w-10 h-10 text-red-600 dark:text-red-400" />
+            <div className="text-center pt-2">
+              {/* Warning icon */}
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDarkMode
+                ? 'bg-red-900/30 border-2 border-red-800/50'
+                : 'bg-red-50 border-2 border-red-200'
+                }`}>
+                <Trash2 className={`w-7 h-7 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`} />
               </div>
 
-              {/* Title with gradient text */}
-              <h3 className="text-2xl font-bold mb-3 bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">
-                Delete Agent
+              {/* Title */}
+              <h3 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                Delete Agent?
               </h3>
 
               {/* Warning message */}
-              <div className={`p-4 rounded-xl mb-6 ${isDarkMode
-                ? 'bg-red-900/20 border border-red-800/50'
-                : 'bg-red-50 border border-red-200'
+              <div className={`p-4 rounded-lg mb-6 text-left ${isDarkMode
+                ? 'bg-gray-900/50 border border-gray-700'
+                : 'bg-gray-50 border border-gray-200'
                 }`}>
-                <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-red-200' : 'text-red-800'}`}>
-                  Are you sure you want to delete <strong className="font-semibold">"{agentToDelete.name}"</strong>?
+                <p className={`text-sm leading-relaxed mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  You are about to delete <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>"{getAgentDisplayName(agentToDelete)}"</span>. This action cannot be undone.
                 </p>
-                <p className={`text-xs mt-2 ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>
-                  This action cannot be undone and will permanently remove the agent and all its data.
+                <p className={`text-xs ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>
+                  ⚠️ All agent data, configurations, and conversations will be permanently removed.
                 </p>
               </div>
 
@@ -625,9 +576,9 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
                     setAgentToDelete(null);
                   }}
                   disabled={isDeletingAgent}
-                  className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 ${isDarkMode
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50'
+                  className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-all duration-200 ${isDarkMode
+                    ? 'bg-gray-700 text-gray-200 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed'
                     }`}
                 >
                   Cancel
@@ -635,9 +586,11 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
                 <button
                   onClick={handleDeleteAgent}
                   disabled={isDeletingAgent}
-                  className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 ${isDeletingAgent
+                  className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 ${isDeletingAgent
                     ? 'bg-red-400 text-white cursor-not-allowed'
-                    : 'bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-700 hover:to-red-600 shadow-lg shadow-red-500/25'
+                    : isDarkMode
+                    ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-500/20'
+                    : 'bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-500/30'
                     }`}
                 >
                   {isDeletingAgent ? (
@@ -648,7 +601,7 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
                   ) : (
                     <>
                       <Trash2 className="w-4 h-4" />
-                      Delete Agent
+                      Delete
                     </>
                   )}
                 </button>
