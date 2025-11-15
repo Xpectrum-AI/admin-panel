@@ -249,8 +249,8 @@ setInterimResultEnabled(existingConfig[provider.toLowerCase()].interim_results);
         {/* Provider and Language Selection */}
         <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
           <div className="flex items-center gap-3 mb-4">
-            <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-blue-900/50' : 'bg-blue-100'}`}>
-              <Mic className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+            <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-green-900/50' : 'bg-green-100'}`}>
+              <Mic className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
             </div>
             <div>
               <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Provider & Language</h4>
@@ -266,7 +266,7 @@ setInterimResultEnabled(existingConfig[provider.toLowerCase()].interim_results);
                 value={selectedTranscriberProvider}
                 onChange={(e) => handleProviderChange(e.target.value)}
                 disabled={true}
-                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${isDarkMode
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base ${isDarkMode
                   ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
                   : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
@@ -286,7 +286,7 @@ setInterimResultEnabled(existingConfig[provider.toLowerCase()].interim_results);
                   // Note: Removed localStorage usage - now uses centralized state only
                 }}
                 disabled={!isEditing}
-                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
                   ? isDarkMode
                     ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
                     : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
@@ -363,8 +363,8 @@ setInterimResultEnabled(existingConfig[provider.toLowerCase()].interim_results);
       {selectedTranscriberProvider === 'Deepgram' && (
         <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
           <div className="flex items-center gap-3 mb-4">
-            <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-purple-900/50' : 'bg-purple-100'}`}>
-              <Settings className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+            <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-green-900/50' : 'bg-green-100'}`}>
+              <Settings className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
             </div>
             <div>
               <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Additional Settings</h4>

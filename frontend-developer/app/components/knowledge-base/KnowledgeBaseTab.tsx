@@ -130,7 +130,7 @@ export default function KnowledgeBaseTab() {
       <div className={`rounded-2xl p-6 border ${isDarkMode ? 'bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border-gray-700/50' : 'bg-white border-gray-200 shadow-lg'}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
+            <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl">
               <Database className="h-6 w-6 text-white" />
             </div>
             <div>
@@ -152,7 +152,7 @@ export default function KnowledgeBaseTab() {
             onClick={() => setActiveSection('list')}
             className={`flex-1 px-6 py-4 text-center font-medium transition-colors ${
               activeSection === 'list'
-                ? 'text-blue-600 border-b-2 border-blue-600'
+                ? 'text-green-600 border-b-2 border-green-600'
                 : isDarkMode
                 ? 'text-gray-300 hover:text-white hover:bg-gray-700'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -169,7 +169,7 @@ export default function KnowledgeBaseTab() {
                 onClick={() => setActiveSection('documents')}
                 className={`flex-1 px-6 py-4 text-center font-medium transition-colors ${
                   activeSection === 'documents'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    ? 'text-green-600 border-b-2 border-green-600'
                     : isDarkMode
                     ? 'text-gray-300 hover:text-white hover:bg-gray-700'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -181,7 +181,7 @@ export default function KnowledgeBaseTab() {
                 onClick={() => setActiveSection('api-keys')}
                 className={`flex-1 px-6 py-4 text-center font-medium transition-colors ${
                   activeSection === 'api-keys'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    ? 'text-green-600 border-b-2 border-green-600'
                     : isDarkMode
                     ? 'text-gray-300 hover:text-white hover:bg-gray-700'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'

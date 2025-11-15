@@ -50,12 +50,12 @@ const WhatsAppIcon = ({ className }: { className?: string }) => (
 // Navigation items for top navbar
 const navigationItems = [
   { name: 'Agents', icon: Bot, color: 'from-green-500 to-emerald-600' },
-  { name: 'Phone Numbers', icon: Phone, color: 'from-blue-500 to-cyan-600' },
-  { name: 'SMS', icon: MessageSquare, color: 'from-green-500 to-teal-600' },
-  { name: 'WhatsApp', icon: WhatsAppIcon, color: 'from-green-600 to-emerald-700' },
-  { name: 'Email', icon: Mail, color: 'from-red-500 to-pink-600' },
-  { name: 'Knowledge Base', icon: BookOpen, color: 'from-purple-500 to-indigo-600' },
-  { name: 'Conversation Logs', icon: FileText, color: 'from-yellow-500 to-orange-600' },
+  { name: 'Phone Numbers', icon: Phone, color: 'from-green-500 to-emerald-600' },
+  { name: 'SMS', icon: MessageSquare, color: 'from-green-500 to-emerald-600' },
+  { name: 'WhatsApp', icon: WhatsAppIcon, color: 'from-green-500 to-emerald-600' },
+  { name: 'Email', icon: Mail, color: 'from-green-500 to-emerald-600' },
+  { name: 'Knowledge Base', icon: BookOpen, color: 'from-green-500 to-emerald-600' },
+  { name: 'Conversation Logs', icon: FileText, color: 'from-green-500 to-emerald-600' },
 ];
 
 export default function DeveloperDashboard() {

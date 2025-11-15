@@ -467,14 +467,14 @@ const response = await getAvailablePhoneNumbersFromBackend();
                 <div className="flex items-center justify-between">
                     <div className="flex-1 max-w-md">
                         <div className="relative group">
-                            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 transition-colors ${isDarkMode ? 'text-gray-500 group-focus-within:text-orange-400' : 'text-gray-400 group-focus-within:text-orange-500'}`} />
+                            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 transition-colors ${isDarkMode ? 'text-gray-500 group-focus-within:text-green-400' : 'text-gray-400 group-focus-within:text-green-500'}`} />
                             <input
                                 type="text"
                                 placeholder="Search phone numbers..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 aria-label="Search phone numbers"
-                                className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 backdrop-blur-sm transition-all duration-300 text-sm ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'}`}
+                                className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 backdrop-blur-sm transition-all duration-300 text-sm ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'}`}
                             />
                         </div>
                     </div>
@@ -488,7 +488,7 @@ const response = await getAvailablePhoneNumbersFromBackend();
                                 loadAgentMappings();
                                 loadAvailablePhoneNumbers();
                             }}
-                            className="group relative px-4 py-2.5 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                            className="group relative px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                         >
                             <RefreshCw className="h-4 w-4" />
                             <span className="text-sm font-semibold">Refresh</span>
@@ -496,7 +496,7 @@ const response = await getAvailablePhoneNumbersFromBackend();
                         {/* Assign Agent Button */}
                         <button
                             onClick={() => setShowAssignModal(true)}
-                            className="group relative px-4 py-2.5 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                            className="group relative px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                         >
                             <Plus className="h-4 w-4" />
                             <span className="text-sm font-semibold">Assign Agent</span>
@@ -536,7 +536,7 @@ const response = await getAvailablePhoneNumbersFromBackend();
                 {loadingOrgPhoneNumbers || loadingAgents ? (
                     <div className="flex items-center justify-center h-64">
                         <div className="flex items-center gap-3">
-                            <RefreshCw className="h-6 w-6 animate-spin text-orange-500" />
+                            <RefreshCw className="h-6 w-6 animate-spin text-green-500" />
                             <span className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                                 Loading SMS data...
                             </span>
@@ -588,7 +588,7 @@ const response = await getAvailablePhoneNumbersFromBackend();
                                         {/* Number Column */}
                                         <td className="py-4 px-6">
                                             <div className="flex items-center gap-2">
-                                                <Phone className={`h-4 w-4 ${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`} />
+                                                <Phone className={`h-4 w-4 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
                                                 <div>
                                                     <div className="font-medium text-sm">
                                                         {assignment.phone_number}
@@ -630,7 +630,7 @@ const response = await getAvailablePhoneNumbersFromBackend();
                                                 <div className="flex items-center gap-1">
                                                     <MessageSquare
                                                         className={`h-4 w-4 ${assignment.sms_enabled
-                                                            ? (isDarkMode ? 'text-blue-400' : 'text-blue-600')
+                                                            ? (isDarkMode ? 'text-green-400' : 'text-green-600')
                                                             : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
                                                             }`}
                                                     />
@@ -715,8 +715,8 @@ const response = await getAvailablePhoneNumbersFromBackend();
                     <div className={`w-full max-w-md rounded-2xl border shadow-2xl ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
                         <div className="p-6">
                             <div className="flex items-center gap-3 mb-6">
-                                <div className="p-2 bg-orange-500/10 rounded-lg">
-                                    <Users className="h-6 w-6 text-orange-500" />
+                                <div className="p-2 bg-green-500/10 rounded-lg">
+                                    <Users className="h-6 w-6 text-green-500" />
                                 </div>
                                 <h3 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                                     Assign Agent
@@ -725,10 +725,10 @@ const response = await getAvailablePhoneNumbersFromBackend();
 
                             <div className="space-y-4">
                                 {/* Agent Selection */}
-                                <div className={`p-4 rounded-lg border ${isDarkMode ? 'bg-orange-900/20 border-orange-700' : 'bg-orange-50 border-orange-200'}`}>
+                                <div className={`p-4 rounded-lg border ${isDarkMode ? 'bg-green-900/20 border-green-700' : 'bg-green-50 border-green-200'}`}>
                                     <div className="flex items-center gap-2 mb-2">
-                                        <Bot className={`h-4 w-4 ${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`} />
-                                        <label className={`text-sm font-medium ${isDarkMode ? 'text-orange-300' : 'text-orange-700'}`}>
+                                        <Bot className={`h-4 w-4 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+                                        <label className={`text-sm font-medium ${isDarkMode ? 'text-green-300' : 'text-green-700'}`}>
                                             Agent
                                         </label>
                                     </div>
@@ -800,7 +800,7 @@ const response = await getAvailablePhoneNumbersFromBackend();
                                 <button
                                     onClick={handleAssignAgent}
                                     disabled={!selectedAgent || !selectedPhoneNumber || isAssigning}
-                                    className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                                    className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                                 >
                                     {isAssigning ? (
                                         <>

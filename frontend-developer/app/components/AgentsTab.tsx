@@ -175,11 +175,8 @@ export default function AgentsTab({ }: AgentsTabProps) {
   }, [user, userClass, currentOrganizationId]);
 
 
-  // Refs for scrolling to sections
+  // Ref for ModelConfig to get current config
   const modelSectionRef = useRef<any>(null);
-  const voiceSectionRef = useRef<HTMLDivElement>(null);
-  const widgetSectionRef = useRef<HTMLDivElement>(null);
-  const toolsSectionRef = useRef<HTMLDivElement>(null);
 
   // Debug function to log current state
   const logCurrentState = useCallback(() => {
@@ -995,7 +992,8 @@ Remember: You are the first point of contact for many patients. Your professiona
         tts_api_key: uiConfig.apiKey || '',
         model: uiConfig.selectedModel || 'sonic-2',
         speed: uiConfig.speedValue || 1.0,
-        language: languageCode
+        language: languageCode,
+        gender: uiConfig.cartesiaSelectedGender || ''
       };
     } else if (provider === 'OpenAI') {
       backendConfig.openai = {
@@ -1262,31 +1260,12 @@ Remember: You are the first point of contact for many patients. Your professiona
     setAgentToDelete(null);
   }, []);
 
-  // Function to handle tab clicks and scroll to section
-  const handleTabClick = useCallback((tabId: string) => {
+  // Function to handle tab clicks
+  const handleTabClick = useCallback((tabId: string, e?: React.MouseEvent) => {
+    e?.preventDefault();
     setActiveConfigTab(tabId);
     setIsDropdownOpen(false); // Close dropdown on mobile
-
-    // Scroll to the corresponding section
-    setTimeout(() => {
-      switch (tabId) {
-        case 'model':
-          modelSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          break;
-        case 'voice':
-          voiceSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          break;
-        case 'widget':
-          widgetSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          break;
-        case 'tools':
-          toolsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          break;
-        default:
-          break;
-      }
-    }, 100);
-  }, [activeConfigTab]);
+  }, []);
 
 
   // Close dropdown when clicking outside
@@ -1383,10 +1362,10 @@ Remember: You are the first point of contact for many patients. Your professiona
   }, [selectedAgent?.name, organizationName, currentOrganizationId]);
 
   const configTabs = useMemo(() => [
-    { id: 'model', label: 'Model', icon: Bot, color: 'from-blue-500 to-purple-600' },
+    { id: 'model', label: 'Model', icon: Bot, color: 'from-green-500 to-emerald-600' },
     { id: 'voice', label: 'Voice & Transcriber', icon: Mic, color: 'from-green-500 to-teal-600' },
     { id: 'tools', label: 'Configurations', icon: Wrench, color: 'from-gray-600 to-gray-800' },
-    { id: 'widget', label: 'Widget', icon: Code, color: 'from-purple-500 to-pink-600' },
+    { id: 'widget', label: 'Widget', icon: Code, color: 'from-green-500 to-emerald-600' },
   ], []);
 
   if (showAgentCards) {
@@ -1412,8 +1391,8 @@ Remember: You are the first point of contact for many patients. Your professiona
             <div className={`p-8 rounded-2xl shadow-2xl max-w-2xl w-full mx-4 ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
               }`}>
               <div className="flex items-center gap-3 mb-6">
-                <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
-                  <svg className={`w-6 h-6 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-green-900/20' : 'bg-green-50'}`}>
+                  <svg className={`w-6 h-6 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                 </div>
@@ -1435,15 +1414,15 @@ Remember: You are the first point of contact for many patients. Your professiona
                 <div className="space-y-3">
                   <div className={`p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${agentType === 'Knowledge Agent (RAG)'
                     ? isDarkMode
-                      ? 'border-blue-500 bg-blue-900/20'
-                      : 'border-blue-500 bg-blue-50'
+                      ? 'border-green-500 bg-green-900/20'
+                      : 'border-green-500 bg-green-50'
                     : isDarkMode
                       ? 'border-gray-600 bg-gray-700/50 hover:border-gray-500'
                       : 'border-gray-200 bg-white hover:border-gray-300'
                     }`} onClick={() => setAgentType('Knowledge Agent (RAG)')}>
                     <div className="flex items-start gap-3">
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${agentType === 'Knowledge Agent (RAG)'
-                        ? 'border-blue-500 bg-blue-500'
+                        ? 'border-green-500 bg-green-500'
                         : isDarkMode ? 'border-gray-500' : 'border-gray-300'
                         }`}>
                         {agentType === 'Knowledge Agent (RAG)' && (
@@ -1455,7 +1434,7 @@ Remember: You are the first point of contact for many patients. Your professiona
                           <h4 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                             Knowledge Agent
                           </h4>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${isDarkMode ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-100 text-blue-700'
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${isDarkMode ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700'
                             }`}>
                             RAG
                           </span>
@@ -1598,7 +1577,7 @@ Remember: You are the first point of contact for many patients. Your professiona
                   disabled={!agentPrefix.trim() || isCreatingAgent}
                   className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${isCreatingAgent
                     ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                    : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
                     }`}
                 >
                   {isCreatingAgent ? (
@@ -1667,7 +1646,7 @@ Remember: You are the first point of contact for many patients. Your professiona
                     {selectedAgent && (
                       <button
                         onClick={() => setShowChatSidebar(true)}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-green-600 text-white hover:bg-green-700"
                       >
                         <MessageSquare className="h-4 w-4" />
                         Chat
@@ -1751,7 +1730,7 @@ Remember: You are the first point of contact for many patients. Your professiona
                         disabled={isUpdatingAgent}
                         className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isUpdatingAgent
                           ? 'bg-gray-400 text-white opacity-60 cursor-not-allowed'
-                          : 'bg-purple-600 text-white hover:bg-purple-700'
+                          : 'bg-green-600 text-white hover:bg-green-700'
                           }`}
                       >
                         {isUpdatingAgent ? 'Publishing...' : 'Publish Agent'}
@@ -1791,10 +1770,10 @@ Remember: You are the first point of contact for many patients. Your professiona
                         {configTabs.map((tab) => (
                           <a
                             key={tab.id}
-                            href="#"
-                            onClick={() => handleTabClick(tab.id)}
+                            href="javascript:void(0)"
+                            onClick={(e) => handleTabClick(tab.id, e)}
                             className={`flex items-center gap-2 px-4 py-2 text-sm ${activeConfigTab === tab.id
-                              ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
                               : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600'
                               }`}
                           >
@@ -1813,11 +1792,11 @@ Remember: You are the first point of contact for many patients. Your professiona
                     {configTabs.map((tab) => (
                       <a
                         key={tab.id}
-                        href="#"
-                        onClick={() => handleTabClick(tab.id)}
+                        href="javascript:void(0)"
+                        onClick={(e) => handleTabClick(tab.id, e)}
                         className={`
                           ${activeConfigTab === tab.id
-                            ? `border-purple-500 text-purple-600 ${isDarkMode ? 'dark:text-purple-400' : ''}`
+                            ? `border-green-500 text-green-600 ${isDarkMode ? 'dark:text-green-400' : ''}`
                             : `border-transparent ${isDarkMode ? 'text-gray-400 hover:text-gray-200 hover:border-gray-300/50' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}`
                           }
                           whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors duration-200
@@ -1865,7 +1844,6 @@ Remember: You are the first point of contact for many patients. Your professiona
                 )}
                 {activeConfigTab === 'voice' && (
                   <VoiceConfig
-                    ref={voiceSectionRef}
                     agentName={selectedAgent.name}
                     onConfigChange={(config) => updateConfiguration('voice', config)}
                     onTranscriberConfigChange={(config) => updateConfiguration('transcriber', config)}
@@ -1881,7 +1859,6 @@ Remember: You are the first point of contact for many patients. Your professiona
                 {activeConfigTab === 'widget' && (
                   <>
                     <WidgetConfig
-                      ref={widgetSectionRef}
                       agentName={selectedAgent.id}
                       onConfigChange={(config) => updateConfiguration('widget', config)}
                       existingConfig={configuration.widget}
@@ -1895,7 +1872,6 @@ Remember: You are the first point of contact for many patients. Your professiona
                 {activeConfigTab === 'tools' && (
                   <ToolsConfig
                     key={`tools-${selectedAgent.id}-${selectedAgent.updated_at || Date.now()}`}
-                    ref={toolsSectionRef}
                     agentName={selectedAgent.name}
                     onConfigChange={(config) => updateConfiguration('tools', config)}
                     existingConfig={configuration.tools}
@@ -1959,7 +1935,7 @@ Remember: You are the first point of contact for many patients. Your professiona
             <div className={`p-6 border-b ${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gradient-to-r from-gray-50 to-white border-gray-200'} backdrop-blur-sm`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-600 shadow-lg">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 via-emerald-600 to-emerald-600 shadow-lg">
                     <Bot className="h-5 w-5 text-white" />
                   </div>
                   <div>
@@ -1996,8 +1972,8 @@ Remember: You are the first point of contact for many patients. Your professiona
               {chatMessages.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
-                    <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 mb-4 inline-block">
-                      <MessageSquare className="h-12 w-12 text-blue-500 dark:text-blue-400" />
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-gray-800 dark:to-gray-700 mb-4 inline-block">
+                      <MessageSquare className="h-12 w-12 text-green-500 dark:text-green-400" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                       Start a conversation
@@ -2015,7 +1991,7 @@ Remember: You are the first point of contact for many patients. Your professiona
                   >
                     <div
                       className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-xl shadow-sm transition-all duration-200 group-hover:shadow-md ${message.type === 'user'
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-br-md'
+                        ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-br-md'
                         : isDarkMode
                           ? 'bg-gray-800 text-gray-100 rounded-bl-md border border-gray-700'
                           : 'bg-gray-50 text-gray-900 rounded-bl-md border border-gray-200'
@@ -2026,7 +2002,7 @@ Remember: You are the first point of contact for many patients. Your professiona
                           {message.message}
                         </ReactMarkdown>
                       </div>
-                      <p className={`text-xs mt-1.5 ${message.type === 'user' ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
+                      <p className={`text-xs mt-1.5 ${message.type === 'user' ? 'text-green-100' : 'text-gray-500 dark:text-gray-400'
                         }`}>
                         {message.timestamp.toLocaleTimeString()}
                       </p>
@@ -2071,7 +2047,7 @@ Remember: You are the first point of contact for many patients. Your professiona
                   onClick={sendChatMessage}
                   disabled={!currentMessage.trim() || isChatLoading}
                   className={`px-5 py-3 rounded-xl transition-all duration-200 flex items-center gap-2 font-medium ${currentMessage.trim() && !isChatLoading
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transform hover:scale-105'
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 shadow-lg hover:shadow-xl transform hover:scale-105'
                     : isDarkMode
                       ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                       : 'bg-gray-200 text-gray-400 cursor-not-allowed'

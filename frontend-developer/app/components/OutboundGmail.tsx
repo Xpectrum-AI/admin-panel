@@ -165,8 +165,8 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
               onClick={() => setShowCreateSchedulerModal(true)}
               className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ${
                 isDarkMode
-                  ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white'
-                  : 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white'
+                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white'
+                  : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white'
               }`}
             >
               <GmailIcon className="h-5 w-5" />
@@ -272,7 +272,7 @@ export default function OutboundGmail({ refreshTrigger }: OutboundGmailProps) {
               <button
                 onClick={handleSendGmailMessage}
                 disabled={sending || !messageForm.to_email || !messageForm.message_text || !messageForm.from_email || !messageForm.context}
-                className="group relative px-8 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
+                className="group relative px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
               >
                 {sending ? (
                   <Loader2 className="h-5 w-5 animate-spin" />

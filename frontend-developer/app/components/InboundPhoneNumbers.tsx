@@ -618,14 +618,14 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
         <div className="flex items-center justify-between">
           <div className="flex-1 max-w-md">
             <div className="relative group">
-              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 transition-colors ${isDarkMode ? 'text-gray-500 group-focus-within:text-blue-400' : 'text-gray-400 group-focus-within:text-blue-500'}`} />
+              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 transition-colors ${isDarkMode ? 'text-gray-500 group-focus-within:text-green-400' : 'text-gray-400 group-focus-within:text-green-500'}`} />
               <input
                 type="text"
                 placeholder="Search phone numbers..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 aria-label="Search phone numbers"
-                className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 text-sm ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'}`}
+                className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 backdrop-blur-sm transition-all duration-300 text-sm ${isDarkMode ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'}`}
               />
             </div>
           </div>
@@ -650,7 +650,7 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
                 setAssigningPhoneNumber('');
                 setShowAssignModal(true);
               }}
-              className="group relative px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              className="group relative px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
             >
               <Plus className="h-4 w-4" />
               <span className="text-sm font-semibold">Add Agent</span>
@@ -706,7 +706,7 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
       <div className="flex-1 overflow-hidden">
         {(loading || loadingOrgPhoneNumbers || isInitialLoading) && filteredPhoneNumbers.length === 0 ? (
           <div className="flex items-center justify-center h-full min-h-[220px] py-10">
-            <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+            <Loader2 className="h-6 w-6 animate-spin text-green-500" />
             <span className={`ml-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
               Loading phone numbers...
             </span>
@@ -757,7 +757,7 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
                     {/* Number Column */}
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-2">
-                        <Phone className={`h-4 w-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                        <Phone className={`h-4 w-4 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
                         <div>
                           <div className="font-medium text-sm">
                             {formatPhoneNumber(phoneNumber.phone_number)}
@@ -799,12 +799,12 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
                         <div className="flex items-center gap-1">
                           <MessageSquare
                             className={`h-4 w-4 ${phoneNumber.sms_enabled
-                              ? (isDarkMode ? 'text-blue-400' : 'text-blue-600')
+                              ? (isDarkMode ? 'text-green-400' : 'text-green-600')
                               : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
                               }`}
                           />
                           <span className={`text-xs font-medium ${phoneNumber.sms_enabled
-                            ? (isDarkMode ? 'text-blue-400' : 'text-blue-600')
+                            ? (isDarkMode ? 'text-green-400' : 'text-green-600')
                             : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
                             }`}>
                             SMS
@@ -921,17 +921,17 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
             )}
 
             <div className="space-y-6">
-              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-blue-900/20 border border-blue-700/30' : 'bg-blue-50 border border-blue-200'}`}>
+              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-green-900/20 border border-green-700/30' : 'bg-green-50 border border-green-200'}`}>
                 <div className="flex items-center gap-2 mb-3">
-                  <User className={`h-4 w-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-                  <label className={`block text-sm font-semibold ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                  <User className={`h-4 w-4 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+                  <label className={`block text-sm font-semibold ${isDarkMode ? 'text-green-300' : 'text-green-700'}`}>
                     Agent Prefix
                   </label>
                 </div>
                 <select
                   value={assigningAgent}
                   onChange={(e) => setAssigningAgent(e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-blue-600 bg-gray-700 text-gray-200' : 'border-blue-200 bg-white text-gray-900'}`}
+                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 ${isDarkMode ? 'border-green-600 bg-gray-700 text-gray-200' : 'border-green-200 bg-white text-gray-900'}`}
                   disabled={loadingAgents}
                 >
                   <option value="">Select an agent</option>
@@ -991,7 +991,7 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
               </button>
               <button
                 onClick={handleAssignPhoneNumber}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
                 disabled={assigning || !assigningAgent.trim() || !assigningPhoneNumber.trim()}
               >
                 {assigning ? <Loader2 className="h-4 w-4 animate-spin mx-auto mr-2" /> : null}
@@ -1032,10 +1032,10 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
             )}
 
             <div className="space-y-6">
-              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-blue-900/20 border border-blue-700/30' : 'bg-blue-50 border border-blue-200'}`}>
+              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-green-900/20 border border-green-700/30' : 'bg-green-50 border border-green-200'}`}>
                 <div className="flex items-center gap-2 mb-3">
-                  <Phone className={`h-4 w-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-                  <label className={`block text-sm font-semibold ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                  <Phone className={`h-4 w-4 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+                  <label className={`block text-sm font-semibold ${isDarkMode ? 'text-green-300' : 'text-green-700'}`}>
                     Phone Number
                   </label>
                 </div>
@@ -1083,7 +1083,7 @@ export default function InboundPhoneNumbersTable({ refreshTrigger }: InboundPhon
               </button>
               <button
                 onClick={handleUnassignPhoneNumber}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
                 disabled={unassigning}
               >
                 {unassigning ? <Loader2 className="h-4 w-4 animate-spin mx-auto mr-2" /> : null}

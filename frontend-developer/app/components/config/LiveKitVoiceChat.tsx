@@ -372,11 +372,11 @@ function RoomStatusComponent({ onDisconnected, isDarkMode, isMuted }: { onDiscon
         return 'text-green-600';
       case ConnectionState.Connecting:
       case ConnectionState.Reconnecting:
-        return 'text-blue-600';
+        return 'text-green-600';
       case ConnectionState.Disconnected:
         return 'text-red-600';
       default:
-        return 'text-blue-600';
+        return 'text-green-600';
     }
   };
 

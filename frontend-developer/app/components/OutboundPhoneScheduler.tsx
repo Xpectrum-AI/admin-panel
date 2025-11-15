@@ -582,8 +582,8 @@ setTrunks([]);
               className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
                 activeTab === 'trunk'
                   ? isDarkMode
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-blue-500 text-white'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-green-500 text-white'
                   : isDarkMode
                     ? 'text-gray-400 hover:text-white hover:bg-gray-700'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -629,8 +629,8 @@ setTrunks([]);
                   onClick={() => setShowCreateTrunkModal(true)}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all duration-300 ${
                     isDarkMode
-                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl'
-                      : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-lg hover:shadow-xl'
+                      ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl'
+                      : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl'
                   }`}
                 >
                   <Phone className="h-4 w-4" />
@@ -662,7 +662,7 @@ setTrunks([]);
               <div className="flex-1 overflow-y-auto p-4">
                 {loadingTrunks ? (
                   <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+                    <Loader2 className="h-6 w-6 animate-spin text-green-500" />
                     <span className={`ml-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                       Loading trunks...
                     </span>
@@ -701,7 +701,7 @@ setTrunks([]);
                           >
                             <td className={`py-3 px-4 text-sm ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
                               <div className="flex items-center gap-2">
-                                <Phone className={`h-4 w-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                                <Phone className={`h-4 w-4 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
                                 <span className="font-mono text-xs">
                                   {trunk.trunk_id || trunk.id}
                                 </span>
@@ -714,8 +714,8 @@ setTrunks([]);
                               <span className={`px-2 py-1 rounded-full text-xs ${
                                 trunk.transport === 'udp' 
                                   ? isDarkMode 
-                                    ? 'bg-blue-900/30 text-blue-300' 
-                                    : 'bg-blue-100 text-blue-800'
+                                    ? 'bg-green-900/30 text-green-300' 
+                                    : 'bg-green-100 text-green-800'
                                   : isDarkMode 
                                     ? 'bg-gray-700 text-gray-300' 
                                     : 'bg-gray-100 text-gray-600'
@@ -804,7 +804,7 @@ setTrunks([]);
                 <div className="flex-1 overflow-y-auto p-4">
                   {loadingScheduledEvents ? (
                     <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+                      <Loader2 className="h-6 w-6 animate-spin text-green-500" />
                       <span className={`ml-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                         Loading scheduled events...
                       </span>
@@ -824,8 +824,8 @@ setTrunks([]);
                           className={`p-3 rounded-lg transition-all duration-200 ${
                             selectedScheduledEvent?.scheduled_id === event.scheduled_id
                               ? isDarkMode
-                                ? 'bg-blue-600/20 border border-blue-500/50'
-                                : 'bg-blue-50 border border-blue-200'
+                                ? 'bg-green-600/20 border border-green-500/50'
+                                : 'bg-green-50 border border-green-200'
                               : isDarkMode
                                 ? 'bg-gray-700/50 hover:bg-gray-700'
                                 : 'bg-gray-50 hover:bg-gray-100'
@@ -993,7 +993,7 @@ setTrunks([]);
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEditScheduledEvent(selectedScheduledEvent)}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                       >
                         Edit
                       </button>
@@ -1402,7 +1402,7 @@ setTrunks([]);
                   }
                 }}
                 disabled={scheduling || !schedulerForm.agent_prefix || !schedulerForm.recipient_phone || !schedulerForm.caller_number || !schedulerForm.scheduled_time}
-                className="group relative px-6 sm:px-8 lg:px-10 py-3 sm:py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg sm:rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 sm:gap-3"
+                className="group relative px-6 sm:px-8 lg:px-10 py-3 sm:py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg sm:rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 sm:gap-3"
               >
                 {scheduling ? (
                   <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
@@ -1425,8 +1425,8 @@ setTrunks([]);
             <div className={`w-full max-w-md rounded-2xl border shadow-2xl ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
               <div className="p-6">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-blue-500/10 rounded-lg">
-                    <Phone className="h-6 w-6 text-blue-500" />
+                  <div className="p-2 bg-green-500/10 rounded-lg">
+                    <Phone className="h-6 w-6 text-green-500" />
                   </div>
                   <h3 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                     Create Trunk
@@ -1458,7 +1458,7 @@ setTrunks([]);
                     <select
                       value={trunkForm.phone_number}
                       onChange={(e) => setTrunkForm({...trunkForm, phone_number: e.target.value})}
-                      className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
+                      className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
                       disabled={loadingPhoneNumbers}
                     >
                       <option value="">Select a phone number</option>
@@ -1492,7 +1492,7 @@ setTrunks([]);
                     <select
                       value={trunkForm.transport}
                       onChange={(e) => setTrunkForm({...trunkForm, transport: e.target.value})}
-                      className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
+                      className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
                     >
                       <option value="udp">UDP</option>
                     </select>
@@ -1513,7 +1513,7 @@ setTrunks([]);
                   <button
                     onClick={handleCreateTrunk}
                     disabled={creatingTrunk || !trunkForm.phone_number}
-                    className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2"
                   >
                     {creatingTrunk ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

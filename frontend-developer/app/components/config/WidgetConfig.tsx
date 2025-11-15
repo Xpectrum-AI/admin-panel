@@ -1,7 +1,7 @@
 'use client';
 
 import React, { forwardRef, useState, useEffect, useRef } from 'react';
-import { Code, Copy, Check, ExternalLink, Globe, RefreshCw } from 'lucide-react';
+import { Code, Copy, Check, ExternalLink, Globe, RefreshCw, MessageSquare, Phone } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { maskApiKey } from '../../../service/agentConfigService';
 import LiveKitVoiceChat from './LiveKitVoiceChat';
@@ -159,25 +159,27 @@ setLocalDifyApiKey(existingConfig.difyApiKey);
   return (
     <div ref={ref} className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-600">
-          <Code className="h-5 w-5 text-white" />
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Widget Configuration
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Configure the Agent widget embed script for your agent
-          </p>
+      <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
+        <div className="flex items-center gap-3">
+          <div className="p-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 shadow-lg">
+            <Code className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h3 className={`text-xl sm:text-2xl font-bold ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>
+              Widget Configuration
+            </h3>
+            <p className={`text-sm sm:text-base mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              Configure the Agent widget embed script for your agent
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Configuration Form */}
-      <div className="space-y-4">
+      <div className={`p-4 sm:p-6 rounded-2xl border space-y-6 ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
         {/* Agent API URL */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700/30 border-gray-600/50' : 'bg-gray-50/50 border-gray-200'}`}>
+          <label className={`block text-sm font-semibold mb-3 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
             Agent API URL
           </label>
           <div className="flex gap-2">
@@ -185,29 +187,29 @@ setLocalDifyApiKey(existingConfig.difyApiKey);
               type="url"
               value={localDifyApiUrl}
               readOnly
-              className={`flex-1 px-3 py-2 border rounded-lg transition-colors ${isDarkMode
-                ? 'bg-gray-800 border-gray-600 text-gray-400'
-                : 'bg-gray-100 border-gray-300 text-gray-600'
+              className={`flex-1 px-4 py-3 border rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-green-500/50 ${isDarkMode
+                ? 'bg-gray-800/50 border-gray-600 text-gray-300'
+                : 'bg-white border-gray-300 text-gray-700'
                 }`}
             />
             <button
               onClick={handleCopyUrl}
-              className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${isDarkMode
-                ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
-                : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+              className={`px-4 py-3 rounded-xl border transition-all duration-200 flex items-center gap-2 hover:scale-105 ${isDarkMode
+                ? 'bg-green-600/20 border-green-500/50 text-green-400 hover:bg-green-600/30'
+                : 'bg-green-50 border-green-200 text-green-600 hover:bg-green-100'
                 }`}
             >
-              {copiedUrl ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              {copiedUrl ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
             </button>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <p className={`text-xs mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
             This URL is automatically configured for your Agent service
           </p>
         </div>
 
         {/* Agent API Key */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700/30 border-gray-600/50' : 'bg-gray-50/50 border-gray-200'}`}>
+          <label className={`block text-sm font-semibold mb-3 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
             Agent API Key
           </label>
           <div className="flex gap-2">
@@ -216,20 +218,20 @@ setLocalDifyApiKey(existingConfig.difyApiKey);
               value={!isEditing ? getApiKeyDisplayValue(localDifyApiKey) : localDifyApiKey}
               onChange={(e) => setLocalDifyApiKey(e.target.value)}
               placeholder="app-xxxxxxxxxxxxxxxx"
-              className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${isDarkMode
-                ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400'
+              className={`flex-1 px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all ${isDarkMode
+                ? 'bg-gray-800/50 border-gray-600 text-white placeholder-gray-400'
                 : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                 }`}
               disabled={!isEditing}
             />
             <button
               onClick={handleCopyKey}
-              className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${isDarkMode
-                ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
-                : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+              className={`px-4 py-3 rounded-xl border transition-all duration-200 flex items-center gap-2 hover:scale-105 ${isDarkMode
+                ? 'bg-green-600/20 border-green-500/50 text-green-400 hover:bg-green-600/30'
+                : 'bg-green-50 border-green-200 text-green-600 hover:bg-green-100'
                 }`}
             >
-              {copiedKey ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              {copiedKey ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
             </button>
           </div>
           {!localDifyApiKey && (
@@ -276,26 +278,34 @@ setLocalDifyApiKey(existingConfig.difyApiKey);
       {/* Generated Widget Scripts - Side by Side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Chatbot Widget Script */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="text-md font-medium text-gray-900 dark:text-white">
-              Chatbot Widget Script
-            </h4>
+        <div className={`p-5 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-green-900/30' : 'bg-green-100'}`}>
+                <MessageSquare className={`h-4 w-4 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+              </div>
+              <h4 className={`text-base font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>
+                Chatbot Widget Script
+              </h4>
+            </div>
             <button
               onClick={handleCopyScript}
-              className={`px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-2 text-sm ${isDarkMode
-                ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
-                : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+              className={`px-4 py-2 rounded-xl border transition-all duration-200 flex items-center gap-2 text-sm font-medium hover:scale-105 ${copiedScript
+                ? isDarkMode
+                  ? 'bg-green-600 border-green-500 text-white'
+                  : 'bg-green-600 border-green-500 text-white'
+                : isDarkMode
+                  ? 'bg-green-600/20 border-green-500/50 text-green-400 hover:bg-green-600/30'
+                  : 'bg-green-50 border-green-200 text-green-600 hover:bg-green-100'
                 }`}
             >
               {copiedScript ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              {copiedScript ? 'Copied!' : 'Copy Script'}
+              {copiedScript ? 'Copied!' : 'Copy'}
             </button>
           </div>
 
-          <div className={`relative rounded-lg border p-4 ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'
-            }`}>
-            <pre className={`text-sm overflow-x-auto whitespace-pre-wrap ${isDarkMode ? 'text-gray-300' : 'text-gray-800'
+          <div className={`relative rounded-xl border-2 p-4 ${isDarkMode ? 'bg-gray-900/50 border-gray-600' : 'bg-gray-900 border-gray-300'}`}>
+            <pre className={`text-xs sm:text-sm overflow-x-auto whitespace-pre-wrap font-mono leading-relaxed ${isDarkMode ? 'text-green-300' : 'text-green-200'
               }`}>
               <code>{widgetScript}</code>
             </pre>
@@ -303,26 +313,34 @@ setLocalDifyApiKey(existingConfig.difyApiKey);
         </div>
 
         {/* Voice Widget Script */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="text-md font-medium text-gray-900 dark:text-white">
-              Voice Widget Script
-            </h4>
+        <div className={`p-5 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-green-900/30' : 'bg-green-100'}`}>
+                <Phone className={`h-4 w-4 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+              </div>
+              <h4 className={`text-base font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>
+                Voice Widget Script
+              </h4>
+            </div>
             <button
               onClick={handleCopyVoiceScript}
-              className={`px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-2 text-sm ${isDarkMode
-                ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
-                : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+              className={`px-4 py-2 rounded-xl border transition-all duration-200 flex items-center gap-2 text-sm font-medium hover:scale-105 ${copiedVoiceScript
+                ? isDarkMode
+                  ? 'bg-green-600 border-green-500 text-white'
+                  : 'bg-green-600 border-green-500 text-white'
+                : isDarkMode
+                  ? 'bg-green-600/20 border-green-500/50 text-green-400 hover:bg-green-600/30'
+                  : 'bg-green-50 border-green-200 text-green-600 hover:bg-green-100'
                 }`}
             >
               {copiedVoiceScript ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              {copiedVoiceScript ? 'Copied!' : 'Copy Script'}
+              {copiedVoiceScript ? 'Copied!' : 'Copy'}
             </button>
           </div>
 
-          <div className={`relative rounded-lg border p-4 ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'
-            }`}>
-            <pre className={`text-sm overflow-x-auto whitespace-pre-wrap ${isDarkMode ? 'text-gray-300' : 'text-gray-800'
+          <div className={`relative rounded-xl border-2 p-4 ${isDarkMode ? 'bg-gray-900/50 border-gray-600' : 'bg-gray-900 border-gray-300'}`}>
+            <pre className={`text-xs sm:text-sm overflow-x-auto whitespace-pre-wrap font-mono leading-relaxed ${isDarkMode ? 'text-green-300' : 'text-green-200'
               }`}>
               <code>{voiceWidgetScript}</code>
             </pre>
@@ -331,20 +349,22 @@ setLocalDifyApiKey(existingConfig.difyApiKey);
       </div>
 
       {/* Usage Instructions */}
-      <div className={`rounded-lg border p-4 ${isDarkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200'
+      <div className={`rounded-2xl border p-5 sm:p-6 ${isDarkMode ? 'bg-gradient-to-br from-green-900/30 to-emerald-900/20 border-green-700/50' : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200'
         }`}>
-        <div className="flex items-start gap-3">
-          <Globe className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-          <div>
-            <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+        <div className="flex items-start gap-4">
+          <div className={`p-3 rounded-xl ${isDarkMode ? 'bg-green-800/50' : 'bg-green-100'}`}>
+            <Globe className="h-6 w-6 text-green-600 dark:text-green-400 flex-shrink-0" />
+          </div>
+          <div className="flex-1">
+            <h4 className={`text-base font-semibold mb-3 ${isDarkMode ? 'text-green-100' : 'text-green-900'}`}>
               How to Use These Widgets
             </h4>
-            <ol className="text-sm text-blue-800 dark:text-blue-200 space-y-1 list-decimal list-inside">
-              <li>Copy the generated script(s) above (Chatbot Widget for text chat, Voice Widget for voice interaction)</li>
-              <li>Paste the script(s) into your website's HTML before the closing &lt;/body&gt; tag</li>
-              <li>The widgets will appear in the bottom-right corner of your website</li>
-              <li>Users can interact with your agent through text chat or voice</li>
-              <li>You can use both widgets together or choose one based on your needs</li>
+            <ol className={`text-sm space-y-2.5 list-decimal list-inside ${isDarkMode ? 'text-green-200' : 'text-green-800'}`}>
+              <li className="leading-relaxed">Copy the generated script(s) above (Chatbot Widget for text chat, Voice Widget for voice interaction)</li>
+              <li className="leading-relaxed">Paste the script(s) into your website's HTML before the closing <code className={`px-1.5 py-0.5 rounded ${isDarkMode ? 'bg-green-800/50 text-green-100' : 'bg-green-100 text-green-800'}`}>&lt;/body&gt;</code> tag</li>
+              <li className="leading-relaxed">The widgets will appear in the bottom-right corner of your website</li>
+              <li className="leading-relaxed">Users can interact with your agent through text chat or voice</li>
+              <li className="leading-relaxed">You can use both widgets together or choose one based on your needs</li>
             </ol>
           </div>
         </div>

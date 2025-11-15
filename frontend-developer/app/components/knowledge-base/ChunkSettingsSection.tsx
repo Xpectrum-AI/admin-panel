@@ -25,13 +25,13 @@ export default function ChunkSettingsSection({
   };
 
   return (
-    <div className={`mt-4 rounded-lg border-2 ${isDarkMode ? 'bg-gray-800/50 border-blue-500' : 'bg-blue-50 border-blue-300'}`}>
+    <div className={`mt-4 rounded-lg border-2 ${isDarkMode ? 'bg-gray-800/50 border-green-500' : 'bg-green-50 border-green-300'}`}>
       <div 
         className={`flex items-center justify-between p-4 ${collapsible ? 'cursor-pointer' : ''}`}
         onClick={() => collapsible && setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-2">
-          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
           <h3 className={`text-base font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -74,7 +74,7 @@ export default function ChunkSettingsSection({
                       isDarkMode 
                         ? 'bg-gray-800 border-gray-600 text-white' 
                         : 'bg-white border-gray-300 text-gray-900'
-                    } focus:ring-2 focus:ring-blue-500`}
+                    } focus:ring-2 focus:ring-green-500`}
                   />
                   <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>chars</span>
                 </div>
@@ -103,7 +103,7 @@ export default function ChunkSettingsSection({
                       isDarkMode 
                         ? 'bg-gray-800 border-gray-600 text-white' 
                         : 'bg-white border-gray-300 text-gray-900'
-                    } focus:ring-2 focus:ring-blue-500`}
+                    } focus:ring-2 focus:ring-green-500`}
                   />
                   <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>%</span>
                 </div>
@@ -135,7 +135,7 @@ export default function ChunkSettingsSection({
                       isDarkMode 
                         ? 'bg-gray-800 border-gray-600 text-white' 
                         : 'bg-white border-gray-300 text-gray-900'
-                    } focus:ring-2 focus:ring-blue-500`}
+                    } focus:ring-2 focus:ring-green-500`}
                   />
                   <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>chars</span>
                 </div>
@@ -164,7 +164,7 @@ export default function ChunkSettingsSection({
                       isDarkMode 
                         ? 'bg-gray-800 border-gray-600 text-white' 
                         : 'bg-white border-gray-300 text-gray-900'
-                    } focus:ring-2 focus:ring-blue-500`}
+                    } focus:ring-2 focus:ring-green-500`}
                   />
                   <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>chars</span>
                 </div>
@@ -208,7 +208,7 @@ export default function ChunkSettingsSection({
                     type="checkbox"
                     checked={chunkSettings.replaceExtraSpaces !== false}
                     onChange={(e) => handleChange('replaceExtraSpaces', e.target.checked)}
-                    className="rounded text-blue-600"
+                    className="rounded text-green-600"
                   />
                   <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                     Replace consecutive spaces, newlines and tabs
@@ -220,7 +220,7 @@ export default function ChunkSettingsSection({
                     type="checkbox"
                     checked={chunkSettings.removeUrlsEmails === true}
                     onChange={(e) => handleChange('removeUrlsEmails', e.target.checked)}
-                    className="rounded text-blue-600"
+                    className="rounded text-green-600"
                   />
                   <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                     Delete all URLs and email addresses

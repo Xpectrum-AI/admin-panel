@@ -139,8 +139,8 @@ export default function Navbar({
                                         </div>
                                         {organizationName && (
                                             <div className="flex items-center gap-2 mt-2">
-                                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                                                <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>{organizationName}</p>
+                                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                <p className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>{organizationName}</p>
                                             </div>
                                         )}
                                     </div>
@@ -155,9 +155,9 @@ export default function Navbar({
                                                 }
                                                 setDropdownOpen(false);
                                             }}
-                                            className={`w-full flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-xl transition-all duration-300 group ${isDarkMode ? 'text-gray-300 hover:bg-blue-500/10 hover:text-blue-300' : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'}`}
+                                            className={`w-full flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-xl transition-all duration-300 group ${isDarkMode ? 'text-gray-300 hover:bg-green-500/10 hover:text-green-300' : 'text-gray-700 hover:bg-green-50 hover:text-green-700'}`}
                                         >
-                                            <UserIcon className={`h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 ${isDarkMode ? 'text-gray-400 group-hover:text-blue-400' : 'text-gray-400 group-hover:text-blue-600'} transition-colors duration-300`} />
+                                            <UserIcon className={`h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 ${isDarkMode ? 'text-gray-400 group-hover:text-green-400' : 'text-gray-400 group-hover:text-green-600'} transition-colors duration-300`} />
                                             Account
                                         </button>
                                         <div className={`${isDarkMode ? 'border-gray-700/50' : 'border-gray-200'} my-2 border-t`}></div>

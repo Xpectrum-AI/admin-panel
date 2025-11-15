@@ -355,7 +355,9 @@ export const AgentConfigProvider: React.FC<AgentConfigProviderProps> = ({ childr
       stability: providerConfig.stability || 0.5,
       similarityBoost: providerConfig.similarity_boost || 0.5,
       responseFormat: providerConfig.response_format || 'mp3',
-      selectedModel: selectedModel // Support both model and model_id fields
+      selectedModel: selectedModel, // Support both model and model_id fields
+      cartesiaSelectedGender: providerConfig.gender || '',
+      selectedGender: providerConfig.gender || '' // For 11Labs, gender might be in labels, but we'll use this for consistency
     };
   }, []);
 

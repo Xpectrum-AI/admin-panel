@@ -333,7 +333,7 @@ return isAgentFromCurrentOrg;
                         {/* Assign Agent Button */}
                         <button
                             onClick={() => setShowAssignModal(true)}
-                            className="group relative px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                            className="group relative px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                         >
                             <Plus className="h-4 w-4" />
                             <span className="text-sm font-semibold">Assign Agent</span>
@@ -353,7 +353,7 @@ return isAgentFromCurrentOrg;
                                 placeholder="Enter agent name or prefix..."
                                 value={agentSearchTerm}
                                 onChange={(e) => setAgentSearchTerm(e.target.value)}
-                                className={`px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all w-64 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-500 hover:bg-gray-600' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-400 hover:bg-gray-50'}`}
+                                className={`px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all w-64 ${isDarkMode ? 'border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-500 hover:bg-gray-600' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-400 hover:bg-gray-50'}`}
                             />
                         </div>
 
@@ -373,7 +373,7 @@ return isAgentFromCurrentOrg;
                 {loadingGmailAccounts || loadingAgents ? (
                     <div className="flex items-center justify-center h-64">
                         <div className="flex items-center gap-3">
-                            <RefreshCw className="h-6 w-6 animate-spin text-blue-500" />
+                            <RefreshCw className="h-6 w-6 animate-spin text-green-500" />
                             <span className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                                 Loading Gmail data...
                             </span>
@@ -479,8 +479,8 @@ return isAgentFromCurrentOrg;
                                                     }}
                                                     disabled={isUnassigning === assignment.id}
                                                     className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${isDarkMode
-                                                        ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
-                                                        : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
+                                                        ? 'hover:bg-green-700/20 text-green-400 hover:text-green-300'
+                                                        : 'hover:bg-green-100 text-green-600 hover:text-green-700'
                                                         }`}
                                                     title={assignment.status === 'assigned' ? 'Unassign agent' : 'Assign agent'}
                                                 >
