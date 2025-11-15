@@ -4,7 +4,6 @@ export { default as SMSTab } from './SMSTab';
 export { default as WhatsAppTab } from './WhatsAppTab';
 export { default as GmailTab } from './GmailTab';
 export { default as KnowledgeBaseTab } from './knowledge-base/KnowledgeBaseTab';
-export { default as OverviewTab } from './OverviewTab';
 export { default as Navbar } from './Navbar';
 export { default as Sidebar } from './Sidebar';
 export { default as MobileNav } from './MobileNav';

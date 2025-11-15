@@ -52,11 +52,16 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
   const [isApiKeyFocused, setIsApiKeyFocused] = useState(false);
   const [isTranscriberApiKeyFocused, setIsTranscriberApiKeyFocused] = useState(false);
   const [selectedGender, setSelectedGender] = useState<string>(''); // Gender filter for 11Labs
+  const [cartesiaSelectedGender, setCartesiaSelectedGender] = useState<string>(''); // Gender filter for Cartesia
   
   // ElevenLabs voices state
   const [availableVoices, setAvailableVoices] = useState<any[]>([]);
   const [isLoadingVoices, setIsLoadingVoices] = useState(false);
   const [voicesError, setVoicesError] = useState('');
+  // Cartesia voices state
+  const [cartesiaVoices, setCartesiaVoices] = useState<any[]>([]);
+  const [isLoadingCartesiaVoices, setIsLoadingCartesiaVoices] = useState(false);
+  const [cartesiaVoicesError, setCartesiaVoicesError] = useState('');
   const providerChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const voiceFieldChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastConfigRef = useRef<string>('');
@@ -158,23 +163,50 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     'cy': 'Welsh'
   };
 
-  // Cartesia Language Mapping (15 languages)
-  const cartesiaLanguageMapping = {
-    'en': 'English',
-    'fr': 'French',
+  // Cartesia Language Mapping
+  const cartesiaLanguageMapping: { [key: string]: string } = {
+    'ar': 'Arabic',
+    'bg': 'Bulgarian',
+    'bn': 'Bengali',
+    'cs': 'Czech',
+    'da': 'Danish',
     'de': 'German',
+    'el': 'Greek',
+    'en': 'English',
     'es': 'Spanish',
-    'pt': 'Portuguese',
-    'zh': 'Chinese',
-    'ja': 'Japanese',
+    'fi': 'Finnish',
+    'fr': 'French',
+    'gu': 'Gujarati',
+    'he': 'Hebrew',
     'hi': 'Hindi',
+    'hr': 'Croatian',
+    'hu': 'Hungarian',
+    'id': 'Indonesian',
     'it': 'Italian',
+    'ja': 'Japanese',
+    'ka': 'Kannada',
+    'kn': 'Kannada',
     'ko': 'Korean',
+    'ml': 'Malayalam',
+    'mr': 'Marathi',
+    'ms': 'Malay',
     'nl': 'Dutch',
+    'no': 'Norwegian',
+    'pa': 'Punjabi',
     'pl': 'Polish',
+    'pt': 'Portuguese',
+    'ro': 'Romanian',
     'ru': 'Russian',
+    'sk': 'Slovak',
     'sv': 'Swedish',
-    'tr': 'Turkish'
+    'ta': 'Tamil',
+    'te': 'Telugu',
+    'th': 'Thai',
+    'tl': 'Tagalog',
+    'tr': 'Turkish',
+    'uk': 'Ukrainian',
+    'vi': 'Vietnamese',
+    'zh': 'Chinese'
   };
 
   // Reverse mappings for both providers
@@ -238,22 +270,48 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     'Welsh': 'cy'
   };
 
-  const cartesiaReverseLanguageMapping = {
+  const cartesiaReverseLanguageMapping: { [key: string]: string } = {
+    'Arabic': 'ar',
+    'Bengali': 'bn',
+    'Bulgarian': 'bg',
+    'Chinese': 'zh',
+    'Croatian': 'hr',
+    'Czech': 'cs',
+    'Danish': 'da',
+    'Dutch': 'nl',
     'English': 'en',
+    'Finnish': 'fi',
     'French': 'fr',
     'German': 'de',
-    'Spanish': 'es',
-    'Portuguese': 'pt',
-    'Chinese': 'zh',
-    'Japanese': 'ja',
+    'Greek': 'el',
+    'Gujarati': 'gu',
+    'Hebrew': 'he',
     'Hindi': 'hi',
+    'Hungarian': 'hu',
+    'Indonesian': 'id',
     'Italian': 'it',
+    'Japanese': 'ja',
+    'Kannada': 'kn',
     'Korean': 'ko',
-    'Dutch': 'nl',
+    'Malay': 'ms',
+    'Malayalam': 'ml',
+    'Marathi': 'mr',
+    'Norwegian': 'no',
     'Polish': 'pl',
+    'Portuguese': 'pt',
+    'Punjabi': 'pa',
+    'Romanian': 'ro',
     'Russian': 'ru',
+    'Slovak': 'sk',
+    'Spanish': 'es',
     'Swedish': 'sv',
-    'Turkish': 'tr'
+    'Tagalog': 'tl',
+    'Tamil': 'ta',
+    'Telugu': 'te',
+    'Thai': 'th',
+    'Turkish': 'tr',
+    'Ukrainian': 'uk',
+    'Vietnamese': 'vi'
   };
 
   // 11Labs Language Mapping (ISO 639-3 and ISO 639-1 codes)
@@ -394,18 +452,20 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
   };
 
   // 11Labs Model Language Support
+  // Languages based on actual ElevenLabs API response from verified_languages
   const elevenLabsModelLanguages = {
     // 'eleven_v3': ['afr', 'ara', 'hye', 'asm', 'aze', 'bel', 'ben', 'bos', 'bul', 'cat', 'ceb', 'nya', 'hrv', 'ces', 'dan', 'nld', 'eng', 'est', 'fil', 'fin', 'fra', 'glg', 'kat', 'deu', 'ell', 'guj', 'hau', 'heb', 'hin', 'hun', 'isl', 'ind', 'gle', 'ita', 'jpn', 'jav', 'kan', 'kaz', 'kir', 'kor', 'lav', 'lin', 'lit', 'ltz', 'mkd', 'msa', 'mal', 'cmn', 'mar', 'nep', 'nor', 'pus', 'fas', 'pol', 'por', 'pan', 'ron', 'rus', 'srp', 'snd', 'slk', 'slv', 'som', 'spa', 'swa', 'swe', 'tam', 'tel', 'tha', 'tur', 'ukr', 'urd', 'vie', 'cym'], // not working
     // 'eleven_ttv_v3': ['afr', 'ara', 'hye', 'asm', 'aze', 'bel', 'ben', 'bos', 'bul', 'cat', 'ceb', 'nya', 'hrv', 'ces', 'dan', 'nld', 'eng', 'est', 'fil', 'fin', 'fra', 'glg', 'kat', 'deu', 'ell', 'guj', 'hau', 'heb', 'hin', 'hun', 'isl', 'ind', 'gle', 'ita', 'jpn', 'jav', 'kan', 'kaz', 'kir', 'kor', 'lav', 'lin', 'lit', 'ltz', 'mkd', 'msa', 'mal', 'cmn', 'mar', 'nep', 'nor', 'pus', 'fas', 'pol', 'por', 'pan', 'ron', 'rus', 'srp', 'snd', 'slk', 'slv', 'som', 'spa', 'swa', 'swe', 'tam', 'tel', 'tha', 'tur', 'ukr', 'urd', 'vie', 'cym'], // not working
     // 'scribe_v1': ['afr', 'amh', 'ara', 'hye', 'asm', 'ast', 'aze', 'bel', 'ben', 'bos', 'bul', 'mya', 'yue', 'cat', 'ceb', 'nya', 'hrv', 'ces', 'dan', 'nld', 'eng', 'est', 'fil', 'fin', 'fra', 'ful', 'glg', 'lug', 'kat', 'deu', 'ell', 'guj', 'hau', 'heb', 'hin', 'hun', 'isl', 'ibo', 'ind', 'gle', 'ita', 'jpn', 'jav', 'kea', 'kan', 'kaz', 'khm', 'kor', 'kur', 'kir', 'lao', 'lav', 'lin', 'lit', 'luo', 'ltz', 'mkd', 'msa', 'mal', 'mlt', 'zho', 'mri', 'mar', 'mon', 'nep', 'nso', 'nor', 'oci', 'ori', 'pus', 'fas', 'pol', 'por', 'pan', 'ron', 'rus', 'srp', 'sna', 'snd', 'slk', 'slv', 'som', 'spa', 'swa', 'swe', 'tam', 'tgk', 'tel', 'tha', 'tur', 'ukr', 'umb', 'urd', 'uzb', 'vie', 'cym', 'wol', 'xho', 'zul'], // not working
     // 'scribe_v1_experimental': ['afr', 'amh', 'ara', 'hye', 'asm', 'ast', 'aze', 'bel', 'ben', 'bos', 'bul', 'mya', 'yue', 'cat', 'ceb', 'nya', 'hrv', 'ces', 'dan', 'nld', 'eng', 'est', 'fil', 'fin', 'fra', 'ful', 'glg', 'lug', 'kat', 'deu', 'ell', 'guj', 'hau', 'heb', 'hin', 'hun', 'isl', 'ibo', 'ind', 'gle', 'ita', 'jpn', 'jav', 'kea', 'kan', 'kaz', 'khm', 'kor', 'kur', 'kir', 'lao', 'lav', 'lin', 'lit', 'luo', 'ltz', 'mkd', 'msa', 'mal', 'mlt', 'zho', 'mri', 'mar', 'mon', 'nep', 'nso', 'nor', 'oci', 'ori', 'pus', 'fas', 'pol', 'por', 'pan', 'ron', 'rus', 'srp', 'sna', 'snd', 'slk', 'slv', 'som', 'spa', 'swa', 'swe', 'tam', 'tgk', 'tel', 'tha', 'tur', 'ukr', 'umb', 'urd', 'uzb', 'vie', 'cym', 'wol', 'xho', 'zul'], // not working
-    'eleven_multilingual_v2': ['en', 'ja', 'zh', 'de', 'hi', 'fr', 'ko', 'pt', 'it', 'es', 'id', 'nl', 'tr', 'fil', 'pl', 'sv', 'bg', 'ro', 'ar', 'cs', 'el', 'fi', 'hr', 'ms', 'sk', 'da', 'ta', 'uk', 'ru'], // working
-    'eleven_flash_v2_5': ['en', 'ja', 'zh', 'de', 'hi', 'fr', 'ko', 'pt', 'it', 'es', 'id', 'nl', 'tr', 'fil', 'pl', 'sv', 'bg', 'ro', 'ar', 'cs', 'el', 'fi', 'hr', 'ms', 'sk', 'da', 'ta', 'uk', 'ru', 'hu', 'no', 'vi'], // working
+    // Languages available in ElevenLabs API verified_languages: en, fr, de, nl, es, ar, zh, hi, it, pt, fil, ja, cs, pl, tr, sk, sv, ro
+    'eleven_multilingual_v2': ['en', 'fr', 'de', 'nl', 'es', 'ar', 'zh', 'hi', 'it', 'pt', 'fil', 'ja', 'cs', 'pl', 'tr', 'sk', 'sv', 'ro'], // working
+    'eleven_flash_v2_5': ['en', 'fr', 'de', 'nl', 'es', 'ar', 'zh', 'hi', 'it', 'pt', 'fil', 'ja', 'cs', 'pl', 'tr', 'sk', 'sv', 'ro'], // working
     'eleven_flash_v2': ['en'], // working
-    'eleven_turbo_v2_5': ['en', 'ja', 'zh', 'de', 'hi', 'fr', 'ko', 'pt', 'it', 'es', 'id', 'nl', 'tr', 'fil', 'pl', 'sv', 'bg', 'ro', 'ar', 'cs', 'el', 'fi', 'hr', 'ms', 'sk', 'da', 'ta', 'uk', 'ru', 'hu', 'no', 'vi'], // working
+    'eleven_turbo_v2_5': ['en', 'fr', 'de', 'nl', 'es', 'ar', 'zh', 'hi', 'it', 'pt', 'fil', 'ja', 'cs', 'pl', 'tr', 'sk', 'sv', 'ro'], // working
     'eleven_turbo_v2': ['en'], // working
-    // 'eleven_multilingual_sts_v2': ['en', 'ja', 'zh', 'de', 'hi', 'fr', 'ko', 'pt', 'it', 'es', 'id', 'nl', 'tr', 'fil', 'pl', 'sv', 'bg', 'ro', 'ar', 'cs', 'el', 'fi', 'hr', 'ms', 'sk', 'da', 'ta', 'uk', 'ru'], // not working
-    // 'eleven_multilingual_ttv_v2': ['en', 'ja', 'zh', 'de', 'hi', 'fr', 'ko', 'pt', 'it', 'es', 'id', 'nl', 'tr', 'fil', 'pl', 'sv', 'bg', 'ro', 'ar', 'cs', 'el', 'fi', 'hr', 'ms', 'sk', 'da', 'ta', 'uk', 'ru'], // not working
+    // 'eleven_multilingual_sts_v2': ['en', 'fr', 'de', 'nl', 'es', 'ar', 'zh', 'hi', 'it', 'pt', 'fil', 'ja', 'cs', 'pl', 'tr', 'sk', 'sv', 'ro'], // not working
+    // 'eleven_multilingual_ttv_v2': ['en', 'fr', 'de', 'nl', 'es', 'ar', 'zh', 'hi', 'it', 'pt', 'fil', 'ja', 'cs', 'pl', 'tr', 'sk', 'sv', 'ro'], // not working
     // 'eleven_english_sts_v2': ['en'] // not working
   };
 
@@ -525,7 +585,22 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
   // Function to get current language mapping based on provider
   const getCurrentLanguageMapping = () => {
     if (selectedVoiceProvider === 'Cartesia') {
-      return cartesiaLanguageMapping;
+      // For Cartesia, return only languages that are actually available in the fetched voices
+      const availableLanguages = getCartesiaAvailableLanguages();
+      const filteredMapping: { [key: string]: string } = {};
+      availableLanguages.forEach(langCode => {
+        // Get language name from mapping, or use a formatted version of the code as fallback
+        const languageName = cartesiaLanguageMapping[langCode.toLowerCase()] || 
+          langCode.charAt(0).toUpperCase() + langCode.slice(1).toLowerCase();
+        filteredMapping[langCode] = languageName;
+      });
+      // Sort by language name for better UX
+      const sortedEntries = Object.entries(filteredMapping).sort((a, b) => a[1].localeCompare(b[1]));
+      const sortedMapping: { [key: string]: string } = {};
+      sortedEntries.forEach(([code, name]) => {
+        sortedMapping[code] = name;
+      });
+      return sortedMapping;
     } else if (selectedVoiceProvider === '11Labs') {
       // Get supported languages for the selected model (not voice)
       const supportedLanguages = elevenLabsModelLanguages[selectedModel as keyof typeof elevenLabsModelLanguages] || [];
@@ -542,7 +617,18 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
 
   const getCurrentReverseLanguageMapping = () => {
     if (selectedVoiceProvider === 'Cartesia') {
-      return cartesiaReverseLanguageMapping;
+      // Create reverse mapping dynamically from available languages in fetched voices
+      const availableLanguages = getCartesiaAvailableLanguages();
+      const reverseMapping: { [key: string]: string } = {};
+      
+      availableLanguages.forEach(langCode => {
+        // Get language name from mapping, or use a formatted version of the code as fallback
+        const languageName = cartesiaLanguageMapping[langCode.toLowerCase()] || 
+          langCode.charAt(0).toUpperCase() + langCode.slice(1).toLowerCase();
+        reverseMapping[languageName] = langCode;
+      });
+      
+      return reverseMapping;
     } else if (selectedVoiceProvider === '11Labs') {
       // Create reverse mapping for 11Labs based on supported languages
       const supportedLanguages = elevenLabsModelLanguages[selectedModel as keyof typeof elevenLabsModelLanguages] || [];
@@ -799,6 +885,43 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     }
   }, [selectedVoiceProvider, apiKey, availableVoices.length]);
 
+  // Fetch Cartesia voices
+  const fetchCartesiaVoices = useCallback(async (forceRefetch = false) => {
+    if (selectedVoiceProvider !== 'Cartesia') return;
+    if (!forceRefetch && cartesiaVoices.length > 0) return;
+    
+    setIsLoadingCartesiaVoices(true);
+    setCartesiaVoicesError('');
+    
+    try {
+      // Get API key from user input or environment variable
+      const cartesiaApiKey = apiKey || process.env.NEXT_PUBLIC_CARTESIA_API_KEY || '';
+      
+      if (!cartesiaApiKey) {
+        throw new Error('Cartesia API key is required');
+      }
+      
+      const response = await fetch('https://api.cartesia.ai/voices', {
+        headers: {
+          'X-API-Key': cartesiaApiKey,
+          'Cartesia-Version': '2024-06-10'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch voices: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setCartesiaVoices(data.voices || data || []);
+    } catch (error) {
+      setCartesiaVoicesError(error instanceof Error ? error.message : 'Failed to fetch voices');
+      setCartesiaVoices([]); // Clear voices on error
+    } finally {
+      setIsLoadingCartesiaVoices(false);
+    }
+  }, [selectedVoiceProvider, apiKey]);
+
   // Load default values on component mount
   useEffect(() => {
     const defaultVoiceIds = agentConfigService.getDefaultVoiceIds();
@@ -819,7 +942,8 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
           setVoiceId('pNInz6obpgDQGcFmaJgB');
           break;
         case 'Cartesia':
-          setVoiceId(defaultVoiceIds.cartesia || '');
+          // Don't set default voice ID - user will select from fetched voices
+          setVoiceId('');
           break;
       }
     }
@@ -831,6 +955,19 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       fetchElevenLabsVoices();
     }
   }, [selectedVoiceProvider, apiKey, fetchElevenLabsVoices]);
+
+  // Fetch Cartesia voices when provider changes to Cartesia or API key changes
+  useEffect(() => {
+    if (selectedVoiceProvider === 'Cartesia' && apiKey) {
+      // Clear existing voices and refetch when API key changes
+      setCartesiaVoices([]);
+      // Reset filters when refetching voices
+      setCartesiaSelectedGender('');
+      setVoiceId('');
+      setSelectedLanguage(''); // Reset language selection
+      fetchCartesiaVoices(true);
+    }
+  }, [selectedVoiceProvider, apiKey, fetchCartesiaVoices]);
 
   // Clear voice selection if current voice doesn't support selected language/model
   useEffect(() => {
@@ -963,6 +1100,64 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     });
     
     return Array.from(genders).sort();
+  };
+
+  // Get unique genders from Cartesia voices
+  const getCartesiaAvailableGenders = () => {
+    if (selectedVoiceProvider !== 'Cartesia' || cartesiaVoices.length === 0) {
+      return [];
+    }
+    
+    const genders = new Set<string>();
+    cartesiaVoices.forEach((voice: any) => {
+      if (voice.gender) {
+        genders.add(voice.gender);
+      }
+    });
+    
+    return Array.from(genders).sort();
+  };
+
+  // Get unique languages from Cartesia voices
+  const getCartesiaAvailableLanguages = () => {
+    if (selectedVoiceProvider !== 'Cartesia' || cartesiaVoices.length === 0) {
+      return [];
+    }
+    
+    const languages = new Set<string>();
+    cartesiaVoices.forEach((voice: any) => {
+      if (voice.language) {
+        languages.add(voice.language);
+      }
+    });
+    
+    return Array.from(languages).sort();
+  };
+
+  // Filter Cartesia voices by gender and language
+  const getFilteredCartesiaVoices = () => {
+    if (selectedVoiceProvider !== 'Cartesia' || cartesiaVoices.length === 0) {
+      return cartesiaVoices;
+    }
+
+    return cartesiaVoices.filter((voice: any) => {
+      // Filter by gender if selected
+      if (cartesiaSelectedGender && voice.gender !== cartesiaSelectedGender) {
+        return false;
+      }
+      
+      // Filter by language if selected (using selectedLanguage which contains the language name)
+      if (selectedLanguage) {
+        // Get the language code from the selected language name
+        const reverseMapping = getCurrentReverseLanguageMapping();
+        const languageCode = reverseMapping[selectedLanguage] || selectedLanguage;
+        if (voice.language !== languageCode) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
   };
 
   // Filter voices by selected language, model, and gender
@@ -1117,8 +1312,8 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       case 'Cartesia':
         // Load API key for the new provider from config, otherwise start empty
         newApiKey = apiKeyFromConfig || '';
-        // Preserve existing voice ID if user has entered one, otherwise use default
-        newVoiceId = existingVoiceId || defaultVoiceIds.cartesia || '';
+        // Don't set default voice ID - user will select from fetched voices
+        newVoiceId = existingVoiceId || '';
         break;
     }
 
@@ -1128,6 +1323,17 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     setSelectedVoice(defaultVoice);
     setApiKey(newApiKey);
     setVoiceId(newVoiceId);
+    
+    // Reset Cartesia filters when switching providers
+    if (newProvider !== 'Cartesia') {
+      setCartesiaSelectedGender('');
+    }
+    
+    // Reset 11Labs gender filter when switching providers
+    if (newProvider !== '11Labs') {
+      setSelectedGender('');
+    }
+    
     // Save to centralized state with correct API key
     saveStateToCentralized({
       selectedVoiceProvider: newProvider,
@@ -1508,6 +1714,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                   saveStateToCentralized({ apiKey: e.target.value });
                   // Reset flag after a short delay to allow state to settle
                   setTimeout(() => setIsUserChangingApiKey(false), 500);
+                  // Fetch voices when API key is entered (handled by useEffect)
                 }}
                 onFocus={() => setIsApiKeyFocused(true)}
                 onBlur={() => setIsApiKeyFocused(false)}
@@ -1525,18 +1732,105 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
             </div>
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Voice ID
+                Gender
               </label>
-              <input
-                type="text"
-                value={voiceId ? maskApiKey(voiceId) : '••••••••••••••••••••••••••••••••'}
-                readOnly
-                className={`w-full p-3 rounded-xl border transition-all duration-300 cursor-not-allowed text-sm sm:text-base ${isDarkMode
-                  ? 'border-gray-600 bg-gray-700/50 text-gray-400'
-                  : 'border-gray-200 bg-gray-100/50 text-gray-500'
+              <select
+                value={cartesiaSelectedGender}
+                onChange={(e) => {
+                  setCartesiaSelectedGender(e.target.value);
+                  // Clear voice selection when gender changes
+                  if (voiceId) {
+                    setVoiceId('');
+                    saveStateToCentralized({ voiceId: '' });
+                  }
+                }}
+                disabled={!isEditing || cartesiaVoices.length === 0}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing || cartesiaVoices.length === 0
+                  ? isDarkMode
+                    ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'bg-gray-700/50 border-gray-600 text-gray-200'
+                    : 'bg-gray-50 border-gray-200 text-gray-900'
                   }`}
-                placeholder="Default voice ID loaded"
-              />
+              >
+                <option value="">All Genders</option>
+                {getCartesiaAvailableGenders().map((gender) => (
+                  <option key={gender} value={gender}>
+                    {gender.charAt(0).toUpperCase() + gender.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Voice Selection
+              </label>
+              {isLoadingCartesiaVoices ? (
+                <div className={`w-full p-3 rounded-xl border ${isDarkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200 bg-gray-100/50'}`}>
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      Loading voices...
+                    </span>
+                  </div>
+                </div>
+              ) : cartesiaVoicesError ? (
+                <div className={`w-full p-3 rounded-xl border ${isDarkMode ? 'border-red-600 bg-red-900/20' : 'border-red-300 bg-red-50'}`}>
+                  <div className="flex items-center gap-2">
+                    <X className="h-4 w-4 text-red-500" />
+                    <span className={`text-sm ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>
+                      {cartesiaVoicesError}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <select
+                  value={voiceId || ''}
+                  onChange={(e) => {
+                    setIsUserChangingVoiceField(true);
+                    setVoiceId(e.target.value);
+                    lastVoiceIdRef.current = e.target.value;
+                    saveStateToCentralized({ voiceId: e.target.value });
+                    
+                    // Clear any existing timeout
+                    if (voiceFieldChangeTimeoutRef.current) {
+                      clearTimeout(voiceFieldChangeTimeoutRef.current);
+                    }
+                    
+                    // Reset the flag after a delay to prevent immediate override
+                    voiceFieldChangeTimeoutRef.current = setTimeout(() => {
+                      setIsUserChangingVoiceField(false);
+                    }, 2000);
+                  }}
+                  disabled={!isEditing || getFilteredCartesiaVoices().length === 0}
+                  className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing || getFilteredCartesiaVoices().length === 0
+                    ? isDarkMode
+                      ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                    : isDarkMode
+                      ? 'bg-gray-700/50 border-gray-600 text-gray-200'
+                      : 'bg-gray-50 border-gray-200 text-gray-900'
+                    }`}
+                >
+                  <option value="">
+                    {(() => {
+                      const filteredVoices = getFilteredCartesiaVoices();
+                      if (filteredVoices.length === 0) {
+                        return cartesiaVoices.length === 0 
+                          ? 'No voices available' 
+                          : 'No voices match the selected filters';
+                      }
+                      return 'Select a voice...';
+                    })()}
+                  </option>
+                  {getFilteredCartesiaVoices().map((voice: any) => (
+                    <option key={voice.id || voice.voice_id} value={voice.id || voice.voice_id}>
+                      {voice.name || voice.id || voice.voice_id}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
             <div>
               <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -1706,9 +2000,14 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                   }
                   setSelectedLanguage(e.target.value);
                   saveStateToCentralized({ selectedLanguage: e.target.value });
+                  // Clear voice selection when language changes (for Cartesia and 11Labs)
+                  if ((selectedVoiceProvider === 'Cartesia' || selectedVoiceProvider === '11Labs') && voiceId) {
+                    setVoiceId('');
+                    saveStateToCentralized({ voiceId: '' });
+                  }
                 }}
-                disabled={!isEditing || selectedVoiceProvider === 'OpenAI'}
-                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base ${!isEditing || selectedVoiceProvider === 'OpenAI'
+                disabled={!isEditing || selectedVoiceProvider === 'OpenAI' || (selectedVoiceProvider === 'Cartesia' && cartesiaVoices.length === 0)}
+                className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base ${!isEditing || selectedVoiceProvider === 'OpenAI' || (selectedVoiceProvider === 'Cartesia' && cartesiaVoices.length === 0)
                   ? isDarkMode
                     ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
                     : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
@@ -1723,9 +2022,19 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                     return <option value="">No languages available</option>;
                   }
 
-                  return Object.entries(languageMapping).map(([code, name]) => (
+                  // For Cartesia, add "All Languages" option at the beginning
+                  const options = Object.entries(languageMapping).map(([code, name]) => (
                     <option key={code} value={name}>{name}</option>
                   ));
+                  
+                  if (selectedVoiceProvider === 'Cartesia') {
+                    return [
+                      <option key="all" value="">All Languages</option>,
+                      ...options
+                    ];
+                  }
+
+                  return options;
                 })()}
               </select>
             </div>

@@ -293,7 +293,7 @@ export const AgentConfigProvider: React.FC<AgentConfigProviderProps> = ({ childr
 
     const uiProvider = providerMapping[provider] || provider;
 
-    // Map language codes to display names
+    // Map language codes to display names (includes all Cartesia languages)
     const languageMapping: { [key: string]: string } = {
       'en': 'English',
       'en-US': 'English',
@@ -316,7 +316,29 @@ export const AgentConfigProvider: React.FC<AgentConfigProviderProps> = ({ childr
       'pl': 'Polish',
       'tr': 'Turkish',
       'th': 'Thai',
-      'vi': 'Vietnamese'
+      'vi': 'Vietnamese',
+      // Additional Cartesia languages
+      'bn': 'Bengali',
+      'bg': 'Bulgarian',
+      'hr': 'Croatian',
+      'cs': 'Czech',
+      'el': 'Greek',
+      'gu': 'Gujarati',
+      'he': 'Hebrew',
+      'hu': 'Hungarian',
+      'id': 'Indonesian',
+      'ka': 'Kannada',
+      'kn': 'Kannada',
+      'ml': 'Malayalam',
+      'mr': 'Marathi',
+      'ms': 'Malay',
+      'pa': 'Punjabi',
+      'ro': 'Romanian',
+      'sk': 'Slovak',
+      'ta': 'Tamil',
+      'te': 'Telugu',
+      'tl': 'Tagalog',
+      'uk': 'Ukrainian'
     };
 
     const languageCode = providerConfig.language || 'en';
