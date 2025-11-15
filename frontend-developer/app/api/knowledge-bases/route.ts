@@ -10,7 +10,9 @@ async function getAuthToken() {
   if (!CONSOLE_ORIGIN || !ADMIN_EMAIL || !ADMIN_PASSWORD) {
     throw new Error('NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN, NEXT_PUBLIC_DIFY_ADMIN_EMAIL, or NEXT_PUBLIC_DIFY_ADMIN_PASSWORD is not configured');
   }
-  const loginResponse = await fetch(`${CONSOLE_ORIGIN}/console/api/login`, {
+  // Handle redirects (308 Permanent Redirect)
+  let loginUrl = `${CONSOLE_ORIGIN}/console/api/login`;
+  let loginResponse = await fetch(loginUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -18,8 +20,29 @@ async function getAuthToken() {
     body: JSON.stringify({
       email: ADMIN_EMAIL,
       password: ADMIN_PASSWORD
-    })
+    }),
+    redirect: 'follow' // Follow redirects automatically
   });
+  
+  // If we get a redirect status, try the redirect location
+  if (loginResponse.status === 308 || loginResponse.status === 301 || loginResponse.status === 302) {
+    const redirectLocation = loginResponse.headers.get('Location');
+    if (redirectLocation) {
+      loginUrl = redirectLocation;
+      loginResponse = await fetch(loginUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: ADMIN_EMAIL,
+          password: ADMIN_PASSWORD
+        }),
+        redirect: 'follow'
+      });
+    }
+  }
+  
   if (!loginResponse.ok) {
     const errorText = await loginResponse.text();
     throw new Error(`Failed to authenticate: ${loginResponse.status} - ${errorText}`);
