@@ -976,7 +976,7 @@ if (!appId) {
           )}
 
           {isSaving && (
-            <div className={`p-3 rounded-xl border ${isDarkMode ? 'bg-blue-900/20 border-blue-700 text-blue-300' : 'bg-blue-50 border-blue-200 text-blue-700'}`}>
+            <div className={`p-3 rounded-xl border ${isDarkMode ? 'bg-green-900/20 border-green-700 text-green-300' : 'bg-green-50 border-green-200 text-green-700'}`}>
               <div className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-sm font-medium">Saving...</span>
@@ -1017,8 +1017,8 @@ if (!appId) {
       <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-purple-900/50' : 'bg-purple-100'}`}>
-              <BookOpen className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+            <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-green-900/50' : 'bg-green-100'}`}>
+              <BookOpen className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
             </div>
             <div>
               <h4 className={`font-bold text-sm sm:text-base ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>Agent Knowledge Base</h4>
@@ -1040,15 +1040,15 @@ if (!appId) {
                   const kb = knowledgeBases.find(k => k.id === kbId);
                   return (
                     <div key={kbId} className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${isDarkMode 
-                      ? 'bg-purple-900/30 border-purple-700 text-purple-300' 
-                      : 'bg-purple-50 border-purple-200 text-purple-700'
+                      ? 'bg-green-900/30 border-green-700 text-green-300' 
+                      : 'bg-green-50 border-green-200 text-green-700'
                     }`}>
                       <BookOpen className="h-4 w-4" />
                       <span className="text-sm">{kb?.name || 'Unknown (deleted)'}</span>
                       {kb ? (
                         <span className={`text-xs px-2 py-1 rounded-full ${kb.indexingTechnique === 'high_quality' 
                           ? 'bg-green-100 text-green-600' 
-                          : 'bg-blue-100 text-blue-600'
+                          : 'bg-green-100 text-green-600'
                         }`}>
                           {kb.indexingTechnique === 'high_quality' ? 'HQ • VECTOR' : 'ECONOMY'}
                         </span>
@@ -1095,8 +1095,8 @@ if (!appId) {
             <button
               onClick={() => setShowKnowledgeModal(true)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all duration-200 ${isDarkMode 
-                ? 'bg-purple-900/20 border-purple-700 text-purple-300 hover:bg-purple-800/30' 
-                : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
+                ? 'bg-green-900/20 border-green-700 text-green-300 hover:bg-green-800/30' 
+                : 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
               }`}
             >
               <Plus className="h-4 w-4" />
@@ -1128,8 +1128,8 @@ if (!appId) {
       <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-blue-900/50' : 'bg-blue-100'}`}>
-              <Sparkles className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+            <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-green-900/50' : 'bg-green-100'}`}>
+              <Sparkles className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
             </div>
             <div>
               <h4 className={`font-bold text-sm sm:text-base ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>Model Selection</h4>
@@ -1151,7 +1151,7 @@ if (!appId) {
                 // Note: handleProviderChange already triggers debouncedModelSave with current state
               }}
               disabled={!isEditing}
-              className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
+              className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
                 ? isDarkMode
                   ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
                   : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
@@ -1189,7 +1189,7 @@ if (!appId) {
                 debouncedModelSave(currentState); // Pass current state to avoid stale closure
               }}
               disabled={!isEditing}
-              className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
+              className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base ${!isEditing
                 ? isDarkMode
                   ? 'bg-gray-800/30 border-gray-700 text-gray-400 cursor-not-allowed'
                   : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
@@ -1218,7 +1218,7 @@ if (!appId) {
                 }}
                 disabled={!isEditing || isUsingModelApiKey}
                 placeholder={isUsingModelApiKey ? `Using configured ${selectedModelProvider} API key` : `Enter your ${selectedModelProvider} API key`}
-                className={`w-full p-3 pr-10 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base ${!isEditing || isUsingModelApiKey
+                className={`w-full p-3 pr-10 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base ${!isEditing || isUsingModelApiKey
                   ? isDarkMode
                     ? 'bg-gray-800/30 border-gray-700 text-gray-400 placeholder-gray-500 cursor-not-allowed'
                     : 'bg-gray-100 border-gray-300 text-gray-500 placeholder-gray-400 cursor-not-allowed'
@@ -1241,8 +1241,8 @@ if (!appId) {
       <div className={`p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'}`}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-purple-900/50' : 'bg-purple-100'}`}>
-              <Sparkles className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+            <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-green-900/50' : 'bg-green-100'}`}>
+              <Sparkles className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
             </div>
             <div>
               <h4 className={`font-bold text-sm sm:text-base ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>Agent API Configuration</h4>
@@ -1267,7 +1267,7 @@ if (!appId) {
                 });
               }}
               placeholder="https://your-agent-api-url.com/v1"
-              className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all duration-300 text-sm sm:text-base ${isDarkMode
+              className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base ${isDarkMode
                 ? 'bg-gray-700/50 border-gray-600 text-gray-200 placeholder-gray-400'
                 : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
                 }`}
@@ -1326,7 +1326,7 @@ if (!appId) {
             <div className={`p-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <BookOpen className={`h-6 w-6 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+                  <BookOpen className={`h-6 w-6 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
                   <h3 className={`text-lg font-bold ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>
                     Select Reference Knowledge
                   </h3>
@@ -1398,8 +1398,8 @@ if (!appId) {
                       className={`p-3 rounded-lg border cursor-pointer transition-all ${
                         selectedKnowledgeBases.includes(kb.id)
                           ? isDarkMode 
-                            ? 'bg-purple-900/30 border-purple-700' 
-                            : 'bg-purple-50 border-purple-200'
+                            ? 'bg-green-900/30 border-green-700' 
+                            : 'bg-green-50 border-green-200'
                           : isDarkMode 
                             ? 'bg-gray-700/50 border-gray-600 hover:bg-gray-600/50' 
                             : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
@@ -1407,7 +1407,7 @@ if (!appId) {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <BookOpen className={`h-4 w-4 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+                          <BookOpen className={`h-4 w-4 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
                           <div>
                             <h4 className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{kb.name}</h4>
                             <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -1419,12 +1419,12 @@ if (!appId) {
                           <span className={`text-xs px-2 py-1 rounded-full ${
                             kb.indexingTechnique === 'high_quality' 
                               ? 'bg-green-100 text-green-600' 
-                              : 'bg-blue-100 text-blue-600'
+                              : 'bg-green-100 text-green-600'
                           }`}>
                             {kb.indexingTechnique === 'high_quality' ? 'HQ • VECTOR' : 'ECONOMY'}
                           </span>
                           {selectedKnowledgeBases.includes(kb.id) && (
-                            <CheckCircle className="h-4 w-4 text-purple-600" />
+                            <CheckCircle className="h-4 w-4 text-green-600" />
                           )}
                         </div>
                       </div>
@@ -1493,8 +1493,8 @@ if (!appId) {
                     disabled={publishingAgent}
                     className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
                       publishingAgent
-                        ? 'bg-purple-400 cursor-not-allowed text-white'
-                        : 'bg-purple-600 text-white hover:bg-purple-700'
+                        ? 'bg-green-400 cursor-not-allowed text-white'
+                        : 'bg-green-600 text-white hover:bg-green-700'
                     }`}
                   >
                     {publishingAgent ? (

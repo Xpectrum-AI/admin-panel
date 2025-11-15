@@ -337,7 +337,7 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
             {/* Header with professional icon */}
             <div className={`p-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-xl flex items-center justify-center text-white shadow-md bg-gradient-to-br from-blue-600 to-blue-700 group-hover:from-blue-700 group-hover:to-blue-800 transition-all duration-300 flex-shrink-0">
+                <div className="w-16 h-16 rounded-xl flex items-center justify-center text-white shadow-md bg-gradient-to-br from-green-600 to-emerald-600 group-hover:from-green-700 group-hover:to-emerald-700 transition-all duration-300 flex-shrink-0">
                   <Plus className="h-8 w-8" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -356,7 +356,7 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
               <div className={`p-5 rounded-lg ${isDarkMode ? 'bg-gray-700/30 border border-gray-600/50' : 'bg-gray-50 border border-gray-200'}`}>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isDarkMode ? 'bg-blue-400' : 'bg-blue-600'}`}></div>
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isDarkMode ? 'bg-green-400' : 'bg-green-600'}`}></div>
                     <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                       Choose from Knowledge or Action agents
                     </p>
@@ -431,7 +431,7 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
                   {/* Primary Action - Full Width */}
                   <button
                     onClick={() => onOpenAgent(agent)}
-                    className="w-full bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-700 hover:to-blue-600 text-white py-3 px-4 rounded-lg transition-all duration-200 shadow-sm font-medium text-sm flex items-center justify-center gap-2 mb-3"
+                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-3 px-4 rounded-lg transition-all duration-200 shadow-sm font-medium text-sm flex items-center justify-center gap-2 mb-3"
                   >
                     <MessageCircle className="w-4 h-4" />
                     Open Agent

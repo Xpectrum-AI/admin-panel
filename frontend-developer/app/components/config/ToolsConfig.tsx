@@ -317,7 +317,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
               value={initialMessage}
               onChange={handleInitialMessageChange}
               disabled={!isEditing}
-              className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 resize-none ${!isEditing
+              className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 backdrop-blur-sm transition-all duration-300 resize-none ${!isEditing
                 ? isDarkMode
                   ? 'border-gray-700 bg-gray-800/30 text-gray-400 placeholder-gray-500 cursor-not-allowed'
                   : 'border-gray-300 bg-gray-100 text-gray-500 placeholder-gray-400 cursor-not-allowed'
@@ -353,7 +353,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                 value={nudgeText}
                 onChange={handleNudgeTextChange}
                 disabled={!isEditing}
-                className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 resize-none ${!isEditing
+                className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 backdrop-blur-sm transition-all duration-300 resize-none ${!isEditing
                   ? isDarkMode
                     ? 'border-gray-700 bg-gray-800/30 text-gray-400 placeholder-gray-500 cursor-not-allowed'
                     : 'border-gray-300 bg-gray-100 text-gray-500 placeholder-gray-400 cursor-not-allowed'
@@ -379,7 +379,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                   value={nudgeInterval}
                   onChange={handleNudgeIntervalChange}
                   disabled={!isEditing}
-                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 ${!isEditing
+                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 backdrop-blur-sm transition-all duration-300 ${!isEditing
                     ? isDarkMode
                       ? 'border-gray-700 bg-gray-800/30 text-gray-400 cursor-not-allowed'
                       : 'border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed'
@@ -402,7 +402,7 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                   value={maxNudges}
                   onChange={handleMaxNudgesChange}
                   disabled={!isEditing}
-                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 backdrop-blur-sm transition-all duration-300 ${!isEditing
+                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 backdrop-blur-sm transition-all duration-300 ${!isEditing
                     ? isDarkMode
                       ? 'border-gray-700 bg-gray-800/30 text-gray-400 cursor-not-allowed'
                       : 'border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed'

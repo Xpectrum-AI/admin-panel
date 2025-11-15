@@ -437,7 +437,7 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
                         {/* Refresh Button */}
                         <button
                             onClick={refreshData}
-                            className="group relative px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                            className="group relative px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                         >
                             <RefreshCw className="h-4 w-4" />
                             <span className="text-sm font-semibold">Refresh</span>
@@ -519,7 +519,7 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
                                         {/* Number Column */}
                                         <td className="py-4 px-6">
                                             <div className="flex items-center gap-2">
-                                                <Phone className={`h-4 w-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                                                <Phone className={`h-4 w-4 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
                                                 <div>
                                                     <div className="font-medium text-sm">
                                                         {phone.number}
@@ -561,7 +561,7 @@ export default function InboundWhatsappNumbers({ refreshTrigger }: InboundWhatsa
                                                 <div className="flex items-center gap-1">
                                                     <MessageSquare
                                                         className={`h-4 w-4 ${phone.sms_enabled
-                                                            ? (isDarkMode ? 'text-blue-400' : 'text-blue-600')
+                                                            ? (isDarkMode ? 'text-green-400' : 'text-green-600')
                                                             : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
                                                             }`}
                                                     />

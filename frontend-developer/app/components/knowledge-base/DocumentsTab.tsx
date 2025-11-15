@@ -153,7 +153,7 @@ export default function DocumentsTab({
           <div className="p-6">
             {loading ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
                 <p className={`mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Loading segments...</p>
               </div>
             ) : documentSegments.length > 0 ? (
@@ -172,7 +172,7 @@ export default function DocumentsTab({
                               className="sr-only"
                             />
                             <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                              segment.enabled ? 'bg-blue-600' : 'bg-gray-200'
+                              segment.enabled ? 'bg-green-600' : 'bg-gray-200'
                             }`}>
                               <span className={`inline-block h-4 w-4 transform rounded-full transition-transform duration-200 ${
                                 segment.enabled ? 'translate-x-6 bg-white' : 'translate-x-1 bg-white'
@@ -213,7 +213,7 @@ export default function DocumentsTab({
                             ? 'bg-gray-900 border-gray-600 text-gray-100' 
                             : 'bg-white border-gray-300 text-gray-900'
                         }`}>
-                          <div className="text-xs font-semibold mb-2 text-blue-500">Full Content:</div>
+                          <div className="text-xs font-semibold mb-2 text-green-500">Full Content:</div>
                           <div className="text-sm whitespace-pre-wrap leading-relaxed">
                             {segment.content}
                           </div>
@@ -268,7 +268,7 @@ export default function DocumentsTab({
             onClick={() => onUploadMethodChange('text')}
             className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
               uploadMethod === 'text'
-                ? 'bg-blue-500 text-white'
+                ? 'bg-green-500 text-white'
                 : isDarkMode
                 ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -281,7 +281,7 @@ export default function DocumentsTab({
             onClick={() => onUploadMethodChange('file')}
             className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
               uploadMethod === 'file'
-                ? 'bg-blue-500 text-white'
+                ? 'bg-green-500 text-white'
                 : isDarkMode
                 ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -294,7 +294,7 @@ export default function DocumentsTab({
             onClick={() => onUploadMethodChange('url')}
             className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
               uploadMethod === 'url'
-                ? 'bg-blue-500 text-white'
+                ? 'bg-green-500 text-white'
                 : isDarkMode
                 ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -375,7 +375,7 @@ export default function DocumentsTab({
               <div
                 className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
                   dragActive
-                    ? 'border-blue-500 bg-blue-50'
+                    ? 'border-green-500 bg-green-50'
                     : isDarkMode
                     ? 'border-gray-600 bg-gray-800/50 hover:bg-gray-700/50'
                     : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
@@ -388,7 +388,7 @@ export default function DocumentsTab({
               >
                 {selectedFile ? (
                   <div>
-                    <FileText className="h-8 w-8 text-blue-500 mx-auto mb-2" />
+                    <FileText className="h-8 w-8 text-green-500 mx-auto mb-2" />
                     <p className={`${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                       {selectedFile.name}
                     </p>
@@ -526,7 +526,7 @@ export default function DocumentsTab({
                         className="sr-only"
                       />
                       <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${
-                        (doc.enabled ?? true) ? 'bg-blue-600' : 'bg-gray-200'
+                        (doc.enabled ?? true) ? 'bg-green-600' : 'bg-gray-200'
                       }`}>
                         <span className={`inline-block h-3.5 w-3.5 transform rounded-full transition-transform duration-200 ${
                           (doc.enabled ?? true) ? 'translate-x-5 bg-white' : 'translate-x-0.5 bg-white'
@@ -544,14 +544,14 @@ export default function DocumentsTab({
                   </span>
                   <button 
                     onClick={() => handleEditChunkSettings(doc.id)}
-                    className="p-1 hover:bg-purple-50 text-purple-500 hover:text-purple-700 rounded transition-colors"
+                    className="p-1 hover:bg-green-50 text-green-500 hover:text-green-700 rounded transition-colors"
                     title="Edit chunk settings"
                   >
                     <Settings className="h-4 w-4" />
                   </button>
                   <button 
                     onClick={() => onViewDocument(doc)}
-                    className="p-1 hover:bg-blue-50 text-blue-500 hover:text-blue-700 rounded transition-colors"
+                    className="p-1 hover:bg-green-50 text-green-500 hover:text-green-700 rounded transition-colors"
                     title="View document details"
                   >
                     <Eye className="h-4 w-4" />
@@ -621,8 +621,8 @@ export default function DocumentsTab({
                 disabled={reindexing}
                 className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
                   reindexing
-                    ? 'bg-purple-400 cursor-not-allowed'
-                    : 'bg-purple-600 hover:bg-purple-700'
+                    ? 'bg-green-400 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700'
                 } text-white`}
               >
                 {reindexing ? (
