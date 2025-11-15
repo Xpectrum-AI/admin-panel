@@ -222,14 +222,10 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
   };
 
 
-  // Generate avatar color based on agent name
+  // Generate avatar color - using website's green theme (same color for all agents)
   const getAvatarColor = (name: string) => {
-    const colors = [
-      '#4F46E5', '#059669', '#DC2626', '#7C3AED', '#EA580C', '#0891B2',
-      '#BE185D', '#65A30D', '#CA8A04', '#9333EA', '#C2410C', '#0D9488'
-    ];
-    const index = name.charCodeAt(0) % colors.length;
-    return colors[index];
+    // Using the same green color as the website (green-600 to match from-green-600)
+    return '#16A34A'; // green-600
   };
 
   // Get status badge styling
@@ -368,7 +364,7 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isDarkMode ? 'bg-purple-400' : 'bg-purple-600'}`}></div>
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isDarkMode ? 'bg-green-400' : 'bg-green-600'}`}></div>
                     <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                       Deploy with enterprise-grade security
                     </p>
