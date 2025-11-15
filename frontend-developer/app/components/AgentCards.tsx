@@ -428,43 +428,64 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
 
                 {/* Actions */}
                 <div className={`p-5 border-t ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-                  <div className="grid grid-cols-5 gap-2.5">
-                    <button
-                      onClick={() => onOpenAgent(agent)}
-                      className="col-span-2 bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-700 hover:to-blue-600 text-white py-2.5 px-4 rounded-lg transition-all duration-200 shadow-sm font-medium text-sm flex items-center justify-center gap-2"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      Open Agent
-                    </button>
+                  {/* Primary Action - Full Width */}
+                  <button
+                    onClick={() => onOpenAgent(agent)}
+                    className="w-full bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-700 hover:to-blue-600 text-white py-3 px-4 rounded-lg transition-all duration-200 shadow-sm font-medium text-sm flex items-center justify-center gap-2 mb-3"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Open Agent
+                  </button>
+                  
+                  {/* Secondary Actions - Icon Buttons with Hover Labels */}
+                  <div className="flex items-center justify-center gap-2">
                     <button
                       onClick={() => onEditAgent(agent)}
-                      className={`p-2.5 rounded-lg transition-colors flex items-center justify-center ${isDarkMode
-                        ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                      className={`group relative px-3 py-2 rounded-lg transition-all duration-300 ease-in-out flex items-center justify-center gap-1.5 ${isDarkMode
+                        ? 'bg-gray-700/50 hover:bg-gray-600 text-gray-300 hover:text-white'
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900'
                         }`}
-                      title="Edit agent settings"
                     >
-                      <Edit className="w-4 h-4" />
+                      <Edit className="w-4 h-4 flex-shrink-0 transition-transform duration-300 group-hover:scale-110" />
+                      <span className={`text-xs font-medium whitespace-nowrap transition-all duration-300 ease-in-out ${
+                        isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                      } ${
+                        'max-w-0 opacity-0 overflow-hidden group-hover:max-w-[50px] group-hover:opacity-100 group-hover:ml-1'
+                      }`}>
+                        Edit
+                      </span>
                     </button>
                     <button
                       onClick={() => showQrCodeModal(agent)}
-                      className={`p-2.5 rounded-lg transition-colors flex items-center justify-center ${isDarkMode
-                        ? 'bg-green-900/30 hover:bg-green-800/30 text-green-300'
-                        : 'bg-green-100 hover:bg-green-200 text-green-700'
+                      className={`group relative px-3 py-2 rounded-lg transition-all duration-300 ease-in-out flex items-center justify-center gap-1.5 ${isDarkMode
+                        ? 'bg-gray-700/50 hover:bg-gray-600 text-gray-300 hover:text-green-400'
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-green-600'
                         }`}
-                      title="Generate QR code"
                     >
-                      <QrCode className="w-4 h-4" />
+                      <QrCode className="w-4 h-4 flex-shrink-0 transition-transform duration-300 group-hover:scale-110" />
+                      <span className={`text-xs font-medium whitespace-nowrap transition-all duration-300 ease-in-out ${
+                        isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                      } ${
+                        'max-w-0 opacity-0 overflow-hidden group-hover:max-w-[40px] group-hover:opacity-100 group-hover:ml-1'
+                      }`}>
+                        QR
+                      </span>
                     </button>
                     <button
                       onClick={() => showDeleteConfirmation(agent)}
-                      className={`p-2.5 rounded-lg transition-colors flex items-center justify-center ${isDarkMode
-                        ? 'bg-red-900/30 hover:bg-red-800/30 text-red-300'
-                        : 'bg-red-100 hover:bg-red-200 text-red-700'
+                      className={`group relative px-3 py-2 rounded-lg transition-all duration-300 ease-in-out flex items-center justify-center gap-1.5 ${isDarkMode
+                        ? 'bg-gray-700/50 hover:bg-gray-600 text-gray-300 hover:text-red-400'
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-red-600'
                         }`}
-                      title="Delete Agent"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4 flex-shrink-0 transition-transform duration-300 group-hover:scale-110" />
+                      <span className={`text-xs font-medium whitespace-nowrap transition-all duration-300 ease-in-out ${
+                        isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                      } ${
+                        'max-w-0 opacity-0 overflow-hidden group-hover:max-w-[60px] group-hover:opacity-100 group-hover:ml-1'
+                      }`}>
+                        Delete
+                      </span>
                     </button>
                   </div>
                 </div>

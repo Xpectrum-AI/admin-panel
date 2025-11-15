@@ -995,7 +995,8 @@ Remember: You are the first point of contact for many patients. Your professiona
         tts_api_key: uiConfig.apiKey || '',
         model: uiConfig.selectedModel || 'sonic-2',
         speed: uiConfig.speedValue || 1.0,
-        language: languageCode
+        language: languageCode,
+        gender: uiConfig.cartesiaSelectedGender || ''
       };
     } else if (provider === 'OpenAI') {
       backendConfig.openai = {

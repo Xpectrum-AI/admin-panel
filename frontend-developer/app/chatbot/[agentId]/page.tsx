@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { Bot, Send, Loader2, MessageCircle, Phone, PhoneOff, Mic, MicOff, MoreVertical, RotateCcw, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface Message {
   id: string;
@@ -29,6 +30,7 @@ export default function ChatbotPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const agentId = params.agentId as string;
+  const { isDarkMode } = useTheme();
 
   const [agentConfig, setAgentConfig] = useState<AgentConfig | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -37,8 +39,10 @@ export default function ChatbotPage() {
   const [isLoadingAgent, setIsLoadingAgent] = useState(true);
   const [conversationId, setConversationId] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -249,12 +253,29 @@ export default function ChatbotPage() {
     }
   };
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuOpen]);
+
   if (isLoadingAgent) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50'}`}>
         <div className="text-center">
-          <Loader2 className="h-12 w-12 text-blue-500 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Loading chatbot...</p>
+          <Loader2 className={`h-12 w-12 animate-spin mx-auto mb-4 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+          <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Loading chatbot...</p>
         </div>
       </div>
     );
@@ -262,14 +283,14 @@ export default function ChatbotPage() {
 
   if (error || !agentConfig) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center bg-red-100 dark:bg-red-900/20 p-6 rounded-lg max-w-md">
+      <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50'}`}>
+        <div className={`text-center p-8 rounded-2xl shadow-xl border max-w-md ${isDarkMode ? 'bg-gray-800/50 border-red-700/50' : 'bg-white border-red-200'}`}>
           <div className="text-red-500 text-4xl mb-4">⚠️</div>
-          <h2 className="text-red-700 dark:text-red-400 text-xl mb-2">Error Loading Chatbot</h2>
-          <p className="text-red-600 dark:text-red-300 mb-4">{error || 'Agent not found'}</p>
+          <h2 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-red-400' : 'text-red-700'}`}>Error Loading Chatbot</h2>
+          <p className={`mb-6 ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>{error || 'Agent not found'}</p>
           <a
             href="/"
-            className="inline-block bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+            className={`inline-block px-6 py-3 rounded-xl font-medium transition-colors ${isDarkMode ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-green-600 hover:bg-green-700 text-white'}`}
           >
             Return to Dashboard
           </a>
@@ -361,6 +382,13 @@ export default function ChatbotPage() {
         .text-white .markdown-content a {
           color: #9dcdfb;
         }
+        .dark .markdown-content pre,
+        .dark .markdown-content code {
+          background-color: rgba(0, 0, 0, 0.3);
+        }
+        .dark .markdown-content a {
+          color: #60a5fa;
+        }
         .typing-dots {
           display: inline-flex;
           align-items: center;
@@ -414,110 +442,140 @@ export default function ChatbotPage() {
         }
       `}</style>
 
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        {/* Background Image */}
-        <div className="fixed top-0 left-0 w-full h-full z-0 overflow-hidden">
-          <div
-            className="w-full h-full object-cover"
-            style={{
-              background: 'linear-gradient(0deg, #1E88E5 0%, #64B5F6 30%, #BBDEFB 60%, #FFFFFF 100%)',
-              opacity: 0.9,
-              pointerEvents: 'none',
-            }}
-          />
-        </div>
-
+      <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50'}`}>
         {/* Chat Interface */}
-        <div className="relative z-10">
+        <div className="relative z-10 w-full max-w-2xl mx-4">
           <div
-            className="bg-white rounded-[30px] shadow-2xl w-[460px] flex flex-col animate-fade-in-up"
+            className={`rounded-2xl shadow-2xl w-full flex flex-col animate-fade-in-up border ${isDarkMode 
+              ? 'bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800 border-gray-700/50' 
+              : 'bg-gradient-to-br from-white via-gray-50 to-white border-gray-200/50'
+            }`}
             style={{
-              background: 'linear-gradient(0deg, #1E88E5 0%, #64B5F6 30%, #BBDEFB 60%, #FFFFFF 100%)',
-              height: '720px',
+              height: '85vh',
+              maxHeight: '800px',
+              minHeight: '600px',
               animation: 'fadeInUp 0.3s ease-out forwards',
             }}
           >
             {/* Header */}
-            <div className="text-white p-4 rounded-t-[30px] flex justify-between items-center"
-              style={{ backgroundColor: '#1E88E5' }}>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-white bg-opacity-20 flex items-center justify-center text-white font-medium">
+            <div className={`p-4 sm:p-6 rounded-t-2xl flex justify-between items-center border-b ${isDarkMode 
+              ? 'bg-gradient-to-r from-gray-800/50 to-gray-900 border-gray-700/50' 
+              : 'bg-gradient-to-r from-gray-50/50 to-white border-gray-200/50'
+            }`}>
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center font-bold text-lg shadow-md ${isDarkMode 
+                  ? 'bg-gradient-to-br from-green-600 to-emerald-600 text-white' 
+                  : 'bg-gradient-to-br from-green-500 to-emerald-500 text-white'
+                }`}>
                   {agentConfig.avatar ? (
-                    <img src={agentConfig.avatar} alt={agentConfig.name || agentConfig.agent_prefix} className="w-full h-full object-cover rounded-full" />
+                    <img src={agentConfig.avatar} alt={agentConfig.name || agentConfig.agent_prefix} className="w-full h-full object-cover rounded-xl" />
                   ) : (
-                    (agentConfig.name || agentConfig.agent_prefix || 'A').charAt(0).toUpperCase()
+                    <Bot className="w-6 h-6" />
                   )}
                 </div>
                 <div className="flex flex-col">
-                  <h1 className="text-lg font-semibold text-white">{agentConfig.name || agentConfig.agent_prefix}</h1>
-                  <p className="text-xs text-blue-100">AI Assistant</p>
+                  <h1 className={`text-base sm:text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {agentConfig.name || agentConfig.agent_prefix}
+                  </h1>
+                  <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    AI Assistant
+                  </p>
                 </div>
               </div>
-              <div className="relative">
+              <div className="relative" ref={menuRef}>
                 <button
-                  onClick={() => document.getElementById('menu-dropdown')?.classList.toggle('hidden')}
-                  className="text-white hover:text-gray-200"
+                  onClick={() => setMenuOpen(!menuOpen)}
+                  className={`p-2 rounded-lg transition-colors ${isDarkMode 
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
                 >
-                  <MoreVertical className="h-6 w-6" />
+                  <MoreVertical className="h-5 w-5" />
                 </button>
-                <div
-                  id="menu-dropdown"
-                  className="hidden absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-lg z-50"
-                >
-                  <div className="py-1">
-                    <button
-                      onClick={() => {
-                        document.getElementById('menu-dropdown')?.classList.add('hidden');
-                        clearChat();
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                    >
-                      <RotateCcw className="h-5 w-5 mr-2" />
-                      Refresh Chat
-                    </button>
-                    <button
-                      onClick={() => {
-                        document.getElementById('menu-dropdown')?.classList.add('hidden');
-                        window.close();
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                    >
-                      <X className="h-5 w-5 mr-2" />
-                      Close Chat
-                    </button>
+                {menuOpen && (
+                  <div
+                    className={`absolute right-0 mt-2 w-48 rounded-xl shadow-xl border z-50 ${isDarkMode 
+                      ? 'bg-gray-800 border-gray-700' 
+                      : 'bg-white border-gray-200'
+                    }`}
+                  >
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          setMenuOpen(false);
+                          clearChat();
+                        }}
+                        className={`w-full text-left px-4 py-2.5 text-sm flex items-center gap-2 transition-colors ${isDarkMode 
+                          ? 'text-gray-300 hover:bg-gray-700 hover:text-white' 
+                          : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                        }`}
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        Refresh Chat
+                      </button>
+                      <button
+                        onClick={() => {
+                          setMenuOpen(false);
+                          window.close();
+                        }}
+                        className={`w-full text-left px-4 py-2.5 text-sm flex items-center gap-2 transition-colors ${isDarkMode 
+                          ? 'text-gray-300 hover:bg-gray-700 hover:text-white' 
+                          : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                        }`}
+                      >
+                        <X className="h-4 w-4" />
+                        Close Chat
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
             {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className={`flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 ${isDarkMode ? 'bg-gray-900/50' : 'bg-gray-50/50'}`}>
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} group`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-2xl p-3 ${message.type === 'user'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-white bg-opacity-80 text-gray-800'
+                    className={`max-w-[80%] sm:max-w-[75%] rounded-2xl p-3 sm:p-4 shadow-sm transition-all duration-200 group-hover:shadow-md ${message.type === 'user'
+                        ? isDarkMode
+                          ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-br-md'
+                          : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-br-md'
+                        : isDarkMode
+                          ? 'bg-gray-800 text-gray-100 rounded-bl-md border border-gray-700'
+                          : 'bg-white text-gray-900 rounded-bl-md border border-gray-200'
                       }`}
                   >
-                    <div className={`markdown-content text-sm ${message.type === 'user' ? 'text-white' : 'text-gray-800'}`}>
+                    <div className={`markdown-content text-sm sm:text-base leading-relaxed ${message.type === 'user' ? 'text-white' : isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {message.message}
                       </ReactMarkdown>
                     </div>
+                    <p className={`text-xs mt-2 ${message.type === 'user' 
+                      ? 'text-green-100' 
+                      : isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                    }`}>
+                      {message.timestamp.toLocaleTimeString()}
+                    </p>
                   </div>
                 </div>
               ))}
               {isLoading && (
                 <div className="flex justify-start">
-                  <div className="max-w-[80%] rounded-2xl p-3 bg-white bg-opacity-80">
-                    <div className="typing-dots">
-                      <span></span>
-                      <span></span>
-                      <span></span>
+                  <div className={`max-w-[80%] sm:max-w-[75%] rounded-2xl p-3 sm:p-4 ${isDarkMode 
+                    ? 'bg-gray-800 text-gray-100 border border-gray-700' 
+                    : 'bg-white text-gray-900 border border-gray-200'
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <div className="typing-dots">
+                        <span className={isDarkMode ? 'bg-gray-400' : 'bg-gray-400'}></span>
+                        <span className={isDarkMode ? 'bg-gray-400' : 'bg-gray-400'}></span>
+                        <span className={isDarkMode ? 'bg-gray-400' : 'bg-gray-400'}></span>
+                      </div>
+                      <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Thinking...</span>
                     </div>
                   </div>
                 </div>
@@ -526,8 +584,11 @@ export default function ChatbotPage() {
             </div>
 
             {/* Chat Input */}
-            <div className="p-4">
-              <div className="flex gap-2 items-center">
+            <div className={`p-4 sm:p-6 border-t ${isDarkMode 
+              ? 'bg-gray-800/50 border-gray-700/50' 
+              : 'bg-gradient-to-r from-gray-50 to-white border-gray-200/50'
+            }`}>
+              <div className="flex gap-3 items-end">
                 <textarea
                   value={currentMessage}
                   onChange={(e) => {
@@ -537,7 +598,10 @@ export default function ChatbotPage() {
                     const newHeight = Math.min(e.target.scrollHeight, 150);
                     e.target.style.height = `${newHeight}px`;
                   }}
-                  className="flex-1 border border-gray-300 rounded-2xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none overflow-y-auto bg-white text-gray-900 placeholder-gray-500"
+                  className={`flex-1 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-transparent resize-none overflow-y-auto transition-all duration-200 leading-normal ${isDarkMode
+                    ? 'bg-gray-700/50 border border-gray-600 text-gray-200 placeholder-gray-400 focus:bg-gray-700'
+                    : 'bg-white border border-gray-300 text-gray-900 placeholder-gray-500 focus:bg-white'
+                  }`}
                   placeholder="Type your message..."
                   disabled={isLoading}
                   onKeyDown={(e) => {
@@ -547,20 +611,24 @@ export default function ChatbotPage() {
                     }
                   }}
                   rows={2}
-                  style={{ minHeight: '80px', maxHeight: '150px' }}
+                  style={{ minHeight: '48px', maxHeight: '150px' }}
                 />
                 <button
                   onClick={sendMessage}
-                  disabled={isLoading}
-                  className={`px-4 py-2 rounded-2xl text-white ${isLoading
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-blue-500 hover:bg-blue-600"
-                    } transition-colors duration-200`}
+                  disabled={isLoading || !currentMessage.trim()}
+                  className={`px-4 py-3 rounded-xl text-white transition-all duration-200 flex items-center justify-center flex-shrink-0 ${isLoading || !currentMessage.trim()
+                      ? isDarkMode
+                        ? "bg-gray-700 cursor-not-allowed text-gray-500"
+                        : "bg-gray-300 cursor-not-allowed text-gray-500"
+                      : isDarkMode
+                        ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg shadow-green-500/20"
+                        : "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-lg shadow-green-500/30"
+                    }`}
                 >
                   {isLoading ? (
                     <Loader2 className="animate-spin h-5 w-5" />
                   ) : (
-                    <Send className="h-5 w-5" style={{ transform: 'rotate(45deg)' }} />
+                    <Send className="h-5 w-5" />
                   )}
                 </button>
               </div>

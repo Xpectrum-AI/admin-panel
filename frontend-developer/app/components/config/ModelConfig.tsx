@@ -947,7 +947,7 @@ if (!appId) {
               <Sparkles className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
             </div>
             <div>
-              <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>System Prompt</h4>
+              <h4 className={`font-bold text-sm sm:text-base ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>System Prompt</h4>
             </div>
           </div>
 
@@ -1000,7 +1000,7 @@ if (!appId) {
               disabled={!isEditing}
               placeholder="Enter the system prompt that defines your agent's behavior..."
               rows={12}
-              className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base resize-none ${!isEditing
+              className={`w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base resize-none leading-normal ${!isEditing
                 ? isDarkMode
                   ? 'bg-gray-800/30 border-gray-700 text-gray-400 placeholder-gray-500 cursor-not-allowed'
                   : 'bg-gray-100 border-gray-300 text-gray-500 placeholder-gray-400 cursor-not-allowed'
@@ -1021,7 +1021,7 @@ if (!appId) {
               <BookOpen className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
             </div>
             <div>
-              <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Agent Knowledge Base</h4>
+              <h4 className={`font-bold text-sm sm:text-base ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>Agent Knowledge Base</h4>
               <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 Select knowledge bases to provide context to your agent
               </p>
@@ -1132,7 +1132,7 @@ if (!appId) {
               <Sparkles className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
             </div>
             <div>
-              <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Model Selection</h4>
+              <h4 className={`font-bold text-sm sm:text-base ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>Model Selection</h4>
             </div>
           </div>
 
@@ -1245,7 +1245,7 @@ if (!appId) {
               <Sparkles className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
             </div>
             <div>
-              <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Agent API Configuration</h4>
+              <h4 className={`font-bold text-sm sm:text-base ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>Agent API Configuration</h4>
             </div>
           </div>
 
@@ -1327,7 +1327,7 @@ if (!appId) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <BookOpen className={`h-6 w-6 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
-                  <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  <h3 className={`text-lg font-bold ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>
                     Select Reference Knowledge
                   </h3>
                 </div>

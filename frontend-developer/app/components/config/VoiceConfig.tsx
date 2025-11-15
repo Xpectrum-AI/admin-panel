@@ -34,25 +34,86 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
   const { isDarkMode } = useTheme();
   const { config: voiceConfig, updateConfig: updateVoiceConfig } = useVoiceConfig();
   const { config: transcriberConfig, updateConfig: updateTranscriberConfig } = useTranscriberConfig();
-  // Local state for UI updates
-  const [selectedVoiceProvider, setSelectedVoiceProvider] = useState('OpenAI');
-  const [selectedLanguage, setSelectedLanguage] = useState('English');
-  const [speedValue, setSpeedValue] = useState(0.0);
-  const [apiKey, setApiKey] = useState('');
-  const [voiceId, setVoiceId] = useState('');
-  const [selectedModel, setSelectedModel] = useState('tts-1');
-  const [stability, setStability] = useState(0.5);
-  const [similarityBoost, setSimilarityBoost] = useState(0.5);
-  const [selectedVoice, setSelectedVoice] = useState('alloy');
-  const [responseFormat, setResponseFormat] = useState('mp3');
+  
+  // Helper to get initial values from config
+  const getInitialValues = () => {
+    if (voiceConfiguration) {
+      let provider = voiceConfiguration.selectedVoiceProvider;
+      if (!provider && voiceConfiguration.provider) {
+        if (voiceConfiguration.provider === 'openai') provider = 'OpenAI';
+        else if (voiceConfiguration.provider === 'elevenlabs') provider = '11Labs';
+        else if (voiceConfiguration.provider === 'cartesian') provider = 'Cartesia';
+      }
+      
+      // Get API key from agentTtsConfig first (MongoDB saved config)
+      let apiKeyFromConfig = '';
+      if (agentTtsConfig && provider) {
+        if (provider === 'OpenAI' && agentTtsConfig.openai?.api_key) {
+          apiKeyFromConfig = agentTtsConfig.openai.api_key;
+        } else if (provider === '11Labs' && agentTtsConfig.elevenlabs?.api_key) {
+          apiKeyFromConfig = agentTtsConfig.elevenlabs.api_key;
+        } else if (provider === 'Cartesia' && agentTtsConfig.cartesian?.tts_api_key) {
+          apiKeyFromConfig = agentTtsConfig.cartesian.tts_api_key;
+        }
+      }
+      if (!apiKeyFromConfig && voiceConfiguration.apiKey) {
+        apiKeyFromConfig = voiceConfiguration.apiKey;
+      } else if (!apiKeyFromConfig && voiceConfiguration[provider?.toLowerCase() || '']?.api_key) {
+        apiKeyFromConfig = voiceConfiguration[provider?.toLowerCase() || ''].api_key;
+      } else if (!apiKeyFromConfig && voiceConfiguration.cartesian?.tts_api_key) {
+        apiKeyFromConfig = voiceConfiguration.cartesian.tts_api_key;
+      }
+      
+      return {
+        provider: provider || 'OpenAI',
+        language: voiceConfiguration.selectedLanguage || 'English',
+        speed: voiceConfiguration.speedValue ?? 1.0,
+        apiKey: apiKeyFromConfig || '',
+        voiceId: voiceConfiguration.voiceId || '',
+        model: voiceConfiguration.selectedModel || (provider === 'Cartesia' ? 'sonic-2' : provider === '11Labs' ? 'eleven_multilingual_v2' : 'tts-1'),
+        stability: voiceConfiguration.stability ?? 0.5,
+        similarityBoost: voiceConfiguration.similarityBoost ?? 0.5,
+        voice: voiceConfiguration.selectedVoice || 'alloy',
+        responseFormat: voiceConfiguration.responseFormat || 'mp3',
+        cartesiaSelectedGender: voiceConfiguration.cartesiaSelectedGender || '',
+        selectedGender: voiceConfiguration.selectedGender || ''
+      };
+    }
+    return {
+      provider: 'OpenAI',
+      language: 'English',
+      speed: 1.0,
+      apiKey: '',
+      voiceId: '',
+      model: 'tts-1',
+      stability: 0.5,
+      similarityBoost: 0.5,
+      voice: 'alloy',
+      responseFormat: 'mp3'
+    };
+  };
+  
+  const initialValues = getInitialValues();
+  
+  // Local state for UI updates - initialize from config
+  const [selectedVoiceProvider, setSelectedVoiceProvider] = useState(initialValues.provider);
+  const [selectedLanguage, setSelectedLanguage] = useState(initialValues.language);
+  const [speedValue, setSpeedValue] = useState(initialValues.speed);
+  const [apiKey, setApiKey] = useState(initialValues.apiKey);
+  const [voiceId, setVoiceId] = useState(initialValues.voiceId);
+  const [selectedModel, setSelectedModel] = useState(initialValues.model);
+  const [stability, setStability] = useState(initialValues.stability);
+  const [similarityBoost, setSimilarityBoost] = useState(initialValues.similarityBoost);
+  const [selectedVoice, setSelectedVoice] = useState(initialValues.voice);
+  const [responseFormat, setResponseFormat] = useState(initialValues.responseFormat);
   const [isUserChangingProvider, setIsUserChangingProvider] = useState(false);
   const [isUserChangingVoiceField, setIsUserChangingVoiceField] = useState(false);
   const [isUserChangingApiKey, setIsUserChangingApiKey] = useState(false);
   const [isUserChangingTranscriberApiKey, setIsUserChangingTranscriberApiKey] = useState(false);
   const [isApiKeyFocused, setIsApiKeyFocused] = useState(false);
   const [isTranscriberApiKeyFocused, setIsTranscriberApiKeyFocused] = useState(false);
-  const [selectedGender, setSelectedGender] = useState<string>(''); // Gender filter for 11Labs
-  const [cartesiaSelectedGender, setCartesiaSelectedGender] = useState<string>(''); // Gender filter for Cartesia
+  const [selectedGender, setSelectedGender] = useState<string>(initialValues.selectedGender); // Gender filter for 11Labs
+  const [cartesiaSelectedGender, setCartesiaSelectedGender] = useState<string>(initialValues.cartesiaSelectedGender); // Gender filter for Cartesia
   
   // ElevenLabs voices state
   const [availableVoices, setAvailableVoices] = useState<any[]>([]);
@@ -66,6 +127,10 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
   const voiceFieldChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastConfigRef = useRef<string>('');
   const lastVoiceIdRef = useRef<string>('');
+  const isInitializedRef = useRef(false);
+  const lastVoiceConfigRef = useRef<string>('');
+  const lastApiKeyRef = useRef<string>('');
+  const voicesFetchedRef = useRef<{ provider: string; apiKey: string } | null>(null);
 
   // Transcriber state
   const [selectedTranscriberProvider, setSelectedTranscriberProvider] = useState('Deepgram');
@@ -690,85 +755,111 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     };
   };
 
-  // Load state from centralized configuration when component mounts or when configuration changes
+  // Load state from centralized configuration - simplified, only when config actually changes
   useEffect(() => {
-    // Load from centralized configuration
-    if (voiceConfiguration && !isUserChangingProvider && !isUserChangingVoiceField && !isUserChangingApiKey) {
-      // Handle provider - check both UI format and backend format
-      let provider = voiceConfiguration.selectedVoiceProvider;
-      if (!provider && voiceConfiguration.provider) {
-        // Map backend format to UI format
-        if (voiceConfiguration.provider === 'openai') provider = 'OpenAI';
-        else if (voiceConfiguration.provider === 'elevenlabs') provider = '11Labs';
-        else if (voiceConfiguration.provider === 'cartesian') provider = 'Cartesia';
-      }
-      if (provider) {
-        setSelectedVoiceProvider(provider);
-      }
-      if (voiceConfiguration.selectedLanguage) {
-        setSelectedLanguage(voiceConfiguration.selectedLanguage);
-      }
-      if (voiceConfiguration.speedValue !== undefined) {
-        setSpeedValue(voiceConfiguration.speedValue);
-      }
-      // Load API key from configuration if it exists (from MongoDB)
-      // Check both UI format (apiKey) and backend format (nested objects)
-      // Also check MongoDB config (agentTtsConfig) which has the saved API keys
-      let apiKeyFromConfig = '';
-      
-      // First check MongoDB config (agentTtsConfig) - this has the saved API keys from MongoDB
-      if (agentTtsConfig) {
-        const currentProvider = provider || selectedVoiceProvider;
-        if (currentProvider === 'OpenAI' && agentTtsConfig.openai?.api_key) {
-          apiKeyFromConfig = agentTtsConfig.openai.api_key;
-        } else if (currentProvider === '11Labs' && agentTtsConfig.elevenlabs?.api_key) {
-          apiKeyFromConfig = agentTtsConfig.elevenlabs.api_key;
-        } else if (currentProvider === 'Cartesia' && agentTtsConfig.cartesian?.tts_api_key) {
-          apiKeyFromConfig = agentTtsConfig.cartesian.tts_api_key;
-        }
-      }
-      
-      // Fallback to UI format (flattened) if not found in MongoDB
-      if (!apiKeyFromConfig && voiceConfiguration.apiKey) {
-        apiKeyFromConfig = voiceConfiguration.apiKey;
-      } else if (!apiKeyFromConfig) {
-        // Check backend format (nested objects) - check all providers
-        if (voiceConfiguration.openai?.api_key) {
-          apiKeyFromConfig = voiceConfiguration.openai.api_key;
-        } else if (voiceConfiguration.elevenlabs?.api_key) {
-          apiKeyFromConfig = voiceConfiguration.elevenlabs.api_key;
-        } else if (voiceConfiguration.cartesian?.tts_api_key) {
-          apiKeyFromConfig = voiceConfiguration.cartesian.tts_api_key;
-        }
-      }
-      
-      // Set API key from config if it exists and current field is empty
-      if (apiKeyFromConfig && !apiKey && !isUserChangingApiKey) {
-        setApiKey(apiKeyFromConfig);
-      } else if (!apiKeyFromConfig && !apiKey) {
-        // If no API key in config and field is empty, keep it empty
-        setApiKey('');
-      }
-      if (voiceConfiguration.voiceId !== undefined) {
-        setVoiceId(voiceConfiguration.voiceId);
-        lastVoiceIdRef.current = voiceConfiguration.voiceId;
-      }
-      if (voiceConfiguration.selectedVoice) {
-        setSelectedVoice(voiceConfiguration.selectedVoice);
-      }
-      if (voiceConfiguration.stability !== undefined) {
-        setStability(voiceConfiguration.stability);
-      }
-      if (voiceConfiguration.similarityBoost !== undefined) {
-        setSimilarityBoost(voiceConfiguration.similarityBoost);
-      }
-      if (voiceConfiguration.responseFormat) {
-        setResponseFormat(voiceConfiguration.responseFormat);
-      }
-      if (voiceConfiguration.selectedModel) {
-        setSelectedModel(voiceConfiguration.selectedModel);
+    if (!voiceConfiguration) return;
+    
+    // Prevent loading if user is actively changing something
+    if (isUserChangingProvider || isUserChangingVoiceField || isUserChangingApiKey) {
+      return;
+    }
+    
+    // Create a stable key to detect actual config changes
+    const configKey = JSON.stringify({
+      provider: voiceConfiguration.selectedVoiceProvider || voiceConfiguration.provider,
+      language: voiceConfiguration.selectedLanguage,
+      voiceId: voiceConfiguration.voiceId,
+      model: voiceConfiguration.selectedModel,
+      speed: voiceConfiguration.speedValue
+    });
+    
+    // Only update if config actually changed
+    if (lastVoiceConfigRef.current === configKey) {
+      return;
+    }
+    lastVoiceConfigRef.current = configKey;
+    
+    // Handle provider
+    let provider = voiceConfiguration.selectedVoiceProvider;
+    if (!provider && voiceConfiguration.provider) {
+      if (voiceConfiguration.provider === 'openai') provider = 'OpenAI';
+      else if (voiceConfiguration.provider === 'elevenlabs') provider = '11Labs';
+      else if (voiceConfiguration.provider === 'cartesian') provider = 'Cartesia';
+    }
+    if (provider && provider !== selectedVoiceProvider) {
+      setSelectedVoiceProvider(provider);
+    }
+    
+    // Load API key from agentTtsConfig (MongoDB) first, then fallback
+    let apiKeyFromConfig = '';
+    if (agentTtsConfig && provider) {
+      if (provider === 'OpenAI' && agentTtsConfig.openai?.api_key) {
+        apiKeyFromConfig = agentTtsConfig.openai.api_key;
+      } else if (provider === '11Labs' && agentTtsConfig.elevenlabs?.api_key) {
+        apiKeyFromConfig = agentTtsConfig.elevenlabs.api_key;
+      } else if (provider === 'Cartesia' && agentTtsConfig.cartesian?.tts_api_key) {
+        apiKeyFromConfig = agentTtsConfig.cartesian.tts_api_key;
       }
     }
+    if (!apiKeyFromConfig && voiceConfiguration.apiKey) {
+      apiKeyFromConfig = voiceConfiguration.apiKey;
+    } else if (!apiKeyFromConfig && voiceConfiguration.cartesian?.tts_api_key) {
+      apiKeyFromConfig = voiceConfiguration.cartesian.tts_api_key;
+    } else if (!apiKeyFromConfig && voiceConfiguration.elevenlabs?.api_key) {
+      apiKeyFromConfig = voiceConfiguration.elevenlabs.api_key;
+    } else if (!apiKeyFromConfig && voiceConfiguration.openai?.api_key) {
+      apiKeyFromConfig = voiceConfiguration.openai.api_key;
+    }
+    
+    // Update states only if values changed
+    if (apiKeyFromConfig && apiKeyFromConfig !== apiKey) {
+      setApiKey(apiKeyFromConfig);
+      // Update lastApiKeyRef to prevent unnecessary refetching
+      lastApiKeyRef.current = apiKeyFromConfig;
+    } else if (!apiKeyFromConfig && apiKey) {
+      setApiKey('');
+    } else if (apiKeyFromConfig && !lastApiKeyRef.current) {
+      // Initialize lastApiKeyRef if we have an API key but ref is empty
+      lastApiKeyRef.current = apiKeyFromConfig;
+    }
+    
+    if (voiceConfiguration.selectedLanguage && voiceConfiguration.selectedLanguage !== selectedLanguage) {
+      setSelectedLanguage(voiceConfiguration.selectedLanguage);
+    }
+    if (voiceConfiguration.speedValue !== undefined && voiceConfiguration.speedValue !== speedValue) {
+      setSpeedValue(voiceConfiguration.speedValue);
+    }
+    if (voiceConfiguration.voiceId !== undefined && voiceConfiguration.voiceId !== voiceId) {
+      setVoiceId(voiceConfiguration.voiceId);
+      lastVoiceIdRef.current = voiceConfiguration.voiceId;
+      // Update last API key ref to prevent unnecessary refetching
+      if (apiKey) {
+        lastApiKeyRef.current = apiKey;
+      }
+    }
+    if (voiceConfiguration.selectedModel && voiceConfiguration.selectedModel !== selectedModel) {
+      setSelectedModel(voiceConfiguration.selectedModel);
+    }
+    if (voiceConfiguration.selectedVoice && voiceConfiguration.selectedVoice !== selectedVoice) {
+      setSelectedVoice(voiceConfiguration.selectedVoice);
+    }
+    if (voiceConfiguration.stability !== undefined && voiceConfiguration.stability !== stability) {
+      setStability(voiceConfiguration.stability);
+    }
+    if (voiceConfiguration.similarityBoost !== undefined && voiceConfiguration.similarityBoost !== similarityBoost) {
+      setSimilarityBoost(voiceConfiguration.similarityBoost);
+    }
+    if (voiceConfiguration.responseFormat && voiceConfiguration.responseFormat !== responseFormat) {
+      setResponseFormat(voiceConfiguration.responseFormat);
+    }
+    if (voiceConfiguration.cartesiaSelectedGender !== undefined && voiceConfiguration.cartesiaSelectedGender !== cartesiaSelectedGender) {
+      setCartesiaSelectedGender(voiceConfiguration.cartesiaSelectedGender);
+    }
+    if (voiceConfiguration.selectedGender !== undefined && voiceConfiguration.selectedGender !== selectedGender) {
+      setSelectedGender(voiceConfiguration.selectedGender);
+    }
+    
+    isInitializedRef.current = true;
 
     // Load transcriber configuration
     if (transcriberConfiguration && !isUserChangingTranscriberProvider && !isUserChangingTranscriberApiKey) {
@@ -832,7 +923,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
         setInterimResultEnabled(transcriberConfiguration.interimResultEnabled);
       }
     }
-  }, [voiceConfiguration, transcriberConfiguration, isUserChangingProvider, isUserChangingTranscriberProvider, isUserChangingApiKey, isUserChangingTranscriberApiKey, apiKey, transcriberApiKey]);
+  }, [voiceConfiguration, agentTtsConfig, isUserChangingProvider, isUserChangingVoiceField, isUserChangingApiKey, selectedVoiceProvider, selectedLanguage, speedValue, apiKey, voiceId, selectedModel, selectedVoice, stability, similarityBoost, responseFormat]);
 
   // Save state to centralized state whenever it changes
   const saveStateToCentralized = useCallback((updates: any = {}) => {
@@ -848,6 +939,8 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
         similarityBoost,
         responseFormat,
         selectedModel,
+        cartesiaSelectedGender,
+        selectedGender,
         ...updates
       };
       // Call parent's onConfigChange
@@ -856,11 +949,28 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       }
     } catch (error) {
     }
-  }, [selectedVoiceProvider, selectedLanguage, speedValue, apiKey, voiceId, selectedVoice, stability, similarityBoost, responseFormat, selectedModel, onConfigChange]);
+  }, [selectedVoiceProvider, selectedLanguage, speedValue, apiKey, voiceId, selectedVoice, stability, similarityBoost, responseFormat, selectedModel, cartesiaSelectedGender, selectedGender, onConfigChange]);
 
   // Fetch ElevenLabs voices
-  const fetchElevenLabsVoices = useCallback(async () => {
-    if (selectedVoiceProvider !== '11Labs' || availableVoices.length > 0) return;
+  const fetchElevenLabsVoices = useCallback(async (forceRefetch = false) => {
+    if (selectedVoiceProvider !== '11Labs') return;
+    
+    // Always fetch if voices array is empty (needed for dropdowns to work)
+    if (availableVoices.length === 0) {
+      forceRefetch = true;
+    }
+    
+    // Don't fetch if we already have voices and voiceId is set (unless forced)
+    if (!forceRefetch && availableVoices.length > 0 && voiceId) {
+      return;
+    }
+    
+    // Don't fetch if we already fetched for this provider and API key (unless voices are empty)
+    if (!forceRefetch && availableVoices.length > 0 && voicesFetchedRef.current?.provider === '11Labs' && voicesFetchedRef.current?.apiKey === apiKey) {
+      return;
+    }
+    
+    if (!apiKey) return;
     
     setIsLoadingVoices(true);
     setVoicesError('');
@@ -878,29 +988,44 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       
       const data = await response.json();
       setAvailableVoices(data.voices || []);
-} catch (error) {
+      voicesFetchedRef.current = { provider: '11Labs', apiKey };
+    } catch (error) {
       setVoicesError(error instanceof Error ? error.message : 'Failed to fetch voices');
     } finally {
       setIsLoadingVoices(false);
     }
-  }, [selectedVoiceProvider, apiKey, availableVoices.length]);
+  }, [selectedVoiceProvider, apiKey, availableVoices.length, voiceId]);
 
   // Fetch Cartesia voices
   const fetchCartesiaVoices = useCallback(async (forceRefetch = false) => {
     if (selectedVoiceProvider !== 'Cartesia') return;
-    if (!forceRefetch && cartesiaVoices.length > 0) return;
+    
+    // Get API key from user input or environment variable
+    const cartesiaApiKey = apiKey || process.env.NEXT_PUBLIC_CARTESIA_API_KEY || '';
+    
+    if (!cartesiaApiKey) {
+      return; // Don't show error if no API key, just return
+    }
+    
+    // Always fetch if voices array is empty (needed for dropdowns to work)
+    if (cartesiaVoices.length === 0) {
+      forceRefetch = true;
+    }
+    
+    // Don't fetch if we already have voices and voiceId is set (unless forced)
+    if (!forceRefetch && cartesiaVoices.length > 0 && voiceId) {
+      return;
+    }
+    
+    // Don't fetch if we already fetched for this provider and API key (unless voices are empty)
+    if (!forceRefetch && cartesiaVoices.length > 0 && voicesFetchedRef.current?.provider === 'Cartesia' && voicesFetchedRef.current?.apiKey === cartesiaApiKey) {
+      return;
+    }
     
     setIsLoadingCartesiaVoices(true);
     setCartesiaVoicesError('');
     
     try {
-      // Get API key from user input or environment variable
-      const cartesiaApiKey = apiKey || process.env.NEXT_PUBLIC_CARTESIA_API_KEY || '';
-      
-      if (!cartesiaApiKey) {
-        throw new Error('Cartesia API key is required');
-      }
-      
       const response = await fetch('https://api.cartesia.ai/voices', {
         headers: {
           'X-API-Key': cartesiaApiKey,
@@ -914,60 +1039,103 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       
       const data = await response.json();
       setCartesiaVoices(data.voices || data || []);
+      voicesFetchedRef.current = { provider: 'Cartesia', apiKey: cartesiaApiKey };
     } catch (error) {
       setCartesiaVoicesError(error instanceof Error ? error.message : 'Failed to fetch voices');
       setCartesiaVoices([]); // Clear voices on error
     } finally {
       setIsLoadingCartesiaVoices(false);
     }
-  }, [selectedVoiceProvider, apiKey]);
+  }, [selectedVoiceProvider, apiKey, cartesiaVoices.length, voiceId]);
 
   // Load default values on component mount
   useEffect(() => {
-    const defaultVoiceIds = agentConfigService.getDefaultVoiceIds();
-
-    // Only set defaults if we don't have existing configuration
-    if (!voiceConfiguration) {
+    // Only set defaults if we don't have existing configuration AND no voiceId is set
+    if (!voiceConfiguration && !voiceId) {
       // Set default API key to empty string (user can enter their own)
       setApiKey('');
       
-      // Set default voice ID based on provider
+      // Set default voice ID based on provider (only if not already set)
       switch (selectedVoiceProvider) {
         case 'OpenAI':
           // OpenAI doesn't use voice ID
-          setVoiceId('');
+          if (!voiceId) setVoiceId('');
           break;
         case '11Labs':
-          // Set default voice ID for 11Labs
-          setVoiceId('pNInz6obpgDQGcFmaJgB');
+          // Set default voice ID for 11Labs only if not already set
+          if (!voiceId) {
+            setVoiceId('pNInz6obpgDQGcFmaJgB');
+          }
           break;
         case 'Cartesia':
           // Don't set default voice ID - user will select from fetched voices
-          setVoiceId('');
+          if (!voiceId) setVoiceId('');
           break;
       }
     }
-  }, [selectedVoiceProvider, voiceConfiguration]);
+  }, [selectedVoiceProvider, voiceConfiguration, voiceId]);
 
-  // Fetch ElevenLabs voices when provider changes to 11Labs
+  // Fetch ElevenLabs voices - only when needed
   useEffect(() => {
-    if (selectedVoiceProvider === '11Labs' && apiKey) {
-      fetchElevenLabsVoices();
+    if (selectedVoiceProvider !== '11Labs' || !apiKey) return;
+    
+    // Always fetch if voices array is empty (needed for dropdowns)
+    const voicesEmpty = availableVoices.length === 0;
+    
+    // Only fetch if:
+    // 1. Voices array is empty (needed for UI), OR
+    // 2. We don't have a voiceId set (user needs to select one), OR
+    // 3. API key actually changed (not just tab switch)
+    const apiKeyChanged = lastApiKeyRef.current !== apiKey;
+    const needsVoices = voicesEmpty || !voiceId || apiKeyChanged;
+    
+    if (needsVoices) {
+      // Only clear and refetch if API key changed
+      if (apiKeyChanged) {
+        setAvailableVoices([]);
+        voicesFetchedRef.current = null;
+        lastApiKeyRef.current = apiKey;
+      }
+      fetchElevenLabsVoices(apiKeyChanged || voicesEmpty);
     }
-  }, [selectedVoiceProvider, apiKey, fetchElevenLabsVoices]);
+  }, [selectedVoiceProvider, apiKey, voiceId, availableVoices.length, fetchElevenLabsVoices]);
 
-  // Fetch Cartesia voices when provider changes to Cartesia or API key changes
+  // Fetch Cartesia voices - only when needed
   useEffect(() => {
-    if (selectedVoiceProvider === 'Cartesia' && apiKey) {
-      // Clear existing voices and refetch when API key changes
-      setCartesiaVoices([]);
-      // Reset filters when refetching voices
-      setCartesiaSelectedGender('');
-      setVoiceId('');
-      setSelectedLanguage(''); // Reset language selection
-      fetchCartesiaVoices(true);
+    if (selectedVoiceProvider !== 'Cartesia') return;
+    
+    const cartesiaApiKey = apiKey || process.env.NEXT_PUBLIC_CARTESIA_API_KEY || '';
+    if (!cartesiaApiKey) return;
+    
+    // Always fetch if voices array is empty (needed for dropdowns)
+    const voicesEmpty = cartesiaVoices.length === 0;
+    
+    // Only fetch if:
+    // 1. Voices array is empty (needed for UI), OR
+    // 2. We don't have a voiceId set (user needs to select one), OR
+    // 3. API key actually changed (not just tab switch)
+    const apiKeyChanged = lastApiKeyRef.current !== cartesiaApiKey;
+    const needsVoices = voicesEmpty || !voiceId || apiKeyChanged;
+    
+    if (needsVoices) {
+      // Only clear and reset if API key changed (not if just empty)
+      if (apiKeyChanged) {
+        setCartesiaVoices([]);
+        setCartesiaSelectedGender('');
+        // Don't clear language if it was set from saved config
+        if (!voiceConfiguration?.selectedLanguage) {
+          setSelectedLanguage('');
+        }
+        voicesFetchedRef.current = null;
+        lastApiKeyRef.current = cartesiaApiKey;
+        // Don't clear voiceId if it was set from saved config
+        if (!voiceId) {
+          setVoiceId('');
+        }
+      }
+      fetchCartesiaVoices(apiKeyChanged || voicesEmpty);
     }
-  }, [selectedVoiceProvider, apiKey, fetchCartesiaVoices]);
+  }, [selectedVoiceProvider, apiKey, voiceId, cartesiaVoices.length, voiceConfiguration, fetchCartesiaVoices]);
 
   // Clear voice selection if current voice doesn't support selected language/model
   useEffect(() => {
@@ -1266,8 +1434,17 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     let newApiKey = '';
     let newVoiceId = '';
 
-    // Check if there's already a voice ID in the centralized configuration
-    const existingVoiceId = voiceConfiguration?.voiceId || '';
+    // Check if there's already a voice ID in the centralized configuration or backend config
+    let existingVoiceId = voiceConfiguration?.voiceId || '';
+    
+    // Also check backend config (agentTtsConfig) for saved voiceId
+    if (!existingVoiceId && agentTtsConfig) {
+      if (newProvider === '11Labs' && agentTtsConfig.elevenlabs?.voice_id) {
+        existingVoiceId = agentTtsConfig.elevenlabs.voice_id;
+      } else if (newProvider === 'Cartesia' && agentTtsConfig.cartesian?.voice_id) {
+        existingVoiceId = agentTtsConfig.cartesian.voice_id;
+      }
+    }
 
     // Check if there's an API key in the configuration for the new provider
     // Each provider should have its own API key, so we load the one for the new provider
@@ -1324,14 +1501,20 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
     setApiKey(newApiKey);
     setVoiceId(newVoiceId);
     
-    // Reset Cartesia filters when switching providers
+    // Reset Cartesia filters when switching providers (but preserve if switching to Cartesia with saved config)
     if (newProvider !== 'Cartesia') {
       setCartesiaSelectedGender('');
+    } else if (newProvider === 'Cartesia' && voiceConfiguration?.cartesiaSelectedGender) {
+      // Restore saved gender when switching to Cartesia
+      setCartesiaSelectedGender(voiceConfiguration.cartesiaSelectedGender);
     }
     
-    // Reset 11Labs gender filter when switching providers
+    // Reset 11Labs gender filter when switching providers (but preserve if switching to 11Labs with saved config)
     if (newProvider !== '11Labs') {
       setSelectedGender('');
+    } else if (newProvider === '11Labs' && voiceConfiguration?.selectedGender) {
+      // Restore saved gender when switching to 11Labs
+      setSelectedGender(voiceConfiguration.selectedGender);
     }
     
     // Save to centralized state with correct API key
@@ -1548,10 +1731,11 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                 value={selectedGender}
                 onChange={(e) => {
                   setSelectedGender(e.target.value);
+                  saveStateToCentralized({ selectedGender: e.target.value });
                   // Clear voice selection when gender changes
                   if (voiceId) {
                     setVoiceId('');
-                    saveStateToCentralized({ voiceId: '' });
+                    saveStateToCentralized({ voiceId: '', selectedGender: e.target.value });
                   }
                 }}
                 disabled={!isEditing || availableVoices.length === 0}
@@ -1738,10 +1922,11 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                 value={cartesiaSelectedGender}
                 onChange={(e) => {
                   setCartesiaSelectedGender(e.target.value);
+                  saveStateToCentralized({ cartesiaSelectedGender: e.target.value });
                   // Clear voice selection when gender changes
                   if (voiceId) {
                     setVoiceId('');
-                    saveStateToCentralized({ voiceId: '' });
+                    saveStateToCentralized({ voiceId: '', cartesiaSelectedGender: e.target.value });
                   }
                 }}
                 disabled={!isEditing || cartesiaVoices.length === 0}
@@ -1905,7 +2090,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
               <Mic className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
             </div>
             <div>
-              <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Voice Selection</h4>
+              <h4 className={`font-bold text-sm sm:text-base ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>Voice Selection</h4>
             </div>
           </div>
 
@@ -1983,7 +2168,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
               <Mic className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
             </div>
             <div>
-              <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Voice Settings</h4>
+              <h4 className={`font-bold text-sm sm:text-base ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>Voice Settings</h4>
             </div>
           </div>
 
@@ -2098,7 +2283,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
             <Mic className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
           </div>
           <div>
-            <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            <h4 className={`font-bold text-sm sm:text-base ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>
               {selectedVoiceProvider} Configuration
             </h4>
           </div>
@@ -2116,7 +2301,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
             <MessageSquare className={`h-6 w-6 ${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`} />
           </div>
           <div>
-            <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            <h3 className={`text-lg font-bold ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>
               Transcriber Configuration
             </h3>
             <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -2134,7 +2319,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                 <Mic className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
               </div>
               <div>
-                <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Provider & Language</h4>
+                <h4 className={`font-bold text-sm sm:text-base ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>Provider & Language</h4>
               </div>
             </div>
 
@@ -2196,7 +2381,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                 <Settings className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
               </div>
               <div>
-                <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Model & API</h4>
+                <h4 className={`font-bold text-sm sm:text-base ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>Model & API</h4>
               </div>
             </div>
 
@@ -2262,7 +2447,7 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
                 <Settings className={`h-4 w-4 sm:h-5 sm:w-5 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
               </div>
               <div>
-                <h4 className={`font-semibold text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Additional Settings</h4>
+                <h4 className={`font-bold text-sm sm:text-base ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>Additional Settings</h4>
               </div>
             </div>
 
