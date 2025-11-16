@@ -63,6 +63,8 @@ export interface ToolsConfig {
   maxNudges?: number;
   typingVolume?: number;
   maxCallDuration?: number;
+  transferPhoneNumber?: string;
+  transferPlatform?: string;
 }
 
 export interface WidgetConfig {
@@ -419,7 +421,9 @@ export const AgentConfigProvider: React.FC<AgentConfigProviderProps> = ({ childr
           nudgeInterval: agent.nudge_interval,
           maxNudges: agent.max_nudges,
           typingVolume: agent.typing_volume,
-          maxCallDuration: agent.max_call_duration
+          maxCallDuration: agent.max_call_duration,
+          transferPhoneNumber: agent.transfer_phonenumber || '',
+          transferPlatform: agent.transfer_phonenumber_platform || 'phone'
         },
 
         widget: null

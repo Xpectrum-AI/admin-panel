@@ -594,5 +594,125 @@ Remember: You are the first point of contact for many patients. Your professiona
   // Get current organization ID
   getCurrentOrganizationId(): string | null {
     return getCurrentOrganizationId();
+  },
+
+  // Add transfer phone number for agent
+  async addTransferPhoneNumber(agentId: string, phoneNumber: string): Promise<AgentConfigResponse> {
+    try {
+      // Use local API instead of external API
+      const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || 'xpectrum-ai@123';
+
+      const response = await fetch(`/api/agents/add_transfer_phonenumber/${agentId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': apiKey,
+        },
+        body: JSON.stringify({
+          transfer_phonenumber: phoneNumber
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      return {
+        success: true,
+        data: result.data || result,
+        message: result.message || 'Transfer phone number added successfully'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to add transfer phone number'
+      };
+    }
+  },
+
+  // Get phone number for agent by agent_prefix
+  async getAgentPhoneNumber(agentPrefix: string): Promise<{ success: boolean; phoneNumber?: string; message?: string }> {
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
+      if (!backendUrl) {
+        throw new Error('NEXT_PUBLIC_LIVE_API_URL is not configured');
+      }
+
+      const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || 'xpectrum-ai@123';
+
+      // Get assigned phone numbers
+      const response = await fetch(`${backendUrl}/phone-numbers/status/assigned`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': apiKey,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch phone numbers: ${response.status}`);
+      }
+
+      const result = await response.json();
+      const phoneNumbers = result.phone_numbers || [];
+
+      // Find phone number where agent_id matches agent_prefix
+      const phoneNumber = phoneNumbers.find((pn: any) => pn.agent_id === agentPrefix);
+
+      if (phoneNumber && phoneNumber.number) {
+        return {
+          success: true,
+          phoneNumber: phoneNumber.number
+        };
+      }
+
+      return {
+        success: false,
+        message: 'No phone number found for this agent'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to get agent phone number'
+      };
+    }
+  },
+
+  // Add transfer phone number platform for agent
+  async addTransferPhoneNumberPlatform(agentId: string, platform: string): Promise<AgentConfigResponse> {
+    try {
+      // Use local API instead of external API
+      const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || 'xpectrum-ai@123';
+
+      const response = await fetch(`/api/agents/add_transfer_phonenumber_platform/${agentId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': apiKey,
+        },
+        body: JSON.stringify({
+          platform: platform
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      return {
+        success: true,
+        data: result.data || result,
+        message: result.message || 'Transfer phone number platform added successfully'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to add transfer phone number platform'
+      };
+    }
   }
 };
