@@ -1,8 +1,9 @@
 'use client';
 
 import React, { forwardRef, useState, useEffect, useCallback, useRef } from 'react';
-import { Wrench, CheckCircle, AlertCircle, Clock, Volume2, MessageSquare, Zap } from 'lucide-react';
+import { Wrench, CheckCircle, AlertCircle, Clock, Volume2, MessageSquare, Zap, Phone } from 'lucide-react';
 import { difyAgentService } from '../../../service/difyAgentService';
+import { agentConfigService } from '../../../service/agentConfigService';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useToolsConfig } from '../../hooks/useAgentConfigSection';
 
@@ -47,7 +48,9 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
         nudgeInterval: selectedAgent.nudge_interval,
         maxNudges: selectedAgent.max_nudges,
         typingVolume: selectedAgent.typing_volume,
-        maxCallDuration: selectedAgent.max_call_duration
+        maxCallDuration: selectedAgent.max_call_duration,
+        transferPhoneNumber: selectedAgent.transfer_phonenumber || '',
+        transferPlatform: selectedAgent.transfer_phonenumber_platform || 'phone'
       };
     } else if (existingConfig) {
       configToLoad = existingConfig;
@@ -69,6 +72,8 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
       maxNudges: configToLoad?.maxNudges ?? '',
       typingVolume: (configToLoad?.typingVolume !== undefined && configToLoad.typingVolume >= 0 && configToLoad.typingVolume <= 1) ? configToLoad.typingVolume : 0.5,
       maxCallDuration: configToLoad?.maxCallDuration ?? 1200,
+      transferPhoneNumber: configToLoad?.transferPhoneNumber ?? '',
+      transferPlatform: configToLoad?.transferPlatform ?? 'phone',
     };
   }, [toolsConfiguration, selectedAgent, existingConfig, modelConfig]);
 
@@ -81,15 +86,127 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
   const [maxNudges, setMaxNudges] = useState<string | number>(initialValues.maxNudges);
   const [typingVolume, setTypingVolume] = useState(initialValues.typingVolume);
   const [maxCallDuration, setMaxCallDuration] = useState(initialValues.maxCallDuration);
+  const [transferPhoneNumber, setTransferPhoneNumber] = useState(initialValues.transferPhoneNumber);
+  const [transferPlatform, setTransferPlatform] = useState(initialValues.transferPlatform);
+  const [agentPhoneNumber, setAgentPhoneNumber] = useState<string | null>(null);
 
   // Status states
   const [configStatus, setConfigStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isTestingDify, setIsTestingDify] = useState(false);
+  const [saveInProgress, setSaveInProgress] = useState(false);
+  const [lastSaveTime, setLastSaveTime] = useState(0);
+
+  // Refs for debouncing transfer settings
+  const transferPhoneNumberTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const transferPlatformTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const initialTransferPlatformRef = useRef<string | null>(null);
+  const hasAutoSavedPlatformRef = useRef(false);
+  const lastAutoSavedAgentPrefixRef = useRef<string | null>(null);
 
   // Ref to track if synchronization has occurred to prevent continuous resets
   const isSynchronizedRef = useRef(false);
+
+  // Fetch agent's phone number when agent is selected
+  useEffect(() => {
+    const fetchAgentPhoneNumber = async () => {
+      if (!selectedAgent?.agent_prefix) {
+        setAgentPhoneNumber(null);
+        return;
+      }
+
+      try {
+        const result = await agentConfigService.getAgentPhoneNumber(selectedAgent.agent_prefix);
+        if (result.success && result.phoneNumber) {
+          setAgentPhoneNumber(result.phoneNumber);
+        } else {
+          setAgentPhoneNumber(null);
+        }
+      } catch (error) {
+        setAgentPhoneNumber(null);
+      }
+    };
+
+    fetchAgentPhoneNumber();
+  }, [selectedAgent?.agent_prefix]);
+
+  // Store initial transfer platform value and auto-save if needed
+  useEffect(() => {
+    if (!selectedAgent?.agent_prefix) {
+      return;
+    }
+
+    const currentAgentPrefix = selectedAgent.agent_prefix;
+    const initialPlatform = selectedAgent.transfer_phonenumber_platform || 'phone';
+    
+    // Only reset flag when agent actually changes
+    if (lastAutoSavedAgentPrefixRef.current !== currentAgentPrefix) {
+      initialTransferPlatformRef.current = initialPlatform;
+      hasAutoSavedPlatformRef.current = false;
+      lastAutoSavedAgentPrefixRef.current = currentAgentPrefix;
+    }
+
+    // Auto-save "phone" if agent doesn't have transfer_phonenumber_platform set
+    // Only if we haven't already auto-saved for this agent
+    if (
+      !selectedAgent.transfer_phonenumber_platform && 
+      agentPhoneNumber && 
+      isEditing && 
+      transferPlatform === 'phone' &&
+      !hasAutoSavedPlatformRef.current
+    ) {
+      // Delay auto-save slightly to ensure agent phone number is loaded
+      const autoSaveTimer = setTimeout(() => {
+        // Double-check conditions before saving
+        if (
+          hasAutoSavedPlatformRef.current ||
+          !selectedAgent?.agent_prefix ||
+          !agentPhoneNumber ||
+          !isEditing ||
+          selectedAgent.transfer_phonenumber_platform // Check again in case it was updated
+        ) {
+          return;
+        }
+
+        hasAutoSavedPlatformRef.current = true;
+        
+        // Call the debounced function directly
+        if (transferPlatformTimeoutRef.current) {
+          clearTimeout(transferPlatformTimeoutRef.current);
+        }
+        
+        transferPlatformTimeoutRef.current = setTimeout(async () => {
+          // Capture values at the time of execution
+          const currentAgentPrefixAtSave = selectedAgent?.agent_prefix;
+          const currentAgentPhoneAtSave = agentPhoneNumber;
+          const currentIsEditingAtSave = isEditing;
+          
+          if (saveInProgress || !currentAgentPrefixAtSave || !currentIsEditingAtSave) {
+            return;
+          }
+          if (!currentAgentPhoneAtSave) {
+            return;
+          }
+          
+          try {
+            setSaveInProgress(true);
+            const platformResult = await agentConfigService.addTransferPhoneNumberPlatform(currentAgentPhoneAtSave, 'phone');
+            if (platformResult.success) {
+              initialTransferPlatformRef.current = 'phone';
+            }
+          } catch (error) {
+            // Silent fail for auto-save
+            hasAutoSavedPlatformRef.current = false; // Reset on error so it can retry
+          } finally {
+            setSaveInProgress(false);
+          }
+        }, 2000);
+      }, 1000);
+      
+      return () => clearTimeout(autoSaveTimer);
+    }
+  }, [selectedAgent?.agent_prefix, selectedAgent?.transfer_phonenumber_platform, agentPhoneNumber, isEditing, transferPlatform]);
 
   // Prop Synchronization Effect (The Fix for Flickering)
   useEffect(() => {
@@ -104,6 +221,8 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
       setMaxNudges(latestConfig.maxNudges);
       setTypingVolume(latestConfig.typingVolume);
       setMaxCallDuration(latestConfig.maxCallDuration);
+      setTransferPhoneNumber(latestConfig.transferPhoneNumber);
+      setTransferPlatform(latestConfig.transferPlatform);
       isSynchronizedRef.current = true;
     } else {
       // Only sync if the external source has actually changed (e.g., different agent selected)
@@ -117,10 +236,10 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
 
       if (!hasUserModifiedEmptyValues) {
         const currentKey = JSON.stringify({
-          im: initialMessage, nt: nudgeText, ni: nudgeInterval, mn: maxNudges, tv: typingVolume, mcd: maxCallDuration
+          im: initialMessage, nt: nudgeText, ni: nudgeInterval, mn: maxNudges, tv: typingVolume, mcd: maxCallDuration, tpn: transferPhoneNumber, tp: transferPlatform
         });
         const latestKey = JSON.stringify({
-          im: latestConfig.initialMessage, nt: latestConfig.nudgeText, ni: latestConfig.nudgeInterval, mn: latestConfig.maxNudges, tv: latestConfig.typingVolume, mcd: latestConfig.maxCallDuration
+          im: latestConfig.initialMessage, nt: latestConfig.nudgeText, ni: latestConfig.nudgeInterval, mn: latestConfig.maxNudges, tv: latestConfig.typingVolume, mcd: latestConfig.maxCallDuration, tpn: latestConfig.transferPhoneNumber, tp: latestConfig.transferPlatform
         });
 
         if (currentKey !== latestKey) {
@@ -130,6 +249,8 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
           setMaxNudges(latestConfig.maxNudges);
           setTypingVolume(latestConfig.typingVolume);
           setMaxCallDuration(latestConfig.maxCallDuration);
+          setTransferPhoneNumber(latestConfig.transferPhoneNumber);
+          setTransferPlatform(latestConfig.transferPlatform);
         }
       }
     }
@@ -156,6 +277,8 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
           maxNudges,
           typingVolume,
           maxCallDuration,
+          transferPhoneNumber,
+          transferPlatform,
           ...updates
         };
         // Call parent's onConfigChange
@@ -219,6 +342,161 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
   const handleTypingVolumeChange = useCallback(handleRangeChange(setTypingVolume, (value: number) => ({ typingVolume: value })), [handleRangeChange]);
   const handleMaxCallDurationChange = useCallback(handleRangeChange(setMaxCallDuration, (value: number) => ({ maxCallDuration: value })), [handleRangeChange]);
 
+  // Debounced transfer phone number save function
+  const debouncedTransferPhoneNumberSave = useCallback((phoneNumber: string) => {
+    if (transferPhoneNumberTimeoutRef.current) {
+      clearTimeout(transferPhoneNumberTimeoutRef.current);
+    }
+
+    transferPhoneNumberTimeoutRef.current = setTimeout(async () => {
+      if (saveInProgress || !selectedAgent?.agent_prefix || !isEditing) {
+        return;
+      }
+
+      if (!agentPhoneNumber) {
+        setErrorMessage('Agent does not have an assigned phone number. Please assign a phone number to this agent first.');
+        setConfigStatus('error');
+        setTimeout(() => {
+          setConfigStatus('idle');
+          setErrorMessage('');
+        }, 5000);
+        return;
+      }
+
+      // Skip if empty
+      if (!phoneNumber || !phoneNumber.trim()) {
+        return;
+      }
+
+      try {
+        setSaveInProgress(true);
+        setErrorMessage('');
+
+        const phoneResult = await agentConfigService.addTransferPhoneNumber(agentPhoneNumber, phoneNumber.trim());
+        
+        if (phoneResult.success) {
+          const now = Date.now();
+          if (now - lastSaveTime > 2000) {
+            setSuccessMessage('Transfer phone number saved successfully');
+            setLastSaveTime(now);
+            setConfigStatus('success');
+            setTimeout(() => {
+              setConfigStatus('idle');
+              setSuccessMessage('');
+            }, 3000);
+          }
+        } else {
+          setErrorMessage(`Failed to save transfer phone number: ${phoneResult.message}`);
+          setConfigStatus('error');
+          setTimeout(() => {
+            setConfigStatus('idle');
+            setErrorMessage('');
+          }, 5000);
+        }
+      } catch (error) {
+        setErrorMessage(`Failed to save transfer phone number: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        setConfigStatus('error');
+        setTimeout(() => {
+          setConfigStatus('idle');
+          setErrorMessage('');
+        }, 5000);
+      } finally {
+        setSaveInProgress(false);
+      }
+    }, 2000); // 2 second delay
+  }, [selectedAgent?.agent_prefix, agentPhoneNumber, isEditing, saveInProgress, lastSaveTime]);
+
+  // Debounced transfer platform save function
+  const debouncedTransferPlatformSave = useCallback((platform: string, isAutoSave: boolean = false) => {
+    if (transferPlatformTimeoutRef.current) {
+      clearTimeout(transferPlatformTimeoutRef.current);
+    }
+
+    transferPlatformTimeoutRef.current = setTimeout(async () => {
+      if (saveInProgress || !selectedAgent?.agent_prefix || !isEditing) {
+        return;
+      }
+
+      if (!agentPhoneNumber) {
+        if (!isAutoSave) {
+          setErrorMessage('Agent does not have an assigned phone number. Please assign a phone number to this agent first.');
+          setConfigStatus('error');
+          setTimeout(() => {
+            setConfigStatus('idle');
+            setErrorMessage('');
+          }, 5000);
+        }
+        return;
+      }
+
+      // Skip if value hasn't changed from initial (unless it's auto-save)
+      if (!isAutoSave && platform === initialTransferPlatformRef.current) {
+        return;
+      }
+
+      try {
+        setSaveInProgress(true);
+        if (!isAutoSave) {
+          setErrorMessage('');
+        }
+
+        const platformResult = await agentConfigService.addTransferPhoneNumberPlatform(agentPhoneNumber, platform);
+        
+        if (platformResult.success) {
+          const now = Date.now();
+          if (now - lastSaveTime > 2000) {
+            if (!isAutoSave) {
+              setSuccessMessage('Transfer platform saved successfully');
+              setLastSaveTime(now);
+              setConfigStatus('success');
+              setTimeout(() => {
+                setConfigStatus('idle');
+                setSuccessMessage('');
+              }, 3000);
+            }
+            // Update initial value after successful save
+            initialTransferPlatformRef.current = platform;
+          }
+        } else {
+          if (!isAutoSave) {
+            setErrorMessage(`Failed to save transfer platform: ${platformResult.message}`);
+            setConfigStatus('error');
+            setTimeout(() => {
+              setConfigStatus('idle');
+              setErrorMessage('');
+            }, 5000);
+          }
+        }
+      } catch (error) {
+        if (!isAutoSave) {
+          setErrorMessage(`Failed to save transfer platform: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          setConfigStatus('error');
+          setTimeout(() => {
+            setConfigStatus('idle');
+            setErrorMessage('');
+          }, 5000);
+        }
+      } finally {
+        setSaveInProgress(false);
+      }
+    }, 2000); // 2 second delay
+  }, [selectedAgent?.agent_prefix, agentPhoneNumber, isEditing, saveInProgress, lastSaveTime]);
+
+  // Transfer phone number handlers
+  const handleTransferPhoneNumberChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setTransferPhoneNumber(value);
+    saveStateToCentralized({ transferPhoneNumber: value });
+    debouncedTransferPhoneNumberSave(value);
+  }, [saveStateToCentralized, debouncedTransferPhoneNumberSave]);
+
+  const handleTransferPlatformChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setTransferPlatform(value);
+    saveStateToCentralized({ transferPlatform: value });
+    debouncedTransferPlatformSave(value, false);
+  }, [saveStateToCentralized, debouncedTransferPlatformSave]);
+
   // Utility for time formatting
   const formatDuration = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
@@ -234,6 +512,18 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
     // Fallback if user types an invalid duration string, try to parse it as seconds
     return parseInt(duration) || 1200;
   };
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (transferPhoneNumberTimeoutRef.current) {
+        clearTimeout(transferPhoneNumberTimeoutRef.current);
+      }
+      if (transferPlatformTimeoutRef.current) {
+        clearTimeout(transferPlatformTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Test Dify integration manually
   const testDifyIntegration = async () => {
@@ -526,6 +816,69 @@ const ToolsConfig = forwardRef<HTMLDivElement, ToolsConfigProps>(({
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Call Transfer Settings */}
+        <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white/50 border-gray-200'}`}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h4 className={`text-lg font-bold ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>Call Transfer Settings</h4>
+            </div>
+            <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+              <Phone className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {/* Transfer Phone Number */}
+            <div>
+              <label className={`text-sm font-semibold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <Phone className="h-4 w-4" />
+                Transfer Phone Number
+              </label>
+              <input
+                type="text"
+                value={transferPhoneNumber}
+                onChange={handleTransferPhoneNumberChange}
+                disabled={!isEditing}
+                placeholder="+15551234567"
+                className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 backdrop-blur-sm transition-all duration-300 ${!isEditing
+                  ? isDarkMode
+                    ? 'border-gray-700 bg-gray-800/30 text-gray-400 placeholder-gray-500 cursor-not-allowed'
+                    : 'border-gray-300 bg-gray-100 text-gray-500 placeholder-gray-400 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'border-gray-600 bg-gray-800/80 text-gray-200 placeholder-gray-500'
+                    : 'border-gray-200 bg-white/80 text-gray-900 placeholder-gray-400'
+                  }`}
+              />
+            </div>
+
+            {/* Transfer Platform */}
+            <div>
+              <label className={`text-sm font-semibold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <Phone className="h-4 w-4" />
+                Transfer Platform
+              </label>
+              <select
+                value={transferPlatform}
+                onChange={handleTransferPlatformChange}
+                disabled={!isEditing}
+                className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 backdrop-blur-sm transition-all duration-300 ${!isEditing
+                  ? isDarkMode
+                    ? 'border-gray-700 bg-gray-800/30 text-gray-400 cursor-not-allowed'
+                    : 'border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'border-gray-600 bg-gray-800/80 text-gray-200'
+                    : 'border-gray-200 bg-white/80 text-gray-900'
+                  }`}
+              >
+                <option value="phone">Phone</option>
+                <option value="sms">SMS</option>
+                <option value="whatsapp">WhatsApp</option>
+              </select>
+            </div>
+
           </div>
         </div>
 
