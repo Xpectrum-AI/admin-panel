@@ -27,6 +27,7 @@ ARG NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY
 ARG NEXT_PUBLIC_MODEL_GROQ_API_KEY
 ARG NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY
 ARG NEXT_PUBLIC_DIFY_BASE_URL
+ARG GOOGLE_TRANSLATE_API_KEY
 
 # Set environment variables for build
 ENV NODE_ENV=production
@@ -95,6 +96,9 @@ RUN apk add --no-cache \
     && rm -rf /var/cache/apk/*
 
 ENV NODE_ENV=production
+
+# Set Google Translate API key (server-side only, not exposed to client)
+ENV GOOGLE_TRANSLATE_API_KEY=AIzaSyD4Dz4KT1b716y8R34WoogEuRMX6j-WQ-4
 
 # Copy only necessary files from builder
 COPY --from=builder /app/next.config.ts ./
