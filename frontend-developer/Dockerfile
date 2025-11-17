@@ -98,7 +98,7 @@ RUN apk add --no-cache \
 ENV NODE_ENV=production
 
 # Set Google Translate API key (server-side only, not exposed to client)
-ENV GOOGLE_TRANSLATE_API_KEY=AIzaSyD4Dz4KT1b716y8R34WoogEuRMX6j-WQ-4
+ENV GOOGLE_TRANSLATE_API_KEY=
 
 # Copy only necessary files from builder
 COPY --from=builder /app/next.config.ts ./
