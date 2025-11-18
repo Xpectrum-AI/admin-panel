@@ -24,7 +24,7 @@ async function createDifyAgentDirectly(
   agentType: string = 'Knowledge Agent (RAG)'
 ): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
-    const consoleOrigin = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN;
+    let consoleOrigin = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN;
     const adminEmail = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL;
     const adminPassword = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD;
     const workspaceId = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID;
@@ -33,8 +33,15 @@ async function createDifyAgentDirectly(
       throw new Error('Missing required Dify environment variables');
     }
 
+    // Normalize CONSOLE_ORIGIN: ensure it ends with /api for proper URL construction
+    consoleOrigin = consoleOrigin.replace(/\/$/, ''); // Remove trailing slash
+    if (!consoleOrigin.endsWith('/api')) {
+      consoleOrigin = `${consoleOrigin}/api`;
+    }
+
     // Step 1: Login to get token
-    const loginResponse = await fetch(`${consoleOrigin}/console/api/login`, {
+    const loginUrl = `${consoleOrigin}/console/api/login`;
+    const loginResponse = await fetch(loginUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -49,14 +56,24 @@ async function createDifyAgentDirectly(
     });
 
     if (!loginResponse.ok) {
-      throw new Error(`Login failed: ${loginResponse.status} ${loginResponse.statusText}`);
+      const errorText = await loginResponse.text().catch(() => 'Unable to read error response');
+      const errorPreview = errorText.substring(0, 500);
+      throw new Error(`Login failed: ${loginResponse.status} ${loginResponse.statusText}. URL: ${loginUrl}. Error: ${errorPreview}`);
     }
 
-    const loginData = await loginResponse.json();
+    let loginData;
+    try {
+      loginData = await loginResponse.json();
+    } catch (parseError) {
+      const errorText = await loginResponse.text().catch(() => 'Unable to read response');
+      const errorPreview = errorText.substring(0, 500);
+      throw new Error(`Failed to parse JSON response from login. Response: ${errorPreview}`);
+    }
+
     const token = loginData.data?.access_token || loginData.access_token || loginData.data?.token;
     
     if (!token) {
-      throw new Error('No access token received from login');
+      throw new Error(`No access token received from login. Response: ${JSON.stringify(loginData).substring(0, 500)}`);
     }
     // Step 2: Create app using YAML import
     const yamlContent = `version: "0.3.0"

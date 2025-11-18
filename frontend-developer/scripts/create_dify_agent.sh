@@ -25,6 +25,14 @@ APP_NAME="$AGENT_NAME"
 [ -n "$ADMIN_PASSWORD" ] || { echo "Error: NEXT_PUBLIC_DIFY_ADMIN_PASSWORD is not set"; exit 1; }
 [ -n "$WS_ID" ] || { echo "Error: NEXT_PUBLIC_DIFY_WORKSPACE_ID is not set"; exit 1; }
 
+# Normalize CONSOLE_ORIGIN: ensure it ends with /api for proper URL construction
+# Remove trailing slash if present
+CONSOLE_ORIGIN="${CONSOLE_ORIGIN%/}"
+# Add /api if not already present
+if [[ "$CONSOLE_ORIGIN" != */api ]]; then
+  CONSOLE_ORIGIN="${CONSOLE_ORIGIN}/api"
+fi
+
 : "${MODEL_PROVIDER_FQN:=$MODEL_PROVIDER}"
 : "${MODEL_NAME:=$MODEL_NAME}"
 
@@ -38,14 +46,45 @@ hdr_code(){ awk 'NR==1{print $2}'; }
 hdr_ct(){ awk 'BEGIN{IGNORECASE=1}/^content-type:/{print $2}' | tr -d '\r'; }
 
 say "login"
-RESP=$(curl -sS -X POST "$CONSOLE_ORIGIN/console/api/login" \
+LOGIN_URL="$CONSOLE_ORIGIN/console/api/login"
+say "Login URL: $LOGIN_URL"
+RESP=$(curl -sS -X POST "$LOGIN_URL" \
   -H "Content-Type: application/json" \
   -H "X-Requested-With: XMLHttpRequest" \
   -H "Cache-Control: no-cache" \
   -H "User-Agent: DifyAgentCreator/1.0" \
-  -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}")
-TOKEN=$(echo "$RESP" | jq -r '.data.access_token // .access_token // .data.token // empty')
-[ -n "$TOKEN" ] || { echo "login error"; exit 1; }
+  -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}" \
+  -w "\nHTTP_CODE:%{http_code}")
+
+# Extract HTTP status code and response body
+HTTP_CODE=$(echo "$RESP" | grep -o "HTTP_CODE:[0-9]*" | cut -d: -f2)
+RESP_BODY=$(echo "$RESP" | sed '/HTTP_CODE:/d')
+
+# Check if we got a valid HTTP response
+if [ -z "$HTTP_CODE" ] || [ "$HTTP_CODE" != "200" ]; then
+  echo "Login failed with HTTP code: ${HTTP_CODE:-unknown}"
+  echo "Response (first 500 chars):"
+  echo "$RESP_BODY" | head -c 500
+  echo ""
+  exit 1
+fi
+
+# Try to parse JSON, show error if it fails
+TOKEN=$(echo "$RESP_BODY" | jq -r '.data.access_token // .access_token // .data.token // empty' 2>/dev/null)
+if [ $? -ne 0 ]; then
+  echo "Failed to parse JSON response. Response was:"
+  echo "$RESP_BODY" | head -c 500
+  echo ""
+  exit 1
+fi
+
+[ -n "$TOKEN" ] || { 
+  echo "Login error: No token found in response"
+  echo "Response (first 500 chars):"
+  echo "$RESP_BODY" | head -c 500
+  echo ""
+  exit 1
+}
 AUTH=(-H "Authorization: Bearer $TOKEN")
 WS_HDR=(-H "X-Workspace-Id: $WS_ID")
 say "logged in, workspace=$WS_ID"

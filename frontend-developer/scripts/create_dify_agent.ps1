@@ -24,6 +24,14 @@ if (-not $CONSOLE_ORIGIN) { Write-Error "Error: NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN 
 if (-not $ADMIN_EMAIL) { Write-Error "Error: NEXT_PUBLIC_DIFY_ADMIN_EMAIL is not set"; exit 1 }
 if (-not $ADMIN_PASSWORD) { Write-Error "Error: NEXT_PUBLIC_DIFY_ADMIN_PASSWORD is not set"; exit 1 }
 if (-not $WS_ID) { Write-Error "Error: NEXT_PUBLIC_DIFY_WORKSPACE_ID is not set"; exit 1 }
+
+# Normalize CONSOLE_ORIGIN: ensure it ends with /api for proper URL construction
+# Remove trailing slash if present
+$CONSOLE_ORIGIN = $CONSOLE_ORIGIN.TrimEnd('/')
+# Add /api if not already present
+if (-not $CONSOLE_ORIGIN.EndsWith('/api')) {
+    $CONSOLE_ORIGIN = "$CONSOLE_ORIGIN/api"
+}
 $MODEL_PROVIDER_FQN = $ModelProvider
 $MODEL_NAME = $ModelName
 
@@ -50,6 +58,8 @@ function Get-ContentType {
 }
 
 Write-Log "login"
+$loginUrl = "$CONSOLE_ORIGIN/console/api/login"
+Write-Log "Login URL: $loginUrl"
 $loginBody = @{
     email = $ADMIN_EMAIL
     password = $ADMIN_PASSWORD
@@ -62,12 +72,46 @@ try {
         "Cache-Control" = "no-cache"
         "User-Agent" = "DifyAgentCreator/1.0"
     }
-    $loginResponse = Invoke-RestMethod -Uri "$CONSOLE_ORIGIN/console/api/login" -Method POST -Body $loginBody -Headers $headers -UseBasicParsing
-    $TOKEN = $loginResponse.data.access_token
-    if (-not $TOKEN) {
-        throw "Login failed - no token received"
+    
+    try {
+        $loginResponse = Invoke-WebRequest -Uri $loginUrl -Method POST -Body $loginBody -Headers $headers -UseBasicParsing -ErrorAction Stop
+        
+        if ($loginResponse.StatusCode -ne 200) {
+            $responsePreview = $loginResponse.Content.Substring(0, [Math]::Min(500, $loginResponse.Content.Length))
+            Write-Error "Login failed with HTTP code: $($loginResponse.StatusCode)`nResponse (first 500 chars):`n$responsePreview"
+            exit 1
+        }
+        
+        $responseJson = $loginResponse.Content | ConvertFrom-Json
+        $TOKEN = $responseJson.data.access_token
+        if (-not $TOKEN) {
+            $TOKEN = $responseJson.access_token
+        }
+        if (-not $TOKEN) {
+            $TOKEN = $responseJson.data.token
+        }
+        
+        if (-not $TOKEN) {
+            $responsePreview = $loginResponse.Content.Substring(0, [Math]::Min(500, $loginResponse.Content.Length))
+            Write-Error "Login error: No token found in response`nResponse (first 500 chars):`n$responsePreview"
+            exit 1
+        }
+        
+        Write-Log "logged in, workspace=$WS_ID"
+    } catch {
+        $errorMessage = $_.Exception.Message
+        if ($_.Exception.Response) {
+            $statusCode = [int]$_.Exception.Response.StatusCode
+            $stream = $_.Exception.Response.GetResponseStream()
+            $reader = New-Object System.IO.StreamReader($stream)
+            $responseBody = $reader.ReadToEnd()
+            $responsePreview = $responseBody.Substring(0, [Math]::Min(500, $responseBody.Length))
+            Write-Error "Login failed with HTTP code: $statusCode`nResponse (first 500 chars):`n$responsePreview"
+        } else {
+            Write-Error "Login error: $errorMessage"
+        }
+        exit 1
     }
-    Write-Log "logged in, workspace=$WS_ID"
 } catch {
     Write-Error "Login error: $_"
     exit 1
