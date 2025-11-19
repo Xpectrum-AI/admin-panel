@@ -70,6 +70,18 @@ export interface ScheduledEventFilters {
   offset?: number;
 }
 
+export interface CallRequest {
+  caller_number: string;
+  callee_number: string;
+  agent_name: string;
+}
+
+export interface CallResponse {
+  success: boolean;
+  message?: string;
+  data?: any;
+}
+
 // Get API base URL - use live API
 const getApiBaseUrl = (): string => {
   const apiBaseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
@@ -111,6 +123,15 @@ const makeApiRequest = async (
   } catch (error) {
     throw error;
   }
+};
+
+const getFastApiCallConfig = () => {
+  const defaultBaseUrl = 'https://fastapi-server-app-dev-hyn35.ondigitalocean.app';
+  const directEndpoint = process.env.NEXT_PUBLIC_FASTAPI_CALL_ENDPOINT;
+  const baseUrl = (process.env.NEXT_PUBLIC_FASTAPI_SERVER_URL || defaultBaseUrl).replace(/\/$/, '');
+  const url = (directEndpoint || `${baseUrl}/outbound/make-call`).replace(/([^:]\/)\/+/g, '$1');
+  const apiKey = process.env.NEXT_PUBLIC_FASTAPI_SERVER_API_KEY || 'xpectrum-ai@123';
+  return { url, apiKey };
 };
 
 // ============================================================================
@@ -592,6 +613,54 @@ export const deleteScheduledEvent = async (scheduleId: string): Promise<Schedule
     return { success: true, data, message: 'Scheduled event deleted successfully' };
   } catch (error: any) {
     return { success: false, message: `Failed to delete scheduled event: ${error.message}` };
+  }
+};
+
+// ============================================================================
+// OUTBOUND IMMEDIATE CALL
+// ============================================================================
+
+export const makeOutboundCall = async (callData: CallRequest): Promise<CallResponse> => {
+  try {
+    const { url, apiKey } = getFastApiCallConfig();
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+      },
+      body: JSON.stringify(callData),
+    });
+
+    const responseText = await response.text();
+    let parsedData: any = null;
+    if (responseText) {
+      try {
+        parsedData = JSON.parse(responseText);
+      } catch {
+        parsedData = responseText;
+      }
+    }
+
+    if (!response.ok) {
+      const errorMessage =
+        (parsedData && parsedData.message) ||
+        `HTTP error! status: ${response.status} - ${response.statusText}`;
+      throw new Error(errorMessage);
+    }
+
+    return {
+      success: true,
+      data: parsedData,
+      message:
+        (parsedData && (parsedData.message || parsedData.status)) ||
+        'Outbound call initiated successfully!',
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: `Failed to initiate outbound call: ${error.message || 'Unknown error'}`,
+    };
   }
 };
 

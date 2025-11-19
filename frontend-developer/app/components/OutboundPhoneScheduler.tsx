@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Calendar, Clock, PhoneCall, User, Phone, Loader2, AlertCircle, CheckCircle, XCircle, Search, Trash2 } from 'lucide-react';
 import { useAuthInfo } from '@propelauth/react';
 import { useTheme } from '../contexts/ThemeContext';
@@ -12,13 +12,16 @@ import {
   updateScheduledEvent,
   getAgentsByOrganization,
   getPhoneNumbersByOrganization,
-  getAvailablePhoneNumbersFromBackend
+  getAvailablePhoneNumbersFromBackend,
+  makeOutboundCall,
+  CallRequest
 } from '../../service/phoneNumberService';
 import { 
   Agent, 
   ScheduledEvent, 
   ApiResponse, 
   SchedulerFormData, 
+  CallFormData,
   FormErrors,
   TIMEOUTS,
   VALIDATION_LIMITS 
@@ -67,6 +70,14 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
   const [scheduling, setScheduling] = useState(false);
   const [schedulerError, setSchedulerError] = useState<string | null>(null);
   const [schedulerSuccess, setSchedulerSuccess] = useState<string | null>(null);
+  const [callForm, setCallForm] = useState<CallFormData>({
+    caller_number: '',
+    callee_number: '',
+    agent_name: '',
+  });
+  const [isCalling, setIsCalling] = useState(false);
+  const [callError, setCallError] = useState<string | null>(null);
+  const [callSuccess, setCallSuccess] = useState<string | null>(null);
   
   // Delete state
   const [deletingEvent, setDeletingEvent] = useState<string | null>(null);
@@ -74,7 +85,7 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
   const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
   
   // Tab state - persist across page refreshes
-  const [activeTab, handleTabChange] = useTabPersistence<'trunk' | 'scheduler'>('outboundScheduler', 'trunk');
+  const [activeTab, handleTabChange] = useTabPersistence<'trunk' | 'scheduler' | 'call'>('outboundScheduler', 'trunk');
   
   // Trunk state
   const [trunks, setTrunks] = useState<any[]>([]);
@@ -97,6 +108,29 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
   const [phoneNumbers, setPhoneNumbers] = useState<any[]>([]);
   const [loadingPhoneNumbers, setLoadingPhoneNumbers] = useState(false);
 
+  const getPhoneNumberValue = useCallback((phone: any) => {
+    if (!phone) return '';
+    return (
+      phone.phone_number ||
+      phone.number ||
+      phone.phone ||
+      phone.recipient_phone ||
+      phone.to_number ||
+      ''
+    );
+  }, []);
+
+  const availableCallerNumbers = useMemo(() => {
+    const uniqueNumbers = new Set<string>();
+    phoneNumbers.forEach((phone) => {
+      const value = getPhoneNumberValue(phone);
+      if (value) {
+        uniqueNumbers.add(value);
+      }
+    });
+    return Array.from(uniqueNumbers);
+  }, [phoneNumbers, getPhoneNumberValue]);
+
   // Load data on component mount
   useEffect(() => {
     const orgId = getOrganizationId();
@@ -107,6 +141,27 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
     loadTrunks();
     loadPhoneNumbers();
   }, [getOrganizationId]);
+
+  useEffect(() => {
+    if (!callForm.caller_number && availableCallerNumbers.length > 0) {
+      setCallForm(prev => ({
+        ...prev,
+        caller_number: prev.caller_number || availableCallerNumbers[0],
+      }));
+    }
+  }, [availableCallerNumbers, callForm.caller_number]);
+
+  useEffect(() => {
+    if (!callForm.agent_name && agents.length > 0) {
+      const defaultAgent = agents[0]?.agent_prefix || agents[0]?.name || '';
+      if (defaultAgent) {
+        setCallForm(prev => ({
+          ...prev,
+          agent_name: prev.agent_name || defaultAgent,
+        }));
+      }
+    }
+  }, [agents, callForm.agent_name]);
 
   const loadScheduledEvents = useCallback(async () => {
     setLoadingScheduledEvents(true);
@@ -535,6 +590,55 @@ setTrunks([]);
     }
   };
 
+  const validateCallForm = () => {
+    if (!callForm.caller_number) {
+      return 'Please select a caller number.';
+    }
+    if (!callForm.callee_number) {
+      return 'Please enter the callee number.';
+    }
+    if (!callForm.agent_name) {
+      return 'Please select an agent.';
+    }
+    return null;
+  };
+
+  const handleInitiateCall = async (event?: React.FormEvent) => {
+    if (event) {
+      event.preventDefault();
+    }
+
+    const validationError = validateCallForm();
+    if (validationError) {
+      setCallError(validationError);
+      return;
+    }
+
+    setIsCalling(true);
+    setCallError(null);
+    setCallSuccess(null);
+
+    try {
+      const callPayload: CallRequest = {
+        caller_number: callForm.caller_number.trim(),
+        callee_number: callForm.callee_number.trim(),
+        agent_name: callForm.agent_name.trim(),
+      };
+
+      const result = await makeOutboundCall(callPayload);
+      if (result.success) {
+        setCallSuccess(result.message || 'Outbound call initiated successfully!');
+      } else {
+        setCallError(result.message || 'Failed to initiate outbound call.');
+      }
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setCallError(`Failed to initiate outbound call: ${errorMessage}`);
+    } finally {
+      setIsCalling(false);
+    }
+  };
+
   const clearSchedulerMessages = () => {
     setSchedulerError(null);
     setSchedulerSuccess(null);
@@ -558,6 +662,16 @@ setTrunks([]);
       return () => clearTimeout(timer);
     }
   }, [deleteError, deleteSuccess]);
+
+  useEffect(() => {
+    if (callError || callSuccess) {
+      const timer = setTimeout(() => {
+        setCallError(null);
+        setCallSuccess(null);
+      }, TIMEOUTS.MESSAGE_DISPLAY);
+      return () => clearTimeout(timer);
+    }
+  }, [callError, callSuccess]);
 
   // Filter scheduled events based on search term
   const filteredScheduledEvents = scheduledEvents.filter(event => {
@@ -605,51 +719,69 @@ setTrunks([]);
             >
               Scheduler
             </button>
+            <button
+              onClick={() => handleTabChange('call')}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                activeTab === 'call'
+                  ? isDarkMode
+                    ? 'bg-green-600 text-white'
+                    : 'bg-green-500 text-white'
+                  : isDarkMode
+                    ? 'text-gray-400 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              Call
+            </button>
           </div>
 
-          <div className="flex items-center justify-between gap-4">
+          <div className={`flex items-center gap-4 ${activeTab === 'call' ? 'justify-end' : 'justify-between'}`}>
             {/* Search Bar - Increased Width */}
-            <div className="w-98 relative group">
-              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 transition-colors ${isDarkMode ? 'text-gray-500 group-focus-within:text-green-400' : 'text-gray-400 group-focus-within:text-green-500'}`} />
-              <input
-                type="text"
-                placeholder={activeTab === 'trunk' ? 'Search trunks...' : 'Search scheduled events...'}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                aria-label={activeTab === 'trunk' ? 'Search trunks' : 'Search scheduled events'}
-                className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm ${isDarkMode ? 'border-gray-600 bg-gray-800 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-400'}`}
-              />
-            </div>
+            {activeTab !== 'call' && (
+              <div className="w-98 relative group">
+                <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 transition-colors ${isDarkMode ? 'text-gray-500 group-focus-within:text-green-400' : 'text-gray-400 group-focus-within:text-green-500'}`} />
+                <input
+                  type="text"
+                  placeholder={activeTab === 'trunk' ? 'Search trunks...' : 'Search scheduled events...'}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  aria-label={activeTab === 'trunk' ? 'Search trunks' : 'Search scheduled events'}
+                  className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm ${isDarkMode ? 'border-gray-600 bg-gray-800 text-gray-200 placeholder-gray-500' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-400'}`}
+                />
+              </div>
+            )}
             
             {/* Button Group - Right Most */}
-            <div className="flex items-center gap-3">
-              {/* Create Button - Dynamic based on active tab */}
-              {activeTab === 'trunk' ? (
-                <button
-                  onClick={() => setShowCreateTrunkModal(true)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all duration-300 ${
-                    isDarkMode
-                      ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl'
-                      : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl'
-                  }`}
-                >
-                  <Phone className="h-4 w-4" />
-                  <span className="text-sm font-semibold">Create Trunk</span>
-                </button>
-              ) : (
-                <button
-          onClick={() => setShowCreateSchedulerModal(true)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all duration-300 ${
-                    isDarkMode
-                      ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl'
-                      : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl'
-                  }`}
-                >
-                  <Calendar className="h-4 w-4" />
-                  <span className="text-sm font-semibold">Create Schedule</span>
-                </button>
-              )}
-            </div>
+            {activeTab !== 'call' && (
+              <div className="flex items-center gap-3">
+                {/* Create Button - Dynamic based on active tab */}
+                {activeTab === 'trunk' ? (
+                  <button
+                    onClick={() => setShowCreateTrunkModal(true)}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all duration-300 ${
+                      isDarkMode
+                        ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl'
+                        : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl'
+                    }`}
+                  >
+                    <Phone className="h-4 w-4" />
+                    <span className="text-sm font-semibold">Create Trunk</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowCreateSchedulerModal(true)}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all duration-300 ${
+                      isDarkMode
+                        ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl'
+                        : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl'
+                    }`}
+                  >
+                    <Calendar className="h-4 w-4" />
+                    <span className="text-sm font-semibold">Create Schedule</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
       </div>
 
@@ -749,7 +881,7 @@ setTrunks([]);
                 )}
               </div>
             </div>
-          ) : (
+          ) : activeTab === 'scheduler' ? (
             // Scheduler layout with sidebar
             <>
               {/* Left Sidebar - Scheduled Events */}
@@ -1020,6 +1152,155 @@ setTrunks([]);
                 )}
               </div>
             </>
+          ) : (
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="max-w-4xl mx-auto space-y-6">
+                <div className={`rounded-2xl border ${isDarkMode ? 'bg-gray-900/80 border-gray-700' : 'bg-white border-gray-200'} shadow-lg`}>
+                  <div className="p-6 sm:p-8">
+                    <div className="mb-6">
+                      <h3 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        Make Outbound Call
+                      </h3>
+                      <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Initiate an immediate outbound call using a provisioned trunk number and AI agent persona.
+                      </p>
+                    </div>
+
+                    {(callError || callSuccess) && (
+                      <div className={`mb-6 flex items-start gap-3 rounded-xl border px-4 py-3 ${
+                        callError
+                          ? isDarkMode
+                            ? 'border-red-500/40 bg-red-500/10 text-red-200'
+                            : 'border-red-200 bg-red-50 text-red-700'
+                          : isDarkMode
+                            ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200'
+                            : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                      }`}>
+                        {callError ? (
+                          <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                        ) : (
+                          <CheckCircle className="h-5 w-5 flex-shrink-0" />
+                        )}
+                        <div className="text-sm font-medium">
+                          {callError || callSuccess}
+                        </div>
+                      </div>
+                    )}
+
+                    <form className="space-y-6" onSubmit={handleInitiateCall}>
+                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        <div>
+                          <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                            Caller Number (From)
+                          </label>
+                          <div className="relative">
+                            <Phone className={`h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                            <select
+                              value={callForm.caller_number}
+                              onChange={(e) => setCallForm(prev => ({ ...prev, caller_number: e.target.value }))}
+                              required
+                              className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-green-500/60 ${
+                                isDarkMode ? 'bg-gray-800 border-gray-700 text-gray-100' : 'bg-white border-gray-200 text-gray-900'
+                              }`}
+                            >
+                              <option value="">Select caller number</option>
+                              {availableCallerNumbers.length === 0 && (
+                                <option value="" disabled>
+                                  No caller numbers available
+                                </option>
+                              )}
+                              {availableCallerNumbers.map((number) => (
+                                <option key={number} value={number}>
+                                  {number}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                            Callee Number (To)
+                          </label>
+                          <div className="relative">
+                            <PhoneCall className={`h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                            <input
+                              type="tel"
+                              value={callForm.callee_number}
+                              onChange={(e) => setCallForm(prev => ({ ...prev, callee_number: e.target.value }))}
+                              required
+                              placeholder="+1XXXXXXXXXX"
+                              className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-green-500/60 ${
+                                isDarkMode ? 'bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400'
+                              }`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        <div>
+                          <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                            Agent Persona
+                          </label>
+                          <div className="relative">
+                            <User className={`h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                            <select
+                              value={callForm.agent_name}
+                              onChange={(e) => setCallForm(prev => ({ ...prev, agent_name: e.target.value }))}
+                              required
+                              className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-green-500/60 ${
+                                isDarkMode ? 'bg-gray-800 border-gray-700 text-gray-100' : 'bg-white border-gray-200 text-gray-900'
+                              }`}
+                            >
+                              <option value="">Select agent persona</option>
+                              {agents.map((agent) => (
+                                <option key={agent.agent_prefix} value={agent.agent_prefix}>
+                                  {agent.agent_prefix}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col justify-end">
+                          <button
+                            type="submit"
+                            disabled={isCalling || availableCallerNumbers.length === 0}
+                            className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                              isCalling || availableCallerNumbers.length === 0
+                                ? isDarkMode
+                                  ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                : isDarkMode
+                                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl'
+                                  : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl'
+                            }`}
+                          >
+                            {isCalling ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Initiating...
+                              </>
+                            ) : (
+                              <>
+                                <PhoneCall className="h-4 w-4" />
+                                Initiate Call
+                              </>
+                            )}
+                          </button>
+                          {availableCallerNumbers.length === 0 && (
+                            <p className={`text-xs mt-2 ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>
+                              Add a trunk with a caller number before placing calls.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>
