@@ -619,9 +619,20 @@ setTrunks([]);
     setCallSuccess(null);
 
     try {
+      // Ensure both numbers are in E.164 format (starts with +)
+      const trimmedCallerNumber = callForm.caller_number.trim();
+      const normalizedCallerNumber = trimmedCallerNumber.startsWith('+') 
+        ? trimmedCallerNumber 
+        : `+${trimmedCallerNumber}`;
+
+      const trimmedCalleeNumber = callForm.callee_number.trim();
+      const normalizedCalleeNumber = trimmedCalleeNumber.startsWith('+') 
+        ? trimmedCalleeNumber 
+        : `+${trimmedCalleeNumber}`;
+
       const callPayload: CallRequest = {
-        caller_number: callForm.caller_number.trim(),
-        callee_number: callForm.callee_number.trim(),
+        caller_number: normalizedCallerNumber,
+        callee_number: normalizedCalleeNumber,
         agent_name: callForm.agent_name.trim(),
       };
 
