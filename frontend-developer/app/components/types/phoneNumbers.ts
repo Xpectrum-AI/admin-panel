@@ -76,6 +76,12 @@ export interface SchedulerFormData {
   receiving_number?: string;
 }
 
+export interface CallFormData {
+  caller_number: string;
+  callee_number: string;
+  agent_name: string;
+}
+
 export interface FormErrors {
   [key: string]: string;
 }
