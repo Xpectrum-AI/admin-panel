@@ -126,11 +126,14 @@ const makeApiRequest = async (
 };
 
 const getFastApiCallConfig = () => {
-  const defaultBaseUrl = 'https://fastapi-server-app-dev-hyn35.ondigitalocean.app';
-  const directEndpoint = process.env.NEXT_PUBLIC_FASTAPI_CALL_ENDPOINT;
-  const baseUrl = (process.env.NEXT_PUBLIC_FASTAPI_SERVER_URL || defaultBaseUrl).replace(/\/$/, '');
-  const url = (directEndpoint || `${baseUrl}/outbound/make-call`).replace(/([^:]\/)\/+/g, '$1');
-  const apiKey = process.env.NEXT_PUBLIC_FASTAPI_SERVER_API_KEY || 'xpectrum-ai@123';
+  const baseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
+  const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
+
+  if (!baseUrl) {
+    throw new Error('NEXT_PUBLIC_LIVE_API_URL is not configured');
+  }
+
+  const url = `${baseUrl.replace(/\/$/, '')}/outbound/make-call`.replace(/([^:]\/)\/+/g, '$1');
   return { url, apiKey };
 };
 
