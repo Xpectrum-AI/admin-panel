@@ -46,6 +46,7 @@ const ModelConfig = forwardRef<HTMLDivElement, ModelConfigProps>(({ agentName = 
   const [agentUrl, setAgentUrl] = useState(agentApiUrl || process.env.NEXT_PUBLIC_CHATBOT_API_URL || '');
   const [localAgentApiKey, setLocalAgentApiKey] = useState(agentApiKey || '');
   const [copiedAgentApiKey, setCopiedAgentApiKey] = useState(false);
+  const appIdCacheRef = useRef<Map<string, string>>(new Map());
 
   // Knowledge Base State
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
@@ -169,6 +170,55 @@ Remember: You are the first point of contact for many patients. Your professiona
     }
   }, [getStorageKey]);
 
+  const resolveAppId = useCallback(
+    async (apiKey?: string | null, options: { silent?: boolean } = {}) => {
+      if (!apiKey) {
+        if (!options.silent) {
+          setErrorMessage('Agent API key is missing. Cannot resolve Dify App ID.');
+        }
+        return null;
+      }
+
+      if (appIdCacheRef.current.has(apiKey)) {
+        return appIdCacheRef.current.get(apiKey)!;
+      }
+
+      if (existingConfig?.dify_app_id && (!existingConfig?.chatbot_key || existingConfig?.chatbot_key === apiKey)) {
+        appIdCacheRef.current.set(apiKey, existingConfig.dify_app_id);
+        return existingConfig.dify_app_id;
+      }
+
+      try {
+        const response = await fetch('/api/dify/get-app-by-key', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ apiKey })
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        if (!data.appId) {
+          throw new Error('App ID not found for the provided API key');
+        }
+
+        appIdCacheRef.current.set(apiKey, data.appId as string);
+        return data.appId as string;
+      } catch (error) {
+        if (!options.silent) {
+          setErrorMessage(`Unable to resolve App ID: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+        return null;
+      }
+    },
+    [existingConfig]
+  );
+
   // Load state from centralized configuration when component mounts or when configuration changes
   useEffect(() => {
     // Reset user change flags when existingConfig changes (tab switch)
@@ -216,6 +266,26 @@ Remember: You are the first point of contact for many patients. Your professiona
       loadFromStorage();
     }
   }, [existingConfig, isUserChangingProvider, isUserChangingModel, loadFromStorage]);
+
+  useEffect(() => {
+    appIdCacheRef.current = new Map();
+  }, [agentName]);
+
+  useEffect(() => {
+    if (existingConfig?.dify_app_id) {
+      const keyForCache = existingConfig?.chatbot_key || localAgentApiKey || agentApiKey;
+      if (keyForCache) {
+        appIdCacheRef.current.set(keyForCache, existingConfig.dify_app_id);
+      }
+    }
+  }, [existingConfig?.dify_app_id, existingConfig?.chatbot_key, localAgentApiKey, agentApiKey]);
+
+  useEffect(() => {
+    if (!localAgentApiKey) {
+      return;
+    }
+    resolveAppId(localAgentApiKey, { silent: true });
+  }, [localAgentApiKey, resolveAppId]);
 
   // Update state when props change
   useEffect(() => {
@@ -369,6 +439,12 @@ setLocalAgentApiKey(agentApiKey);
         saveToStorage('prompt', { prompt: promptValue, timestamp: new Date().toISOString() });
 
         const chatbotApiKey = agentApiKey || existingConfig?.chatbot_key || process.env.NEXT_PUBLIC_CHATBOT_API_KEY;
+        const appId = chatbotApiKey ? await resolveAppId(chatbotApiKey) : null;
+
+        if (!appId) {
+          setErrorMessage('Unable to resolve Dify App ID. Please refresh the page or recreate the agent.');
+          return;
+        }
 
         // Use the same API endpoint as the original function
         const response = await fetch('/api/prompt-config', {
@@ -379,7 +455,8 @@ setLocalAgentApiKey(agentApiKey);
           },
           body: JSON.stringify({
             prompt: promptValue,
-            chatbot_api_key: chatbotApiKey
+            chatbot_api_key: chatbotApiKey,
+            app_id: appId
           }),
         });
 
@@ -405,7 +482,7 @@ setLocalAgentApiKey(agentApiKey);
         setSaveInProgress(false);
       }
     }, 2000); // 2 second delay
-  }, [agentApiKey, existingConfig, saveToStorage, saveInProgress]);
+  }, [agentApiKey, existingConfig, saveToStorage, saveInProgress, resolveAppId]);
 
   // Debounced model save function with current state capture
   const debouncedModelSave = useCallback((currentState?: {
@@ -451,23 +528,10 @@ setLocalAgentApiKey(agentApiKey);
         const provider = modelProviders[stateToUse.selectedModelProvider as keyof typeof modelProviders];
         const apiModel = modelApiMapping[stateToUse.selectedModel] || stateToUse.selectedModel.toLowerCase().replace(/\s+/g, '-');
         const chatbotApiKey = stateToUse.agentApiKey || existingConfig?.chatbot_key || process.env.NEXT_PUBLIC_CHATBOT_API_KEY;
-        // Get app_id from localStorage using the chatbot API key
-        let appId: string | null = null;
-        if (chatbotApiKey) {
-          appId = localStorage.getItem(`dify_app_id_${chatbotApiKey}`);
-}
-
-        // If not found in localStorage, try to get from existingConfig
-        if (!appId && existingConfig?.dify_app_id) {
-          appId = existingConfig.dify_app_id;
-// Store for future use
-          if (chatbotApiKey && appId) {
-            localStorage.setItem(`dify_app_id_${chatbotApiKey}`, appId);
-          }
-        }
+        const appId = chatbotApiKey ? await resolveAppId(chatbotApiKey) : null;
 
         if (!appId) {
-          setErrorMessage('App ID not found. Please ensure the agent was created properly.');
+          setErrorMessage('Unable to resolve Dify App ID. Please refresh the page or recreate the agent.');
           return;
         }
 
@@ -518,7 +582,7 @@ setLocalAgentApiKey(agentApiKey);
         setSaveInProgress(false);
       }
     }, 2000); // 2 second delay
-  }, [selectedModelProvider, selectedModel, modelApiKey, modelLiveUrl, agentUrl, localAgentApiKey, existingConfig, saveToStorage, saveInProgress]);
+  }, [selectedModelProvider, selectedModel, modelApiKey, modelLiveUrl, agentUrl, localAgentApiKey, existingConfig, saveToStorage, saveInProgress, resolveAppId]);
 
   // fetchCurrentPrompt function removed - no longer needed with auto-save functionality
 
@@ -792,65 +856,11 @@ setLocalAgentApiKey(agentApiKey);
       
       // Get the correct model API name
       const apiModel = modelApiMapping[selectedModel] || 'gpt-4o';
-      // Get the app ID from localStorage
-      let appId = localStorage.getItem(`dify_app_id_${localAgentApiKey}`);
-if (!appId) {
-        // Fallback: Try to get the app ID from the current agent list
-        // Try to get from existingConfig if available
-        if (existingConfig && existingConfig.dify_app_id) {
-          appId = existingConfig.dify_app_id;
-          // Store for future use
-          localStorage.setItem(`dify_app_id_${localAgentApiKey}`, appId);
-        } else {
-          // Last resort: Search Dify for the app by API key
-          try {
-            const searchResponse = await fetch('/api/dify/get-app-by-key', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ apiKey: localAgentApiKey })
-            });
-            
-            if (searchResponse.ok) {
-              const searchData = await searchResponse.json();
-              appId = searchData.appId;
-              // Store for future use
-              localStorage.setItem(`dify_app_id_${localAgentApiKey}`, appId);
-            } else {
-              alert('⚠️ App ID not found in storage. This agent might have been created before the app ID tracking was implemented. Please create a new agent or contact support.');
-              return false;
-            }
-          } catch (searchError) {
-            alert('⚠️ App ID not found in storage. This agent might have been created before the app ID tracking was implemented. Please create a new agent or contact support.');
-            return false;
-          }
-        }
-      }
-      
-      // Validate app ID format (should be a UUID)
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(appId)) {
-// Try to fetch the correct app ID from Dify by searching with API key
-        try {
-          const searchResponse = await fetch('/api/dify/get-app-by-key', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ apiKey: localAgentApiKey })
-          });
-          
-          if (searchResponse.ok) {
-            const searchData = await searchResponse.json();
-            appId = searchData.appId;
-            // Store the corrected app ID
-            localStorage.setItem(`dify_app_id_${localAgentApiKey}`, appId);
-            alert(`✅ App ID Fixed!\n\nFound the correct App ID: ${appId}\n\nThe configuration will now be saved.`);
-          } else {
-            alert(`⚠️ Invalid App ID Detected\n\nStored App ID: ${appId}\n\nThis agent was created with an incorrect App ID format. The App ID should be a UUID (e.g., 661d95ae-77ee-4cfd-88e3-e6f3ef8d638b).\n\n✅ Solution: Delete this agent and create a new one. The app ID tracking has been fixed in the latest version.`);
-            return false;
-          }
-        } catch (searchError) {
-          alert(`⚠️ Invalid App ID Detected\n\nStored App ID: ${appId}\n\nThis agent was created with an incorrect App ID format. The App ID should be a UUID (e.g., 661d95ae-77ee-4cfd-88e3-e6f3ef8d638b).\n\n✅ Solution: Delete this agent and create a new one. The app ID tracking has been fixed in the latest version.`);
-          return false;
-        }
+      const appId = await resolveAppId(localAgentApiKey);
+
+      if (!appId) {
+        alert('⚠️ Unable to resolve the agent App ID. Please refresh the page or recreate the agent.');
+        return false;
       }
       
       const response = await fetch('/api/model-config', {
@@ -894,8 +904,9 @@ if (!appId) {
             if (searchResponse.ok) {
               const searchData = await searchResponse.json();
               const correctAppId = searchData.appId;
-              // Update localStorage with correct app ID
-              localStorage.setItem(`dify_app_id_${localAgentApiKey}`, correctAppId);
+              if (correctAppId) {
+                appIdCacheRef.current.set(localAgentApiKey, correctAppId);
+              }
               
               alert(`✅ App ID has been corrected!\n\nOld (incorrect): ${appId}\nNew (correct): ${correctAppId}\n\nPlease try adding the knowledge base again.`);
               
@@ -926,7 +937,7 @@ if (!appId) {
     } catch (error) {
       return false;
     }
-  }, [selectedModelProvider, selectedModel, modelApiKey, localAgentApiKey]);
+  }, [selectedModelProvider, selectedModel, modelApiKey, localAgentApiKey, resolveAppId]);
 
   // Debounced save function for knowledge base changes
   const debouncedKnowledgeBaseSave = useCallback(
@@ -1458,10 +1469,9 @@ if (!appId) {
                       // Trigger publish after knowledge base configuration is saved
                       if (localAgentApiKey) {
                         try {
-                          // Get the app ID from localStorage
-                          const appId = localStorage.getItem(`dify_app_id_${localAgentApiKey}`);
+                          const appId = await resolveAppId(localAgentApiKey);
                           if (!appId) {
-                            alert('⚠️ Could not find app ID. The configuration has been saved but may require manual publishing.');
+                            alert('⚠️ Unable to resolve the agent App ID. The configuration has been saved but may require manual publishing.');
                             setPublishingAgent(false);
                             return;
                           }
