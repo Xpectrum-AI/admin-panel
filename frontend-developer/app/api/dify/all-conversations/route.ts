@@ -68,6 +68,43 @@ async function findAppIdByApiKey(token: string, apiKey: string): Promise<string 
   return null;
 }
 
+const DEFAULT_USER_IDS = ['preview-user', 'voice-session-abc123', 'admin', 'user', 'test-user'];
+
+async function findAppUserId(
+  apiKey: string,
+  conversationId: string,
+  preferredIds: string[] = []
+) {
+  const baseUrl = process.env.NEXT_PUBLIC_DIFY_BASE_URL;
+  if (!baseUrl) {
+    throw new Error('NEXT_PUBLIC_DIFY_BASE_URL is not configured');
+  }
+
+  const candidates = Array.from(new Set([...preferredIds, ...DEFAULT_USER_IDS].filter(Boolean)));
+
+  for (const userId of candidates) {
+    try {
+      const testResponse = await fetch(
+        `${baseUrl}/messages?user=${encodeURIComponent(userId)}&conversation_id=${conversationId}&limit=1`,
+        {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (testResponse.ok) {
+        return userId;
+      }
+    } catch (error) {
+      // ignore and continue
+    }
+  }
+
+  return null;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -120,18 +157,17 @@ export async function POST(request: NextRequest) {
     }
     
     if (!conversationsResponse || !conversationsResponse.ok) {
-            // Fallback: Use App API with multiple common user types
-            const userTypes = ['preview-user', 'voice-session-abc123', 'admin', 'user', 'test-user'];
-            const allConversations: any[] = [];
-            const conversationIds = new Set<string>();
-            
-            // Use default base URL
-            const baseUrl = process.env.NEXT_PUBLIC_DIFY_BASE_URL;
-            if (!baseUrl) {
-              throw new Error('NEXT_PUBLIC_DIFY_BASE_URL is not configured');
-            }
+      // Fallback: Use App API with multiple common user types
+      const allConversations: any[] = [];
+      const conversationIds = new Set<string>();
       
-      for (const userId of userTypes) {
+      // Use default base URL
+      const baseUrl = process.env.NEXT_PUBLIC_DIFY_BASE_URL;
+      if (!baseUrl) {
+        throw new Error('NEXT_PUBLIC_DIFY_BASE_URL is not configured');
+      }
+
+      for (const userId of DEFAULT_USER_IDS) {
         try {
           const appResponse = await fetch(`${baseUrl}/conversations?user=${userId}&limit=100`, {
             method: 'GET',
@@ -145,14 +181,16 @@ export async function POST(request: NextRequest) {
             const appData = await appResponse.json();
             const conversations = appData.data || [];
             
-            // IMPORTANT: Store the userId we used to fetch, NOT the from_end_user_id
             conversations.forEach((conv: any) => {
               if (!conversationIds.has(conv.id)) {
                 conversationIds.add(conv.id);
                 allConversations.push({
                   ...conv,
-                  user_id: userId, // This is the user string to use for fetching messages
-                  from_end_user_id: conv.from_end_user_id, // Preserve original for reference
+                  user_id: conv.from_end_user_id || userId,
+                  app_user_id: userId,
+                  from_end_user_id: conv.from_end_user_id || userId,
+                  session_id: conv.from_end_user_session_id || userId,
+                  app_id: appId,
                 });
               }
             });
@@ -170,47 +208,23 @@ export async function POST(request: NextRequest) {
     }
 
     const conversations = conversationsData.data || [];
-// Console API gives us UUIDs, but we need user strings for App API
+    // Console API gives us UUIDs, but we need user strings for App API
     // Try to match each conversation with the correct user string
-    const conversationsWithUser = await Promise.all(conversations.map(async (conv: any) => {
-      const baseUrl = process.env.NEXT_PUBLIC_DIFY_BASE_URL;
-      if (!baseUrl) {
-        throw new Error('NEXT_PUBLIC_DIFY_BASE_URL is not configured');
-      }
-      const userTypes = ['preview-user', 'voice-session-abc123', 'admin', 'user', 'test-user'];
-      
-      // Try to find which user string works for this conversation
-      for (const userId of userTypes) {
-        try {
-          const testResponse = await fetch(
-            `${baseUrl}/messages?user=${userId}&conversation_id=${conv.id}&limit=1`,
-            {
-              headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-              },
-            }
-          );
-          
-          if (testResponse.ok) {
-            return {
-              ...conv,
-              user_id: userId,
-              from_end_user_id: conv.from_end_user_id,
-            };
-          }
-        } catch (error) {
-          // Continue to next user type
-        }
-      }
-      
-      // If no user type worked, default to preview-user
-      return {
-        ...conv,
-        user_id: 'preview-user',
-        from_end_user_id: conv.from_end_user_id,
-      };
-    }));
+    const conversationsWithUser = await Promise.all(
+      conversations.map(async (conv: any) => {
+        const preferred = conv.from_end_user_id ? [conv.from_end_user_id] : [];
+        const foundUser = await findAppUserId(apiKey, conv.id, preferred);
+
+        return {
+          ...conv,
+          user_id: conv.from_end_user_id || foundUser || 'preview-user',
+          app_user_id: foundUser || conv.from_end_user_id || 'preview-user',
+          from_end_user_id: conv.from_end_user_id,
+          session_id: conv.from_end_user_session_id || foundUser || 'preview-user',
+          app_id: appId,
+        };
+      })
+    );
 
     return NextResponse.json({
       success: true,
