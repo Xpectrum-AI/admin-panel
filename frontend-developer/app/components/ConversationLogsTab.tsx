@@ -261,30 +261,59 @@ const apiKey = agent.chatbot_key || '';
       if (!baseUrl) {
         throw new Error('Chatbot API URL or NEXT_PUBLIC_DIFY_BASE_URL is not configured');
       }
-      // Use the user_id from the conversation (fetched via Console API)
-      const userId = conversation.user_id || 'preview-user';
-      // Call App API directly: GET /v1/messages
-      const response = await fetch(`${baseUrl}/messages?user=${encodeURIComponent(userId)}&conversation_id=${encodeURIComponent(conversation.id)}&limit=100`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const sessionId = conversation.session_id || conversation.from_end_user_session_id || conversation.app_user_id || conversation.user_id || 'preview-user';
+      let messages: any[] = [];
+      let createdAt = conversation.created_at;
+      let updatedAt = conversation.updated_at || conversation.created_at;
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to fetch messages: ${response.status} ${response.statusText}`);
+      const messageLimit = Math.min(Math.max(conversation.message_count || 100, 1), 100);
+
+      try {
+        const appResponse = await fetch(`${baseUrl}/messages?user=${encodeURIComponent(sessionId)}&conversation_id=${encodeURIComponent(conversation.id)}&limit=${messageLimit}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (appResponse.ok) {
+          const appData = await appResponse.json();
+          messages = appData.data || [];
+        } else {
+          throw new Error(`App API error: ${appResponse.status}`);
+        }
+      } catch (appError) {
+        // fallback to console API proxy
+        const fallbackResponse = await fetch('/api/dify/conversation-messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            apiKey,
+            conversationId: conversation.id,
+            appId: conversation.app_id || selectedAgent?.agent_id || selectedAgent?.id
+          })
+        });
+
+        if (!fallbackResponse.ok) {
+          const errorText = await fallbackResponse.text();
+          throw new Error(`Failed to fetch messages: ${fallbackResponse.status} ${errorText}`);
+        }
+
+        const fallbackData = await fallbackResponse.json();
+        messages = fallbackData.messages || fallbackData.conversation?.messages || [];
+        createdAt = fallbackData.conversation?.created_at || createdAt;
+        updatedAt = fallbackData.conversation?.updated_at || updatedAt;
       }
 
-      const data = await response.json();
-      const messages = data.data || [];
       // Update conversation with messages
       const updatedConversation = {
         ...conversation,
-        messages: messages,
-        created_at: conversation.created_at * 1000, // Convert to milliseconds for Date
-        updated_at: (conversation.updated_at || conversation.created_at) * 1000,
+        messages,
+        created_at: typeof createdAt === 'number' ? createdAt * 1000 : new Date(createdAt).getTime(),
+        updated_at: typeof updatedAt === 'number' ? updatedAt * 1000 : new Date(updatedAt).getTime(),
       };
       setSelectedConversation(updatedConversation);
       setView('chat');
