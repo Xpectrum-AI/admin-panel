@@ -1305,7 +1305,11 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
   // Filter Cartesia voices by gender and language
   const getFilteredCartesiaVoices = () => {
     if (selectedVoiceProvider !== 'Cartesia' || cartesiaVoices.length === 0) {
-      return cartesiaVoices;
+      return cartesiaVoices.slice().sort((a, b) => {
+        const nameA = (a?.name || a?.id || a?.voice_id || '').toLowerCase();
+        const nameB = (b?.name || b?.id || b?.voice_id || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
     }
 
     return cartesiaVoices.filter((voice: any) => {
@@ -1325,6 +1329,10 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       }
       
       return true;
+    }).sort((a: any, b: any) => {
+      const nameA = (a?.name || a?.id || a?.voice_id || '').toLowerCase();
+      const nameB = (b?.name || b?.id || b?.voice_id || '').toLowerCase();
+      return nameA.localeCompare(nameB);
     });
   };
 
@@ -1353,6 +1361,10 @@ const VoiceConfig = forwardRef<HTMLDivElement, VoiceConfigProps>(({
       return voice.verified_languages.some((lang: any) => 
         lang.model_id === selectedModel && lang.language === languageCode
       );
+    }).sort((a: any, b: any) => {
+      const nameA = (a?.name || a?.voice_id || '').toLowerCase();
+      const nameB = (b?.name || b?.voice_id || '').toLowerCase();
+      return nameA.localeCompare(nameB);
     });
   };
 
