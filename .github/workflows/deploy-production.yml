@@ -2,6 +2,15 @@ name: Deploy to Production
 
 on:
   workflow_dispatch:
+    inputs:
+      admin_release_tag:
+        description: 'Admin release image tag (e.g., admin-release-2025-01-15-001)'
+        required: true
+        type: string
+      developer_release_tag:
+        description: 'Developer release image tag (e.g., developer-release-2025-01-15-001)'
+        required: true
+        type: string
 
 env:
   DIGITALOCEAN_REGION: sfo3
@@ -66,40 +75,44 @@ jobs:
         run: |
           doctl registry login --expiry-seconds 1200
 
-      - name: Generate image tag for Admin Panel with date and counter
-        id: admin-image-tag
+      - name: Determine production tag for Admin Panel
+        id: admin-prod-tag
         run: |
-          # Get today's date in YYYY-MM-DD format
-          TODAY=$(date +%Y-%m-%d)
-          
-          # Full repository path
+          set -e
+          RELEASE_TAG="${{ inputs.admin_release_tag }}"
+          if [ -z "$RELEASE_TAG" ]; then
+            echo "❌ admin_release_tag input is required"
+            exit 1
+          fi
+
+          if [[ ! "$RELEASE_TAG" =~ ^admin-release-[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{3}$ ]]; then
+            echo "❌ admin_release_tag must look like admin-release-YYYY-MM-DD-###"
+            exit 1
+          fi
+
+          DATE_PART=$(echo "$RELEASE_TAG" | sed -E 's/^admin-release-([0-9]{4}-[0-9]{2}-[0-9]{2})-.*/\1/')
+
           REPO="registry.digitalocean.com/xpectrum-main-app-dev/admin-prod"
           REPO_NAME="xpectrum-main-app-dev/admin-prod"
-          
-          # Tag prefix for today
-          TAG_PREFIX="admin-${TODAY}"
-          
-          echo "Today's date: $TODAY"
-          echo "Tag prefix: $TAG_PREFIX"
-          
-          # Find the highest counter for today's date by checking existing tags
+          TAG_PREFIX="admin-production-${DATE_PART}"
+
+          echo "Release tag: $RELEASE_TAG"
+          echo "Production tag prefix: $TAG_PREFIX"
+
           MAX_COUNTER=0
           FOUND_TAGS=false
-          
-          # Method 1: Try to get tags using doctl
+
           if command -v doctl >/dev/null 2>&1; then
             EXISTING_TAGS=$(doctl registry repository list-tags $REPO_NAME --format Tag --no-header 2>/dev/null || echo "")
             if [ -n "$EXISTING_TAGS" ]; then
-              echo "Querying existing tags via doctl..."
+              echo "Querying existing production tags via doctl..."
               for tag in $EXISTING_TAGS; do
                 if [[ $tag == ${TAG_PREFIX}-* ]]; then
                   FOUND_TAGS=true
-                  # Extract the counter part (3 digits after the last dash)
                   COUNTER=$(echo $tag | sed "s/${TAG_PREFIX}-//" | sed 's/^0*//')
                   if [ -z "$COUNTER" ]; then
                     COUNTER=0
                   fi
-                  # Convert to integer and find max
                   if [ "$COUNTER" -gt "$MAX_COUNTER" ] 2>/dev/null; then
                     MAX_COUNTER=$COUNTER
                   fi
@@ -107,68 +120,68 @@ jobs:
               done
             fi
           fi
-          
-          # Method 2: Fallback - use docker manifest inspect if doctl didn't find matching tags
+
           if [ "$FOUND_TAGS" = false ]; then
-            echo "Using docker manifest inspect fallback to find existing tags..."
+            echo "Using docker manifest inspect fallback to find production tags..."
             for i in {1..999}; do
               COUNTER_FORMATTED=$(printf "%03d" $i)
               TEST_TAG="${TAG_PREFIX}-${COUNTER_FORMATTED}"
               if docker manifest inspect "$REPO:$TEST_TAG" >/dev/null 2>&1; then
                 MAX_COUNTER=$i
-                echo "Found existing tag: $TEST_TAG"
+                echo "Found existing production tag: $TEST_TAG"
               else
                 break
               fi
             done
           fi
-          
-          # Increment counter and format with leading zeros
+
           NEW_COUNTER=$((MAX_COUNTER + 1))
           FORMATTED_COUNTER=$(printf "%03d" $NEW_COUNTER)
-          
-          # Generate the final tag
-          IMAGE_TAG="${TAG_PREFIX}-${FORMATTED_COUNTER}"
-          
-          echo "Max existing counter: $MAX_COUNTER"
-          echo "New counter: $NEW_COUNTER"
-          echo "Generated tag: $IMAGE_TAG"
-          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          PRODUCTION_TAG="${TAG_PREFIX}-${FORMATTED_COUNTER}"
 
-      - name: Generate image tag for Developer Dashboard with date and counter
-        id: developer-image-tag
+          echo "Max existing production counter: $MAX_COUNTER"
+          echo "Generated production tag: $PRODUCTION_TAG"
+          echo "release_tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
+          echo "production_tag=$PRODUCTION_TAG" >> $GITHUB_OUTPUT
+
+      - name: Determine production tag for Developer Dashboard
+        id: developer-prod-tag
         run: |
-          # Get today's date in YYYY-MM-DD format
-          TODAY=$(date +%Y-%m-%d)
-          
-          # Full repository path
+          set -e
+          RELEASE_TAG="${{ inputs.developer_release_tag }}"
+          if [ -z "$RELEASE_TAG" ]; then
+            echo "❌ developer_release_tag input is required"
+            exit 1
+          fi
+
+          if [[ ! "$RELEASE_TAG" =~ ^developer-release-[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{3}$ ]]; then
+            echo "❌ developer_release_tag must look like developer-release-YYYY-MM-DD-###"
+            exit 1
+          fi
+
+          DATE_PART=$(echo "$RELEASE_TAG" | sed -E 's/^developer-release-([0-9]{4}-[0-9]{2}-[0-9]{2})-.*/\1/')
+
           REPO="registry.digitalocean.com/xpectrum-main-app-dev/developer-prod"
           REPO_NAME="xpectrum-main-app-dev/developer-prod"
-          
-          # Tag prefix for today
-          TAG_PREFIX="developer-${TODAY}"
-          
-          echo "Today's date: $TODAY"
-          echo "Tag prefix: $TAG_PREFIX"
-          
-          # Find the highest counter for today's date by checking existing tags
+          TAG_PREFIX="developer-production-${DATE_PART}"
+
+          echo "Release tag: $RELEASE_TAG"
+          echo "Production tag prefix: $TAG_PREFIX"
+
           MAX_COUNTER=0
           FOUND_TAGS=false
-          
-          # Method 1: Try to get tags using doctl
+
           if command -v doctl >/dev/null 2>&1; then
             EXISTING_TAGS=$(doctl registry repository list-tags $REPO_NAME --format Tag --no-header 2>/dev/null || echo "")
             if [ -n "$EXISTING_TAGS" ]; then
-              echo "Querying existing tags via doctl..."
+              echo "Querying existing production tags via doctl..."
               for tag in $EXISTING_TAGS; do
                 if [[ $tag == ${TAG_PREFIX}-* ]]; then
                   FOUND_TAGS=true
-                  # Extract the counter part (3 digits after the last dash)
                   COUNTER=$(echo $tag | sed "s/${TAG_PREFIX}-//" | sed 's/^0*//')
                   if [ -z "$COUNTER" ]; then
                     COUNTER=0
                   fi
-                  # Convert to integer and find max
                   if [ "$COUNTER" -gt "$MAX_COUNTER" ] 2>/dev/null; then
                     MAX_COUNTER=$COUNTER
                   fi
@@ -177,82 +190,72 @@ jobs:
             fi
           fi
           
-          # Method 2: Fallback - use docker manifest inspect if doctl didn't find matching tags
           if [ "$FOUND_TAGS" = false ]; then
-            echo "Using docker manifest inspect fallback to find existing tags..."
+            echo "Using docker manifest inspect fallback to find production tags..."
             for i in {1..999}; do
               COUNTER_FORMATTED=$(printf "%03d" $i)
               TEST_TAG="${TAG_PREFIX}-${COUNTER_FORMATTED}"
               if docker manifest inspect "$REPO:$TEST_TAG" >/dev/null 2>&1; then
                 MAX_COUNTER=$i
-                echo "Found existing tag: $TEST_TAG"
+                echo "Found existing production tag: $TEST_TAG"
               else
                 break
               fi
             done
           fi
-          
-          # Increment counter and format with leading zeros
+
           NEW_COUNTER=$((MAX_COUNTER + 1))
           FORMATTED_COUNTER=$(printf "%03d" $NEW_COUNTER)
-          
-          # Generate the final tag
-          IMAGE_TAG="${TAG_PREFIX}-${FORMATTED_COUNTER}"
-          
-          echo "Max existing counter: $MAX_COUNTER"
-          echo "New counter: $NEW_COUNTER"
-          echo "Generated tag: $IMAGE_TAG"
-          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          PRODUCTION_TAG="${TAG_PREFIX}-${FORMATTED_COUNTER}"
+
+          echo "Max existing production counter: $MAX_COUNTER"
+          echo "Generated production tag: $PRODUCTION_TAG"
+          echo "release_tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
+          echo "production_tag=$PRODUCTION_TAG" >> $GITHUB_OUTPUT
 
       - name: Pull and tag Release Main Frontend image for Production
         run: |
-          # Pull the release image and tag it for production
           RELEASE_REPO="registry.digitalocean.com/xpectrum-main-app-dev/admin-release"
           PROD_REPO="registry.digitalocean.com/xpectrum-main-app-dev/admin-prod"
-          IMAGE_TAG="${{ steps.admin-image-tag.outputs.image_tag }}"
+          RELEASE_TAG="${{ steps.admin-prod-tag.outputs.release_tag }}"
+          PROD_TAG="${{ steps.admin-prod-tag.outputs.production_tag }}"
           
-          echo "📥 Pulling release image: $RELEASE_REPO:latest"
-          docker pull $RELEASE_REPO:latest
+          echo "📥 Pulling release image: $RELEASE_REPO:$RELEASE_TAG"
+          docker pull $RELEASE_REPO:$RELEASE_TAG
           
-          echo "🏷️ Tagging release image as production with date-based tag: $PROD_REPO:$IMAGE_TAG"
-          docker tag $RELEASE_REPO:latest $PROD_REPO:$IMAGE_TAG
+          echo "🏷️ Tagging release image as production with tag: $PROD_REPO:$PROD_TAG"
+          docker tag $RELEASE_REPO:$RELEASE_TAG $PROD_REPO:$PROD_TAG
           
-          echo "📤 Pushing production image with date-based tag: $PROD_REPO:$IMAGE_TAG"
-          docker push $PROD_REPO:$IMAGE_TAG
+          echo "📤 Pushing production image: $PROD_REPO:$PROD_TAG"
+          docker push $PROD_REPO:$PROD_TAG
           
-          # Also tag as latest for convenience
-          echo "🏷️ Tagging as latest: $PROD_REPO:latest"
-          docker tag $RELEASE_REPO:latest $PROD_REPO:latest
-          
-          echo "📤 Pushing production image as latest: $PROD_REPO:latest"
+          echo "🏷️ Updating latest tag for convenience"
+          docker tag $RELEASE_REPO:$RELEASE_TAG $PROD_REPO:latest
           docker push $PROD_REPO:latest
           
-          echo "✅ Successfully tagged and pushed release image to production with tag: $IMAGE_TAG"
+          echo "✅ Successfully promoted $RELEASE_TAG -> $PROD_TAG"
 
       - name: Pull and tag Release Developer Frontend image for Production
         run: |
-          # Pull the release image and tag it for production
           RELEASE_REPO="registry.digitalocean.com/xpectrum-main-app-dev/developer-release"
           PROD_REPO="registry.digitalocean.com/xpectrum-main-app-dev/developer-prod"
-          IMAGE_TAG="${{ steps.developer-image-tag.outputs.image_tag }}"
+          RELEASE_TAG="${{ steps.developer-prod-tag.outputs.release_tag }}"
+          PROD_TAG="${{ steps.developer-prod-tag.outputs.production_tag }}"
           
-          echo "📥 Pulling release image: $RELEASE_REPO:latest"
-          docker pull $RELEASE_REPO:latest
+          echo "📥 Pulling release image: $RELEASE_REPO:$RELEASE_TAG"
+          docker pull $RELEASE_REPO:$RELEASE_TAG
           
-          echo "🏷️ Tagging release image as production with date-based tag: $PROD_REPO:$IMAGE_TAG"
-          docker tag $RELEASE_REPO:latest $PROD_REPO:$IMAGE_TAG
+          echo "🏷️ Tagging release image as production with tag: $PROD_REPO:$PROD_TAG"
+          docker tag $RELEASE_REPO:$RELEASE_TAG $PROD_REPO:$PROD_TAG
           
-          echo "📤 Pushing production image with date-based tag: $PROD_REPO:$IMAGE_TAG"
-          docker push $PROD_REPO:$IMAGE_TAG
+          echo "📤 Pushing production image: $PROD_REPO:$PROD_TAG"
+          docker push $PROD_REPO:$PROD_TAG
           
-          # Also tag as latest for convenience
-          echo "🏷️ Tagging as latest: $PROD_REPO:latest"
-          docker tag $RELEASE_REPO:latest $PROD_REPO:latest
-          
-          echo "📤 Pushing production image as latest: $PROD_REPO:latest"
+          echo "🏷️ Updating latest tag for convenience"
+          docker tag $RELEASE_REPO:$RELEASE_TAG $PROD_REPO:latest
           docker push $PROD_REPO:latest
           
-          echo "✅ Successfully tagged and pushed release image to production with tag: $IMAGE_TAG"
+          echo "✅ Successfully promoted $RELEASE_TAG -> $PROD_TAG"
 
       - name: Install Pulumi CLI
         uses: pulumi/actions@v4
@@ -327,9 +330,9 @@ jobs:
           pulumi config set prod:elevenLabsVoiceId "${{ vars.PRODUCTION_ELEVEN_LABS_VOICE_ID }}"
           pulumi config set prod:liveApiUrl "${{ vars.PRODUCTION_LIVE_API_URL }}"
           
-          # Set image tags (from generated tags)
-          pulumi config set prod:adminImageTag "${{ steps.admin-image-tag.outputs.image_tag }}"
-          pulumi config set prod:developerImageTag "${{ steps.developer-image-tag.outputs.image_tag }}"
+          # Set image tags (from generated production tags)
+          pulumi config set prod:adminImageTag "${{ steps.admin-prod-tag.outputs.production_tag }}"
+          pulumi config set prod:developerImageTag "${{ steps.developer-prod-tag.outputs.production_tag }}"
           
           echo "✅ Pulumi config fully configured from GitHub secrets and variables"
 
@@ -397,8 +400,8 @@ jobs:
       - name: Display deployment info
         run: |
           echo "🎉 Production Deployment Complete!"
-          echo "📦 Admin Panel Image: registry.digitalocean.com/xpectrum-main-app-dev/admin-prod:${{ steps.admin-image-tag.outputs.image_tag }}"
-          echo "📦 Developer Dashboard Image: registry.digitalocean.com/xpectrum-main-app-dev/developer-prod:${{ steps.developer-image-tag.outputs.image_tag }}"
+          echo "📦 Admin Panel Image: registry.digitalocean.com/xpectrum-main-app-dev/admin-prod:${{ steps.admin-prod-tag.outputs.production_tag }}"
+          echo "📦 Developer Dashboard Image: registry.digitalocean.com/xpectrum-main-app-dev/developer-prod:${{ steps.developer-prod-tag.outputs.production_tag }}"
           echo "🌍 Environment: production"
           echo "🔧 Stack: frontend-prod"
 
