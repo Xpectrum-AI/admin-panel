@@ -3,69 +3,232 @@ import { NextRequest, NextResponse } from 'next/server';
 const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN || '';
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL || '';
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD || '';
-const WS_ID = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID || '';
+const WORKSPACE_FROM_ENV = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID || '';
+
+type WorkspaceSummary = { id?: string; tenant_id?: string; name?: string };
+
+if (!CONSOLE_ORIGIN || !ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  throw new Error('Missing required Dify environment variables.');
+}
+
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  timeoutMs: number = 10000
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`Request timeout after ${timeoutMs}ms`);
+    }
+    throw error;
+  }
+}
 
 async function getAuthToken() {
-  const loginResponse = await fetch(`${CONSOLE_ORIGIN}/console/api/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD })
-  });
+  const loginResponse = await fetchWithTimeout(
+    `${CONSOLE_ORIGIN}/console/api/login`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
+    },
+    10000
+  );
 
   if (!loginResponse.ok) {
     const errorText = await loginResponse.text();
-    throw new Error('Failed to authenticate with Console API');
+    throw new Error(`Failed to authenticate with Console API: ${errorText.substring(0, 300)}`);
   }
 
   const loginData = await loginResponse.json();
-  const token = loginData.data?.access_token || loginData.access_token || loginData.data?.token;
-  return token;
+  return loginData.data?.access_token || loginData.access_token || loginData.data?.token;
 }
 
-async function findAppIdByApiKey(token: string, apiKey: string): Promise<string | null> {
-  // Fetch all apps
-  const response = await fetch(`${CONSOLE_ORIGIN}/console/api/apps?page=1&limit=100`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'X-Workspace-Id': WS_ID,
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch apps');
-  }
-
-  const data = await response.json();
-  const apps = data.data || [];
-  // For each app, fetch its API keys and check if any match
-  for (const app of apps) {
-    try {
-      const keysResponse = await fetch(`${CONSOLE_ORIGIN}/console/api/apps/${app.id}/api-keys`, {
+async function getAllWorkspaces(token: string): Promise<WorkspaceSummary[]> {
+  try {
+    const response = await fetchWithTimeout(
+      `${CONSOLE_ORIGIN}/console/api/workspaces`,
+      {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'X-Workspace-Id': WS_ID,
-        }
-      });
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      },
+      10000
+    );
 
-      if (keysResponse.ok) {
-        const keysData = await keysResponse.json();
-        const keys = keysData.data || [];
-        
-        // Check if any key matches
-        const matchingKey = keys.find((k: any) => {
-          const keyValue = k.api_key || k.key || k.token;
-          return keyValue === apiKey;
-        });
+    if (!response.ok) {
+      console.warn(`[All Conversations] Failed to fetch workspaces: ${response.status}`);
+      return [];
+    }
 
-        if (matchingKey) {
-          return app.id;
-        }
+    const data = await response.json();
+    return data.data || data.workspaces || [];
+  } catch (error) {
+    console.error('[All Conversations] Error fetching workspaces:', error);
+    return [];
+  }
+}
+
+function extractAllKeyFormats(keyObj: any): string[] {
+  const keys: string[] = [];
+  if (!keyObj) return keys;
+
+  const possibleFields = [
+    'api_key',
+    'key',
+    'token',
+    'token_value',
+    'value',
+    'id',
+    'secret_key',
+    'app_key',
+  ];
+
+  for (const field of possibleFields) {
+    if (keyObj[field] && typeof keyObj[field] === 'string') {
+      const val = keyObj[field].trim();
+      if (val && !keys.includes(val)) {
+        keys.push(val);
       }
-    } catch (error) {
     }
   }
 
-  return null;
+  return keys;
+}
+
+const keyMatches = (keyValues: string[], searchKey: string): boolean => {
+  if (!keyValues || keyValues.length === 0) return false;
+  const trimmedSearch = searchKey.trim();
+  return keyValues.some((k) => k === trimmedSearch || k.trim() === trimmedSearch);
+};
+
+async function switchWorkspace(token: string, workspaceId: string) {
+  try {
+    const response = await fetchWithTimeout(
+      `${CONSOLE_ORIGIN}/console/api/workspaces/switch`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tenant_id: workspaceId }),
+      },
+      8000
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unable to read error');
+      console.warn(
+        `[All Conversations] Workspace switch failed (${workspaceId.substring(0, 8)}...): ${response.status} ${response.statusText}`
+      );
+      console.warn(`[All Conversations] Error response: ${errorText.substring(0, 500)}`);
+    }
+  } catch (error) {
+    console.warn('[All Conversations] Workspace switch error:', error);
+  }
+}
+
+async function findAppInWorkspace(
+  token: string,
+  workspaceId: string,
+  apiKey: string
+): Promise<{ appId: string; appName?: string } | null> {
+  try {
+    await switchWorkspace(token, workspaceId);
+
+    const response = await fetchWithTimeout(
+      `${CONSOLE_ORIGIN}/console/api/apps?page=1&limit=100`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'X-Workspace-Id': workspaceId,
+        },
+      },
+      8000
+    );
+
+    if (!response.ok) {
+      console.warn(`[All Conversations] Failed to fetch apps in workspace ${workspaceId.substring(0, 8)}...`);
+      return null;
+    }
+
+    const data = await response.json();
+    const apps = data.data || [];
+
+    for (const app of apps) {
+      try {
+        const keysResponse = await fetchWithTimeout(
+          `${CONSOLE_ORIGIN}/console/api/apps/${app.id}/api-keys`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'X-Workspace-Id': workspaceId,
+            },
+          },
+          8000
+        );
+
+        if (!keysResponse.ok) {
+          const errorText = await keysResponse.text().catch(() => 'Unable to read error');
+          console.warn(
+            `[All Conversations] Failed to fetch keys for app ${app.id}: ${keysResponse.status} - ${errorText.substring(
+              0,
+              200
+            )}`
+          );
+          continue;
+        }
+
+        const keysData = await keysResponse.json();
+        let keys = keysData.data || keysData || [];
+        if (!Array.isArray(keys)) {
+          keys = [keys];
+        }
+
+        for (const keyObj of keys) {
+          const keyFormats = extractAllKeyFormats(keyObj);
+          if (keyFormats.length > 0) {
+            console.log(
+              `[All Conversations] App ${app.id.substring(0, 8)}... - Key formats:`,
+              keyFormats
+            );
+          }
+          if (keyMatches(keyFormats, apiKey)) {
+            console.log(
+              `[All Conversations] ✓ Found matching app ${app.id.substring(0, 8)}... in workspace ${workspaceId.substring(
+                0,
+                8
+              )}...`
+            );
+            return { appId: app.id, appName: app.name };
+          }
+        }
+      } catch (error) {
+        console.warn(
+          `[All Conversations] Error while inspecting keys for app ${app.id}:`,
+          error instanceof Error ? error.message : 'Unknown error'
+        );
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error(
+      `[All Conversations] Error searching workspace ${workspaceId.substring(0, 8)}...`,
+      error
+    );
+    return null;
+  }
 }
 
 const DEFAULT_USER_IDS = ['preview-user', 'voice-session-abc123', 'admin', 'user', 'test-user'];
@@ -113,18 +276,70 @@ export async function POST(request: NextRequest) {
     if (!apiKey) {
       return NextResponse.json({ error: 'API key is required' }, { status: 400 });
     }
-// Get auth token
+
+    const trimmedApiKey = apiKey.trim();
     const token = await getAuthToken();
 
-    // Find app ID by API key
-    const appId = await findAppIdByApiKey(token, apiKey);
+    console.log(`[All Conversations] Searching for API key: ${trimmedApiKey.substring(0, 16)}...`);
 
-    if (!appId) {
+    let searchedWorkspaces = 0;
+    let foundApp: { appId: string; appName?: string; workspace: string } | null = null;
+    const searchedWorkspaceIds = new Set<string>();
+
+    if (WORKSPACE_FROM_ENV) {
+      console.log(
+        `[All Conversations] Searching environment workspace first: ${WORKSPACE_FROM_ENV.substring(0, 8)}...`
+      );
+      const result = await findAppInWorkspace(token, WORKSPACE_FROM_ENV, trimmedApiKey);
+      searchedWorkspaces++;
+      searchedWorkspaceIds.add(WORKSPACE_FROM_ENV);
+      if (result) {
+        foundApp = { ...result, workspace: WORKSPACE_FROM_ENV };
+      }
+    }
+
+    if (!foundApp) {
+      const workspaces = await getAllWorkspaces(token);
+      const otherWorkspaces = workspaces.filter((ws) => {
+        const wsId = ws.id || ws.tenant_id;
+        return wsId && !searchedWorkspaceIds.has(wsId);
+      });
+
+      console.log(`[All Conversations] Searching ${otherWorkspaces.length} additional workspaces...`);
+
+      const CONCURRENT_WORKSPACES = 3;
+      for (let i = 0; i < otherWorkspaces.length && !foundApp; i += CONCURRENT_WORKSPACES) {
+        const batch = otherWorkspaces.slice(i, i + CONCURRENT_WORKSPACES);
+        const results = await Promise.all(
+          batch.map(async (ws) => {
+            const wsId = ws.id || ws.tenant_id;
+            if (!wsId) return null;
+            console.log(
+              `[All Conversations] Searching workspace ${wsId.substring(0, 8)}... (${ws.name || 'Unnamed'})`
+            );
+            searchedWorkspaceIds.add(wsId);
+            return findAppInWorkspace(token, wsId, trimmedApiKey).then((res) =>
+              res ? { ...res, workspace: wsId } : null
+            );
+          })
+        );
+        searchedWorkspaces += batch.length;
+        foundApp = results.find((res) => res !== null) as typeof foundApp;
+      }
+    }
+
+    if (!foundApp) {
       return NextResponse.json(
-        { error: 'No app found with the provided API key' },
+        {
+          error: 'No app found with the provided API key',
+          searchedWorkspaces,
+        },
         { status: 404 }
       );
     }
+
+    const { appId, workspace } = foundApp;
+    await switchWorkspace(token, workspace);
     // Try multiple possible Console API endpoints
     let conversationsResponse;
     let conversationsData;
@@ -142,7 +357,7 @@ export async function POST(request: NextRequest) {
           {
             headers: {
               'Authorization': `Bearer ${token}`,
-              'X-Workspace-Id': WS_ID,
+              'X-Workspace-Id': workspace,
             }
           }
         );
@@ -201,6 +416,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         appId,
+        workspace,
         conversations: allConversations,
         total: allConversations.length,
         source: 'app-api-fallback'
@@ -229,6 +445,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       appId,
+      workspace,
       conversations: conversationsWithUser,
       total: conversations.length
     });

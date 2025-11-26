@@ -29,20 +29,44 @@ export async function DELETE(request: NextRequest) {
         error: 'Missing required fields: agentName and organizationId' 
       }, { status: 400 });
     }
+/**
+ * Get workspace ID from environment variable ONLY
+ * This ensures agents are always deleted from the workspace specified in .env
+ * and NOT from the currently active workspace context
+ */
+function getWorkspaceIdFromEnv(): string {
+  const workspaceId = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID;
+  
+  if (!workspaceId || workspaceId.trim() === '') {
+    throw new Error('NEXT_PUBLIC_DIFY_WORKSPACE_ID is not set in environment variables. Agent deletion requires a workspace ID from .env file.');
+  }
+  
+  return workspaceId.trim();
+}
+
     // For now, we'll try to delete using the Dify Console API directly
     // Since we don't have a delete script, we'll use curl commands
     try {
       const consoleOrigin = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN;
       const adminEmail = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL;
       const adminPassword = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD;
-      const workspaceId = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID;
+      
+      // CRITICAL: Always use workspace ID from environment variable, never from request headers or user context
+      const workspaceId = getWorkspaceIdFromEnv();
+      console.log(`[Agent Deletion] Using workspace ID from environment: ${workspaceId.substring(0, 8)}...`);
 
-      if (!consoleOrigin || !adminEmail || !adminPassword || !workspaceId) {
+      if (!consoleOrigin || !adminEmail || !adminPassword) {
         return NextResponse.json({
           success: true,
           message: 'Dify deletion skipped - environment not configured',
           data: { agentName, organizationId }
         });
+      }
+      
+      // Explicitly ignore any workspace ID from request headers to prevent conflicts
+      const requestWorkspaceId = request.headers.get('x-workspace-id') || request.headers.get('X-Workspace-Id');
+      if (requestWorkspaceId && requestWorkspaceId !== workspaceId) {
+        console.warn(`[Agent Deletion] WARNING: Request contains workspace ID header (${requestWorkspaceId.substring(0, 8)}...), but using environment variable workspace ID instead.`);
       }
 
       // Step 1: Login to get token
@@ -70,6 +94,32 @@ export async function DELETE(request: NextRequest) {
       if (!token) {
         throw new Error('No access token received from login');
       }
+      
+      // CRITICAL: Switch workspace after login to ensure all operations use the correct workspace
+      console.log(`[Agent Deletion] Switching workspace to: ${workspaceId.substring(0, 8)}...`);
+      try {
+        const switchResponse = await fetch(`${consoleOrigin}/console/api/workspaces/switch`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            tenant_id: workspaceId
+          })
+        });
+
+        if (switchResponse.ok) {
+          console.log(`[Agent Deletion] ✓ Workspace switched successfully to: ${workspaceId.substring(0, 8)}...`);
+        } else {
+          const errorText = await switchResponse.text().catch(() => 'Unable to read error');
+          console.warn(`[Agent Deletion] ⚠️ Workspace switch failed: ${switchResponse.status} ${switchResponse.statusText}`);
+          console.warn(`[Agent Deletion] Error: ${errorText.substring(0, 500)}`);
+        }
+      } catch (switchError) {
+        console.warn(`[Agent Deletion] ⚠️ Workspace switch error:`, switchError);
+      }
+      
       // Step 2: List apps to find the agent by name
       const appsResponse = await fetch(`${consoleOrigin}/console/api/apps`, {
         method: 'GET',

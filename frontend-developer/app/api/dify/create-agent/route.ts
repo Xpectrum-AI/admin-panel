@@ -15,6 +15,21 @@ interface CreateDifyAgentRequest {
   agentType?: 'Knowledge Agent (RAG)' | 'Action Agent (AI Employee)';
 }
 
+/**
+ * Get workspace ID from environment variable ONLY
+ * This ensures agents are always created in the workspace specified in .env
+ * and NOT in the currently active workspace context
+ */
+function getWorkspaceIdFromEnv(): string {
+  const workspaceId = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID;
+  
+  if (!workspaceId || workspaceId.trim() === '') {
+    throw new Error('NEXT_PUBLIC_DIFY_WORKSPACE_ID is not set in environment variables. Agent creation requires a workspace ID from .env file.');
+  }
+  
+  return workspaceId.trim();
+}
+
 // Fallback function to create Dify agent using direct API calls
 async function createDifyAgentDirectly(
   agentName: string, 
@@ -27,11 +42,16 @@ async function createDifyAgentDirectly(
     let consoleOrigin = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN;
     const adminEmail = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL;
     const adminPassword = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD;
-    const workspaceId = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID;
+    
+    // CRITICAL: Always use workspace ID from environment variable, never from request headers or user context
+    const workspaceId = getWorkspaceIdFromEnv();
 
-    if (!consoleOrigin || !adminEmail || !adminPassword || !workspaceId) {
+    if (!consoleOrigin || !adminEmail || !adminPassword) {
       throw new Error('Missing required Dify environment variables');
     }
+    
+    // Log the workspace ID being used for debugging
+    console.log(`[Agent Creation] Using workspace ID from environment: ${workspaceId.substring(0, 8)}...`);
 
     // Normalize CONSOLE_ORIGIN: ensure it ends with /api for proper URL construction
     consoleOrigin = consoleOrigin.replace(/\/$/, ''); // Remove trailing slash
@@ -70,11 +90,63 @@ async function createDifyAgentDirectly(
       throw new Error(`Failed to parse JSON response from login. Response: ${errorPreview}`);
     }
 
+    // Log login response to check for workspace information
+    console.log(`[Agent Creation] Login response data:`, JSON.stringify({
+      hasData: !!loginData.data,
+      hasAccessToken: !!(loginData.data?.access_token || loginData.access_token),
+      userInfo: loginData.data?.user ? {
+        id: loginData.data.user.id,
+        email: loginData.data.user.email,
+        currentWorkspaceId: loginData.data.user.current_workspace_id,
+        currentWorkspace: loginData.data.user.current_workspace
+      } : null,
+      workspaceInfo: loginData.data?.workspace || loginData.workspace || null
+    }, null, 2));
+
     const token = loginData.data?.access_token || loginData.access_token || loginData.data?.token;
     
     if (!token) {
       throw new Error(`No access token received from login. Response: ${JSON.stringify(loginData).substring(0, 500)}`);
     }
+    
+    // Log if login response contains workspace information that differs from env
+    const loginWorkspaceId = loginData.data?.user?.current_workspace_id || loginData.data?.workspace?.id || loginData.workspace?.id;
+    if (loginWorkspaceId && loginWorkspaceId !== workspaceId) {
+      console.warn(`[Agent Creation] WARNING: Login response indicates active workspace is ${loginWorkspaceId.substring(0, 8)}..., but we're using env workspace ${workspaceId.substring(0, 8)}...`);
+      console.log(`[Agent Creation] Switching workspace to target workspace...`);
+    }
+    
+    // CRITICAL: Switch workspace after login to ensure all operations use the correct workspace
+    // Dify API ignores X-Workspace-Id header and uses the session's active workspace
+    // We must explicitly switch the workspace in the session
+    console.log(`[Agent Creation] Switching workspace to: ${workspaceId.substring(0, 8)}...`);
+    try {
+      const switchResponse = await fetch(`${consoleOrigin}/console/api/workspaces/switch`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          tenant_id: workspaceId
+        })
+      });
+
+      if (switchResponse.ok) {
+        const switchData = await switchResponse.json().catch(() => ({}));
+        console.log(`[Agent Creation] ✓ Workspace switched successfully to: ${workspaceId.substring(0, 8)}...`);
+        console.log(`[Agent Creation] Switch response:`, JSON.stringify(switchData, null, 2));
+      } else {
+        const errorText = await switchResponse.text().catch(() => 'Unable to read error');
+        console.warn(`[Agent Creation] ⚠️ Workspace switch failed: ${switchResponse.status} ${switchResponse.statusText}`);
+        console.warn(`[Agent Creation] Error response: ${errorText.substring(0, 500)}`);
+        console.warn(`[Agent Creation] Continuing with current workspace - app may be created in wrong workspace`);
+      }
+    } catch (switchError) {
+      console.warn(`[Agent Creation] ⚠️ Workspace switch error:`, switchError);
+      console.warn(`[Agent Creation] Continuing with current workspace - app may be created in wrong workspace`);
+    }
+    
     // Step 2: Create app using YAML import
     const yamlContent = `version: "0.3.0"
 kind: "app"
@@ -90,6 +162,15 @@ model_config:
   parameters:
     temperature: 0.3`;
 
+    // Log the request details before sending
+    console.log(`[Agent Creation] Creating app with workspace ID: ${workspaceId}`);
+    console.log(`[Agent Creation] Request URL: ${consoleOrigin}/console/api/apps/imports`);
+    console.log(`[Agent Creation] Request headers:`, {
+      'Authorization': 'Bearer [REDACTED]',
+      'X-Workspace-Id': workspaceId,
+      'Content-Type': 'application/json'
+    });
+
     const importResponse = await fetch(`${consoleOrigin}/console/api/apps/imports`, {
       method: 'POST',
       headers: {
@@ -103,16 +184,38 @@ model_config:
       })
     });
 
+    // Log response status and headers
+    console.log(`[Agent Creation] Import response status: ${importResponse.status} ${importResponse.statusText}`);
+    console.log(`[Agent Creation] Import response headers:`, Object.fromEntries(importResponse.headers.entries()));
+
     if (!importResponse.ok) {
       const errorText = await importResponse.text();
+      console.error(`[Agent Creation] Import failed. Error: ${errorText}`);
       throw new Error(`App import failed: ${importResponse.status} ${importResponse.statusText} - ${errorText}`);
     }
 
     const importData = await importResponse.json();
+    
+    // Log full import response to see workspace information
+    console.log(`[Agent Creation] Import response data:`, JSON.stringify({
+      app_id: importData.app_id || importData.data?.app_id,
+      status: importData.status || importData.data?.status,
+      workspace_id: importData.workspace_id || importData.data?.workspace_id,
+      fullResponse: importData
+    }, null, 2));
+    
     const appId = importData.app_id || importData.data?.app_id;
     
     if (!appId) {
       throw new Error('No app ID received from import');
+    }
+    
+    // Verify workspace ID in response matches what we sent
+    const responseWorkspaceId = importData.workspace_id || importData.data?.workspace_id;
+    if (responseWorkspaceId && responseWorkspaceId !== workspaceId) {
+      console.error(`[Agent Creation] CRITICAL: App was created in workspace ${responseWorkspaceId.substring(0, 8)}... but we requested ${workspaceId.substring(0, 8)}...`);
+    } else if (responseWorkspaceId) {
+      console.log(`[Agent Creation] ✓ App created in correct workspace: ${responseWorkspaceId.substring(0, 8)}...`);
     }
     // Step 3: Create API key
     const keyResponse = await fetch(`${consoleOrigin}/console/api/apps/${appId}/api-keys`, {
@@ -138,7 +241,8 @@ model_config:
     if (!appKey) {
       throw new Error('No API key received');
     }
-    // Step 4: Get service origin
+    // Step 4: Get service origin and verify app workspace
+    console.log(`[Agent Creation] Fetching app details for app ID: ${appId} with workspace ID: ${workspaceId}`);
     const appDetailResponse = await fetch(`${consoleOrigin}/console/api/apps/${appId}`, {
       method: 'GET',
       headers: {
@@ -150,10 +254,77 @@ model_config:
     let serviceOrigin = '';
     if (appDetailResponse.ok) {
       const appDetail = await appDetailResponse.json();
+      
+      // Log app details to verify workspace
+      console.log(`[Agent Creation] App detail response:`, JSON.stringify({
+        app_id: appDetail.data?.id || appDetail.id,
+        app_name: appDetail.data?.name || appDetail.name,
+        workspace_id: appDetail.data?.workspace_id || appDetail.workspace_id,
+        mode: appDetail.data?.mode || appDetail.mode,
+        hasApiServer: !!(appDetail.data?.api_server || appDetail.api_server)
+      }, null, 2));
+      
+      const appWorkspaceId = appDetail.data?.workspace_id || appDetail.workspace_id;
+      if (appWorkspaceId && appWorkspaceId !== workspaceId) {
+        console.error(`[Agent Creation] CRITICAL: App detail shows workspace ${appWorkspaceId.substring(0, 8)}... but we requested ${workspaceId.substring(0, 8)}...`);
+      } else if (appWorkspaceId) {
+        console.log(`[Agent Creation] ✓ App detail confirms correct workspace: ${appWorkspaceId.substring(0, 8)}...`);
+      }
+      
       serviceOrigin = appDetail.data?.api_server || appDetail.api_server || '';
       if (serviceOrigin) {
         serviceOrigin = serviceOrigin.replace('/v1', '');
       }
+    } else {
+      console.warn(`[Agent Creation] Failed to fetch app details: ${appDetailResponse.status} ${appDetailResponse.statusText}`);
+    }
+    
+    // Step 5: Verify app exists in the correct workspace by listing apps
+    console.log(`[Agent Creation] Verifying app exists in workspace ${workspaceId.substring(0, 8)}...`);
+    console.log(`[Agent Creation] Full workspace ID: ${workspaceId}`);
+    try {
+      const listAppsResponse = await fetch(`${consoleOrigin}/console/api/apps?page=1&limit=100`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-Workspace-Id': workspaceId
+        }
+      });
+      
+      if (listAppsResponse.ok) {
+        const appsData = await listAppsResponse.json();
+        const apps = appsData.data || appsData || [];
+        console.log(`[Agent Creation] Found ${apps.length} apps in workspace ${workspaceId.substring(0, 8)}...`);
+        
+        const foundApp = apps.find((app: any) => (app.id || app.app_id) === appId);
+        
+        if (foundApp) {
+          console.log(`[Agent Creation] ✓ VERIFIED: App ${appId.substring(0, 8)}... exists in workspace ${workspaceId.substring(0, 8)}...`);
+          console.log(`[Agent Creation] Full workspace ID: ${workspaceId}`);
+          console.log(`[Agent Creation] App name in workspace: ${foundApp.name || foundApp.app_name || 'N/A'}`);
+          console.log(`[Agent Creation] App details:`, JSON.stringify({
+            id: foundApp.id || foundApp.app_id,
+            name: foundApp.name || foundApp.app_name,
+            mode: foundApp.mode
+          }, null, 2));
+          console.log(`[Agent Creation] ⚠️ IMPORTANT: If the app appears in a different workspace in the UI, the UI might be using the active workspace context instead of filtering by workspace ID.`);
+          console.log(`[Agent Creation] ⚠️ The app was created in workspace: ${workspaceId}`);
+          console.log(`[Agent Creation] ⚠️ Make sure you're viewing the correct workspace in the Dify UI to see this app.`);
+        } else {
+          console.error(`[Agent Creation] ⚠️ WARNING: App ${appId.substring(0, 8)}... NOT FOUND in workspace ${workspaceId.substring(0, 8)}...`);
+          console.error(`[Agent Creation] This suggests the app was created in a different workspace!`);
+          console.error(`[Agent Creation] Total apps found in target workspace: ${apps.length}`);
+          if (apps.length > 0) {
+            console.error(`[Agent Creation] First few app IDs in workspace:`, apps.slice(0, 3).map((app: any) => app.id || app.app_id));
+          }
+        }
+      } else {
+        const errorText = await listAppsResponse.text().catch(() => 'Unable to read error');
+        console.warn(`[Agent Creation] Could not verify workspace - list apps failed: ${listAppsResponse.status} ${listAppsResponse.statusText}`);
+        console.warn(`[Agent Creation] Error response: ${errorText.substring(0, 500)}`);
+      }
+    } catch (verifyError) {
+      console.warn(`[Agent Creation] Could not verify workspace:`, verifyError);
     }
     return {
       success: true,
@@ -182,6 +353,18 @@ export async function POST(request: NextRequest) {
     const authResult = await authenticateApiKey(request);
     if (!authResult.success) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // CRITICAL: Ensure workspace ID is from environment variable ONLY
+    // Do NOT read from request headers (x-workspace-id) or user context
+    // This prevents agents from being created in the wrong workspace
+    const workspaceIdFromEnv = getWorkspaceIdFromEnv();
+    console.log(`[Agent Creation API] Workspace ID from environment: ${workspaceIdFromEnv.substring(0, 8)}...`);
+    
+    // Explicitly ignore any workspace ID from request headers to prevent conflicts
+    const requestWorkspaceId = request.headers.get('x-workspace-id') || request.headers.get('X-Workspace-Id');
+    if (requestWorkspaceId && requestWorkspaceId !== workspaceIdFromEnv) {
+      console.warn(`[Agent Creation API] WARNING: Request contains workspace ID header (${requestWorkspaceId.substring(0, 8)}...), but using environment variable workspace ID instead.`);
     }
 
     const body: CreateDifyAgentRequest = await request.json();
@@ -217,13 +400,16 @@ export async function POST(request: NextRequest) {
 
     try {
       // Execute the script
-      // Check if environment variables are properly set
+      // CRITICAL: Ensure workspace ID is from environment variable ONLY
+      // Do NOT pass any workspace ID from request headers or user context to the script
       const requiredEnvVars = {
         NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN: process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN,
         NEXT_PUBLIC_DIFY_ADMIN_EMAIL: process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL,
         NEXT_PUBLIC_DIFY_ADMIN_PASSWORD: process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD,
-        NEXT_PUBLIC_DIFY_WORKSPACE_ID: process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID,
+        // Always use workspace ID from environment variable, never from request
+        NEXT_PUBLIC_DIFY_WORKSPACE_ID: workspaceIdFromEnv,
       };
+      
       // Check if all required environment variables are set
       const missingVars = Object.entries(requiredEnvVars)
         .filter(([key, value]) => !value)
@@ -234,10 +420,16 @@ export async function POST(request: NextRequest) {
       }
       
       // Prepare environment variables for the script
+      // Explicitly override any workspace ID that might exist in process.env
+      // to ensure we always use the one from .env file
       const envVars = {
         ...process.env,
         ...requiredEnvVars,
+        // Force override to ensure script uses correct workspace ID
+        NEXT_PUBLIC_DIFY_WORKSPACE_ID: workspaceIdFromEnv,
       };
+      
+      console.log(`[Agent Creation API] Passing workspace ID to script: ${workspaceIdFromEnv.substring(0, 8)}...`);
       
       // Determine the correct command based on the operating system
       const command = isWindows 
@@ -253,13 +445,42 @@ export async function POST(request: NextRequest) {
         const { stdout: jqCheck } = await execAsync('which jq', { timeout: 5000 });
 } catch (jqError) {
       }
+      console.log(`[Agent Creation API] Executing script: ${command.substring(0, 100)}...`);
+      console.log(`[Agent Creation API] Script will output logs below...`);
+      
       const { stdout, stderr } = await execAsync(command, {
         timeout: 60000, // 60 second timeout
         maxBuffer: 1024 * 1024 * 10, // 10MB buffer
         env: envVars // Pass environment variables to the script
       });
-      if (stderr) {
+      
+      // Log all script output for debugging - this is critical for workspace debugging
+      console.log(`\n========== SCRIPT OUTPUT (STDOUT) ==========`);
+      if (stdout && stdout.trim()) {
+        // Split by lines and log each line with prefix for clarity
+        const stdoutLines = stdout.split('\n');
+        stdoutLines.forEach((line, index) => {
+          if (line.trim()) {
+            console.log(`[Script] ${line}`);
+          }
+        });
+      } else {
+        console.log(`[Script] (no stdout output)`);
       }
+      console.log(`==========================================\n`);
+      
+      console.log(`\n========== SCRIPT ERRORS (STDERR) ==========`);
+      if (stderr && stderr.trim()) {
+        const stderrLines = stderr.split('\n');
+        stderrLines.forEach((line, index) => {
+          if (line.trim()) {
+            console.error(`[Script Error] ${line}`);
+          }
+        });
+      } else {
+        console.log(`[Script] (no stderr output)`);
+      }
+      console.log(`==========================================\n`);
       
       // Additional debugging for environment issues
       if (stdout.includes('Error:') || stderr.includes('Error:')) {
@@ -307,17 +528,29 @@ export async function POST(request: NextRequest) {
       });
 
     } catch (execError) {
-// Try fallback method using direct API calls
+      console.error(`[Agent Creation API] Script execution error:`, execError);
+      console.error(`[Agent Creation API] Error details:`, {
+        message: execError instanceof Error ? execError.message : 'Unknown error',
+        code: (execError as any)?.code,
+        signal: (execError as any)?.signal
+      });
+      
+      // Try fallback method using direct API calls
+      console.log(`[Agent Creation API] Attempting fallback method (direct API calls)...`);
       try {
         const fallbackResult = await createDifyAgentDirectly(agentName, organizationId, modelProvider, modelName, agentType);
         if (fallbackResult.success) {
+          console.log(`[Agent Creation API] Fallback method succeeded`);
           return NextResponse.json({
             success: true,
             data: fallbackResult.data,
             message: 'Dify agent created successfully using fallback method'
           });
+        } else {
+          console.error(`[Agent Creation API] Fallback method failed:`, fallbackResult.error);
         }
       } catch (fallbackError) {
+        console.error(`[Agent Creation API] Fallback method error:`, fallbackError);
       }
 
       return NextResponse.json({

@@ -1940,7 +1940,7 @@ Remember: You are the first point of contact for many patients. Your professiona
                     <Bot className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <h5 className="font-semibold text-lg text-gray-900 dark:text-white">
+                    <h5 className={`font-semibold text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                       {getAgentDisplayName(selectedAgent)} Assistant
                     </h5>
                     <div className="flex items-center gap-2">
