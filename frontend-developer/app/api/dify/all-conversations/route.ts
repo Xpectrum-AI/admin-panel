@@ -290,9 +290,9 @@ export async function POST(request: NextRequest) {
       console.log(
         `[All Conversations] Searching environment workspace first: ${WORKSPACE_FROM_ENV.substring(0, 8)}...`
       );
-      const result = await findAppInWorkspace(token, WORKSPACE_FROM_ENV, trimmedApiKey);
-      searchedWorkspaces++;
       searchedWorkspaceIds.add(WORKSPACE_FROM_ENV);
+      searchedWorkspaces++;
+      const result = await findAppInWorkspace(token, WORKSPACE_FROM_ENV, trimmedApiKey);
       if (result) {
         foundApp = { ...result, workspace: WORKSPACE_FROM_ENV };
       }
@@ -307,24 +307,21 @@ export async function POST(request: NextRequest) {
 
       console.log(`[All Conversations] Searching ${otherWorkspaces.length} additional workspaces...`);
 
-      const CONCURRENT_WORKSPACES = 3;
-      for (let i = 0; i < otherWorkspaces.length && !foundApp; i += CONCURRENT_WORKSPACES) {
-        const batch = otherWorkspaces.slice(i, i + CONCURRENT_WORKSPACES);
-        const results = await Promise.all(
-          batch.map(async (ws) => {
-            const wsId = ws.id || ws.tenant_id;
-            if (!wsId) return null;
-            console.log(
-              `[All Conversations] Searching workspace ${wsId.substring(0, 8)}... (${ws.name || 'Unnamed'})`
-            );
-            searchedWorkspaceIds.add(wsId);
-            return findAppInWorkspace(token, wsId, trimmedApiKey).then((res) =>
-              res ? { ...res, workspace: wsId } : null
-            );
-          })
+      for (const ws of otherWorkspaces) {
+        const wsId = ws.id || ws.tenant_id;
+        if (!wsId) {
+          continue;
+        }
+        console.log(
+          `[All Conversations] Searching workspace ${wsId.substring(0, 8)}... (${ws.name || 'Unnamed'})`
         );
-        searchedWorkspaces += batch.length;
-        foundApp = results.find((res) => res !== null) as typeof foundApp;
+        searchedWorkspaceIds.add(wsId);
+        searchedWorkspaces++;
+        const result = await findAppInWorkspace(token, wsId, trimmedApiKey);
+        if (result) {
+          foundApp = { ...result, workspace: wsId };
+          break;
+        }
       }
     }
 
@@ -419,7 +416,8 @@ export async function POST(request: NextRequest) {
         workspace,
         conversations: allConversations,
         total: allConversations.length,
-        source: 'app-api-fallback'
+        source: 'app-api-fallback',
+        searchedWorkspaces,
       });
     }
 
@@ -447,7 +445,8 @@ export async function POST(request: NextRequest) {
       appId,
       workspace,
       conversations: conversationsWithUser,
-      total: conversations.length
+      total: conversations.length,
+      searchedWorkspaces,
     });
 
   } catch (error) {
