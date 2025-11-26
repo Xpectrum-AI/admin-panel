@@ -47,6 +47,7 @@ const ModelConfig = forwardRef<HTMLDivElement, ModelConfigProps>(({ agentName = 
   const [localAgentApiKey, setLocalAgentApiKey] = useState(agentApiKey || '');
   const [copiedAgentApiKey, setCopiedAgentApiKey] = useState(false);
   const appIdCacheRef = useRef<Map<string, string>>(new Map());
+  const pendingRequestsRef = useRef<Map<string, Promise<string | null>>>(new Map());
 
   // Knowledge Base State
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
@@ -179,42 +180,60 @@ Remember: You are the first point of contact for many patients. Your professiona
         return null;
       }
 
+      // Check cache first
       if (appIdCacheRef.current.has(apiKey)) {
         return appIdCacheRef.current.get(apiKey)!;
       }
 
+      // Check if there's already a pending request for this API key
+      if (pendingRequestsRef.current.has(apiKey)) {
+        return pendingRequestsRef.current.get(apiKey)!;
+      }
+
+      // Check existing config
       if (existingConfig?.dify_app_id && (!existingConfig?.chatbot_key || existingConfig?.chatbot_key === apiKey)) {
         appIdCacheRef.current.set(apiKey, existingConfig.dify_app_id);
         return existingConfig.dify_app_id;
       }
 
-      try {
-        const response = await fetch('/api/dify/get-app-by-key', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ apiKey })
-        });
+      // Create the request promise
+      const requestPromise = (async () => {
+        try {
+          const response = await fetch('/api/dify/get-app-by-key', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ apiKey })
+          });
 
-        const data = await response.json().catch(() => ({}));
+          const data = await response.json().catch(() => ({}));
 
-        if (!response.ok) {
-          throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
+          if (!response.ok) {
+            throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          if (!data.appId) {
+            throw new Error('App ID not found for the provided API key');
+          }
+
+          appIdCacheRef.current.set(apiKey, data.appId as string);
+          return data.appId as string;
+        } catch (error) {
+          if (!options.silent) {
+            setErrorMessage(`Unable to resolve App ID: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+          return null;
+        } finally {
+          // Remove from pending requests when done
+          pendingRequestsRef.current.delete(apiKey);
         }
+      })();
 
-        if (!data.appId) {
-          throw new Error('App ID not found for the provided API key');
-        }
+      // Store the pending request
+      pendingRequestsRef.current.set(apiKey, requestPromise);
 
-        appIdCacheRef.current.set(apiKey, data.appId as string);
-        return data.appId as string;
-      } catch (error) {
-        if (!options.silent) {
-          setErrorMessage(`Unable to resolve App ID: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-        return null;
-      }
+      return requestPromise;
     },
     [existingConfig]
   );
@@ -280,11 +299,18 @@ Remember: You are the first point of contact for many patients. Your professiona
     }
   }, [existingConfig?.dify_app_id, existingConfig?.chatbot_key, localAgentApiKey, agentApiKey]);
 
+  // Debounced effect to resolve App ID - only call after user stops typing
   useEffect(() => {
-    if (!localAgentApiKey) {
+    if (!localAgentApiKey || localAgentApiKey.length < 10) {
       return;
     }
-    resolveAppId(localAgentApiKey, { silent: true });
+
+    // Debounce the API call - wait 1 second after user stops typing
+    const timeoutId = setTimeout(() => {
+      resolveAppId(localAgentApiKey, { silent: true });
+    }, 1000);
+
+    return () => clearTimeout(timeoutId);
   }, [localAgentApiKey, resolveAppId]);
 
   // Update state when props change

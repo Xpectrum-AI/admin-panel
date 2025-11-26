@@ -13,6 +13,11 @@ if [[ "$AGENT_TYPE" != "Knowledge Agent (RAG)" && "$AGENT_TYPE" != "Action Agent
     exit 1
 fi
 
+# CRITICAL: Always use workspace ID from environment variable ONLY
+# This ensures agents are always created in the workspace specified in .env
+# and NOT in the currently active workspace context
+# Do NOT read workspace ID from any other source (request headers, user context, etc.)
+
 CONSOLE_ORIGIN="${NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN}"
 ADMIN_EMAIL="${NEXT_PUBLIC_DIFY_ADMIN_EMAIL}"
 ADMIN_PASSWORD="${NEXT_PUBLIC_DIFY_ADMIN_PASSWORD}"
@@ -23,7 +28,19 @@ APP_NAME="$AGENT_NAME"
 [ -n "$CONSOLE_ORIGIN" ] || { echo "Error: NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN is not set"; exit 1; }
 [ -n "$ADMIN_EMAIL" ] || { echo "Error: NEXT_PUBLIC_DIFY_ADMIN_EMAIL is not set"; exit 1; }
 [ -n "$ADMIN_PASSWORD" ] || { echo "Error: NEXT_PUBLIC_DIFY_ADMIN_PASSWORD is not set"; exit 1; }
-[ -n "$WS_ID" ] || { echo "Error: NEXT_PUBLIC_DIFY_WORKSPACE_ID is not set"; exit 1; }
+[ -n "$WS_ID" ] || { 
+    echo "Error: NEXT_PUBLIC_DIFY_WORKSPACE_ID is not set in environment variables. Agent creation requires a workspace ID from .env file."; 
+    exit 1; 
+}
+
+# Trim whitespace and validate workspace ID is not empty
+WS_ID=$(echo "$WS_ID" | xargs)
+[ -n "$WS_ID" ] || { 
+    echo "Error: NEXT_PUBLIC_DIFY_WORKSPACE_ID is empty. Please set a valid workspace ID in .env file."; 
+    exit 1; 
+}
+
+say "Using workspace ID from environment: ${WS_ID:0:8}..."
 
 # Normalize CONSOLE_ORIGIN: ensure it ends with /api for proper URL construction
 # Remove trailing slash if present
@@ -85,9 +102,45 @@ fi
   echo ""
   exit 1
 }
+
+# Log login response to check for workspace information
+LOGIN_WORKSPACE_ID=$(echo "$RESP_BODY" | jq -r '.data.user.current_workspace_id // .data.workspace.id // .workspace.id // empty' 2>/dev/null)
+say "logged in, workspace=$WS_ID"
+if [ -n "$LOGIN_WORKSPACE_ID" ]; then
+  say "Login response workspace: ${LOGIN_WORKSPACE_ID:0:8}..."
+  if [ "$LOGIN_WORKSPACE_ID" != "$WS_ID" ]; then
+    echo "[WARNING] Login response indicates active workspace is ${LOGIN_WORKSPACE_ID:0:8}..., but using env workspace ${WS_ID:0:8}..." >&2
+    say "Switching to target workspace..."
+  fi
+else
+  say "Login response workspace: not found"
+fi
+
+# CRITICAL: Switch workspace after login to ensure all operations use the correct workspace
+say "Switching workspace to: ${WS_ID:0:8}..."
+SWITCH_BODY=$(jq -n --arg tenant_id "$WS_ID" '{tenant_id: $tenant_id}')
+SWITCH_RESP=$(curl -sS -X POST "$CONSOLE_ORIGIN/console/api/workspaces/switch" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "$SWITCH_BODY" \
+  -w "\nHTTP_CODE:%{http_code}" || true)
+
+SWITCH_HTTP_CODE=$(echo "$SWITCH_RESP" | grep -o "HTTP_CODE:[0-9]*" | cut -d: -f2)
+SWITCH_RESP_BODY=$(echo "$SWITCH_RESP" | sed '/HTTP_CODE:/d')
+
+if [ -n "$SWITCH_HTTP_CODE" ] && [ "$SWITCH_HTTP_CODE" = "200" ]; then
+  echo "[SUCCESS] Workspace switched to: ${WS_ID:0:8}..." >&2
+  say "Workspace switch successful"
+else
+  echo "[WARNING] Workspace switch failed with HTTP code: ${SWITCH_HTTP_CODE:-unknown}" >&2
+  if [ -n "$SWITCH_RESP_BODY" ]; then
+    echo "[WARNING] Response: $(echo "$SWITCH_RESP_BODY" | head -c 500)" >&2
+  fi
+  say "Continuing with current workspace - app may be created in wrong workspace"
+fi
+
 AUTH=(-H "Authorization: Bearer $TOKEN")
 WS_HDR=(-H "X-Workspace-Id: $WS_ID")
-say "logged in, workspace=$WS_ID"
 
 # Create DSL based on agent type
 if [[ "$AGENT_TYPE" == "Knowledge Agent (RAG)" ]]; then
@@ -141,11 +194,31 @@ YAML
 fi
 BODY=$(jq -n --arg mode "yaml-content" --arg yaml "$DSL_A" '{mode:$mode,yaml_content:$yaml}')
 say "import app"
+say "Request URL: $CONSOLE_ORIGIN/console/api/apps/imports"
+say "Request workspace ID: ${WS_ID:0:8}..."
 RESP=$(curl -sS -X POST "$CONSOLE_ORIGIN/console/api/apps/imports" \
-  "${AUTH[@]}" "${WS_HDR[@]}" -H "Content-Type: application/json" -d "$BODY")
-echo "$RESP" | jq '.'
-STATUS=$(echo "$RESP" | jq -r '.status // .data.status // empty')
-APP_ID=$(echo "$RESP" | jq -r '.app_id // .data.app_id // empty')
+  "${AUTH[@]}" "${WS_HDR[@]}" -H "Content-Type: application/json" -d "$BODY" \
+  -w "\nHTTP_CODE:%{http_code}")
+HTTP_CODE=$(echo "$RESP" | grep -o "HTTP_CODE:[0-9]*" | cut -d: -f2)
+RESP_BODY=$(echo "$RESP" | sed '/HTTP_CODE:/d')
+echo "$RESP_BODY" | jq '.'
+STATUS=$(echo "$RESP_BODY" | jq -r '.status // .data.status // empty')
+APP_ID=$(echo "$RESP_BODY" | jq -r '.app_id // .data.app_id // empty')
+RESPONSE_WORKSPACE_ID=$(echo "$RESP_BODY" | jq -r '.workspace_id // .data.workspace_id // empty')
+
+say "Import response status: $STATUS (HTTP $HTTP_CODE)"
+say "Import response app_id: $APP_ID"
+if [ -n "$RESPONSE_WORKSPACE_ID" ]; then
+  say "Import response workspace_id: ${RESPONSE_WORKSPACE_ID:0:8}..."
+  if [ "$RESPONSE_WORKSPACE_ID" != "$WS_ID" ]; then
+    echo "[CRITICAL] App was created in workspace ${RESPONSE_WORKSPACE_ID:0:8}... but we requested ${WS_ID:0:8}..." >&2
+  else
+    echo "[SUCCESS] App created in correct workspace: ${RESPONSE_WORKSPACE_ID:0:8}..." >&2
+  fi
+else
+  say "[WARNING] Import response does not contain workspace_id field"
+fi
+
 [ "$STATUS" = "completed" ] && [ -n "$APP_ID" ] || { echo "import failed"; exit 1; }
 say "app_id=$APP_ID"
 
@@ -159,7 +232,39 @@ APP_KEY=$(echo "$KEY_RESP" | jq -r '.data.api_key // .data.key // .key // .token
 say "app_key=$APP_KEY"
 
 say "discover service origin"
+say "Fetching app details for app_id=$APP_ID with workspace_id=${WS_ID:0:8}..."
 APP_DETAIL=$(curl -sS -X GET "$CONSOLE_ORIGIN/console/api/apps/$APP_ID" "${AUTH[@]}" "${WS_HDR[@]}" || true)
+
+# Log app detail workspace information
+APP_DETAIL_WORKSPACE_ID=$(echo "$APP_DETAIL" | jq -r '.data.workspace_id // .workspace_id // empty' 2>/dev/null)
+if [ -n "$APP_DETAIL_WORKSPACE_ID" ]; then
+  say "App detail workspace_id: ${APP_DETAIL_WORKSPACE_ID:0:8}..."
+  if [ "$APP_DETAIL_WORKSPACE_ID" != "$WS_ID" ]; then
+    echo "[CRITICAL] App detail shows workspace ${APP_DETAIL_WORKSPACE_ID:0:8}... but we requested ${WS_ID:0:8}..." >&2
+  else
+    echo "[SUCCESS] App detail confirms correct workspace: ${APP_DETAIL_WORKSPACE_ID:0:8}..." >&2
+  fi
+else
+  say "[WARNING] App detail response does not contain workspace_id field"
+fi
+
+# Verify app exists in the correct workspace by listing apps
+say "Verifying app exists in workspace ${WS_ID:0:8}..."
+APPS_LIST=$(curl -sS -X GET "$CONSOLE_ORIGIN/console/api/apps?page=1&limit=100" "${AUTH[@]}" "${WS_HDR[@]}" || true)
+if [ -n "$APPS_LIST" ]; then
+  FOUND_APP=$(echo "$APPS_LIST" | jq -r ".data[]? | select(.id == \"$APP_ID\" or .app_id == \"$APP_ID\")" 2>/dev/null)
+  if [ -n "$FOUND_APP" ]; then
+    APP_NAME=$(echo "$FOUND_APP" | jq -r '.name // .app_name // "N/A"' 2>/dev/null)
+    echo "[SUCCESS] VERIFIED: App ${APP_ID:0:8}... exists in workspace ${WS_ID:0:8}..." >&2
+    say "App name in workspace: $APP_NAME"
+  else
+    APP_COUNT=$(echo "$APPS_LIST" | jq -r '.data | length // 0' 2>/dev/null)
+    echo "[CRITICAL] App ${APP_ID:0:8}... NOT FOUND in workspace ${WS_ID:0:8}..." >&2
+    echo "[CRITICAL] This suggests the app was created in a different workspace!" >&2
+    say "Total apps found in target workspace: $APP_COUNT"
+  fi
+fi
+
 RAW_BASE=$(echo "$APP_DETAIL" | jq -r '.data.api_server // .api_server // .data.api_base_url // .api_base_url // empty')
 if [ -z "${SERVICE_ORIGIN}" ] && [ -n "$RAW_BASE" ]; then
   SERVICE_ORIGIN="$RAW_BASE"

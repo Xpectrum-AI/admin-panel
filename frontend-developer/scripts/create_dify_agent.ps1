@@ -13,6 +13,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# CRITICAL: Always use workspace ID from environment variable ONLY
+# This ensures agents are always created in the workspace specified in .env
+# and NOT in the currently active workspace context
+# Do NOT read workspace ID from any other source (request headers, user context, etc.)
+
 $CONSOLE_ORIGIN = $env:NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN
 $ADMIN_EMAIL = $env:NEXT_PUBLIC_DIFY_ADMIN_EMAIL
 $ADMIN_PASSWORD = $env:NEXT_PUBLIC_DIFY_ADMIN_PASSWORD
@@ -23,7 +28,19 @@ $APP_NAME = $AgentName
 if (-not $CONSOLE_ORIGIN) { Write-Error "Error: NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN is not set"; exit 1 }
 if (-not $ADMIN_EMAIL) { Write-Error "Error: NEXT_PUBLIC_DIFY_ADMIN_EMAIL is not set"; exit 1 }
 if (-not $ADMIN_PASSWORD) { Write-Error "Error: NEXT_PUBLIC_DIFY_ADMIN_PASSWORD is not set"; exit 1 }
-if (-not $WS_ID) { Write-Error "Error: NEXT_PUBLIC_DIFY_WORKSPACE_ID is not set"; exit 1 }
+if (-not $WS_ID) { 
+    Write-Error "Error: NEXT_PUBLIC_DIFY_WORKSPACE_ID is not set in environment variables. Agent creation requires a workspace ID from .env file."; 
+    exit 1 
+}
+
+# Trim whitespace and validate workspace ID is not empty
+$WS_ID = $WS_ID.Trim()
+if ([string]::IsNullOrWhiteSpace($WS_ID)) {
+    Write-Error "Error: NEXT_PUBLIC_DIFY_WORKSPACE_ID is empty. Please set a valid workspace ID in .env file."; 
+    exit 1
+}
+
+Write-Host "[Agent Creation Script] Using workspace ID from environment: $($WS_ID.Substring(0, [Math]::Min(8, $WS_ID.Length)))..."
 
 # Normalize CONSOLE_ORIGIN: ensure it ends with /api for proper URL construction
 # Remove trailing slash if present
@@ -40,6 +57,7 @@ $SERVICE_ORIGIN = ""
 function Write-Log {
     param([string]$Message)
     $timestamp = Get-Date -Format "HH:mm:ss"
+    # Write to stdout so it's captured by Node.js exec
     Write-Host "[$timestamp] $Message"
 }
 
@@ -97,7 +115,55 @@ try {
             exit 1
         }
         
+        # Log login response to check for workspace information
+        $loginWorkspaceId = $null
+        if ($responseJson.data.user.current_workspace_id) {
+            $loginWorkspaceId = $responseJson.data.user.current_workspace_id
+        } elseif ($responseJson.data.workspace.id) {
+            $loginWorkspaceId = $responseJson.data.workspace.id
+        } elseif ($responseJson.workspace.id) {
+            $loginWorkspaceId = $responseJson.workspace.id
+        }
+        
         Write-Log "logged in, workspace=$WS_ID"
+        Write-Log "Login response workspace: $(if ($loginWorkspaceId) { $loginWorkspaceId.Substring(0, [Math]::Min(8, $loginWorkspaceId.Length)) + '...' } else { 'not found' })"
+        
+        if ($loginWorkspaceId -and $loginWorkspaceId -ne $WS_ID) {
+            Write-Host "[WARNING] Login response indicates active workspace is $($loginWorkspaceId.Substring(0, [Math]::Min(8, $loginWorkspaceId.Length)))..., but using env workspace $($WS_ID.Substring(0, [Math]::Min(8, $WS_ID.Length)))..." -ForegroundColor Yellow
+            Write-Log "Switching to target workspace..."
+        }
+        
+        # CRITICAL: Switch workspace after login to ensure all operations use the correct workspace
+        Write-Log "Switching workspace to: $($WS_ID.Substring(0, [Math]::Min(8, $WS_ID.Length)))..."
+        try {
+            $switchBody = @{
+                tenant_id = $WS_ID
+            } | ConvertTo-Json
+            
+            $switchHeaders = @{
+                "Authorization" = "Bearer $TOKEN"
+                "Content-Type" = "application/json"
+            }
+            
+            $switchResponse = Invoke-RestMethod -Uri "$CONSOLE_ORIGIN/console/api/workspaces/switch" -Method POST -Body $switchBody -Headers $switchHeaders -UseBasicParsing -ErrorAction Stop
+            
+            Write-Host "[SUCCESS] Workspace switched to: $($WS_ID.Substring(0, [Math]::Min(8, $WS_ID.Length)))..." -ForegroundColor Green
+            Write-Log "Workspace switch response: $(if ($switchResponse) { 'Success' } else { 'No response' })"
+        } catch {
+            $errorMessage = $_.Exception.Message
+            if ($_.Exception.Response) {
+                $statusCode = [int]$_.Exception.Response.StatusCode
+                $stream = $_.Exception.Response.GetResponseStream()
+                $reader = New-Object System.IO.StreamReader($stream)
+                $responseBody = $reader.ReadToEnd()
+                Write-Host "[WARNING] Workspace switch failed with HTTP code: $statusCode" -ForegroundColor Yellow
+                Write-Host "[WARNING] Response: $($responseBody.Substring(0, [Math]::Min(500, $responseBody.Length)))" -ForegroundColor Yellow
+                Write-Log "Continuing with current workspace - app may be created in wrong workspace"
+            } else {
+                Write-Host "[WARNING] Workspace switch error: $errorMessage" -ForegroundColor Yellow
+                Write-Log "Continuing with current workspace - app may be created in wrong workspace"
+            }
+        }
     } catch {
         $errorMessage = $_.Exception.Message
         if ($_.Exception.Response) {
@@ -172,15 +238,46 @@ $importBody = @{
 } | ConvertTo-Json
 
 Write-Log "import app"
+Write-Log "Request URL: $CONSOLE_ORIGIN/console/api/apps/imports"
+Write-Log "Request workspace ID: $($WS_ID.Substring(0, [Math]::Min(8, $WS_ID.Length)))..."
 try {
     $headers = @{
         "Authorization" = "Bearer $TOKEN"
         "X-Workspace-Id" = $WS_ID
         "Content-Type" = "application/json"
     }
-    $importResponse = Invoke-RestMethod -Uri "$CONSOLE_ORIGIN/console/api/apps/imports" -Method POST -Body $importBody -Headers $headers -UseBasicParsing
+    
+    try {
+        $importResponse = Invoke-RestMethod -Uri "$CONSOLE_ORIGIN/console/api/apps/imports" -Method POST -Body $importBody -Headers $headers -UseBasicParsing -ErrorAction Stop
+    } catch {
+        $errorDetails = $_.Exception.Message
+        if ($_.Exception.Response) {
+            $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
+            $errorBody = $reader.ReadToEnd()
+            Write-Error "Import HTTP error: $($_.Exception.Response.StatusCode) - $errorBody"
+        } else {
+            Write-Error "Import error: $errorDetails"
+        }
+        throw
+    }
+    
     $STATUS = $importResponse.status
     $APP_ID = $importResponse.app_id
+    $responseWorkspaceId = $importResponse.workspace_id
+    
+    # Log import response details
+    Write-Log "Import response status: $STATUS"
+    Write-Log "Import response app_id: $APP_ID"
+    if ($responseWorkspaceId) {
+        Write-Log "Import response workspace_id: $($responseWorkspaceId.Substring(0, [Math]::Min(8, $responseWorkspaceId.Length)))..."
+        if ($responseWorkspaceId -ne $WS_ID) {
+            Write-Host "[CRITICAL] App was created in workspace $($responseWorkspaceId.Substring(0, [Math]::Min(8, $responseWorkspaceId.Length)))... but we requested $($WS_ID.Substring(0, [Math]::Min(8, $WS_ID.Length)))..." -ForegroundColor Red
+        } else {
+            Write-Host "[SUCCESS] App created in correct workspace: $($responseWorkspaceId.Substring(0, [Math]::Min(8, $responseWorkspaceId.Length)))..." -ForegroundColor Green
+        }
+    } else {
+        Write-Host "[WARNING] Import response does not contain workspace_id field" -ForegroundColor Yellow
+    }
     
     if ($STATUS -ne "completed" -or -not $APP_ID) {
         throw "Import failed - Status: $STATUS, App ID: $APP_ID"
@@ -220,7 +317,60 @@ try {
 
 Write-Log "discover service origin"
 try {
+    Write-Log "Fetching app details for app_id=$APP_ID with workspace_id=$($WS_ID.Substring(0, [Math]::Min(8, $WS_ID.Length)))..."
     $appDetailResponse = Invoke-RestMethod -Uri "$CONSOLE_ORIGIN/console/api/apps/$APP_ID" -Method GET -Headers $headers -UseBasicParsing
+    
+    # Log app detail workspace information
+    $appDetailWorkspaceId = $null
+    if ($appDetailResponse.data.workspace_id) {
+        $appDetailWorkspaceId = $appDetailResponse.data.workspace_id
+    } elseif ($appDetailResponse.workspace_id) {
+        $appDetailWorkspaceId = $appDetailResponse.workspace_id
+    }
+    
+    if ($appDetailWorkspaceId) {
+        Write-Log "App detail workspace_id: $($appDetailWorkspaceId.Substring(0, [Math]::Min(8, $appDetailWorkspaceId.Length)))..."
+        if ($appDetailWorkspaceId -ne $WS_ID) {
+            Write-Host "[CRITICAL] App detail shows workspace $($appDetailWorkspaceId.Substring(0, [Math]::Min(8, $appDetailWorkspaceId.Length)))... but we requested $($WS_ID.Substring(0, [Math]::Min(8, $WS_ID.Length)))..." -ForegroundColor Red
+        } else {
+            Write-Host "[SUCCESS] App detail confirms correct workspace: $($appDetailWorkspaceId.Substring(0, [Math]::Min(8, $appDetailWorkspaceId.Length)))..." -ForegroundColor Green
+        }
+    } else {
+        Write-Host "[WARNING] App detail response does not contain workspace_id field" -ForegroundColor Yellow
+    }
+    
+    # Verify app exists in the correct workspace by listing apps
+    Write-Log "Verifying app exists in workspace $($WS_ID.Substring(0, [Math]::Min(8, $WS_ID.Length)))..."
+    try {
+        $listAppsResponse = Invoke-RestMethod -Uri "$CONSOLE_ORIGIN/console/api/apps?page=1&limit=100" -Method GET -Headers $headers -UseBasicParsing
+        $apps = $listAppsResponse.data
+        if (-not $apps) {
+            $apps = $listAppsResponse
+        }
+        if ($apps -is [System.Array]) {
+            $foundApp = $apps | Where-Object { ($_.id -eq $APP_ID) -or ($_.app_id -eq $APP_ID) }
+            if ($foundApp) {
+                $appName = if ($foundApp.name) { $foundApp.name } elseif ($foundApp.app_name) { $foundApp.app_name } else { 'N/A' }
+                Write-Host "[SUCCESS] VERIFIED: App $($APP_ID.Substring(0, [Math]::Min(8, $APP_ID.Length)))... exists in workspace $($WS_ID.Substring(0, [Math]::Min(8, $WS_ID.Length)))..." -ForegroundColor Green
+                Write-Host "[INFO] Full workspace ID: $WS_ID" -ForegroundColor Cyan
+                Write-Log "App name in workspace: $appName"
+                Write-Log "Total apps in workspace: $($apps.Count)"
+                Write-Log "Workspace ID used for verification: $WS_ID"
+                Write-Host "[IMPORTANT] If the app appears in a different workspace in the UI, the UI might be using the active workspace context instead of filtering by workspace ID." -ForegroundColor Yellow
+            } else {
+                Write-Host "[CRITICAL] App $($APP_ID.Substring(0, [Math]::Min(8, $APP_ID.Length)))... NOT FOUND in workspace $($WS_ID.Substring(0, [Math]::Min(8, $WS_ID.Length)))..." -ForegroundColor Red
+                Write-Host "[CRITICAL] This suggests the app was created in a different workspace!" -ForegroundColor Red
+                Write-Log "Total apps found in target workspace: $($apps.Count)"
+                Write-Log "First few app IDs in workspace: $($apps[0..2] | ForEach-Object { $_.id -or $_.app_id } | Out-String)"
+            }
+        } else {
+            Write-Host "[WARNING] Apps list is not an array. Response structure: $($listAppsResponse | ConvertTo-Json -Depth 2)" -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "[WARNING] Could not verify workspace: $_" -ForegroundColor Yellow
+        Write-Host "[WARNING] Error details: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+    
     $RAW_BASE = $appDetailResponse.data.api_server
     if (-not $RAW_BASE) {
         $RAW_BASE = $appDetailResponse.api_server
