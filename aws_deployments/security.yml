@@ -1,0 +1,122 @@
+name: Security
+
+on:
+  workflow_run:
+    workflows: ["Create_Weekly_release"]
+    types:
+      - requested
+  workflow_dispatch:
+
+jobs:
+  dependency-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run OWASP Dependency Check for Frontend
+      uses: dependency-check/Dependency-Check_Action@main
+      with:
+        project: 'Admin Panel Frontend'
+        path: './frontend'
+        format: 'HTML'
+        out: 'reports/frontend'
+
+    - name: Run OWASP Dependency Check for Developer Frontend
+      uses: dependency-check/Dependency-Check_Action@main
+      with:
+        project: 'Admin Panel Developer Frontend'
+        path: './frontend-developer'
+        format: 'HTML'
+        out: 'reports/frontend-developer'
+
+    - name: Upload security reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-reports
+        path: reports/
+        retention-days: 30
+
+  container-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner on Dockerfiles
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH'
+
+    - name: Log Trivy scan results
+      run: |
+        echo "Trivy scan completed"
+        echo "Check the logs above for any vulnerabilities"
+
+  secrets-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run TruffleHog
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: HEAD~1
+        head: HEAD
+
+  npm-audit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Audit frontend dependencies
+      run: |
+        cd frontend
+        npm audit --audit-level=moderate || echo "Audit completed with warnings"
+
+    - name: Audit developer frontend dependencies
+      run: |
+        cd frontend-developer
+        npm audit --audit-level=moderate || echo "Audit completed with warnings"
+
+  notify-security-issues:
+    runs-on: ubuntu-latest
+    needs: [dependency-check, container-scan, secrets-scan, npm-audit]
+    if: always()
+    
+    steps:
+    - name: Check for security issues
+      id: check-issues
+      run: |
+        # Check if any of the security jobs failed
+        if [[ "${{ needs.dependency-check.result }}" == "failure" ]] || \
+           [[ "${{ needs.container-scan.result }}" == "failure" ]] || \
+           [[ "${{ needs.secrets-scan.result }}" == "failure" ]] || \
+           [[ "${{ needs.npm-audit.result }}" == "failure" ]]; then
+          echo "has-issues=true" >> $GITHUB_OUTPUT
+        else
+          echo "has-issues=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Log security status
+      if: steps.check-issues.outputs.has-issues == 'true'
+      run: |
+        echo "Security issues detected in the workflow"
+        echo "Please review the security scan results"
+ 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, MessageCircle, Edit, BarChart3, ExternalLink, Plus, RefreshCw, QrCode, Trash2, ChevronDown, CheckCircle } from 'lucide-react';
+import { Bot, MessageCircle, Edit, BarChart3, ExternalLink, Plus, RefreshCw, QrCode, Trash2, ChevronDown, CheckCircle, Link2, Search, Loader2, X } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { agentConfigService } from '../../service/agentConfigService';
 import { getAgentDisplayName } from '../../lib/utils/agentNameUtils';
@@ -109,10 +109,12 @@ interface AgentCardsProps {
   onOpenAgent: (agent: Agent) => void;
   onCreateAgent: () => void;
   onRefreshAgents: () => void;
+  onAssociateAgent?: () => void;
   isLoadingAgents: boolean;
   isRefreshingAgents: boolean;
   agentsError?: string;
   agentsLoaded?: boolean;
+  organizationId?: string;
 }
 
 export default function AgentCards({
@@ -121,10 +123,12 @@ export default function AgentCards({
   onOpenAgent,
   onCreateAgent,
   onRefreshAgents,
+  onAssociateAgent,
   isLoadingAgents,
   isRefreshingAgents,
   agentsError,
-  agentsLoaded = false
+  agentsLoaded = false,
+  organizationId
 }: AgentCardsProps) {
   const { isDarkMode } = useTheme();
 
@@ -136,6 +140,15 @@ export default function AgentCards({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
   const [isDeletingAgent, setIsDeletingAgent] = useState(false);
+
+  // Associate agent modal state
+  const [showAssociateModal, setShowAssociateModal] = useState(false);
+  const [availableAgents, setAvailableAgents] = useState<Array<{ appId: string; appName: string; workspaceId: string; workspaceName?: string }>>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isLoadingAgentsList, setIsLoadingAgentsList] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<{ appId: string; appName: string; workspaceId: string; workspaceName?: string } | null>(null);
+  const [isAssociating, setIsAssociating] = useState(false);
+  const [associateError, setAssociateError] = useState<string | null>(null);
 
   // Success modal state
   // const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -163,6 +176,98 @@ export default function AgentCards({
     setAgentToDelete(agent);
     setShowDeleteModal(true);
   };
+
+  // Function to open associate agent modal
+  const handleOpenAssociateModal = async () => {
+    setShowAssociateModal(true);
+    setSearchQuery('');
+    setSelectedAgent(null);
+    setAssociateError(null);
+    setIsLoadingAgentsList(true);
+
+    try {
+      const response = await fetch('/api/dify/get-all-agents', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch agents from Main App');
+      }
+
+      const result = await response.json();
+      if (result.success && result.agents) {
+        setAvailableAgents(result.agents);
+      } else {
+        setAvailableAgents([]);
+      }
+    } catch (error) {
+      console.error('Error fetching agents:', error);
+      setAssociateError('Failed to load agents from Main App');
+      setAvailableAgents([]);
+    } finally {
+      setIsLoadingAgentsList(false);
+    }
+  };
+
+  // Function to handle agent association
+  const handleAssociateAgent = async () => {
+    if (!selectedAgent || !organizationId) {
+      setAssociateError('Please select an agent and ensure organization ID is set');
+      return;
+    }
+
+    setIsAssociating(true);
+    setAssociateError(null);
+
+    try {
+      const response = await fetch('/api/dify/associate-agent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
+        },
+        body: JSON.stringify({
+          appId: selectedAgent.appId,
+          appName: selectedAgent.appName,
+          workspaceId: selectedAgent.workspaceId,
+          organizationId: organizationId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.details || 'Failed to associate agent');
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        setShowAssociateModal(false);
+        setSelectedAgent(null);
+        setSearchQuery('');
+        onRefreshAgents();
+        if (onAssociateAgent) {
+          onAssociateAgent();
+        }
+      } else {
+        throw new Error(result.error || 'Failed to associate agent');
+      }
+    } catch (error) {
+      console.error('Error associating agent:', error);
+      setAssociateError(error instanceof Error ? error.message : 'Failed to associate agent');
+    } finally {
+      setIsAssociating(false);
+    }
+  };
+
+  // Filter agents based on search query
+  const filteredAgents = availableAgents.filter((agent) =>
+    agent.appName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    agent.workspaceName?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Function to handle agent deletion
   const handleDeleteAgent = async () => {
@@ -322,7 +427,70 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
     <div className="w-full h-full flex flex-col">
         <div className="flex-1 p-6 overflow-y-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Create New Agent Card */}
+          {/* Associate Agent Card - First */}
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              handleOpenAssociateModal();
+            }}
+            className={`group rounded-xl shadow-md hover:shadow-lg border overflow-hidden transition-all duration-300 transform hover:-translate-y-1 cursor-pointer flex flex-col ${isDarkMode
+              ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700 hover:border-green-500/50'
+              : 'bg-gradient-to-br from-white to-gray-50 border-gray-200 hover:border-green-300'
+              }`}
+          >
+            {/* Header with professional icon */}
+            <div className={`p-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-xl flex items-center justify-center text-white shadow-md bg-gradient-to-br from-green-600 to-emerald-600 group-hover:from-green-700 group-hover:to-emerald-700 transition-all duration-300 flex-shrink-0">
+                  <Link2 className="h-8 w-8" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className={`text-xl font-semibold truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    Associate Agent
+                  </h3>
+                  <p className={`text-sm mt-1.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Link existing agent from Main App
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className={`p-6 flex-1 ${isDarkMode ? 'bg-gray-800/50' : 'bg-white/50'}`}>
+              <div className={`p-5 rounded-lg ${isDarkMode ? 'bg-gray-700/30 border border-gray-600/50' : 'bg-gray-50 border border-gray-200'}`}>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isDarkMode ? 'bg-green-400' : 'bg-green-600'}`}></div>
+                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Connect agents from Main App
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isDarkMode ? 'bg-green-400' : 'bg-green-600'}`}></div>
+                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Use existing configurations
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className={`p-5 border-t ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenAssociateModal();
+                }}
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-2.5 px-4 rounded-lg transition-all duration-200 shadow-sm font-medium text-sm flex items-center justify-center gap-2"
+              >
+                <Link2 className="w-4 h-4" />
+                Associate Agent
+              </button>
+            </div>
+          </div>
+
+          {/* Create New Agent Card - Second */}
           <div
             onClick={onCreateAgent}
             className={`group rounded-xl shadow-md hover:shadow-lg border overflow-hidden transition-all duration-300 transform hover:-translate-y-1 cursor-pointer flex flex-col ${isDarkMode
@@ -361,12 +529,6 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isDarkMode ? 'bg-green-400' : 'bg-green-600'}`}></div>
                     <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                       Configure advanced AI capabilities
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isDarkMode ? 'bg-green-400' : 'bg-green-600'}`}></div>
-                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      Deploy with enterprise-grade security
                     </p>
                   </div>
                 </div>
@@ -520,6 +682,184 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
         )}
 
         {/* Success modal removed */}
+
+        {/* Associate Agent Modal */}
+        {showAssociateModal && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[9999] p-4">
+            <div
+              className={`relative p-6 rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col ${isDarkMode
+                ? 'bg-gray-800 border border-gray-700'
+                : 'bg-white border border-gray-200'
+                }`}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-green-900/20' : 'bg-green-50'}`}>
+                    <Link2 className={`w-6 h-6 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+                  </div>
+                  <div>
+                    <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      Associate Agent from Main App
+                    </h3>
+                    <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Select an agent to link to your organization
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (!isAssociating) {
+                      setShowAssociateModal(false);
+                      setSelectedAgent(null);
+                      setSearchQuery('');
+                      setAssociateError(null);
+                    }
+                  }}
+                  disabled={isAssociating}
+                  className={`p-1.5 rounded-lg transition-all ${isDarkMode
+                    ? 'hover:bg-gray-700 text-gray-400 hover:text-white disabled:opacity-50'
+                    : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700 disabled:opacity-50'
+                    }`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Search Input */}
+              <div className="mb-4">
+                <div className="relative">
+                  <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                  <input
+                    type="text"
+                    placeholder="Search agents by name or workspace..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-lg border ${isDarkMode
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                      } focus:outline-none focus:ring-2 focus:ring-green-500`}
+                  />
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {associateError && (
+                <div className={`mb-4 p-3 rounded-lg ${isDarkMode ? 'bg-red-900/20 border border-red-800/50' : 'bg-red-50 border border-red-200'}`}>
+                  <p className={`text-sm ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>{associateError}</p>
+                </div>
+              )}
+
+              {/* Agents List */}
+              <div className="flex-1 overflow-y-auto mb-6">
+                {isLoadingAgentsList ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-6 h-6 text-green-500 animate-spin" />
+                    <span className={`ml-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      Loading agents from Main App...
+                    </span>
+                  </div>
+                ) : filteredAgents.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <Bot className={`w-12 h-12 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`} />
+                    <p className={`mt-4 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {searchQuery ? 'No agents found matching your search' : 'No agents available in Main App'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {filteredAgents.map((agent) => (
+                      <div
+                        key={agent.appId}
+                        onClick={() => setSelectedAgent(agent)}
+                        className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${selectedAgent?.appId === agent.appId
+                          ? isDarkMode
+                            ? 'border-green-500 bg-green-900/20'
+                            : 'border-green-500 bg-green-50'
+                          : isDarkMode
+                            ? 'border-gray-600 bg-gray-700/50 hover:border-gray-500'
+                            : 'border-gray-200 bg-white hover:border-gray-300'
+                          }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h4 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                              {agent.appName}
+                            </h4>
+                            <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                              Workspace: {agent.workspaceName || agent.workspaceId.substring(0, 8) + '...'}
+                            </p>
+                          </div>
+                          {selectedAgent?.appId === agent.appId && (
+                            <CheckCircle className={`w-5 h-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Selected Agent Info */}
+              {selectedAgent && (
+                <div className={`mb-6 p-4 rounded-lg ${isDarkMode ? 'bg-gray-700/50 border border-gray-600' : 'bg-gray-50 border border-gray-200'}`}>
+                  <p className={`text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Selected Agent:
+                  </p>
+                  <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {selectedAgent.appName}
+                  </p>
+                  <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Workspace ID: {selectedAgent.workspaceId}
+                  </p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    if (!isAssociating) {
+                      setShowAssociateModal(false);
+                      setSelectedAgent(null);
+                      setSearchQuery('');
+                      setAssociateError(null);
+                    }
+                  }}
+                  disabled={isAssociating}
+                  className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-all duration-200 ${isDarkMode
+                    ? 'bg-gray-700 text-gray-200 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed'
+                    }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAssociateAgent}
+                  disabled={!selectedAgent || isAssociating}
+                  className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 ${isAssociating || !selectedAgent
+                    ? 'bg-green-400 text-white cursor-not-allowed'
+                    : isDarkMode
+                      ? 'bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-500/20'
+                      : 'bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-500/30'
+                    }`}
+                >
+                  {isAssociating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Associating...
+                    </>
+                  ) : (
+                    <>
+                      <Link2 className="w-4 h-4" />
+                      Associate Agent
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Delete Confirmation Modal */}
         {showDeleteModal && agentToDelete && (

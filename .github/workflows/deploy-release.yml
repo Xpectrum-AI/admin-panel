@@ -2,6 +2,14 @@ name: Deploy to Release
 
 on:
   workflow_dispatch:
+    inputs:
+      image_tag_suffix:
+        description: "Image tag suffix (e.g., 2025w01)"
+        required: false
+        type: string
+  push:
+    branches:
+      - "release-*"
 
 env:
   DIGITALOCEAN_REGION: sfo3
@@ -449,13 +457,84 @@ jobs:
           
           echo "Health checks completed"
 
-      - name: Display deployment info
+      - name: Generate deployment summary
         run: |
-          echo "🎉 Release Deployment Complete!"
-          echo "📦 Admin Panel Image: registry.digitalocean.com/xpectrum-main-app-dev/admin-release:${{ steps.admin-image-tag.outputs.image_tag }}"
-          echo "📦 Developer Dashboard Image: registry.digitalocean.com/xpectrum-main-app-dev/developer-release:${{ steps.developer-image-tag.outputs.image_tag }}"
-          echo "🌍 Environment: release"
-          echo "🔧 Stack: frontend-release"
+          ADMIN_TAG="${{ steps.admin-image-tag.outputs.image_tag }}"
+          DEVELOPER_TAG="${{ steps.developer-image-tag.outputs.image_tag }}"
+          ADMIN_REPO="registry.digitalocean.com/xpectrum-main-app-dev/admin-release"
+          DEVELOPER_REPO="registry.digitalocean.com/xpectrum-main-app-dev/developer-release"
+          ADMIN_FULL_IMAGE="${ADMIN_REPO}:${ADMIN_TAG}"
+          DEVELOPER_FULL_IMAGE="${DEVELOPER_REPO}:${DEVELOPER_TAG}"
+          
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          # deploy-release summary
+          
+          ## 🚀 Release Deployment Complete!
+          
+          ---
+          
+          ### 📦 Admin Panel
+          
+          #### Image Information
+          - **Full Image Name:** `EOF'
+          echo "${ADMIN_FULL_IMAGE}" >> $GITHUB_STEP_SUMMARY
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          `
+          - **Image Tag:** `EOF'
+          echo "${ADMIN_TAG}" >> $GITHUB_STEP_SUMMARY
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          `
+          - **Registry:** `EOF'
+          echo "${ADMIN_REPO}" >> $GITHUB_STEP_SUMMARY
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          `
+          
+          #### Deployment Details
+          - **Environment:** `release`
+          - **Stack:** `frontend-release`
+          
+          #### For Production Deployment
+          Use this image tag when promoting to production:
+          `EOF'
+          echo "${ADMIN_TAG}" >> $GITHUB_STEP_SUMMARY
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          `
+          
+          ---
+          
+          ### 📦 Developer Dashboard
+          
+          #### Image Information
+          - **Full Image Name:** `EOF'
+          echo "${DEVELOPER_FULL_IMAGE}" >> $GITHUB_STEP_SUMMARY
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          `
+          - **Image Tag:** `EOF'
+          echo "${DEVELOPER_TAG}" >> $GITHUB_STEP_SUMMARY
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          `
+          - **Registry:** `EOF'
+          echo "${DEVELOPER_REPO}" >> $GITHUB_STEP_SUMMARY
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          `
+          
+          #### Deployment Details
+          - **Environment:** `release`
+          - **Stack:** `frontend-release`
+          
+          #### For Production Deployment
+          Use this image tag when promoting to production:
+          `EOF'
+          echo "${DEVELOPER_TAG}" >> $GITHUB_STEP_SUMMARY
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          `
+          
+          ---
+          
+          <sub>Job summary generated at run-time</sub>
+          EOF
+          
+          echo "✅ Deployment summary generated"
 
   deployment-failure:
     needs: deploy-release
