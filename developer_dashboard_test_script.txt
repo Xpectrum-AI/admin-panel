@@ -1,0 +1,141 @@
+check that page contains "Sign in to Developer Dashboard"
+wait 2 sec
+
+check that page contains "create a new account"
+wait 2 sec
+
+enter "j.karthikeya2004@gmail.com" into "Email address"
+enter "Karthikeya@2004" into "Password"
+click "Sign in"
+wait 10 sec
+
+check that page contains "Agent Configuration"
+wait 3 sec
+
+click "Create Agent"
+wait 3 sec
+
+click "Knowledge Agent"
+wait 2 sec
+
+click "Action Agent"
+wait 2 sec
+
+enter "devdash-demo" into "Agent Identifier"
+wait 2 sec
+
+click "Create Agent"
+wait 5 sec
+
+check that page contains "Creating Agent..."
+wait 2 sec
+
+check that page contains "Agent Configuration"
+wait 2 sec
+
+click "Back to Agents"
+wait 3 sec
+
+check that page contains "Create Agent"
+wait 2 sec
+
+click "Chat"
+wait 3 sec
+
+click "Back to Agents"
+wait 3 sec
+
+click "Phone Numbers"
+wait 3 sec
+
+check that page contains "Phone Numbers Management"
+wait 2 sec
+
+click "Sync Phone Numbers"
+wait 5 sec
+
+check that page contains "Phone numbers synced successfully from Twilio!"
+wait 3 sec
+
+click "Outbound"
+wait 2 sec
+
+click "Inbound"
+wait 2 sec
+
+click "SMS"
+wait 3 sec
+
+check that page contains "SMS-Enabled Phone Numbers"
+wait 2 sec
+
+click "Outbound"
+wait 2 sec
+
+click "Inbound"
+wait 2 sec
+
+click "WhatsApp"
+wait 3 sec
+
+check that page contains "WhatsApp-Enabled Phone Numbers"
+wait 2 sec
+
+click "Outbound"
+wait 2 sec
+
+click "Inbound"
+wait 2 sec
+
+click "Email"
+wait 3 sec
+
+check that page contains "Email-Enabled Accounts"
+wait 2 sec
+
+click "Outbound"
+wait 2 sec
+
+click "Inbound"
+wait 2 sec
+
+click "Knowledge Base"
+wait 3 sec
+
+check that page contains "Knowledge Base Management"
+wait 2 sec
+
+click "Create Knowledge Base"
+wait 3 sec
+
+enter "DevDash KB" into "Name *"
+enter "Testing pipeline knowledge base" into "Description"
+select "High Quality (Better accuracy, slower processing)" from "Indexing Technique"
+select "All Team Members" from "Permission"
+wait 2 sec
+
+click "Create Knowledge Base"
+wait 5 sec
+
+check that page contains "Documents"
+wait 2 sec
+
+click "Back to List"
+wait 3 sec
+
+click "Knowledge Bases"
+wait 2 sec
+
+click "Conversation Logs"
+wait 3 sec
+
+check that page contains "Conversation Logs"
+wait 2 sec
+
+check that page contains "Select an agent to view conversation history"
+wait 2 sec
+
+click "Log out"
+wait 5 sec
+
+check that page contains "Sign in to Developer Dashboard"
