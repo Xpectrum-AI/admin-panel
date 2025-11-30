@@ -2,8 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Bot, Settings, Mic, Wrench, BarChart3, MessageSquare, Sparkles, Zap, Activity, Search, RefreshCw, Trash2, ChevronDown, Loader2, Code, CheckCircle, Phone, X, Send, VolumeX, Volume2 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import MarkdownRenderer from './MarkdownRenderer';
 
 import ModelConfig from './config/ModelConfig';
 import VoiceConfig from './config/VoiceConfig';
@@ -21,77 +20,42 @@ import { useAgentConfig } from '../contexts/AgentConfigContext';
 import { generateAgentUuid, extractAgentName, getDisplayName } from '../../lib/utils/agentUuid';
 import { getAgentDisplayName } from '../../lib/utils/agentNameUtils';
 
-interface Agent {
-  id: string;
-  name: string;
-  status: 'active' | 'inactive' | 'draft';
-  model?: string;
-  provider?: string;
-  cost?: string;
-  latency?: string;
-  avatar?: string;
-  description?: string;
+// Import new components and hooks
+import { useAgents } from './AgentsTab/hooks/useAgents';
+import AgentConfigPanel from './AgentsTab/components/AgentConfigPanel';
+import { Agent, AgentsTabProps } from './AgentsTab/types';
+import dynamic from 'next/dynamic';
 
-  organization_id?: string;
-  chatbot_api?: string;
-  chatbot_key?: string;
-  modelApiKey?: string;
-  systemPrompt?: string;
-  tts_config?: any;
-  stt_config?: any;
-  initial_message?: string;
-  nudge_text?: string;
-  nudge_interval?: number;
-  max_nudges?: number;
-  typing_volume?: number;
-  max_call_duration?: number;
-  created_at?: string;
-  updated_at?: string;
-  agent_prefix?: string; // Add agent_prefix field for backend compatibility
+// Lazy load modals - only load when they're opened
+const AgentPrefixModal = dynamic(() => import('./AgentsTab/components/AgentPrefixModal'), {
+  ssr: false
+});
 
-  config?: Record<string, unknown>;
-
-}
-
-// Fallback sample agents in case API fails
-const fallbackAgents: Agent[] = [
-  {
-    id: 'riley-001',
-    name: 'Riley',
-    status: 'active',
-    model: 'GPT 4o Cluster',
-    provider: 'OpenAI',
-    cost: '~$0.15/min',
-    latency: '~1050ms',
-    avatar: '🤖',
-    description: 'Your intelligent scheduling agent'
-  },
-  {
-    id: 'elliot-002',
-    name: 'Elliot',
-    status: 'draft',
-    model: 'Claude 3.5 Sonnet',
-    provider: 'Anthropic',
-    cost: '~$0.12/min',
-    latency: '~980ms',
-    avatar: '🧠',
-    description: 'Advanced conversation specialist'
-  }
-];
-
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface AgentsTabProps {
-
-}
+const DeleteConfirmationModal = dynamic(() => import('./AgentsTab/components/DeleteConfirmationModal'), {
+  ssr: false
+});
 
 export default function AgentsTab({ }: AgentsTabProps) {
   const { isDarkMode } = useTheme();
   const { user, userClass } = useAuthInfo();
 
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
-  const [showAgentCards, setShowAgentCards] = useState(true);
+  // Use the new useAgents hook for agent management
+  const {
+    agents,
+    setAgents,
+    selectedAgent,
+    setSelectedAgent,
+    isLoadingAgents,
+    agentsError,
+    isRefreshingAgents,
+    currentOrganizationId,
+    organizationName,
+    agentsLoaded,
+    handleRefreshAgents,
+    fetchAgents
+  } = useAgents();
 
+  const [showAgentCards, setShowAgentCards] = useState(true);
   const [activeConfigTab, setActiveConfigTab] = useState('model');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -105,17 +69,7 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
-  // Success modal state - removed
-  const [isLoadingAgents, setIsLoadingAgents] = useState(false);
-  const [agentsError, setAgentsError] = useState('');
-  const [currentOrganizationId, setCurrentOrganizationId] = useState<string>('');
-  const [organizationName, setOrganizationName] = useState<string>('');
-  const [agentsLoaded, setAgentsLoaded] = useState(false);
-  const loadedOrganizationRef = useRef<string>('');
-  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isFetchingRef = useRef<boolean>(false);
   const [generatedDifyApiKey, setGeneratedDifyApiKey] = useState<string>('');
-  const [isRefreshingAgents, setIsRefreshingAgents] = useState(false);
   const [isUpdatingAgent, setIsUpdatingAgent] = useState(false);
   const [showVoiceChat, setShowVoiceChat] = useState(false);
   const [startVoiceCall, setStartVoiceCall] = useState(false);
@@ -131,8 +85,6 @@ export default function AgentsTab({ }: AgentsTabProps) {
   const [currentMessage, setCurrentMessage] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [conversationId, setConversationId] = useState('');
-  const selectedAgentIdRef = useRef<string | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Use centralized configuration state
@@ -146,42 +98,9 @@ export default function AgentsTab({ }: AgentsTabProps) {
     resetConfiguration
   } = useAgentConfig();
 
-  // Initialize organization ID from user context
-  useEffect(() => {
-    const orgId = (user as any)?.orgIdToOrgMemberInfo ?
-      Object.keys((user as any).orgIdToOrgMemberInfo)[0] :
-      null;
-
-    if (orgId && orgId !== currentOrganizationId) {
-      setCurrentOrganizationId(orgId);
-    } else if (userClass && !orgId) {
-      // Fallback: get organization ID from userClass
-      const orgs = userClass.getOrgs?.() || [];
-      if (orgs.length > 0) {
-        const org = orgs[0] as any;
-        const orgIdFromClass = org.orgId || org.id || '';
-        if (orgIdFromClass && orgIdFromClass !== currentOrganizationId) {
-          setCurrentOrganizationId(orgIdFromClass);
-        }
-      }
-    } else {
-      // Temporary workaround: use userId as organizationId for users without organizations
-      if (user && (user as any).userId && !currentOrganizationId) {
-        const userIdAsOrgId = (user as any).userId;
-        setCurrentOrganizationId(userIdAsOrgId);
-        setOrganizationName('Single User Workspace');
-      }
-    }
-  }, [user, userClass, currentOrganizationId]);
-
 
   // Ref for ModelConfig to get current config
   const modelSectionRef = useRef<any>(null);
-
-  // Debug function to log current state
-  const logCurrentState = useCallback(() => {
-    // State logging removed
-  }, [selectedAgent, configuration, hasUnsavedChanges, autoSaveStatus, activeConfigTab]);
 
   // Call duration timer
   useEffect(() => {
@@ -213,134 +132,19 @@ export default function AgentsTab({ }: AgentsTabProps) {
     scrollToBottom();
   }, [chatMessages, scrollToBottom]);
 
-  // Add welcome message when chat sidebar opens
+  // Add welcome message when chat sidebar opens - optimized dependencies
+  const selectedAgentInitialMessage = useMemo(() => selectedAgent?.initial_message, [selectedAgent?.initial_message]);
   useEffect(() => {
-    if (showChatSidebar && selectedAgent && chatMessages.length === 0) {
-      if (selectedAgent.initial_message) {
-        const welcomeMessage = {
-          id: 'welcome',
-          type: 'bot' as const,
-          message: selectedAgent.initial_message,
-          timestamp: new Date()
-        };
-        setChatMessages([welcomeMessage]);
-      }
+    if (showChatSidebar && selectedAgent && chatMessages.length === 0 && selectedAgentInitialMessage) {
+      const welcomeMessage = {
+        id: 'welcome',
+        type: 'bot' as const,
+        message: selectedAgentInitialMessage,
+        timestamp: new Date()
+      };
+      setChatMessages([welcomeMessage]);
     }
-  }, [showChatSidebar, selectedAgent, chatMessages.length]);
-
-  // Debug function to check localStorage state
-  const logLocalStorageState = useCallback(() => {
-}, []);
-  // Removed analysis, advanced section refs
-
-  // Fetch agents from backend with debouncing and duplicate call prevention
-  const fetchAgents = useCallback(async (signal?: AbortSignal) => {
-    // Prevent multiple simultaneous calls
-    if (isFetchingRef.current) {
-      return;
-    }
-    isFetchingRef.current = true;
-    setAgentsError('');
-    // Better check for initial load: only show full loader if we haven't loaded yet AND have no agents
-    const isInitialLoad = !agentsLoaded && agents.length === 0;
-    if (isInitialLoad) {
-      setIsLoadingAgents(true); // Full screen spinner on initial load only
-    } else {
-      setIsRefreshingAgents(true); // Small spinner on refresh button
-    }
-
-    try {
-      const orgName = organizationName || currentOrganizationId || 'Unknown Organization';
-      const result = await agentConfigService.getAllAgents(orgName, signal);
-      if (result.success) {
-        if (result.data && result.data.length > 0) {
-          // Transform backend data to match our Agent interface
-          const transformedAgents: Agent[] = result.data.map((agent: any) => {
-            // Get agent_prefix from backend (could be in name, agent_prefix, or id field)
-            const agentPrefix = agent.agent_prefix || agent.name || agent.id || '';
-            return {
-              id: agentPrefix || `agent_${Date.now()}`, // Use agent_prefix as ID (full UUID format)
-              name: getDisplayName(agent.name || agent.agent_prefix || agent.id || 'Unnamed Agent'), // Display only the agent name
-              agent_prefix: agentPrefix, // Store agent_prefix for backend API calls
-              status: agent.status || 'draft',
-              model: agent.model || 'GPT-4o',
-              provider: agent.provider || 'OpenAI',
-              cost: agent.cost || '~$0.10/min',
-              latency: agent.latency || '~1000ms',
-              avatar: '🤖',
-              description: agent.description || 'AI Agent',
-              organization_id: agent.organization_id,
-              chatbot_api: agent.chatbot_api,
-              chatbot_key: agent.chatbot_key,
-              tts_config: agent.tts_config,
-              stt_config: agent.stt_config,
-              initial_message: agent.initial_message,
-              nudge_text: agent.nudge_text,
-              nudge_interval: agent.nudge_interval,
-              max_nudges: agent.max_nudges,
-              typing_volume: agent.typing_volume,
-              max_call_duration: agent.max_call_duration,
-              created_at: agent.created_at,
-              updated_at: agent.updated_at
-            };
-          });
-
-          setAgents(transformedAgents);
-
-          // Preserve previously selected agent if still present
-          const previouslySelectedId = selectedAgentIdRef.current;
-          if (transformedAgents.length > 0) {
-            const match = transformedAgents.find(a => a.id === previouslySelectedId);
-            if (match) {
-              setSelectedAgent(match);
-            } else if (!previouslySelectedId) {
-              setSelectedAgent(transformedAgents[0]);
-            }
-          }
-        } else {
-          // No agents found - update agents array to match backend
-          // The loading state will prevent flickering by keeping loading spinner visible
-          setAgents([]);
-          setSelectedAgent(null);
-        }
-      } else {
-        // Don't show error for 405 Method Not Allowed - it's expected
-        if (result.message.includes('405') || result.message.includes('Method Not Allowed')) {
-          setAgents([]);
-          setSelectedAgent(null);
-        } else {
-          setAgentsError(result.message);
-          setAgents(fallbackAgents);
-          if (fallbackAgents.length > 0 && !selectedAgentIdRef.current) {
-            setSelectedAgent(fallbackAgents[0]);
-          }
-        }
-      }
-    } catch (error) {
-      // Handle abort errors gracefully
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        return;
-      }
-      // Don't show 405 errors as they are expected
-      if (error instanceof Error && error.message.includes('405')) {
-        setAgents([]);
-        setSelectedAgent(null);
-      } else {
-        setAgentsError('Failed to load agents from server');
-        setAgents(fallbackAgents);
-        if (fallbackAgents.length > 0 && !selectedAgentIdRef.current) {
-          setSelectedAgent(fallbackAgents[0]);
-        }
-      }
-    } finally {
-      // Clear loading states immediately - React batches state updates so agents will be set first
-      setIsLoadingAgents(false);
-      setIsRefreshingAgents(false);
-      setAgentsLoaded(true);
-      loadedOrganizationRef.current = currentOrganizationId || organizationName || '';
-      isFetchingRef.current = false;
-    }
-  }, [currentOrganizationId, organizationName]);
+  }, [showChatSidebar, selectedAgent, chatMessages.length, selectedAgentInitialMessage]);
 
   // Load configuration from selected agent
   const loadAgentConfiguration = useCallback((agent: Agent) => {
@@ -349,92 +153,29 @@ export default function AgentsTab({ }: AgentsTabProps) {
     }
   }, [loadConfigurationFromAgent]);
 
-  // Load agent configuration when agent is selected
+  // Load agent configuration when agent is selected - use ref to track previous agent ID
+  const previousAgentIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (selectedAgent) {
+    if (selectedAgent && selectedAgent.id !== previousAgentIdRef.current) {
+      previousAgentIdRef.current = selectedAgent.id;
       loadAgentConfiguration(selectedAgent);
     }
-  }, [selectedAgent, loadAgentConfiguration]);
+  }, [selectedAgent?.id, loadAgentConfiguration]);
 
-  // Initial fetch when component mounts and organization is available
-  useEffect(() => {
-    const currentOrg = currentOrganizationId || organizationName;
-    if (currentOrg && !agentsLoaded && !isLoadingAgents) {
-      fetchAgents();
-    }
-  }, [currentOrganizationId, organizationName, agentsLoaded, isLoadingAgents, fetchAgents]);
-
-  // Fetch agents when organization ID or name changes (only if not already loaded)
-  useEffect(() => {
-    const currentOrg = currentOrganizationId || organizationName;
-    const loadedOrg = loadedOrganizationRef.current;
-
-    if (currentOrg && !isLoadingAgents && currentOrg !== loadedOrg && agentsLoaded) {
-      setAgentsLoaded(false);
-      fetchAgents();
-    }
-  }, [currentOrganizationId, organizationName, isLoadingAgents, agentsLoaded, fetchAgents]);
-
-  // Get organization name from user context
-  useEffect(() => {
-    if (userClass) {
-      const orgs = userClass.getOrgs?.() || [];
-      if (orgs.length > 0) {
-        const org = orgs[0] as any;
-        const orgName = org.orgName || org.name || '';
-        if (orgName && orgName !== organizationName) {
-          setOrganizationName(orgName);
-        }
-      } else {
-      }
-    } else {
-    }
-  }, [userClass, organizationName]);
-
-  // Refresh configuration when selectedAgent changes
-  useEffect(() => {
-    if (selectedAgent) {
-      // Load configuration from selected agent using centralized state
-      loadAgentConfiguration(selectedAgent);
-    }
-  }, [selectedAgent?.id]); // Only depend on the agent ID, not the entire object
-
-  // Keep a ref of selected agent id to avoid fetch refetch ties
-  useEffect(() => {
-    selectedAgentIdRef.current = selectedAgent ? selectedAgent.id : null;
-  }, [selectedAgent?.id]);
-
-  // Cleanup abort controller on unmount
-  useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, []);
-
-  // Handle refresh button click with abort signal
-  const handleRefreshAgents = useCallback(() => {
-    // Cancel any existing request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    // Create new abort controller
-    abortControllerRef.current = new AbortController();
-
-    // Don't reset agentsLoaded or clear agents - just trigger refresh
-    // This keeps existing agents visible during refresh (no flickering)
-    fetchAgents(abortControllerRef.current.signal);
-  }, [fetchAgents]);
-
-  // Handle creating a new agent
+  // Handle creating a new agent - memoized
   const handleCreateNewAgent = useCallback(() => {
     // Show agent prefix modal first
     setShowAgentPrefixModal(true);
     setAgentPrefix('');
     setIsCreatingAgent(false); // Reset loading state when opening modal
-  }, [showAgentPrefixModal, agentPrefix, isCreatingAgent]);
+  }, []);
+
+  // Handle closing agent prefix modal - memoized
+  const handleCloseAgentPrefixModal = useCallback(() => {
+    setShowAgentPrefixModal(false);
+    setAgentPrefix('');
+    setIsCreatingAgent(false);
+  }, []);
 
   // Handle agent prefix submission
   const handleAgentPrefixSubmit = useCallback(async () => {
@@ -506,7 +247,6 @@ export default function AgentsTab({ }: AgentsTabProps) {
         const currentOrgName = org.orgName || org.name || '';
         if (currentOrgName) {
           orgName = currentOrgName;
-          setOrganizationName(currentOrgName);
         }
       }
     }
@@ -1282,85 +1022,12 @@ Remember: You are the first point of contact for many patients. Your professiona
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isDropdownOpen]);
 
-  // Cleanup timeouts on unmount
-  useEffect(() => {
-    return () => {
-      if (fetchTimeoutRef.current) {
-        clearTimeout(fetchTimeoutRef.current);
-      }
-    };
-  }, []);
 
-  // Fallback timeout to prevent infinite loading (increased to prevent premature clearing)
-  useEffect(() => {
-    if (isLoadingAgents) {
-      const fallbackTimeout = setTimeout(() => {
-        setIsLoadingAgents(false);
-        setAgentsLoaded(true);
-        isFetchingRef.current = false;
-      }, 10000); // 10 second timeout - increased from 200ms to prevent flickering
-
-      return () => clearTimeout(fallbackTimeout);
-    }
-  }, [isLoadingAgents]);
-
-  // Manual refresh function for agent configuration
+  // Manual refresh function for agent configuration - use hook's refresh function
   const refreshSelectedAgentConfig = useCallback(async () => {
     if (!selectedAgent) return;
-    setIsRefreshingAgents(true);
-
-    try {
-      const orgName = organizationName || currentOrganizationId || 'Unknown Organization';
-      const result = await agentConfigService.getAllAgents(orgName);
-      if (result.success && result.data) {
-        const updatedAgent = result.data.find((a: any) => a.name === selectedAgent.name);
-        if (updatedAgent) {
-          // Transform the agent data
-          const agentPrefix = updatedAgent.agent_prefix || updatedAgent.name || updatedAgent.id || '';
-          const transformedAgent: Agent = {
-            id: agentPrefix || `agent_${Date.now()}`,
-            name: getDisplayName(updatedAgent.name || updatedAgent.agent_prefix || updatedAgent.id || 'Unnamed Agent'),
-            agent_prefix: agentPrefix, // Store agent_prefix for backend API calls
-            status: updatedAgent.status || 'draft',
-            model: updatedAgent.model || 'Unknown Model',
-            provider: updatedAgent.provider || 'Unknown Provider',
-            cost: updatedAgent.cost || '~$0.10/min',
-            latency: updatedAgent.latency || '~1000ms',
-            avatar: '🤖',
-            description: updatedAgent.description || 'AI Agent',
-            organization_id: updatedAgent.organization_id,
-            chatbot_api: updatedAgent.chatbot_api,
-            chatbot_key: updatedAgent.chatbot_key,
-            tts_config: updatedAgent.tts_config,
-            stt_config: updatedAgent.stt_config,
-            initial_message: updatedAgent.initial_message,
-            nudge_text: updatedAgent.nudge_text,
-            nudge_interval: updatedAgent.nudge_interval,
-            max_nudges: updatedAgent.max_nudges,
-            typing_volume: updatedAgent.typing_volume,
-            max_call_duration: updatedAgent.max_call_duration,
-            created_at: updatedAgent.created_at,
-            updated_at: updatedAgent.updated_at
-          };
-
-          // Update the selected agent with new configuration
-          setSelectedAgent(transformedAgent);
-
-          // Update the agents list in the sidebar with the updated agent
-          setAgents(prev => prev.map(agent =>
-            agent.id === transformedAgent.id ? transformedAgent : agent
-          ));
-
-          // Configuration will be updated automatically by the centralized state
-        } else {
-        }
-      } else {
-      }
-    } catch (error) {
-    } finally {
-      setIsRefreshingAgents(false);
-    }
-  }, [selectedAgent?.name, organizationName, currentOrganizationId]);
+    await handleRefreshAgents();
+  }, [selectedAgent, handleRefreshAgents]);
 
   const configTabs = useMemo(() => [
     { id: 'model', label: 'Model', icon: Bot, color: 'from-green-500 to-emerald-600' },
@@ -1387,224 +1054,17 @@ Remember: You are the first point of contact for many patients. Your professiona
           />
         </div>
 
-        {/* Agent Prefix Modal */}
-        {showAgentPrefixModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className={`p-8 rounded-2xl shadow-2xl max-w-2xl w-full mx-4 ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
-              }`}>
-              <div className="flex items-center gap-3 mb-6">
-                <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-green-900/20' : 'bg-green-50'}`}>
-                  <svg className={`w-6 h-6 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                    Create New Agent
-                  </h3>
-                  <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Configure your AI agent for optimal performance
-                  </p>
-                </div>
-              </div>
-
-              {/* Agent Type Selection */}
-              <div className="mb-6">
-                <label className={`block text-sm font-semibold mb-3 ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-                  Agent Configuration
-                </label>
-                <div className="space-y-3">
-                  <div className={`p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${agentType === 'Knowledge Agent (RAG)'
-                    ? isDarkMode
-                      ? 'border-green-500 bg-green-900/20'
-                      : 'border-green-500 bg-green-50'
-                    : isDarkMode
-                      ? 'border-gray-600 bg-gray-700/50 hover:border-gray-500'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                    }`} onClick={() => setAgentType('Knowledge Agent (RAG)')}>
-                    <div className="flex items-start gap-3">
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${agentType === 'Knowledge Agent (RAG)'
-                        ? 'border-green-500 bg-green-500'
-                        : isDarkMode ? 'border-gray-500' : 'border-gray-300'
-                        }`}>
-                        {agentType === 'Knowledge Agent (RAG)' && (
-                          <div className="w-2 h-2 rounded-full bg-white"></div>
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                            Knowledge Agent
-                          </h4>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${isDarkMode ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700'
-                            }`}>
-                            RAG
-                          </span>
-                        </div>
-                        <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                          Specialized for information retrieval, document analysis, and knowledge-based Q&A with advanced search capabilities
-                        </p>
-                        <div className="flex items-center gap-4 mt-2 text-xs">
-                          <span className={`flex items-center gap-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            Document Search
-                          </span>
-                          <span className={`flex items-center gap-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            Q&A Engine
-                          </span>
-                          <span className={`flex items-center gap-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            Blocking Mode
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className={`p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${agentType === 'Action Agent (AI Employee)'
-                    ? isDarkMode
-                      ? 'border-green-500 bg-green-900/20'
-                      : 'border-green-500 bg-green-50'
-                    : isDarkMode
-                      ? 'border-gray-600 bg-gray-700/50 hover:border-gray-500'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                    }`} onClick={() => setAgentType('Action Agent (AI Employee)')}>
-                    <div className="flex items-start gap-3">
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${agentType === 'Action Agent (AI Employee)'
-                        ? 'border-green-500 bg-green-500'
-                        : isDarkMode ? 'border-gray-500' : 'border-gray-300'
-                        }`}>
-                        {agentType === 'Action Agent (AI Employee)' && (
-                          <div className="w-2 h-2 rounded-full bg-white"></div>
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                            Action Agent
-                          </h4>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${isDarkMode ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700'
-                            }`}>
-                            AI Employee
-                          </span>
-                        </div>
-                        <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                          Intelligent assistant capable of task execution, tool integration, and complex workflow automation
-                        </p>
-                        <div className="flex items-center gap-4 mt-2 text-xs">
-                          <span className={`flex items-center gap-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            Function Calling
-                          </span>
-                          <span className={`flex items-center gap-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            Tool Integration
-                          </span>
-                          <span className={`flex items-center gap-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            Streaming Mode
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Agent Identifier Input */}
-              <div className="mb-6">
-                <label className={`block text-sm font-semibold mb-3 ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-                  Agent Identifier
-                </label>
-                <div className="relative">
-                  <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none`}>
-                    <svg className={`w-5 h-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                    </svg>
-                  </div>
-                  <input
-                    type="text"
-                    value={agentPrefix}
-                    onChange={(e) => setAgentPrefix(e.target.value)}
-                    placeholder="e.g., customer-support, sales-automation"
-                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${isDarkMode
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:bg-gray-600'
-                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:bg-gray-50'
-                      }`}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        handleAgentPrefixSubmit();
-                      }
-                    }}
-                  />
-                </div>
-                <div className="mt-2 flex items-start gap-2">
-                  <svg className={`w-4 h-4 mt-0.5 ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`} fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  <p className={`text-xs ${isDarkMode ? 'text-amber-200' : 'text-amber-700'}`}>
-                    <span className="font-medium">Requirements:</span> 3-50 characters, lowercase letters, numbers, and underscores only. This will be used as your agent's unique identifier.
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={() => {
-                    setShowAgentPrefixModal(false);
-                    setAgentPrefix('');
-                    setAgentType('Knowledge Agent (RAG)');
-                  }}
-                  className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all duration-200 ${isDarkMode
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-gray-900'
-                    }`}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAgentPrefixSubmit}
-                  disabled={!agentPrefix.trim() || isCreatingAgent}
-                  className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${isCreatingAgent
-                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
-                    }`}
-                >
-                  {isCreatingAgent ? (
-                    <>
-                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Creating Agent...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                      Create Agent
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Success Modal - removed */}
+        {/* Agent Prefix Modal - Using new component */}
+        <AgentPrefixModal
+          isOpen={showAgentPrefixModal}
+          agentPrefix={agentPrefix}
+          agentType={agentType}
+          isCreating={isCreatingAgent}
+          onClose={handleCloseAgentPrefixModal}
+          onPrefixChange={setAgentPrefix}
+          onTypeChange={setAgentType}
+          onSubmit={handleAgentPrefixSubmit}
+        />
       </div>
     );
   }
@@ -1813,20 +1273,6 @@ Remember: You are the first point of contact for many patients. Your professiona
                 </div>
               </div>
 
-              {/* Debug Section - only show in development */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="px-4 sm:px-6 lg:px-8 py-2 border-b border-gray-200 dark:border-gray-700">
-                  <button
-                    onClick={() => {
-                      logCurrentState();
-                      logLocalStorageState();
-                    }}
-                    className="px-3 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:hover:bg-yellow-900/50"
-                  >
-                    Debug State
-                  </button>
-                </div>
-              )}
 
               {/* Configuration Content */}
               <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 lg:p-8">
@@ -1918,7 +1364,14 @@ Remember: You are the first point of contact for many patients. Your professiona
         </div>
       </div>
 
-      {/* Success Modal - removed */}
+      {/* Delete Confirmation Modal - Using new component */}
+      <DeleteConfirmationModal
+        isOpen={showDeleteConfirmation}
+        agent={agentToDelete}
+        isDeleting={deletingAgentId !== null}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+      />
 
       {/* Voice Chat Modal removed; Voice chat now toggled inline from header */}
 
@@ -2000,9 +1453,9 @@ Remember: You are the first point of contact for many patients. Your professiona
                         }`}
                     >
                       <div className={`text-sm leading-relaxed ${message.type === 'user' ? 'text-white' : isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {message.message}
-                        </ReactMarkdown>
+                        <MarkdownRenderer>
+                          {message.message || ''}
+                        </MarkdownRenderer>
                       </div>
                       <p className={`text-xs mt-1.5 ${message.type === 'user' ? 'text-green-100' : 'text-gray-500 dark:text-gray-400'
                         }`}>

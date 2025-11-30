@@ -3,9 +3,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Bot, Send, Loader2, MessageCircle, Phone, PhoneOff, Mic, MicOff, MoreVertical, RotateCcw, X } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import MarkdownRenderer from '../../components/MarkdownRenderer';
 import { useTheme } from '../../contexts/ThemeContext';
+import { logger } from '../../../lib/utils/logger';
 
 interface Message {
   id: string;
@@ -66,7 +66,7 @@ export default function ChatbotPage() {
         const name = searchParams.get('name');
 
         if (apiUrl && apiKey) {
-          console.log('🎯 Using agent config from URL parameters:', { apiUrl, apiKey: apiKey.substring(0, 10) + '...', name });
+          logger.log('🎯 Using agent config from URL parameters:', { apiUrl, apiKey: apiKey.substring(0, 10) + '...', name });
           const configFromUrl: AgentConfig = {
             _id: agentId,
             agent_prefix: agentId,
@@ -104,7 +104,7 @@ export default function ChatbotPage() {
             );
 
             if (realAgent) {
-              console.log('🎯 Found real agent for chatbot:', realAgent.agent_prefix);
+              logger.log('🎯 Found real agent for chatbot:', realAgent.agent_prefix);
               setAgentConfig(realAgent);
 
               // Add welcome message if available
@@ -124,7 +124,7 @@ export default function ChatbotPage() {
             }
           }
         } catch (fetchError) {
-          console.log('⚠️ Could not fetch real agent data, using fallback:', fetchError);
+          logger.log('⚠️ Could not fetch real agent data, using fallback:', fetchError);
         }
 
         // Fallback to chatbot agent API
@@ -135,9 +135,9 @@ export default function ChatbotPage() {
         }
 
         const responseData = await response.json();
-        console.log('API Response:', responseData);
+        logger.log('API Response:', responseData);
         const data = responseData.data || responseData; // Handle both wrapped and direct responses
-        console.log('Agent Config Data:', data);
+        logger.log('Agent Config Data:', data);
         setAgentConfig(data);
 
         // Add welcome message if available
@@ -155,7 +155,7 @@ export default function ChatbotPage() {
         document.title = `${data.name || data.agent_prefix} | Chat`;
 
       } catch (err) {
-        console.error('Error fetching agent config:', err);
+        logger.error('Error fetching agent config:', err);
         setError(err instanceof Error ? err.message : 'Failed to load agent');
       } finally {
         setIsLoadingAgent(false);
@@ -217,7 +217,7 @@ export default function ChatbotPage() {
 
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
-      console.error('Error sending message:', error);
+      logger.error('Error sending message:', error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'bot',
@@ -550,9 +550,9 @@ export default function ChatbotPage() {
                       }`}
                   >
                     <div className={`markdown-content text-sm sm:text-base leading-relaxed ${message.type === 'user' ? 'text-white' : isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {message.message}
-                      </ReactMarkdown>
+                      <MarkdownRenderer>
+                        {message.message || ''}
+                      </MarkdownRenderer>
                     </div>
                     <p className={`text-xs mt-2 ${message.type === 'user' 
                       ? 'text-green-100' 

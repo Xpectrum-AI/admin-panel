@@ -30,6 +30,12 @@ import { useOrganizationId } from './utils/phoneNumberUtils';
 import { getAgentDisplayName } from '../../lib/utils/agentNameUtils';
 import { useTabPersistence } from '../../hooks/useTabPersistence';
 
+// Import new hooks and components
+import { useScheduledEvents } from './OutboundPhoneScheduler/hooks/useScheduledEvents';
+import { useTrunks } from './OutboundPhoneScheduler/hooks/useTrunks';
+import { useOutboundData } from './OutboundPhoneScheduler/hooks/useOutboundData';
+import TabNavigation from './OutboundPhoneScheduler/components/TabNavigation';
+
 interface OutboundSchedulerProps {
   // No props needed for this component
 }
@@ -48,10 +54,41 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
   const { user, userClass } = useAuthInfo();
   const getOrganizationId = useOrganizationId();
   
-  // State for scheduled events
-  const [scheduledEvents, setScheduledEvents] = useState<ScheduledEvent[]>([]);
-  const [selectedScheduledEvent, setSelectedScheduledEvent] = useState<ScheduledEvent | null>(null);
-  const [loadingScheduledEvents, setLoadingScheduledEvents] = useState(false);
+  // Use new hooks for data management
+  const {
+    scheduledEvents,
+    selectedScheduledEvent,
+    setSelectedScheduledEvent,
+    loadingScheduledEvents,
+    deletingEvent,
+    deleteError,
+    deleteSuccess,
+    loadScheduledEvents,
+    handleDeleteScheduledEvent
+  } = useScheduledEvents();
+  
+  const {
+    trunks,
+    loadingTrunks,
+    trunkError,
+    trunkSuccess,
+    creatingTrunk,
+    deletingTrunk,
+    loadTrunks,
+    handleDeleteTrunk,
+    handleCreateTrunk: createTrunk
+  } = useTrunks();
+  
+  const {
+    agents,
+    phoneNumbers,
+    loadingAgents,
+    loadingPhoneNumbers,
+    loadAgents,
+    loadPhoneNumbers
+  } = useOutboundData();
+  
+  // Local UI state
   const [showCreateSchedulerModal, setShowCreateSchedulerModal] = useState(false);
   const [showEditSchedulerModal, setShowEditSchedulerModal] = useState(false);
   const [editingScheduledEvent, setEditingScheduledEvent] = useState<ScheduledEvent | null>(null);
@@ -79,34 +116,15 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
   const [callError, setCallError] = useState<string | null>(null);
   const [callSuccess, setCallSuccess] = useState<string | null>(null);
   
-  // Delete state
-  const [deletingEvent, setDeletingEvent] = useState<string | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
-  
-  // Tab state - persist across page refreshes
-  const [activeTab, handleTabChange] = useTabPersistence<'trunk' | 'scheduler' | 'call'>('outboundScheduler', 'trunk');
-  
-  // Trunk state
-  const [trunks, setTrunks] = useState<any[]>([]);
-  const [loadingTrunks, setLoadingTrunks] = useState(false);
+  // Trunk UI state
   const [showCreateTrunkModal, setShowCreateTrunkModal] = useState(false);
   const [trunkForm, setTrunkForm] = useState({
     phone_number: '',
     transport: 'udp'
   });
-  const [trunkError, setTrunkError] = useState<string | null>(null);
-  const [trunkSuccess, setTrunkSuccess] = useState<string | null>(null);
-  const [creatingTrunk, setCreatingTrunk] = useState(false);
-  const [deletingTrunk, setDeletingTrunk] = useState<string | null>(null);
   
-  // Agents state
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [loadingAgents, setLoadingAgents] = useState(false);
-  
-  // Phone numbers state
-  const [phoneNumbers, setPhoneNumbers] = useState<any[]>([]);
-  const [loadingPhoneNumbers, setLoadingPhoneNumbers] = useState(false);
+  // Tab state - persist across page refreshes
+  const [activeTab, handleTabChange] = useTabPersistence<'trunk' | 'scheduler' | 'call'>('outboundScheduler', 'trunk');
 
   const getPhoneNumberValue = useCallback((phone: any) => {
     if (!phone) return '';
@@ -140,7 +158,7 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
     loadAgents();
     loadTrunks();
     loadPhoneNumbers();
-  }, [getOrganizationId]);
+  }, [getOrganizationId, loadScheduledEvents, loadAgents, loadTrunks, loadPhoneNumbers]);
 
   useEffect(() => {
     if (!callForm.caller_number && availableCallerNumbers.length > 0) {
@@ -163,270 +181,18 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
     }
   }, [agents, callForm.agent_name]);
 
-  const loadScheduledEvents = useCallback(async () => {
-    setLoadingScheduledEvents(true);
-    try {
-      const orgId = getOrganizationId();
-      if (!orgId) {
-        setScheduledEvents([]);
-        return;
-      }
-
-      const response: ApiResponse<{ scheduled_events: ScheduledEvent[] }> = await getScheduledEventsByOrganization(orgId);
-      if (response.success && response.data) {
-        const eventsData = response.data;
-        if (eventsData.scheduled_events && Array.isArray(eventsData.scheduled_events)) {
-          setScheduledEvents(eventsData.scheduled_events);
-        } else {
-          setScheduledEvents([]);
-        }
-      } else {
-        setScheduledEvents([]);
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setScheduledEvents([]);
-    } finally {
-      setLoadingScheduledEvents(false);
-    }
-  }, [getOrganizationId]);
-
-  const loadAgents = useCallback(async () => {
-    setLoadingAgents(true);
-    try {
-      const orgId = getOrganizationId();
-      
-      if (!orgId) {
-        setAgents([]);
-        return;
-      }
-      
-      const response: ApiResponse<{ agents: Record<string, unknown> }> = await getAgentsByOrganization(orgId);
-      
-      if (response.success && response.data) {
-        const agentsData = response.data;
-        
-        // Extract agent_prefix from the agents object
-        if (agentsData.agents && typeof agentsData.agents === 'object') {
-          const agentList: Agent[] = Object.keys(agentsData.agents).map(agentPrefix => ({
-            agent_prefix: agentPrefix,
-            name: agentPrefix,
-            organization_id: orgId,
-            ...(agentsData.agents[agentPrefix] as Record<string, unknown>)
-          }));
-          
-          setAgents(agentList);
-        } else {
-          setAgents([]);
-        }
-      } else {
-        setAgents([]);
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setAgents([]);
-    } finally {
-      setLoadingAgents(false);
-    }
-  }, [getOrganizationId]);
-
-  // Load phone numbers
-  const loadPhoneNumbers = useCallback(async () => {
-    setLoadingPhoneNumbers(true);
-    try {
-      const orgId = getOrganizationId();
-      
-      if (!orgId) {
-        setPhoneNumbers([]);
-        return;
-      }
-      const response: ApiResponse<any> = await getPhoneNumbersByOrganization(orgId);
-      
-      if (response.success && response.data) {
-        // Handle different possible response structures
-        let phoneNumbersList = [];
-        if (Array.isArray(response.data)) {
-          phoneNumbersList = response.data;
-        } else if (response.data.phone_numbers && Array.isArray(response.data.phone_numbers)) {
-          phoneNumbersList = response.data.phone_numbers;
-        } else if (response.data.assigned && Array.isArray(response.data.assigned)) {
-          phoneNumbersList = response.data.assigned;
-        }
-        setPhoneNumbers(phoneNumbersList);
-      } else {
-        setPhoneNumbers([]);
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setPhoneNumbers([]);
-    } finally {
-      setLoadingPhoneNumbers(false);
-    }
-  }, [getOrganizationId]);
-
-  // Load trunks
-  const loadTrunks = useCallback(async () => {
-    setLoadingTrunks(true);
-    try {
-      const orgId = getOrganizationId();
-      
-      if (!orgId) {
-        setTrunks([]);
-        return;
-      }
-
-      const baseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
-      const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
-      const response = await fetch(`${baseUrl}/outbound/trunks/organization/${orgId}`, {
-        method: 'GET',
-        headers: {
-          'X-API-Key': apiKey,
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-      }
-
-      const result = await response.json();
-      if (result.success && result.trunks) {
-        setTrunks(Array.isArray(result.trunks) ? result.trunks : []);
-      } else if (result.success && result.data) {
-        setTrunks(Array.isArray(result.data) ? result.data : []);
-      } else {
-setTrunks([]);
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setTrunks([]);
-    } finally {
-      setLoadingTrunks(false);
-    }
-  }, [getOrganizationId]);
-
-  // Create trunk
+  // Create trunk - using hook function
   const handleCreateTrunk = async () => {
-    setTrunkError(null);
-    setTrunkSuccess(null);
-    setCreatingTrunk(true);
-
-    try {
-      const orgId = getOrganizationId();
-      
-      if (!orgId) {
-        setTrunkError('Organization ID not found');
-        return;
-      }
-
-      if (!trunkForm.phone_number) {
-        setTrunkError('Phone number is required');
-        return;
-      }
-
-      const baseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
-      const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
-      // Ensure phone number is in E.164 format (add + if missing)
-      let formattedPhoneNumber = trunkForm.phone_number;
-      if (formattedPhoneNumber && !formattedPhoneNumber.startsWith('+')) {
-        formattedPhoneNumber = '+' + formattedPhoneNumber;
-      }
-      
-      const trunkData = {
-        organization_id: orgId,
-        phone_number: formattedPhoneNumber,
-        transport: trunkForm.transport
-      };
-      const response = await fetch(`${baseUrl}/outbound/trunks/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': apiKey,
-        },
-        body: JSON.stringify(trunkData),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-      }
-
-      const result = await response.json();
-      if (result.success) {
-        setTrunkSuccess('Trunk created successfully!');
-        setTrunkForm({ phone_number: '', transport: 'udp' });
-        setShowCreateTrunkModal(false);
-        // Reload trunks to show the new one
-        await loadTrunks();
-      } else {
-        setTrunkError(result.message || 'Failed to create trunk');
-      }
-    } catch (error: any) {
-      setTrunkError('Failed to create trunk: ' + error.message);
-    } finally {
-      setCreatingTrunk(false);
+    if (!trunkForm.phone_number) {
+      return;
+    }
+    await createTrunk(trunkForm.phone_number, trunkForm.transport);
+    if (trunkSuccess) {
+      setTrunkForm({ phone_number: '', transport: 'udp' });
+      setShowCreateTrunkModal(false);
     }
   };
 
-  // Delete trunk
-  const handleDeleteTrunk = async (trunkId: string) => {
-    setTrunkError(null);
-    setTrunkSuccess(null);
-    setDeletingTrunk(trunkId);
-
-    try {
-      const baseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
-      const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
-      // Find the trunk object to get the name field
-      const trunk = trunks.find(t => (t.trunk_id || t.id) === trunkId);
-      const trunkName = trunk?.name || trunkId;
-      // Try different delete endpoint patterns using the name field
-      const deleteEndpoints = [
-        `${baseUrl}/outbound/trunks/${trunkName}`,  // Pattern 1: Direct name
-        `${baseUrl}/outbound/trunks/delete/${trunkName}`,  // Pattern 2: Delete with name
-        `${baseUrl}/outbound/trunks/remove/${trunkName}`,  // Pattern 3: Remove with name
-      ];
-      
-      let deleteSuccess = false;
-      let lastError = '';
-      
-      for (const endpoint of deleteEndpoints) {
-        try {
-          const response = await fetch(endpoint, {
-            method: 'DELETE',
-            headers: {
-              'X-API-Key': apiKey,
-            },
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            if (result.success) {
-              setTrunkSuccess('Trunk deleted successfully!');
-              await loadTrunks();
-              deleteSuccess = true;
-              break;
-            } else {
-              lastError = result.message || 'Failed to delete trunk';
-            }
-          } else {
-            const errorText = await response.text();
-            lastError = `HTTP error! status: ${response.status} - ${errorText}`;
-          }
-        } catch (endpointError) {
-          lastError = endpointError instanceof Error ? endpointError.message : 'Unknown error';
-        }
-      }
-      
-      if (!deleteSuccess) {
-        throw new Error(`All delete endpoints failed. Last error: ${lastError}`);
-      }
-    } catch (error: any) {
-      setTrunkError('Failed to delete trunk: ' + error.message);
-    } finally {
-      setDeletingTrunk(null);
-    }
-  };
 
   // Form validation function
   const validateForm = useCallback((): boolean => {
@@ -477,36 +243,6 @@ setTrunks([]);
     setSelectedScheduledEvent(event);
   };
 
-  // Delete scheduled event
-  const handleDeleteScheduledEvent = async (eventId: string) => {
-    setDeleteError(null);
-    setDeleteSuccess(null);
-    setDeletingEvent(eventId);
-
-    try {
-      const result = await deleteScheduledEvent(eventId);
-      if (result.success) {
-        setDeleteSuccess('Scheduled event deleted successfully!');
-        
-        // Remove the event from the local state
-        setScheduledEvents(prev => prev.filter(event => event.scheduled_id !== eventId));
-        
-        // Clear selection if the deleted event was selected
-        if (selectedScheduledEvent?.scheduled_id === eventId) {
-          setSelectedScheduledEvent(null);
-        }
-        
-        // Reload scheduled events
-        await loadScheduledEvents();
-      } else {
-        setDeleteError(result.message || 'Failed to delete scheduled event');
-      }
-    } catch (error: any) {
-      setDeleteError('Failed to delete scheduled event: ' + error.message);
-    } finally {
-      setDeletingEvent(null);
-    }
-  };
 
   const handleEditScheduledEvent = (event: ScheduledEvent) => {
     setEditingScheduledEvent(event);
@@ -655,24 +391,12 @@ setTrunks([]);
     setSchedulerSuccess(null);
   };
 
-  const clearDeleteMessages = () => {
-    setDeleteError(null);
-    setDeleteSuccess(null);
-  };
-
   useEffect(() => {
     if (schedulerError || schedulerSuccess) {
       const timer = setTimeout(clearSchedulerMessages, TIMEOUTS.MESSAGE_DISPLAY);
       return () => clearTimeout(timer);
     }
   }, [schedulerError, schedulerSuccess]);
-
-  useEffect(() => {
-    if (deleteError || deleteSuccess) {
-      const timer = setTimeout(clearDeleteMessages, 3000); // 3 seconds instead of 5
-      return () => clearTimeout(timer);
-    }
-  }, [deleteError, deleteSuccess]);
 
   useEffect(() => {
     if (callError || callSuccess) {
@@ -700,51 +424,11 @@ setTrunks([]);
       <div className="flex-1 flex flex-col">
         {/* Header Section - Full Width */}
         <div className={`p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          {/* Tabs */}
-          <div className="flex items-center gap-1 mb-4">
-            <button
-              onClick={() => handleTabChange('trunk')}
-              className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
-                activeTab === 'trunk'
-                  ? isDarkMode
-                    ? 'bg-green-600 text-white'
-                    : 'bg-green-500 text-white'
-                  : isDarkMode
-                    ? 'text-gray-400 hover:text-white hover:bg-gray-700'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-            >
-              Trunk
-            </button>
-            <button
-              onClick={() => handleTabChange('scheduler')}
-              className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
-                activeTab === 'scheduler'
-                  ? isDarkMode
-                    ? 'bg-green-600 text-white'
-                    : 'bg-green-500 text-white'
-                  : isDarkMode
-                    ? 'text-gray-400 hover:text-white hover:bg-gray-700'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-            >
-              Scheduler
-            </button>
-            <button
-              onClick={() => handleTabChange('call')}
-              className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
-                activeTab === 'call'
-                  ? isDarkMode
-                    ? 'bg-green-600 text-white'
-                    : 'bg-green-500 text-white'
-                  : isDarkMode
-                    ? 'text-gray-400 hover:text-white hover:bg-gray-700'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-            >
-              Call
-            </button>
-          </div>
+          {/* Tabs - Using TabNavigation component */}
+          <TabNavigation
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+          />
 
           <div className={`flex items-center gap-4 ${activeTab === 'call' ? 'justify-end' : 'justify-between'}`}>
             {/* Search Bar - Increased Width */}
@@ -919,7 +603,7 @@ setTrunks([]);
                       <p>{deleteError}</p>
                     </div>
                     <button
-                      onClick={clearDeleteMessages}
+                      onClick={() => {}}
                       className="text-red-300 hover:text-red-100 transition-colors duration-200"
                       title="Close message"
                     >
@@ -935,7 +619,7 @@ setTrunks([]);
                       <p>{deleteSuccess}</p>
                     </div>
                     <button
-                      onClick={clearDeleteMessages}
+                      onClick={() => {}}
                       className="text-green-300 hover:text-green-100 transition-colors duration-200"
                       title="Close message"
                     >

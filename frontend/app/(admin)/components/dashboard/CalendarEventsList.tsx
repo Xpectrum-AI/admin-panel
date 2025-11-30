@@ -42,9 +42,9 @@ export default function CalendarEventsList({ events, loading, selectedCalendar, 
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedCalendar?.calendar_id, onEventsRefresh, showError, showSuccess]);
 
-  const handleDeleteEvent = async (event: CalendarEvent) => {
+  const handleDeleteEvent = useCallback(async (event: CalendarEvent) => {
     if (!selectedCalendar?.calendar_id) {
       showError('No calendar selected');
       return;
@@ -72,16 +72,27 @@ export default function CalendarEventsList({ events, loading, selectedCalendar, 
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedCalendar?.calendar_id, onEventsRefresh, showError, showSuccess]);
 
-  const formatSelectedDate = (date: Date) => {
+  // Memoize formatted date to avoid recalculation
+  const formattedSelectedDate = useMemo(() => {
+    if (!selectedDate) return null;
+    return selectedDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }, [selectedDate]);
+
+  const formatSelectedDate = useCallback((date: Date) => {
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
-  };
+  }, []);
   
   if (loading) {
     return (
@@ -125,7 +136,7 @@ export default function CalendarEventsList({ events, loading, selectedCalendar, 
       <div className="space-y-1.5 p-6 flex flex-row items-center justify-between">
         <div className="flex flex-col">
           <h3 className="text-2xl font-semibold leading-none tracking-tight">
-            {selectedDate ? `Events for ${formatSelectedDate(selectedDate)}` : 'All Events'}
+            {formattedSelectedDate ? `Events for ${formattedSelectedDate}` : 'All Events'}
           </h3>
           {selectedCalendar?.timezone && (
             <p className="text-sm text-muted-foreground mt-1">
@@ -328,4 +339,7 @@ export default function CalendarEventsList({ events, loading, selectedCalendar, 
       </div>
     </div>
   );
-} 
+}
+
+// Export memoized component to prevent unnecessary re-renders
+export default React.memo(CalendarEventsList); 

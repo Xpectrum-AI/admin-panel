@@ -1,24 +1,26 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Bot, MessageCircle, Edit, BarChart3, ExternalLink, Plus, RefreshCw, QrCode, Trash2, ChevronDown, CheckCircle, Link2, Search, Loader2, X } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { agentConfigService } from '../../service/agentConfigService';
 import { getAgentDisplayName } from '../../lib/utils/agentNameUtils';
 
-// QR Code Content Component
-const QrCodeContent: React.FC<{ agent: Agent }> = ({ agent }) => {
+// QR Code Content Component - memoized to prevent unnecessary re-renders
+const QrCodeContent: React.FC<{ agent: Agent }> = React.memo(({ agent }) => {
   const [qrUrl, setQrUrl] = useState("");
   const [isQrLoading, setIsQrLoading] = useState(true);
   const qrCodeRef = useRef<HTMLDivElement>(null);
 
-  // Generate QR code URL when component mounts
+  // Generate QR code URL when component mounts - memoized agent.id
+  const agentId = useMemo(() => agent.id, [agent.id]);
+  
   useEffect(() => {
     const generateQrCodeUrl = async () => {
       setIsQrLoading(true);
       try {
         // Use the chatbot page URL with the agent ID
-        const agentUrl = `${window.location.origin}/chatbot/${agent.id}`;
+        const agentUrl = `${window.location.origin}/chatbot/${agentId}`;
         setQrUrl(agentUrl);
       } catch (error) {
         setQrUrl(window.location.origin);
@@ -28,7 +30,7 @@ const QrCodeContent: React.FC<{ agent: Agent }> = ({ agent }) => {
     };
 
     generateQrCodeUrl();
-  }, [agent]);
+  }, [agentId]);
 
   // Render QR code when URL is available
   useEffect(() => {
@@ -73,7 +75,7 @@ const QrCodeContent: React.FC<{ agent: Agent }> = ({ agent }) => {
       </p>
     </div>
   );
-};
+});
 
 interface Agent {
   id: string;
@@ -117,7 +119,7 @@ interface AgentCardsProps {
   organizationId?: string;
 }
 
-export default function AgentCards({
+function AgentCards({
   agents,
   onEditAgent,
   onOpenAgent,
@@ -154,14 +156,14 @@ export default function AgentCards({
   // const [showSuccessModal, setShowSuccessModal] = useState(false);
   // const [successMessage, setSuccessMessage] = useState('');
 
-  // Function to show the QR code modal
-  const showQrCodeModal = (agent: Agent) => {
+  // Function to show the QR code modal - memoized with useCallback
+  const showQrCodeModal = useCallback((agent: Agent) => {
     setQrAgent(agent);
     setShowQrModal(true);
-  };
+  }, []);
 
-  // Function to get the agent URL for QR code
-  const getAgentUrl = async (agent: Agent): Promise<string> => {
+  // Function to get the agent URL for QR code - memoized with useCallback
+  const getAgentUrl = useCallback(async (agent: Agent): Promise<string> => {
     try {
       // For now, we'll use the chatbot page URL with the agent ID
       // In the future, we can create a session-based URL like in CHAT-APP
@@ -169,16 +171,16 @@ export default function AgentCards({
     } catch (error) {
       return window.location.origin;
     }
-  };
+  }, []);
 
-  // Function to show delete confirmation modal
-  const showDeleteConfirmation = (agent: Agent) => {
+  // Function to show delete confirmation modal - memoized with useCallback
+  const showDeleteConfirmation = useCallback((agent: Agent) => {
     setAgentToDelete(agent);
     setShowDeleteModal(true);
-  };
+  }, []);
 
-  // Function to open associate agent modal
-  const handleOpenAssociateModal = async () => {
+  // Function to open associate agent modal - memoized with useCallback
+  const handleOpenAssociateModal = useCallback(async () => {
     setShowAssociateModal(true);
     setSearchQuery('');
     setSelectedAgent(null);
@@ -211,10 +213,10 @@ export default function AgentCards({
     } finally {
       setIsLoadingAgentsList(false);
     }
-  };
+  }, []);
 
-  // Function to handle agent association
-  const handleAssociateAgent = async () => {
+  // Function to handle agent association - memoized with useCallback
+  const handleAssociateAgent = useCallback(async () => {
     if (!selectedAgent || !organizationId) {
       setAssociateError('Please select an agent and ensure organization ID is set');
       return;
@@ -261,16 +263,20 @@ export default function AgentCards({
     } finally {
       setIsAssociating(false);
     }
-  };
+  }, [selectedAgent, organizationId, onRefreshAgents, onAssociateAgent]);
 
-  // Filter agents based on search query
-  const filteredAgents = availableAgents.filter((agent) =>
-    agent.appName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    agent.workspaceName?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter agents based on search query - memoized to avoid recalculation
+  const filteredAgents = useMemo(() => {
+    if (!searchQuery.trim()) return availableAgents;
+    const queryLower = searchQuery.toLowerCase();
+    return availableAgents.filter((agent) =>
+      agent.appName.toLowerCase().includes(queryLower) ||
+      agent.workspaceName?.toLowerCase().includes(queryLower)
+    );
+  }, [availableAgents, searchQuery]);
 
-  // Function to handle agent deletion
-  const handleDeleteAgent = async () => {
+  // Function to handle agent deletion - memoized with useCallback
+  const handleDeleteAgent = useCallback(async () => {
     if (!agentToDelete) return;
 
     setIsDeletingAgent(true);
@@ -324,17 +330,16 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
     } finally {
       setIsDeletingAgent(false);
     }
-  };
+  }, [agentToDelete, onRefreshAgents]);
 
-
-  // Generate avatar color - using website's green theme (same color for all agents)
-  const getAvatarColor = (name: string) => {
+  // Generate avatar color - using website's green theme (same color for all agents) - memoized
+  const getAvatarColor = useCallback((name: string) => {
     // Using the same green color as the website (green-600 to match from-green-600)
     return '#16A34A'; // green-600
-  };
+  }, []);
 
-  // Get status badge styling
-  const getStatusBadge = (status: string) => {
+  // Get status badge styling - memoized
+  const getStatusBadge = useCallback((status: string) => {
     switch (status) {
       case 'active':
         return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
@@ -345,10 +350,10 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
-  };
+  }, []);
 
-  // Combined loading state: show loading if either initial load or refresh is in progress
-  const isLoading = isLoadingAgents || isRefreshingAgents;
+  // Combined loading state: show loading if either initial load or refresh is in progress - memoized
+  const isLoading = useMemo(() => isLoadingAgents || isRefreshingAgents, [isLoadingAgents, isRefreshingAgents]);
 
   // 1. Error State (show first, before loading check)
   if (agentsError) {
@@ -970,3 +975,6 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
       </div>
   );
 }
+
+// Export memoized component to prevent unnecessary re-renders
+export default React.memo(AgentCards);
