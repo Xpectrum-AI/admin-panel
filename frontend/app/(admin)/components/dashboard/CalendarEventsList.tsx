@@ -4,7 +4,7 @@ import { Plus, Clock, MapPin, Users, RefreshCw, Calendar, Edit, Trash2 } from 'l
 import { eventService } from '@/service/eventService';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { formatTimeInTimezone, getTimezoneLabel } from '@/lib/utils/timezoneUtils';
-import { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 
 interface CalendarEventsListProps {
   events: CalendarEvent[];
@@ -23,7 +23,7 @@ export default function CalendarEventsList({ events, loading, selectedCalendar, 
   
   
 
-  const handleSyncGoogleCalendar = async () => {
+  const handleSyncGoogleCalendar = useCallback(async () => {
     if (!selectedCalendar?.calendar_id) {
       showError('No calendar selected');
       return;
