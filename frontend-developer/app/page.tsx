@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import {
   Bot,
   Phone,
@@ -26,8 +27,7 @@ import { useAuthInfo, useLogoutFunction } from '@propelauth/react';
 import { SyncLoader } from 'react-spinners';
 import { useRouter } from 'next/navigation';
 
-import { AgentsTab, PhoneNumbersTab, SMSTab, WhatsAppTab, GmailTab, KnowledgeBaseTab, OrgSetup } from './components';
-import ConversationLogsTab from './components/ConversationLogsTab';
+import { OrgSetup } from './components';
 import Navbar from './components/Navbar';
 import ChatSidebar from './components/ChatSidebar';
 import MobileNav from './components/MobileNav';
@@ -35,6 +35,72 @@ import Sidebar from './components/Sidebar';
 import { useTheme } from './contexts/ThemeContext';
 import { useTabPersistence } from '../hooks/useTabPersistence';
 import { DashboardService, DashboardStats, OrganizationInfo } from '../service/dashboardService';
+
+// Lazy load all tabs with dynamic imports
+const AgentsTab = dynamic(() => import('./components/AgentsTab'), {
+  ssr: false,
+  loading: () => <TabSkeleton />
+});
+
+const PhoneNumbersTab = dynamic(() => import('./components/PhoneNumbersTab'), {
+  ssr: false,
+  loading: () => <TabSkeleton />
+});
+
+const SMSTab = dynamic(() => import('./components/SMSTab'), {
+  ssr: false,
+  loading: () => <TabSkeleton />
+});
+
+const WhatsAppTab = dynamic(() => import('./components/WhatsAppTab'), {
+  ssr: false,
+  loading: () => <TabSkeleton />
+});
+
+const GmailTab = dynamic(() => import('./components/GmailTab'), {
+  ssr: false,
+  loading: () => <TabSkeleton />
+});
+
+const KnowledgeBaseTab = dynamic(() => import('./components/knowledge-base/KnowledgeBaseTab'), {
+  ssr: false,
+  loading: () => <TabSkeleton />
+});
+
+const ConversationLogsTab = dynamic(() => import('./components/ConversationLogsTab'), {
+  ssr: false,
+  loading: () => <TabSkeleton />
+});
+
+// Loading skeleton component for tabs
+function TabSkeleton() {
+  const { isDarkMode } = useTheme();
+  return (
+    <div className={`max-w-7xl mx-auto ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} min-h-[400px]`}>
+      <div className={`rounded-2xl p-8 border ${isDarkMode ? 'bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border-gray-700/50' : 'bg-white border-gray-200 shadow-lg'}`}>
+        <div className="animate-pulse space-y-6">
+          <div className="flex items-center gap-4">
+            <div className={`h-12 w-12 rounded-xl ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+            <div className="flex-1 space-y-2">
+              <div className={`h-6 w-48 rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+              <div className={`h-4 w-32 rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <div className={`h-4 w-full rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+            <div className={`h-4 w-5/6 rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+            <div className={`h-4 w-4/6 rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className={`h-32 rounded-xl ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Custom WhatsApp icon component
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -60,7 +126,7 @@ const navigationItems = [
 
 export default function DeveloperDashboard() {
   const [activeNavItem, handleNavItemChange] = useTabPersistence<string>('mainNavigation', 'Agents');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   const { isDarkMode, toggleTheme } = useTheme();
 

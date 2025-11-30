@@ -405,6 +405,137 @@ jobs:
           echo "🌍 Environment: production"
           echo "🔧 Stack: frontend-prod"
 
+      - name: Record deployment to tracking files
+        run: |
+          set -e
+          
+          # Get deployment information
+          DEPLOYMENT_DATE=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          DEPLOYMENT_DATE_ISO=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          COMMIT_SHA="${{ github.sha }}"
+          DEPLOYED_BY="${{ github.actor }}"
+          PLATFORM="DigitalOcean"
+          
+          ADMIN_RELEASE_TAG="${{ steps.admin-prod-tag.outputs.release_tag }}"
+          ADMIN_PROD_TAG="${{ steps.admin-prod-tag.outputs.production_tag }}"
+          DEVELOPER_RELEASE_TAG="${{ steps.developer-prod-tag.outputs.release_tag }}"
+          DEVELOPER_PROD_TAG="${{ steps.developer-prod-tag.outputs.production_tag }}"
+          
+          ADMIN_URL="${{ steps.pulumi-outputs.outputs.admin-url }}"
+          DEVELOPER_URL="${{ steps.pulumi-outputs.outputs.developer-url }}"
+          
+          # Create deployment record JSON
+          DEPLOYMENT_JSON=$(cat <<EOF
+          {
+            "deploymentDate": "$DEPLOYMENT_DATE_ISO",
+            "platform": "$PLATFORM",
+            "adminReleaseTag": "$ADMIN_RELEASE_TAG",
+            "adminProductionTag": "$ADMIN_PROD_TAG",
+            "developerReleaseTag": "$DEVELOPER_RELEASE_TAG",
+            "developerProductionTag": "$DEVELOPER_PROD_TAG",
+            "deployedBy": "$DEPLOYED_BY",
+            "commitSha": "$COMMIT_SHA",
+            "adminUrl": "${ADMIN_URL:-N/A}",
+            "developerUrl": "${DEVELOPER_URL:-N/A}",
+            "status": "Success",
+            "workflowRunId": "${{ github.run_id }}",
+            "workflowRunUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          }
+          EOF
+          )
+          
+          # Read existing deployments JSON
+          if [ -f "deployments/production-deployments.json" ]; then
+            # Use jq if available, otherwise use Python
+            if command -v jq >/dev/null 2>&1; then
+              # Prepend new deployment to the deployments array
+              jq --argjson newDeployment "$DEPLOYMENT_JSON" '.deployments = [$newDeployment] + .deployments | .lastUpdated = now' deployments/production-deployments.json > deployments/production-deployments.json.tmp
+              mv deployments/production-deployments.json.tmp deployments/production-deployments.json
+            else
+              # Fallback to Python
+              python3 <<PYTHON_SCRIPT
+          import json
+          import sys
+          from datetime import datetime
+          
+          with open('deployments/production-deployments.json', 'r') as f:
+              data = json.load(f)
+          
+          new_deployment = json.loads('''$DEPLOYMENT_JSON''')
+          data['deployments'].insert(0, new_deployment)
+          data['lastUpdated'] = datetime.utcnow().isoformat() + 'Z'
+          
+          with open('deployments/production-deployments.json', 'w') as f:
+              json.dump(data, f, indent=2)
+          PYTHON_SCRIPT
+            fi
+          else
+            echo "Warning: deployments/production-deployments.json not found, creating it..."
+            mkdir -p deployments
+            cat > deployments/production-deployments.json <<EOF
+          {
+            "deployments": [$DEPLOYMENT_JSON],
+            "lastUpdated": "$DEPLOYMENT_DATE_ISO",
+            "metadata": {
+              "description": "Production deployment history tracking which images were deployed to production",
+              "format": "1.0"
+            }
+          }
+          EOF
+          fi
+          
+          # Update Markdown file
+          MARKDOWN_ROW="| $DEPLOYMENT_DATE | $PLATFORM | \`$ADMIN_RELEASE_TAG\` | \`$ADMIN_PROD_TAG\` | \`$DEVELOPER_RELEASE_TAG\` | \`$DEVELOPER_PROD_TAG\` | $DEPLOYED_BY | \`${COMMIT_SHA:0:7}\` | ✅ Success |"
+          
+          if [ -f "deployments/PRODUCTION_DEPLOYMENTS.md" ]; then
+            # Insert new row after the header row (line 5)
+            sed -i "5a\\$MARKDOWN_ROW" deployments/PRODUCTION_DEPLOYMENTS.md
+          else
+            echo "Warning: deployments/PRODUCTION_DEPLOYMENTS.md not found, creating it..."
+            mkdir -p deployments
+            cat > deployments/PRODUCTION_DEPLOYMENTS.md <<EOF
+          # Production Deployment History
+          
+          This file tracks all production deployments, including which release images were promoted to production.
+          
+          ## Deployment Log
+          
+          | Date | Platform | Admin Release Tag | Admin Production Tag | Developer Release Tag | Developer Production Tag | Deployed By | Commit SHA | Status |
+          |------|----------|-------------------|---------------------|----------------------|-------------------------|-------------|------------|--------|
+          $MARKDOWN_ROW
+          
+          ---
+          
+          ## Notes
+          
+          - **Release Tag**: The source image tag from the release environment
+          - **Production Tag**: The production image tag created during deployment
+          - **Platform**: Either "DigitalOcean" or "AWS"
+          - **Status**: "Success" or "Failed"
+          
+          ---
+          
+          *This file is automatically updated by the deployment workflows.*
+          EOF
+          fi
+          
+          echo "✅ Deployment recorded to tracking files"
+
+      - name: Commit and push deployment tracking
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          git add deployments/production-deployments.json deployments/PRODUCTION_DEPLOYMENTS.md
+          
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "📝 Record production deployment: ${{ steps.admin-prod-tag.outputs.production_tag }} and ${{ steps.developer-prod-tag.outputs.production_tag }}"
+            git push
+            echo "✅ Deployment tracking committed and pushed"
+          fi
+
   deployment-failure:
     needs: deploy-production
     runs-on: ubuntu-latest
