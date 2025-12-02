@@ -1,0 +1,22 @@
+{
+  "deployments": [{
+  "deploymentDate": "2025-12-02T08:47:25Z",
+  "platform": "DigitalOcean",
+  "adminReleaseTag": "admin-release-2025-12-01-001",
+  "adminProductionTag": "admin-production-2025-12-01-001",
+  "developerReleaseTag": "developer-release-2025-12-01-001",
+  "developerProductionTag": "developer-production-2025-12-01-001",
+  "deployedBy": "vijay-xpectrum",
+  "commitSha": "eef82705b7ac91a25bd085e33209837971a93c46",
+  "adminUrl": "https://admin.xpectrum-ai.com",
+  "developerUrl": "https://developer.xpectrum-ai.com",
+  "status": "Success",
+  "workflowRunId": "19852423305",
+  "workflowRunUrl": "https://github.com/Xpectrum-AI/admin-panel/actions/runs/19852423305"
+}],
+  "lastUpdated": "2025-12-02T08:47:25Z",
+  "metadata": {
+    "description": "Production deployment history tracking which images were deployed to production",
+    "format": "1.0"
+  }
+}
