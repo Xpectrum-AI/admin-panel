@@ -464,73 +464,27 @@ jobs:
           ADMIN_FULL_IMAGE="${ADMIN_REPO}:${ADMIN_TAG}"
           DEVELOPER_FULL_IMAGE="${DEVELOPER_REPO}:${DEVELOPER_TAG}"
           
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          # deploy-release summary
+          echo "🎉 Release Deployment Complete!"
+          echo "📦 Admin Panel Image: $ADMIN_FULL_IMAGE"
+          echo "📦 Developer Dashboard Image: $DEVELOPER_FULL_IMAGE"
+          echo "🌍 Environment: release"
+          echo "🔧 Stack: frontend-release"
+          echo "🏷️  Admin Panel Tag: $ADMIN_TAG"
+          echo "🏷️  Developer Dashboard Tag: $DEVELOPER_TAG"
           
-          ## 🚀 Release Deployment Complete!
-          
-          ---
-          
-          ### 📦 Admin Panel
-          
-          #### Image Information
-          - **Full Image Name:** `EOF'
-          echo "${ADMIN_FULL_IMAGE}" >> $GITHUB_STEP_SUMMARY
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          `
-          - **Image Tag:** `EOF'
-          echo "${ADMIN_TAG}" >> $GITHUB_STEP_SUMMARY
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          `
-          - **Registry:** `EOF'
-          echo "${ADMIN_REPO}" >> $GITHUB_STEP_SUMMARY
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          `
-          
-          #### Deployment Details
-          - **Environment:** `release`
-          - **Stack:** `frontend-release`
-          
-          #### For Production Deployment
-          Use this image tag when promoting to production:
-          `EOF'
-          echo "${ADMIN_TAG}" >> $GITHUB_STEP_SUMMARY
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          `
-          
-          ---
-          
-          ### 📦 Developer Dashboard
-          
-          #### Image Information
-          - **Full Image Name:** `EOF'
-          echo "${DEVELOPER_FULL_IMAGE}" >> $GITHUB_STEP_SUMMARY
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          `
-          - **Image Tag:** `EOF'
-          echo "${DEVELOPER_TAG}" >> $GITHUB_STEP_SUMMARY
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          `
-          - **Registry:** `EOF'
-          echo "${DEVELOPER_REPO}" >> $GITHUB_STEP_SUMMARY
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          `
-          
-          #### Deployment Details
-          - **Environment:** `release`
-          - **Stack:** `frontend-release`
-          
-          #### For Production Deployment
-          Use this image tag when promoting to production:
-          `EOF'
-          echo "${DEVELOPER_TAG}" >> $GITHUB_STEP_SUMMARY
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          `
-          
-          ---
-          
-          <sub>Job summary generated at run-time</sub>
-          EOF
+          # Add to GitHub Actions summary
+          echo "## 🚀 Release Deployment Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Admin Panel" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image Tag**: \`$ADMIN_TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Developer Dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image Tag**: \`$DEVELOPER_TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📌 For Production Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "Use these image tags when promoting to production:" >> $GITHUB_STEP_SUMMARY
+          echo "- Admin Panel: \`$ADMIN_TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Developer Dashboard: \`$DEVELOPER_TAG\`" >> $GITHUB_STEP_SUMMARY
           
           echo "✅ Deployment summary generated"
 
