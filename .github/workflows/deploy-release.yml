@@ -50,7 +50,7 @@ jobs:
 
   deploy-release:
     runs-on: ubuntu-latest
-    environment: production
+    environment: release
     needs: test
 
     steps:
@@ -214,11 +214,11 @@ jobs:
 
       - name: Build and push Main Frontend image to DOCR
         env:
-          NEXT_PUBLIC_LIVE_API_URL: ${{ vars.PRODUCTION_LIVE_API_URL }}
-          NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.PRODUCTION_PROPELAUTH_URL }}
-          NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.PRODUCTION_LIVE_API_KEY }}
-          NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_PROPELAUTH_API_KEY }}
-          NEXT_PUBLIC_SUPER_ADMIN_ORG_ID: ${{ secrets.PRODUCTION_SUPER_ADMIN_ORG_ID }}
+          NEXT_PUBLIC_LIVE_API_URL: ${{ vars.REL_LIVE_API_URL }}
+          NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.REL_PROPELAUTH_URL }}
+          NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.REL_LIVE_API_KEY }}
+          NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.REL_PROPELAUTH_API_KEY }}
+          NEXT_PUBLIC_SUPER_ADMIN_ORG_ID: ${{ secrets.REL_SUPER_ADMIN_ORG_ID }}
         run: |
           # Use the specific registry name
           REPO="registry.digitalocean.com/xpectrum-main-app-dev/admin-release"
@@ -248,29 +248,28 @@ jobs:
 
       - name: Build and push Developer Frontend image to DOCR
         env:
-          NEXT_PUBLIC_LIVE_API_URL: ${{ vars.PRODUCTION_LIVE_API_URL }}
-          NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL: ${{ vars.PRODUCTION_DEVELOPMENT_PROPELAUTH_URL }}
-          NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.PRODUCTION_LIVE_API_KEY }}
-          NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY: ${{ secrets.PRODUCTION_DEVELOPMENT_PROPELAUTH_API_KEY }}
-          NEXT_PUBLIC_MODEL_API_BASE_URL: ${{ vars.PRODUCTION_MODEL_API_BASE_URL }}
-          NEXT_PUBLIC_MODEL_API_KEY: ${{ secrets.PRODUCTION_MODEL_API_KEY }}
-          NEXT_PUBLIC_CHATBOT_API_URL: ${{ vars.PRODUCTION_CHATBOT_API_URL }}
-          NEXT_PUBLIC_CHATBOT_API_KEY: ${{ secrets.PRODUCTION_CHATBOT_API_KEY }}
-          NEXT_PUBLIC_ELEVEN_LABS_API_KEY: ${{ secrets.PRODUCTION_ELEVEN_LABS_API_KEY }}
-          NEXT_PUBLIC_OPEN_AI_API_KEY: ${{ secrets.PRODUCTION_OPEN_AI_API_KEY }}
-          NEXT_PUBLIC_WHISPER_API_KEY: ${{ secrets.PRODUCTION_WHISPER_API_KEY }}
-          NEXT_PUBLIC_DEEPGRAM_API_KEY: ${{ secrets.PRODUCTION_DEEPGRAM_API_KEY }}
-          NEXT_PUBLIC_CARTESIA_API_KEY: ${{ secrets.PRODUCTION_CARTESIA_API_KEY }}
-          NEXT_PUBLIC_CARTESIA_VOICE_ID: ${{ vars.PRODUCTION_CARTESIA_VOICE_ID }}
-          NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID: ${{ vars.PRODUCTION_ELEVEN_LABS_VOICE_ID }}
-          NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN: ${{ vars.PRODUCTION_DIFY_CONSOLE_ORIGIN }}
-          NEXT_PUBLIC_DIFY_ADMIN_EMAIL: ${{ vars.PRODUCTION_DIFY_ADMIN_EMAIL }}
-          NEXT_PUBLIC_DIFY_ADMIN_PASSWORD: ${{ secrets.PRODUCTION_DIFY_ADMIN_PASSWORD }}
-          NEXT_PUBLIC_DIFY_WORKSPACE_ID: ${{ vars.PRODUCTION_DIFY_WORKSPACE_ID }}
-          NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY: ${{ secrets.PRODUCTION_MODEL_OPEN_AI_API_KEY }}
-          NEXT_PUBLIC_MODEL_GROQ_API_KEY: ${{ secrets.PRODUCTION_MODEL_GROQ_API_KEY }}
-          NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY: ${{ secrets.PRODUCTION_MODEL_ANTHROPIC_API_KEY }}
-          NEXT_PUBLIC_DIFY_BASE_URL: ${{ vars.PRODUCTION_DIFY_BASE_URL }}
+          NEXT_PUBLIC_LIVE_API_URL: ${{ vars.REL_LIVE_API_URL }}
+          NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL: ${{ vars.REL_DEVELOPER_PROPELAUTH_URL }}
+          NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.REL_LIVE_API_KEY }}
+          NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY: ${{ secrets.REL_DEVELOPER_PROPELAUTH_API_KEY }}
+          NEXT_PUBLIC_MODEL_API_BASE_URL: ${{ vars.REL_MODEL_API_BASE_URL }}
+          NEXT_PUBLIC_CHATBOT_API_URL: ${{ vars.REL_CHATBOT_API_URL }}
+          NEXT_PUBLIC_CHATBOT_API_KEY: ${{ secrets.REL_CHATBOT_API_KEY }}
+          NEXT_PUBLIC_ELEVEN_LABS_API_KEY: ${{ secrets.REL_ELEVEN_LABS_API_KEY }}
+          NEXT_PUBLIC_OPEN_AI_API_KEY: ${{ secrets.REL_OPEN_AI_API_KEY }}
+          NEXT_PUBLIC_WHISPER_API_KEY: ${{ secrets.REL_WHISPER_API_KEY }}
+          NEXT_PUBLIC_DEEPGRAM_API_KEY: ${{ secrets.REL_DEEPGRAM_API_KEY }}
+          NEXT_PUBLIC_CARTESIA_API_KEY: ${{ secrets.REL_CARTESIA_API_KEY }}
+          NEXT_PUBLIC_CARTESIA_VOICE_ID: ${{ vars.REL_CARTESIA_VOICE_ID }}
+          NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID: ${{ vars.REL_ELEVEN_LABS_VOICE_ID }}
+          NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN: ${{ vars.REL_DIFY_CONSOLE_ORIGIN }}
+          NEXT_PUBLIC_DIFY_ADMIN_EMAIL: ${{ vars.REL_DIFY_ADMIN_EMAIL }}
+          NEXT_PUBLIC_DIFY_ADMIN_PASSWORD: ${{ secrets.REL_DIFY_ADMIN_PASSWORD }}
+          NEXT_PUBLIC_DIFY_WORKSPACE_ID: ${{ vars.REL_DIFY_WORKSPACE_ID }}
+          NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY: ${{ secrets.REL_MODEL_OPEN_AI_API_KEY }}
+          NEXT_PUBLIC_MODEL_GROQ_API_KEY: ${{ secrets.REL_MODEL_GROQ_API_KEY }}
+          NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY: ${{ secrets.REL_MODEL_ANTHROPIC_API_KEY }}
+          NEXT_PUBLIC_DIFY_BASE_URL: ${{ vars.REL_DIFY_BASE_URL }}
         run: |
           # Use the specific registry name
           REPO="registry.digitalocean.com/xpectrum-main-app-dev/developer-release"
@@ -287,7 +286,6 @@ jobs:
             --build-arg NEXT_PUBLIC_LIVE_API_KEY="${NEXT_PUBLIC_LIVE_API_KEY}" \
             --build-arg NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY="${NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY}" \
             --build-arg NEXT_PUBLIC_MODEL_API_BASE_URL="${NEXT_PUBLIC_MODEL_API_BASE_URL}" \
-            --build-arg NEXT_PUBLIC_MODEL_API_KEY="${NEXT_PUBLIC_MODEL_API_KEY}" \
             --build-arg NEXT_PUBLIC_CHATBOT_API_URL="${NEXT_PUBLIC_CHATBOT_API_URL}" \
             --build-arg NEXT_PUBLIC_CHATBOT_API_KEY="${NEXT_PUBLIC_CHATBOT_API_KEY}" \
             --build-arg NEXT_PUBLIC_ELEVEN_LABS_API_KEY="${NEXT_PUBLIC_ELEVEN_LABS_API_KEY}" \
@@ -359,36 +357,36 @@ jobs:
           # Admin Panel and Developer Dashboard share the same namespace (release:)
           # Both use the same propelauthApiKey and propelauthUrl config keys
           # Using Developer Dashboard values since they're more specific
-          pulumi config set release:propelauthApiKey "${{ secrets.PRODUCTION_PROPELAUTH_API_KEY }}" --secret
-          pulumi config set release:liveApiKey "${{ secrets.PRODUCTION_LIVE_API_KEY }}" --secret
-          pulumi config set release:propelauthUrl "${{ vars.PRODUCTION_DEVELOPMENT_PROPELAUTH_URL }}"
-          pulumi config set release:liveApiUrl "${{ vars.PRODUCTION_LIVE_API_URL }}"
-          pulumi config set release:superAdminOrgId "${{ secrets.PRODUCTION_SUPER_ADMIN_ORG_ID }}"
+          pulumi config set release:propelauthApiKey "${{ secrets.REL_PROPELAUTH_API_KEY }}" --secret
+          pulumi config set release:liveApiKey "${{ secrets.REL_LIVE_API_KEY }}" --secret
+          pulumi config set release:propelauthUrl "${{ vars.REL_DEVELOPER_PROPELAUTH_URL }}"
+          pulumi config set release:liveApiUrl "${{ vars.REL_LIVE_API_URL }}"
+          pulumi config set release:superAdminOrgId "${{ secrets.REL_SUPER_ADMIN_ORG_ID }}"
           
-          # Developer Dashboard secrets - using PRODUCTION_* secrets, storing in release: namespace
-          pulumi config set release:difyAdminPassword "${{ secrets.PRODUCTION_DIFY_ADMIN_PASSWORD }}" --secret
-          pulumi config set release:modelOpenAiApiKey "${{ secrets.PRODUCTION_MODEL_OPEN_AI_API_KEY }}" --secret
-          pulumi config set release:modelGroqApiKey "${{ secrets.PRODUCTION_MODEL_GROQ_API_KEY }}" --secret
-          pulumi config set release:modelAnthropicApiKey "${{ secrets.PRODUCTION_MODEL_ANTHROPIC_API_KEY }}" --secret
-          pulumi config set release:chatbotApiKey "${{ secrets.PRODUCTION_CHATBOT_API_KEY }}" --secret
-          pulumi config set release:elevenLabsApiKey "${{ secrets.PRODUCTION_ELEVEN_LABS_API_KEY }}" --secret
-          pulumi config set release:openAiApiKey "${{ secrets.PRODUCTION_OPEN_AI_API_KEY }}" --secret
-          pulumi config set release:whisperApiKey "${{ secrets.PRODUCTION_WHISPER_API_KEY }}" --secret
-          pulumi config set release:deepgramApiKey "${{ secrets.PRODUCTION_DEEPGRAM_API_KEY }}" --secret
-          pulumi config set release:cartesiaApiKey "${{ secrets.PRODUCTION_CARTESIA_API_KEY }}" --secret
+          # Developer Dashboard secrets - using REL_* secrets, storing in release: namespace
+          pulumi config set release:difyAdminPassword "${{ secrets.REL_DIFY_ADMIN_PASSWORD }}" --secret
+          pulumi config set release:modelOpenAiApiKey "${{ secrets.REL_MODEL_OPEN_AI_API_KEY }}" --secret
+          pulumi config set release:modelGroqApiKey "${{ secrets.REL_MODEL_GROQ_API_KEY }}" --secret
+          pulumi config set release:modelAnthropicApiKey "${{ secrets.REL_MODEL_ANTHROPIC_API_KEY }}" --secret
+          pulumi config set release:chatbotApiKey "${{ secrets.REL_CHATBOT_API_KEY }}" --secret
+          pulumi config set release:elevenLabsApiKey "${{ secrets.REL_ELEVEN_LABS_API_KEY }}" --secret
+          pulumi config set release:openAiApiKey "${{ secrets.REL_OPEN_AI_API_KEY }}" --secret
+          pulumi config set release:whisperApiKey "${{ secrets.REL_WHISPER_API_KEY }}" --secret
+          pulumi config set release:deepgramApiKey "${{ secrets.REL_DEEPGRAM_API_KEY }}" --secret
+          pulumi config set release:cartesiaApiKey "${{ secrets.REL_CARTESIA_API_KEY }}" --secret
           
-          # Developer Dashboard config values - using PRODUCTION_* vars, storing in release: namespace
+          # Developer Dashboard config values - using REL_* vars, storing in release: namespace
           # Note: propelauthUrl already set above (shared with Admin Panel)
-          pulumi config set release:apiBaseUrl "${{ vars.PRODUCTION_MODEL_API_BASE_URL }}"
+          pulumi config set release:apiBaseUrl "${{ vars.REL_MODEL_API_BASE_URL }}"
           pulumi config set release:enableEmailVerification "true"
-          pulumi config set release:difyConsoleOrigin "${{ vars.PRODUCTION_DIFY_CONSOLE_ORIGIN }}"
-          pulumi config set release:difyAdminEmail "${{ vars.PRODUCTION_DIFY_ADMIN_EMAIL }}"
-          pulumi config set release:difyWorkspaceId "${{ vars.PRODUCTION_DIFY_WORKSPACE_ID }}"
-          pulumi config set release:difyBaseUrl "${{ vars.PRODUCTION_DIFY_BASE_URL }}"
-          pulumi config set release:chatbotApiUrl "${{ vars.PRODUCTION_CHATBOT_API_URL }}"
-          pulumi config set release:cartesiaVoiceId "${{ vars.PRODUCTION_CARTESIA_VOICE_ID }}"
-          pulumi config set release:elevenLabsVoiceId "${{ vars.PRODUCTION_ELEVEN_LABS_VOICE_ID }}"
-          pulumi config set release:liveApiUrl "${{ vars.PRODUCTION_LIVE_API_URL }}"
+          pulumi config set release:difyConsoleOrigin "${{ vars.REL_DIFY_CONSOLE_ORIGIN }}"
+          pulumi config set release:difyAdminEmail "${{ vars.REL_DIFY_ADMIN_EMAIL }}"
+          pulumi config set release:difyWorkspaceId "${{ vars.REL_DIFY_WORKSPACE_ID }}"
+          pulumi config set release:difyBaseUrl "${{ vars.REL_DIFY_BASE_URL }}"
+          pulumi config set release:chatbotApiUrl "${{ vars.REL_CHATBOT_API_URL }}"
+          pulumi config set release:cartesiaVoiceId "${{ vars.REL_CARTESIA_VOICE_ID }}"
+          pulumi config set release:elevenLabsVoiceId "${{ vars.REL_ELEVEN_LABS_VOICE_ID }}"
+          pulumi config set release:liveApiUrl "${{ vars.REL_LIVE_API_URL }}"
           
           # Set image tags (from generated tags)
           pulumi config set release:adminImageTag "${{ steps.admin-image-tag.outputs.image_tag }}"
@@ -466,73 +464,27 @@ jobs:
           ADMIN_FULL_IMAGE="${ADMIN_REPO}:${ADMIN_TAG}"
           DEVELOPER_FULL_IMAGE="${DEVELOPER_REPO}:${DEVELOPER_TAG}"
           
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          # deploy-release summary
+          echo "🎉 Release Deployment Complete!"
+          echo "📦 Admin Panel Image: $ADMIN_FULL_IMAGE"
+          echo "📦 Developer Dashboard Image: $DEVELOPER_FULL_IMAGE"
+          echo "🌍 Environment: release"
+          echo "🔧 Stack: frontend-release"
+          echo "🏷️  Admin Panel Tag: $ADMIN_TAG"
+          echo "🏷️  Developer Dashboard Tag: $DEVELOPER_TAG"
           
-          ## 🚀 Release Deployment Complete!
-          
-          ---
-          
-          ### 📦 Admin Panel
-          
-          #### Image Information
-          - **Full Image Name:** `EOF'
-          echo "${ADMIN_FULL_IMAGE}" >> $GITHUB_STEP_SUMMARY
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          `
-          - **Image Tag:** `EOF'
-          echo "${ADMIN_TAG}" >> $GITHUB_STEP_SUMMARY
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          `
-          - **Registry:** `EOF'
-          echo "${ADMIN_REPO}" >> $GITHUB_STEP_SUMMARY
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          `
-          
-          #### Deployment Details
-          - **Environment:** `release`
-          - **Stack:** `frontend-release`
-          
-          #### For Production Deployment
-          Use this image tag when promoting to production:
-          `EOF'
-          echo "${ADMIN_TAG}" >> $GITHUB_STEP_SUMMARY
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          `
-          
-          ---
-          
-          ### 📦 Developer Dashboard
-          
-          #### Image Information
-          - **Full Image Name:** `EOF'
-          echo "${DEVELOPER_FULL_IMAGE}" >> $GITHUB_STEP_SUMMARY
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          `
-          - **Image Tag:** `EOF'
-          echo "${DEVELOPER_TAG}" >> $GITHUB_STEP_SUMMARY
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          `
-          - **Registry:** `EOF'
-          echo "${DEVELOPER_REPO}" >> $GITHUB_STEP_SUMMARY
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          `
-          
-          #### Deployment Details
-          - **Environment:** `release`
-          - **Stack:** `frontend-release`
-          
-          #### For Production Deployment
-          Use this image tag when promoting to production:
-          `EOF'
-          echo "${DEVELOPER_TAG}" >> $GITHUB_STEP_SUMMARY
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          `
-          
-          ---
-          
-          <sub>Job summary generated at run-time</sub>
-          EOF
+          # Add to GitHub Actions summary
+          echo "## 🚀 Release Deployment Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Admin Panel" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image Tag**: \`$ADMIN_TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Developer Dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image Tag**: \`$DEVELOPER_TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📌 For Production Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "Use these image tags when promoting to production:" >> $GITHUB_STEP_SUMMARY
+          echo "- Admin Panel: \`$ADMIN_TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Developer Dashboard: \`$DEVELOPER_TAG\`" >> $GITHUB_STEP_SUMMARY
           
           echo "✅ Deployment summary generated"
 
