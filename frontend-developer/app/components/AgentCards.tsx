@@ -600,6 +600,15 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
                     Open Agent
                   </button>
                   
+                  {/* Demo Button */}
+                  <button
+                    onClick={() => window.open(`/demo/${agent.id}`, '_blank')}
+                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-3 px-4 rounded-lg transition-all duration-200 shadow-sm font-medium text-sm flex items-center justify-center gap-2 mb-3"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Demo
+                  </button>
+                  
                   {/* Secondary Actions - Icon Buttons with Hover Labels */}
                   <div className="flex items-center justify-center gap-2">
                     <button

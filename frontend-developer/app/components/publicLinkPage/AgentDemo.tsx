@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, Mic, Send, MessageSquare, Phone, X, Volume2, VolumeX, Loader2, Share2, Sparkles } from 'lucide-react';
+import { 
+  Bot, Mic, Send, MessageSquare, Phone, X, Volume2, 
+  VolumeX, Loader2, Share2, Settings, Upload, Image as ImageIcon, Palette
+} from 'lucide-react';
 import MarkdownRenderer from '@/app/components/MarkdownRenderer'; 
 import LiveKitVoiceChat from '@/app/components/config/LiveKitVoiceChat'; 
 import { useParams } from 'next/navigation';
 
-// 1. Updated Interface matching your JSON structure exactly
 interface AgentInfo {
   organization_id: string;
   chatbot_api: string;
@@ -17,7 +19,6 @@ interface AgentInfo {
   max_nudges?: number;
   typing_volume?: number;
   max_call_duration?: number;
-  // Fallback fields (in case you add them to API later)
   name?: string;
   avatar?: string;
   description?: string;
@@ -26,10 +27,20 @@ interface AgentInfo {
 export default function AgentDemoPage(params : { agentId: string }) {
   const agentId = params?.agentId as string;
 
-  // State
+  // Data State
   const [agent, setAgent] = useState<AgentInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // Customization State
+  const [themeColor, setThemeColor] = useState('#16a34a'); // Default Green-600
+  const [backgroundImage, setBackgroundImage] = useState<string>('');
+  const [logoImage, setLogoImage] = useState<string>('');
+  const [showSettings, setShowSettings] = useState(false);
+
+  // UI State
+  const [isChatOpen, setIsChatOpen] = useState(true); // Open by default
+  const [activeTab, setActiveTab] = useState<'chat' | 'voice'>('chat');
   
   // Chat State
   const [messages, setMessages] = useState<Array<{role: 'user' | 'bot', content: string, timestamp: Date}>>([]);
@@ -42,24 +53,33 @@ export default function AgentDemoPage(params : { agentId: string }) {
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
 
-  // 2. Fetch Agent Data on Mount
+  // --- Helpers for File Uploads ---
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: (val: string) => void) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setter(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // --- Fetch Agent Data ---
   useEffect(() => {
     const fetchAgent = async () => {
       try {
-           const response = await fetch(`/api/agents/info/${agentId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
-        },
-      });
+        const response = await fetch(`/api/agents/info/${agentId}`, {
+            method: 'GET',
+            headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': process.env.NEXT_PUBLIC_LIVE_API_KEY || '',
+            },
+        });
         const data = await response.json();
         
-        // CHECK: Validating against your specific JSON structure
         if (data.status === 'success' && data.agent_info) {
           setAgent(data.agent_info);
-          
-          // Set initial welcome message from JSON
           if (data.agent_info.initial_message) {
             setMessages([{
               role: 'bot',
@@ -80,12 +100,13 @@ export default function AgentDemoPage(params : { agentId: string }) {
     if (agentId) fetchAgent();
   }, [agentId]);
 
-  // Scroll to bottom of chat
+  // --- Effects ---
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (isChatOpen && activeTab === 'chat') {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isChatOpen, activeTab]);
 
-  // Call Timer
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isVoiceActive) {
@@ -96,6 +117,7 @@ export default function AgentDemoPage(params : { agentId: string }) {
     return () => clearInterval(interval);
   }, [isVoiceActive]);
 
+  // --- Handlers ---
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !agent) return;
 
@@ -105,13 +127,12 @@ export default function AgentDemoPage(params : { agentId: string }) {
     setIsChatLoading(true);
 
     try {
-      // 3. Using the specific API Key and URL from your JSON
       const response = await fetch('/api/chatbot/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          difyApiUrl: agent.chatbot_api, // From JSON
-          difyApiKey: agent.chatbot_key, // From JSON
+          difyApiUrl: agent.chatbot_api,
+          difyApiKey: agent.chatbot_key,
           message: userMsg,
           useStreaming: false 
         }),
@@ -143,174 +164,326 @@ export default function AgentDemoPage(params : { agentId: string }) {
     alert('Link copied to clipboard!');
   };
 
-  // 4. UI Fallbacks for missing JSON fields
+  // --- Render Helpers ---
   const displayAvatar = agent?.avatar || '🤖';
   const displayName = agent?.name || 'AI Assistant';
-  const displayDesc = agent?.description || `Virtual agent for ${agent?.organization_id || 'our services'}.`;
-
-  if (loading) return <div className="h-screen flex items-center justify-center bg-gray-50"><Loader2 className="w-8 h-8 animate-spin text-green-600" /></div>;
+  
+  if (loading) return <div className="h-screen flex items-center justify-center bg-gray-50"><Loader2 className="w-8 h-8 animate-spin" style={{color: themeColor}} /></div>;
   if (error || !agent) return <div className="h-screen flex items-center justify-center text-red-500">{error}</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-      
-      {/* Header */}
-      <header className="bg-white border-b px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+    <div 
+        className="min-h-screen flex flex-col font-sans relative overflow-hidden transition-all duration-500"
+        style={{ 
+            backgroundColor: backgroundImage ? 'transparent' : '#f9fafb',
+            backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundAttachment: 'fixed'
+        }}
+    >
+      {/* Dark Overlay if background image exists */}
+      {backgroundImage && (
+        <div className="absolute inset-0 bg-black/40 background-repeat: no-repeat z-0" />
+      )}
+
+      {/* --- Header --- */}
+      <header className={`px-6 py-4 flex items-center justify-between sticky top-0 z-20 transition-all duration-300 ${backgroundImage ? 'bg-black/20 backdrop-blur-md border-white/10' : 'bg-white/80 backdrop-blur-md border-gray-200'} border-b`}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-2xl shadow-lg text-white">
-            {displayAvatar}
-          </div>
-          <div>
-            <h1 className="font-bold text-gray-900 leading-tight">{displayName}</h1>
-            <p className="text-xs text-green-600 font-medium flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"/> 
-              Online & Ready
-            </p>
-          </div>
+          {logoImage ? (
+             <img src={logoImage} alt="Company Logo" className="h-10 w-auto object-contain" />
+          ) : (
+            <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold" style={{ background: `linear-gradient(135deg, ${themeColor}, #000)` }}>
+                    X
+                </div>
+                <h1 className={`font-bold text-xl tracking-tight ${backgroundImage ? 'text-white' : 'text-gray-900'}`}>
+                    Xpectrum<span style={{ color: themeColor }}>-ai</span>
+                </h1>
+            </div>
+          )}
         </div>
-        <button onClick={copyToClipboard} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500" title="Share Demo">
-          <Share2 className="w-5 h-5" />
-        </button>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-80px)]">
         
-        {/* Left Col: Voice Interface */}
-        <div className="flex flex-col gap-6">
-          
-          {/* Voice Card */}
-          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 text-white shadow-xl flex flex-col items-center justify-center relative overflow-hidden flex-1 min-h-[300px]">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/20 blur-3xl rounded-full -mr-32 -mt-32 pointer-events-none"></div>
+        <div className="flex items-center gap-2">
+            <span className={`hidden sm:flex text-xs font-medium items-center gap-1.5 px-3 py-1.5 rounded-full ${backgroundImage ? 'bg-white/10 text-white backdrop-blur-md' : 'bg-green-50 text-green-700'}`}>
+                <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: themeColor }}/> 
+                System Online
+            </span>
+            <button onClick={copyToClipboard} className={`p-2 rounded-full transition-colors ${backgroundImage ? 'hover:bg-white/20 text-white' : 'hover:bg-gray-100 text-gray-500'}`} title="Share Demo">
+                <Share2 className="w-5 h-5" />
+            </button>
+        </div>
+      </header>
+    
+      {/* --- Integrated Widget --- */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4">
+        
+        {/* Settings Panel (Popup) */}
+        {showSettings && (
+            <div className="mb-2 bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 w-80 animate-in slide-in-from-bottom-5 fade-in duration-200">
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                        <Settings className="w-4 h-4" /> Customize Demo
+                    </h3>
+                    <button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-gray-600">
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+
+                <div className="space-y-4">
+                    {/* Color Picker */}
+                    <div>
+                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Theme Color</label>
+                        <div className="flex items-center gap-2">
+                            <input 
+                                type="color" 
+                                value={themeColor}
+                                onChange={(e) => setThemeColor(e.target.value)}
+                                className="h-9 w-9 p-1 rounded cursor-pointer border border-gray-200"
+                            />
+                            <span className="text-sm text-gray-600 font-mono">{themeColor}</span>
+                        </div>
+                    </div>
+
+                    {/* Logo Upload */}
+                    <div>
+                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Company Logo</label>
+                        <div className="flex gap-2">
+                            <label className="flex-1 cursor-pointer flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 border-dashed rounded-lg hover:bg-gray-50 transition-colors">
+                                <Upload className="w-4 h-4 text-gray-400" />
+                                <span className="text-xs text-gray-600">Upload Logo</span>
+                                <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setLogoImage)} />
+                            </label>
+                            {logoImage && (
+                                <button onClick={() => setLogoImage('')} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                                    <X className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Background Upload */}
+                    <div>
+                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Page Background</label>
+                        <div className="flex gap-2">
+                            <label className="flex-1 cursor-pointer flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 border-dashed rounded-lg hover:bg-gray-50 transition-colors">
+                                <ImageIcon className="w-4 h-4 text-gray-400" />
+                                <span className="text-xs text-gray-600">Upload Image</span>
+                                <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setBackgroundImage)} />
+                            </label>
+                            {backgroundImage && (
+                                <button onClick={() => setBackgroundImage('')} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                                    <X className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* --- Main Widget Container --- */}
+        <div className={`bg-white rounded-3xl shadow-2xl border border-gray-200 overflow-hidden transition-all duration-300 origin-bottom-right flex flex-col ${isChatOpen ? 'w-[90vw] sm:w-[380px] h-[600px] max-h-[85vh] opacity-100 scale-100' : 'w-0 h-0 opacity-0 scale-90'}`}>
             
-            <div className="relative z-10 text-center space-y-6">
-              <div className={`w-32 h-32 rounded-full mx-auto flex items-center justify-center transition-all duration-500 ${isVoiceActive ? 'bg-green-500/20 ring-4 ring-green-500/30' : 'bg-white/10'}`}>
-                <div className="text-6xl">{displayAvatar}</div>
-              </div>
-
-              <div>
-                <h2 className="text-2xl font-bold">{isVoiceActive ? 'Call in Progress' : 'Start a Voice Call'}</h2>
-                <p className="text-gray-400 mt-2 max-w-sm mx-auto">
-                  {isVoiceActive 
-                    ? `Talking to ${displayName} • ${formatTime(callDuration)}` 
-                    : `Have a natural spoken conversation with ${displayName} in real-time.`}
-                </p>
-              </div>
-
-              {/* 5. LiveKit Component - Passing ID as agentName */}
-              {isVoiceActive && (
-                <div className="hidden">
-                  <LiveKitVoiceChat
-                    agentName={agentId} 
-                    isDarkMode={true}
-                    startCall={true}
-                    endCall={false}
-                    isMuted={isMuted}
-                  />
+            {/* 1. Integrated Header with Tabs */}
+            <div className="pt-4 px-4 pb-2 bg-white border-b border-gray-100">
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm" style={{ backgroundColor: themeColor }}>
+                            {displayAvatar}
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-gray-900 text-sm">{displayName}</h3>
+                            <p className="text-xs text-green-600 flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> Online
+                            </p>
+                        </div>
+                    </div>
+                    <button onClick={() => setIsChatOpen(false)} className="text-gray-400 hover:text-gray-600 p-1">
+                        <X className="w-5 h-5" />
+                    </button>
                 </div>
-              )}
 
-              {/* Controls */}
-              <div className="flex items-center justify-center gap-4">
-                <button
-                  onClick={() => setIsMuted(!isMuted)}
-                  disabled={!isVoiceActive}
-                  className={`p-4 rounded-full transition-all ${!isVoiceActive ? 'opacity-0 scale-0 w-0 p-0 overflow-hidden' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}
-                >
-                  {isMuted ? <VolumeX /> : <Volume2 />}
-                </button>
-
-                <button
-                  onClick={() => setIsVoiceActive(!isVoiceActive)}
-                  className={`px-8 py-4 rounded-full font-bold text-lg flex items-center gap-2 shadow-lg transition-all transform hover:scale-105 ${
-                    isVoiceActive 
-                    ? 'bg-red-500 hover:bg-red-600 text-white' 
-                    : 'bg-green-500 hover:bg-green-600 text-white'
-                  }`}
-                >
-                  {isVoiceActive ? <Phone className="w-5 h-5 fill-current" /> : <Mic className="w-5 h-5" />}
-                  {isVoiceActive ? 'End Call' : 'Start Call'}
-                </button>
-              </div>
+                {/* Tabs Switcher */}
+                <div className="flex bg-gray-100 p-1 rounded-xl">
+                    <button 
+                        onClick={() => setActiveTab('chat')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${
+                            activeTab === 'chat' 
+                            ? 'bg-white text-gray-900 shadow-sm' 
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                    >
+                        <MessageSquare className="w-4 h-4" /> Chat
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('voice')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${
+                            activeTab === 'voice' 
+                            ? 'bg-white text-gray-900 shadow-sm' 
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                    >
+                        <Phone className="w-4 h-4" /> Call
+                    </button>
+                </div>
             </div>
-          </div>
 
-          {/* Description Card */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hidden lg:block">
-            <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-purple-500" />
-              About this Agent
-            </h3>
-            <p className="text-gray-600 leading-relaxed text-sm">
-              {displayDesc}
-            </p>
-          </div>
+            {/* 2. Content Area */}
+            <div className="flex-1 overflow-hidden relative bg-gray-50">
+                
+                {/* --- Tab: Chat Content --- */}
+                <div className={`absolute inset-0 flex flex-col transition-transform duration-300 ${activeTab === 'chat' ? 'translate-x-0' : '-translate-x-full'}`}>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        {messages.map((msg, idx) => (
+                            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 shadow-sm text-sm ${
+                                    msg.role === 'user' 
+                                    ? 'text-white rounded-br-none' 
+                                    : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none'
+                                }`}
+                                style={{ backgroundColor: msg.role === 'user' ? themeColor : 'white' }}
+                                >
+                                    <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                                    <p className={`text-[10px] mt-1 ${msg.role === 'user' ? 'text-white/80' : 'text-gray-400'}`}>
+                                        {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                        {isChatLoading && (
+                            <div className="flex justify-start">
+                                <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-none px-4 py-3">
+                                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                                </div>
+                            </div>
+                        )}
+                        <div ref={messagesEndRef} />
+                    </div>
+
+                    {/* Chat Input */}
+                    <div className="p-3 bg-white border-t text-black">
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={inputMessage}
+                                onChange={(e) => setInputMessage(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                                placeholder="Type a message..."
+                                className="flex-1 px-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:border-transparent text-sm"
+                                style={{ '--tw-ring-color': themeColor } as React.CSSProperties}
+                            />
+                            <button 
+                                onClick={handleSendMessage}
+                                disabled={!inputMessage.trim() || isChatLoading}
+                                className="p-2.5 rounded-full text-white shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-transform hover:scale-105"
+                                style={{ backgroundColor: themeColor }}
+                            >
+                                <Send className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* --- Tab: Voice Content --- */}
+                <div className={`absolute inset-0 flex flex-col items-center justify-center p-6 text-center transition-transform duration-300 ${activeTab === 'voice' ? 'translate-x-0' : 'translate-x-full'}`}
+                     style={{ background: isVoiceActive ? '#111827' : '#f9fafb' }}>
+                    
+                    <div className="relative mb-8">
+                        {/* Glow effect */}
+                        <div className={`absolute inset-0 rounded-full blur-2xl opacity-20 transition-all duration-500`} 
+                             style={{ backgroundColor: isVoiceActive ? themeColor : 'transparent', transform: 'scale(1.5)' }}></div>
+                        
+                        <div className={`w-32 h-32 rounded-full flex items-center justify-center text-6xl shadow-xl transition-all duration-500 border-4`}
+                            style={{ 
+                                backgroundColor: isVoiceActive ? 'rgba(255,255,255,0.05)' : 'white',
+                                borderColor: isVoiceActive ? themeColor : 'transparent',
+                                color: isVoiceActive ? themeColor : themeColor,
+                                transform: isVoiceActive ? 'scale(1.1)' : 'scale(1)'
+                            }}
+                        >
+                            {displayAvatar}
+                        </div>
+                        
+                        {/* Ping animation when active */}
+                        {isVoiceActive && (
+                             <div className="absolute inset-0 rounded-full border-2 animate-ping opacity-50" style={{ borderColor: themeColor }}></div>
+                        )}
+                    </div>
+
+                    <h3 className={`text-xl font-bold mb-2 ${isVoiceActive ? 'text-white' : 'text-gray-900'}`}>
+                        {isVoiceActive ? 'Call in Progress' : 'Start Voice Call'}
+                    </h3>
+                    
+                    <p className={`text-sm mb-8 max-w-[200px] ${isVoiceActive ? 'text-gray-400 font-mono' : 'text-gray-500'}`}>
+                        {isVoiceActive 
+                         ? formatTime(callDuration) 
+                         : "Speak naturally with the AI assistant in real-time."}
+                    </p>
+
+                    {/* Hidden LiveKit Component */}
+                    {isVoiceActive && (
+                        <div className="hidden">
+                            <LiveKitVoiceChat
+                                agentName={agentId} 
+                                isDarkMode={true}
+                                startCall={true}
+                                endCall={false}
+                                isMuted={isMuted}
+                            />
+                        </div>
+                    )}
+
+                    {/* Voice Controls */}
+                    <div className="flex items-center gap-4">
+                         {/* Mute Toggle */}
+                        <button
+                            onClick={() => setIsMuted(!isMuted)}
+                            disabled={!isVoiceActive}
+                            className={`p-4 rounded-full transition-all duration-300 ${!isVoiceActive ? 'opacity-0 scale-50 w-0 p-0 overflow-hidden hidden' : 'bg-gray-800 hover:bg-gray-700 text-white'}`}
+                        >
+                            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                        </button>
+
+                        {/* Main Call Button */}
+                        <button
+                            onClick={() => setIsVoiceActive(!isVoiceActive)}
+                            className={`p-5 rounded-full shadow-xl transition-all transform hover:scale-105 text-white flex items-center justify-center`}
+                            style={{ backgroundColor: isVoiceActive ? '#ef4444' : themeColor }}
+                        >
+                            {isVoiceActive ? <Phone className="w-6 h-6 fill-current rotate-[135deg]" /> : <Mic className="w-6 h-6" />}
+                        </button>
+                    </div>
+
+                </div>
+
+            </div>
         </div>
 
-        {/* Right Col: Text Chat Interface */}
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-200 flex flex-col overflow-hidden h-full max-h-[calc(100vh-120px)] lg:max-h-none">
-          {/* Chat Header */}
-          <div className="p-4 border-b bg-gray-50 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-gray-600">
-              <MessageSquare className="w-4 h-4" />
-              <span className="text-sm font-medium">Text Conversation</span>
-            </div>
-            {isVoiceActive && (
-              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full animate-pulse">
-                Voice Active
-              </span>
-            )}
-          </div>
+        {/* Toggle Buttons (Bottom Right) */}
+        <div className="flex items-center gap-3">
+            {/* Customization Toggle */}
+            <button 
+                onClick={() => setShowSettings(!showSettings)}
+                className="bg-white text-gray-600 hover:text-gray-900 p-3 rounded-full shadow-lg border border-gray-200 transition-transform hover:scale-110"
+                title="Customize Interface"
+            >
+                <Palette className="w-6 h-6" />
+            </button>
 
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50">
-            {messages.map((msg, idx) => (
-              <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-sm ${
-                  msg.role === 'user' 
-                  ? 'bg-green-600 text-white rounded-br-none' 
-                  : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none'
-                }`}>
-                   <MarkdownRenderer>{msg.content}</MarkdownRenderer>
-                   <p className={`text-[10px] mt-1 ${msg.role === 'user' ? 'text-green-100' : 'text-gray-400'}`}>
-                     {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                   </p>
-                </div>
-              </div>
-            ))}
-            {isChatLoading && (
-               <div className="flex justify-start">
-                 <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-none px-4 py-3">
-                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                 </div>
-               </div>
+            {/* Main Widget Toggle */}
+            {!isChatOpen && (
+                <button 
+                    onClick={() => setIsChatOpen(true)}
+                    className="p-4 rounded-full text-white shadow-xl transition-all duration-300 hover:scale-110 flex items-center justify-center animate-in zoom-in"
+                    style={{ backgroundColor: themeColor }}
+                >
+                     <MessageSquare className="w-7 h-7" />
+                </button>
             )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input Area */}
-          <div className="p-4 bg-white border-t">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Type a message..."
-                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-gray-50 focus:bg-white transition-all"
-              />
-              <button 
-                onClick={handleSendMessage}
-                disabled={!inputMessage.trim() || isChatLoading}
-                className="p-3 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-              >
-                <Send className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
         </div>
+      </div>
 
-      </main>
     </div>
   );
 }
