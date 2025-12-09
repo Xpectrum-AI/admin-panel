@@ -18,7 +18,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Routes that don't require authentication
-  const PUBLIC_ROUTES = ['/login', '/signup', '/chatbot', '/demo'];
+  const PUBLIC_ROUTES = ['/login', '/signup', '/chatbot', '/client'];
 
   // For development, bypass authentication
   if (isClient) {

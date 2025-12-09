@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Bot, MessageCircle, Edit, BarChart3, ExternalLink, Plus, RefreshCw, QrCode, Trash2, ChevronDown, CheckCircle, Link2, Search, Loader2, X } from 'lucide-react';
+import { Bot, MessageCircle, Edit, BarChart3, ExternalLink, Plus, RefreshCw, QrCode, Trash2, ChevronDown, CheckCircle, Link2, Search, Loader2, X, Code } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { agentConfigService } from '../../service/agentConfigService';
 import { getAgentDisplayName } from '../../lib/utils/agentNameUtils';
@@ -137,6 +137,48 @@ function AgentCards({
   // QR code modal state
   const [showQrModal, setShowQrModal] = useState(false);
   const [qrAgent, setQrAgent] = useState<Agent | null>(null);
+
+  // Public configs modal state
+  const [showPublicConfigsModal, setShowPublicConfigsModal] = useState(false);
+  const [publicConfigs, setPublicConfigs] = useState<string[]>([]);
+  const [isLoadingPublicConfigs, setIsLoadingPublicConfigs] = useState(false);
+  const [publicConfigsError, setPublicConfigsError] = useState<string | null>(null);
+  const [publicConfigsAgent, setPublicConfigsAgent] = useState<Agent | null>(null);
+
+  const fetchPublicConfigs = async (agentId: string) => {
+    setIsLoadingPublicConfigs(true);
+    setPublicConfigsError(null);
+    try {
+      const res = await fetch(`/api/upload/getConfigs/${encodeURIComponent(agentId)}`);
+      const data = await res.json();
+      if (res.ok && data.status === 'success' && data.config && Array.isArray(data.config.configs)) {
+        // route returns { status: 'success', config: { configs: [{ name: '...' }, ...] } }
+        const names = data.config.configs.map((c: any) => c.name).filter(Boolean);
+        setPublicConfigs(names);
+      } else {
+        setPublicConfigs([]);
+        setPublicConfigsError(data.error || 'No public configs found');
+      }
+    } catch (err) {
+      setPublicConfigs([]);
+      setPublicConfigsError('Failed to load public configs');
+    } finally {
+      setIsLoadingPublicConfigs(false);
+    }
+  };
+
+  const openPublicConfigs = (agent: Agent) => {
+    setPublicConfigsAgent(agent);
+    setShowPublicConfigsModal(true);
+    fetchPublicConfigs(agent.id);
+  };
+
+  const closePublicConfigs = () => {
+    setShowPublicConfigsModal(false);
+    setPublicConfigsAgent(null);
+    setPublicConfigs([]);
+    setPublicConfigsError(null);
+  };
 
   // Settings dropdown state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -606,7 +648,16 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
                     className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-3 px-4 rounded-lg transition-all duration-200 shadow-sm font-medium text-sm flex items-center justify-center gap-2 mb-3"
                   >
                     <ExternalLink className="w-4 h-4" />
-                    Demo
+                    Configure
+                  </button>
+
+                  {/* Public Configs Button */}
+                  <button
+                    onClick={() => openPublicConfigs(agent)}
+                    className="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-white py-3 px-4 rounded-lg transition-all duration-200 shadow-sm font-medium text-sm flex items-center justify-center gap-2 mb-3"
+                  >
+                    <Code className="w-4 h-4" />
+                    Public Configs
                   </button>
                   
                   {/* Secondary Actions - Icon Buttons with Hover Labels */}
@@ -980,6 +1031,53 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
             </div>
           </div>
         </div>
+        )}
+
+        {/* Public Configs Modal */}
+        {showPublicConfigsModal && publicConfigsAgent && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center text-black">
+            <div className="absolute inset-0 bg-black/40" onClick={closePublicConfigs} />
+            <div className="relative w-full max-w-lg bg-white rounded-xl shadow-lg p-6 z-10">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Public Configurations for {publicConfigsAgent.name || publicConfigsAgent.id}</h3>
+                <button onClick={closePublicConfigs} className="text-gray-500 hover:text-gray-700">Close</button>
+              </div>
+              {isLoadingPublicConfigs ? (
+                <div className="py-8 text-center">Loading...</div>
+              ) : publicConfigsError ? (
+                <div className="py-4 text-sm text-red-600">{publicConfigsError}</div>
+              ) : publicConfigs.length === 0 ? (
+                <div className="py-4 text-sm text-gray-600">No public configs available.</div>
+              ) : (
+                <ul className="space-y-2">
+                  {publicConfigs.map((name) => (
+                    <li key={name} className="flex items-center justify-between bg-gray-50 p-3 rounded-md">
+                      <span className="text-sm text-gray-900 truncate">{name}</span>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={`/client/${publicConfigsAgent.id}?config=${encodeURIComponent(name)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-sm text-white bg-green-600 px-3 py-1.5 rounded-md hover:bg-green-700"
+                        >
+                          Open
+                        </a>
+                        <button
+                          onClick={() => {
+                            const url = `${window.location.origin}/client/${publicConfigsAgent.id}?config=${encodeURIComponent(name)}`;
+                            navigator.clipboard?.writeText(url);
+                          }}
+                          className="text-sm text-gray-700 bg-gray-200 px-3 py-1.5 rounded-md hover:bg-gray-300"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
         )}
       </div>
   );

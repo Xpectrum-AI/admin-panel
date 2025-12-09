@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum InteractionMode {
+  chat_only
+  call_only
+  both
+}
+
+model Agent {
+  id        String    @id @default(cuid())
+  agentId   String    @unique // This is the public ID used in URLs
+  
+
+  configs   Configs[] 
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Configs {
+  id        String   @id @default(cuid())
+  
+  // The unique name you requested (e.g., "Green_Theme_V1")
+  name      String   
+
+  // --- Visuals ---
+  themeColor       String   @default("#16a34a")
+  logoImage        String?  @db.Text // Text type for base64 strings or long URLs
+  backgroundImage  String?  @db.Text
+
+  // --- Bot Identity ---
+  botName          String   @default("AI Assistant")
+  botIconStyle     String   @default("bottts") // e.g., adventurer, bottts
+
+  // --- Widget Styling ---
+  widgetBgColor    String   @default("#ffffff")
+  chatBgColor      String   @default("#f9fafb") // Message Area
+  userBubbleColor  String   @default("#16a34a")
+  botBubbleColor   String   @default("#ffffff")
+
+  // --- Functionality ---
+  interactionMode  InteractionMode @default(both)
+
+  // --- Relation ---
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agentId   String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // --- Constraints ---
+  // This ensures the config name is unique PER AGENT.
+  // Agent A can have a "Dark_Mode" and Agent B can also have a "Dark_Mode".
+  // If you want the name to be globally unique across the whole app, remove the array 
+  // and just put @unique on the `name` field above.
+  @@unique([agentId, name])
+  
+  // Index for faster lookups since we will query by name frequently
+  @@index([name])
+}
