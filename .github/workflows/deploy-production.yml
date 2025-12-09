@@ -521,21 +521,6 @@ jobs:
           
           echo "✅ Deployment recorded to tracking files"
 
-      - name: Commit and push deployment tracking
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          
-          git add deployments/production-deployments.json deployments/PRODUCTION_DEPLOYMENTS.md
-          
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "📝 Record production deployment: ${{ steps.admin-prod-tag.outputs.production_tag }} and ${{ steps.developer-prod-tag.outputs.production_tag }}"
-            git push
-            echo "✅ Deployment tracking committed and pushed"
-          fi
-
   deployment-failure:
     needs: deploy-production
     runs-on: ubuntu-latest
