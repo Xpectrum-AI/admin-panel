@@ -49,8 +49,8 @@ export function useTrunks() {
     }
   }, [getOrganizationId]);
 
-  const handleDeleteTrunk = useCallback(async (trunkId: string) => {
-    setDeletingTrunk(trunkId);
+  const handleDeleteTrunk = useCallback(async (trunkName: string) => {
+    setDeletingTrunk(trunkName);
     setTrunkError(null);
     setTrunkSuccess(null);
 
@@ -59,7 +59,7 @@ export function useTrunks() {
       const baseUrl = process.env.NEXT_PUBLIC_LIVE_API_URL;
       const apiKey = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
       
-      const response = await fetch(`${baseUrl}/outbound/trunks/${trunkId}`, {
+      const response = await fetch(`${baseUrl}/outbound/trunks/${trunkName}`, {
         method: 'DELETE',
         headers: {
           'X-API-Key': apiKey,
