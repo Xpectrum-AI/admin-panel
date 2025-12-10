@@ -355,10 +355,10 @@ export default function AgentDemoPage(params : { agentId: string }) {
                 
                 {/* 1. Bot Identity */}
                 <section>
-                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Bot Identity</h4>
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Agent Identity</h4>
                     <div className="space-y-3">
                         <div>
-                            <label className="text-xs text-gray-500 mb-1 block">Bot Name</label>
+                            <label className="text-xs text-gray-500 mb-1 block">Agent Name</label>
                             <div className="flex gap-2">
                                 <Type className="w-4 h-4 text-gray-400 mt-2" />
                                 <input 
@@ -372,7 +372,7 @@ export default function AgentDemoPage(params : { agentId: string }) {
 
                         {/* Bot Icon Upload */}
                         <div>
-                            <label className="text-xs text-gray-500 mb-1 block">Custom Bot Icon</label>
+                            <label className="text-xs text-gray-500 mb-1 block">Custom Agent Icon</label>
                             <label className="flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 border-dashed rounded hover:bg-gray-50 cursor-pointer">
                                 <Upload className="w-3 h-3 text-gray-400" />
                                 <span className="text-xs text-gray-600">Upload Icon</span>
@@ -426,7 +426,7 @@ export default function AgentDemoPage(params : { agentId: string }) {
 
                         {/* Bot Bubble Settings */}
                         <div className="p-2 bg-gray-50 rounded-lg">
-                            <span className="text-xs font-bold text-gray-500 block mb-2">Bot Message Style</span>
+                            <span className="text-xs font-bold text-gray-500 block mb-2">Agent Message Style</span>
                             <div className="flex justify-between items-center mb-2">
                                 <span className="text-xs text-gray-600">Bubble Color</span>
                                 <input type="color" value={config.botBubbleColor} onChange={(e) => setConfig(prev => ({...prev, botBubbleColor: e.target.value}))} className="h-6 w-8 rounded cursor-pointer border-0" />
