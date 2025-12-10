@@ -633,14 +633,7 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
 
                 {/* Actions */}
                 <div className={`p-5 border-t ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-                  {/* Primary Action - Full Width */}
-                  <button
-                    onClick={() => onOpenAgent(agent)}
-                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-3 px-4 rounded-lg transition-all duration-200 shadow-sm font-medium text-sm flex items-center justify-center gap-2 mb-3"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    Open Agent
-                  </button>
+                  
                   
                   {/* Demo Button */}
                   <button

@@ -1,17 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Bot, Mic, Send, MessageSquare, Phone, X, Volume2, 
+import { Mic, Send, MessageSquare, Phone, X, Volume2, 
   VolumeX, Loader2, Share2, Settings, Upload, Image as ImageIcon, 
-  Palette, Type, Check, AlertCircle, Copy
+  Palette, Type, Check, AlertCircle, Copy, ArrowRight
 } from 'lucide-react';
 import MarkdownRenderer from '@/app/components/MarkdownRenderer'; 
 import LiveKitVoiceChat from '@/app/components/config/LiveKitVoiceChat'; 
-import { useParams } from 'next/navigation';
 import { uploadImage } from '@/service/uploadImage';
-
-// --- Types ---
+import jwt from 'jsonwebtoken';
 
 interface AgentInfo {
   organization_id: string;
@@ -25,7 +22,6 @@ interface AgentInfo {
 
 type CallOption = 'chat_only' | 'call_only' | 'both';
 
-// All available DiceBear v9 styles
 const DICEBEAR_STYLES = [
   'adventurer', 'adventurer-neutral', 'avataaars', 'avataaars-neutral',
   'big-ears', 'big-ears-neutral', 'big-smile', 'bottts', 'bottts-neutral',
@@ -36,24 +32,113 @@ const DICEBEAR_STYLES = [
 ];
 
 interface ConfigState {
-  // Visuals
   themeColor: string;
   logoImage: string;
   backgroundImage: string;
-  
-  // Bot Identity
   botName: string;
   botIconStyle: string;
-  
-  // Chat Widget Styling (The "Iframe" settings)
+  botIcon: string;
+  // These strings will now hold HEX codes OR "linear-gradient(...)" strings
   widgetBackgroundColor: string; 
   messageAreaBackgroundColor: string; 
   userBubbleColor: string;
   botBubbleColor: string;
   
-  // Functionality
   interactionMode: CallOption;
 }
+
+// --- Helper Component: Background Picker (Solid vs Gradient) ---
+const BackgroundPicker = ({ 
+  label, 
+  value, 
+  onChange 
+}: { 
+  label: string; 
+  value: string; 
+  onChange: (val: string) => void; 
+}) => {
+  // Determine if current value is a gradient
+  const isGradient = value.includes('gradient');
+  
+  // Extract colors if it is a gradient (Simple extraction for UI state)
+  // Format: linear-gradient(135deg, color1, color2)
+  const getGradientColors = () => {
+    if (!isGradient) return { start: value, end: value };
+    const matches = value.match(/linear-gradient\(\d+deg,\s*(.+?),\s*(.+?)\)/);
+    if (matches && matches.length === 3) {
+      return { start: matches[1], end: matches[2] };
+    }
+    return { start: '#ffffff', end: '#000000' };
+  };
+
+  const [colors, setColors] = useState(getGradientColors());
+
+  const handleSolidChange = (color: string) => {
+    setColors({ start: color, end: color });
+    onChange(color);
+  };
+
+  const handleGradientChange = (type: 'start' | 'end', color: string) => {
+    const newColors = { ...colors, [type]: color };
+    setColors(newColors);
+    // Construct CSS Gradient String
+    onChange(`linear-gradient(135deg, ${newColors.start}, ${newColors.end})`);
+  };
+
+  return (
+    <div className="mb-3">
+      <div className="flex justify-between items-center mb-1">
+        <label className="text-xs text-gray-500">{label}</label>
+        <div className="flex bg-gray-100 rounded p-0.5">
+          <button 
+            onClick={() => handleSolidChange(colors.start)}
+            className={`text-[10px] px-2 py-0.5 rounded ${!isGradient ? 'bg-white shadow-sm font-medium' : 'text-gray-500'}`}
+          >
+            Solid
+          </button>
+          <button 
+            onClick={() => handleGradientChange('end', colors.end)} // Trigger gradient update
+            className={`text-[10px] px-2 py-0.5 rounded ${isGradient ? 'bg-white shadow-sm font-medium' : 'text-gray-500'}`}
+          >
+            Gradient
+          </button>
+        </div>
+      </div>
+
+      {!isGradient ? (
+        <div className="flex items-center gap-2">
+          <input 
+            type="color" 
+            value={colors.start.startsWith('#') ? colors.start : '#ffffff'} // Fallback for safety
+            onChange={(e) => handleSolidChange(e.target.value)} 
+            className="h-8 w-full rounded cursor-pointer border border-gray-200" 
+          />
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <input 
+              type="color" 
+              value={colors.start.startsWith('#') ? colors.start : '#ffffff'} 
+              onChange={(e) => handleGradientChange('start', e.target.value)} 
+              className="h-8 w-full rounded cursor-pointer border border-gray-200" 
+            />
+          </div>
+          <ArrowRight className="w-3 h-3 text-gray-400" />
+          <div className="flex-1">
+            <input 
+              type="color" 
+              value={colors.end.startsWith('#') ? colors.end : '#000000'} 
+              onChange={(e) => handleGradientChange('end', e.target.value)} 
+              className="h-8 w-full rounded cursor-pointer border border-gray-200" 
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 
 // --- Main Component ---
 
@@ -61,17 +146,15 @@ export default function AgentDemoPage(params : { agentId: string }) {
   const agentId = params?.agentId as string;
 
   // --- State Management ---
-  
-  // 1. Agent Data
   const [agent, setAgent] = useState<AgentInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // 2. Configuration State
   const [config, setConfig] = useState<ConfigState>({
     themeColor: '#16a34a',
     logoImage: '',
     backgroundImage: '',
+    botIcon : '',
     botName: 'AI Assistant',
     botIconStyle: 'bottts', 
     widgetBackgroundColor: '#ffffff',
@@ -81,18 +164,14 @@ export default function AgentDemoPage(params : { agentId: string }) {
     interactionMode: 'both'
   });
 
-  // 3. UI/Modal States
+  // UI/Modal States
   const [showSettings, setShowSettings] = useState(false);
-  
-  // Background Image Logic States
   const [tempBgPreview, setTempBgPreview] = useState<string>('');
   const [showBgConfirmation, setShowBgConfirmation] = useState(false);
-
-  // Share Logic States
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareConfigName, setShareConfigName] = useState('');
   const [generatedUrl, setGeneratedUrl] = useState('');
-  const [isSaving, setIsSaving] = useState(false); // New Loading State for POST request
+  const [isSaving, setIsSaving] = useState(false);
 
   // Chat/Voice States
   const [isChatOpen, setIsChatOpen] = useState(true);
@@ -121,7 +200,6 @@ export default function AgentDemoPage(params : { agentId: string }) {
         
         if (data.status === 'success' && data.agent_info) {
           setAgent(data.agent_info);
-          
           setConfig(prev => ({
             ...prev,
             botName: data.agent_info.name || 'AI Assistant',
@@ -172,7 +250,6 @@ export default function AgentDemoPage(params : { agentId: string }) {
 
   // --- Logic Functions ---
 
-  // 1. Image Upload Logic (Generic - for preview)
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'bg') => {
     const file = e.target.files?.[0];
     if (file) {
@@ -189,19 +266,13 @@ export default function AgentDemoPage(params : { agentId: string }) {
     }
   };
 
-  // 2. Background "Use" Logic (Uploads to server)
   const handleConfirmBackground = async () => {
     if (!tempBgPreview) return;
-    
-    // Convert data URL to Blob for upload
     try {
         const res = await fetch(tempBgPreview);
         const blob = await res.blob();
         const file = new File([blob], 'background-image.png', { type: blob.type });
-        
-        // Upload to your storage service
         const finalUrl = await uploadImage(file);
-        
         setConfig(prev => ({ ...prev, backgroundImage: finalUrl }));
         setTempBgPreview('');
         setShowBgConfirmation(false);
@@ -211,30 +282,14 @@ export default function AgentDemoPage(params : { agentId: string }) {
     }
   };
 
-  // 3. Share/Generate URL Logic (API POST REQUEST)
   const handleGenerateUrl = async () => {
     if (!shareConfigName.trim()) return;
-
     setIsSaving(true);
-
     try {
-        // Construct Payload mapping to Prisma Schema
         const payload = {
-            configName: shareConfigName,
-            themeColor: config.themeColor,
-            logoImage: config.logoImage,
-            backgroundImage: config.backgroundImage,
-            botName: config.botName,
-            botIconStyle: config.botIconStyle,
-            widgetBackgroundColor: config.widgetBackgroundColor,
-            messageAreaBackgroundColor: config.messageAreaBackgroundColor,
-            userBubbleColor: config.userBubbleColor,
-            botBubbleColor: config.botBubbleColor,
-            interactionMode: config.interactionMode
+            config
         };
-
-        // POST Request
-        const response = await fetch(`/api/upload/configs/${agentId}`, {
+        const response = await fetch(`/api/upload/configs`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -242,39 +297,29 @@ export default function AgentDemoPage(params : { agentId: string }) {
             },
             body: JSON.stringify(payload)
         });
-
         const data = await response.json();
-
         if (response.ok && data.status === 'success') {
-            // Success: Generate URL with the Config Name
-            // The client page will fetch the config by name from the DB
-            const cleanName = encodeURIComponent(shareConfigName);
+            const cleanName = data.token;
             const url = `${window.location.origin}/client/${agentId}?config=${cleanName}`;
             setGeneratedUrl(url);
         } else if (response.status === 409) {
             alert('A configuration with this name already exists. Please choose a unique name.');
         } else {
-            console.error('Save failed', data);
             alert('Failed to save configuration.');
         }
-
     } catch (error) {
-        console.error('Network Error:', error);
         alert('An error occurred while saving.');
     } finally {
         setIsSaving(false);
     }
   };
 
-  // 4. Chat Send Logic
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !agent) return;
-
     const userMsg = inputMessage;
     setMessages(prev => [...prev, { role: 'user', content: userMsg, timestamp: new Date() }]);
     setInputMessage('');
     setIsChatLoading(true);
-
     try {
       const response = await fetch('/api/chatbot/chat', {
         method: 'POST',
@@ -286,9 +331,7 @@ export default function AgentDemoPage(params : { agentId: string }) {
           useStreaming: false 
         }),
       });
-
       const data = await response.json();
-      
       if (data.answer) {
         setMessages(prev => [...prev, { role: 'bot', content: data.answer, timestamp: new Date() }]);
       } else {
@@ -307,7 +350,6 @@ export default function AgentDemoPage(params : { agentId: string }) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // --- DiceBear Icon Generator ---
   const getBotIconUrl = (seed: string, style: string) => {
     return `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}`;
   };
@@ -327,7 +369,6 @@ export default function AgentDemoPage(params : { agentId: string }) {
             backgroundAttachment: 'fixed'
         }}
     >
-      {/* Overlay for readability if BG exists */}
       {config.backgroundImage && <div className="absolute inset-0 bg-black/40 z-0" />}
 
       {/* --- Header --- */}
@@ -381,7 +422,7 @@ export default function AgentDemoPage(params : { agentId: string }) {
         )}
       </main>
 
-      {/* --- Settings Panel (The "Configurator") --- */}
+      {/* --- Settings Panel --- */}
       {showSettings && (
         <div className="fixed bottom-24 right-6 z-50 mb-2 bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 w-80 animate-in slide-in-from-bottom-5 fade-in duration-200 h-[600px] flex flex-col">
              <div className="flex items-center justify-between mb-4 border-b pb-2">
@@ -392,6 +433,7 @@ export default function AgentDemoPage(params : { agentId: string }) {
             </div>
             
             <div className="space-y-6 overflow-y-auto pr-2 flex-1 custom-scrollbar">
+                
                 {/* 1. Bot Identity */}
                 <section>
                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Bot Identity</h4>
@@ -426,23 +468,26 @@ export default function AgentDemoPage(params : { agentId: string }) {
                     </div>
                 </section>
 
-                {/* 2. Chat Widget Styling */}
+                {/* 2. Chat Widget Styling (With Gradients) */}
                 <section>
                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Chat Interface</h4>
                     <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Widget Background</span>
-                            <input 
-                                type="color" 
-                                value={config.widgetBackgroundColor} 
-                                onChange={(e) => setConfig(prev => ({...prev, widgetBackgroundColor: e.target.value}))} 
-                                className="h-6 w-8 rounded cursor-pointer border-0" 
-                            />
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Message Area Bg</span>
-                            <input type="color" value={config.messageAreaBackgroundColor} onChange={(e) => setConfig(prev => ({...prev, messageAreaBackgroundColor: e.target.value}))} className="h-6 w-8 rounded cursor-pointer border-0" />
-                        </div>
+                        
+                        {/* WIDGET BACKGROUND - Supports Gradient */}
+                        <BackgroundPicker 
+                            label="Widget Background"
+                            value={config.widgetBackgroundColor}
+                            onChange={(val) => setConfig(prev => ({...prev, widgetBackgroundColor: val}))}
+                        />
+
+                        {/* MESSAGE AREA BACKGROUND - Supports Gradient */}
+                        <BackgroundPicker 
+                            label="Message Area Background"
+                            value={config.messageAreaBackgroundColor}
+                            onChange={(val) => setConfig(prev => ({...prev, messageAreaBackgroundColor: val}))}
+                        />
+
+                        {/* Bubbles (Simple Colors) */}
                         <div className="flex justify-between items-center">
                             <span className="text-sm text-gray-600">User Bubble</span>
                             <input type="color" value={config.userBubbleColor} onChange={(e) => setConfig(prev => ({...prev, userBubbleColor: e.target.value}))} className="h-6 w-8 rounded cursor-pointer border-0" />
@@ -493,14 +538,13 @@ export default function AgentDemoPage(params : { agentId: string }) {
                     </div>
 
                     <div className="mb-3">
-                        <label className="text-xs text-gray-500 mb-1 block">Background Image</label>
+                        <label className="text-xs text-gray-500 mb-1 block">Page Background</label>
                         <label className="flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 border-dashed rounded hover:bg-gray-50 cursor-pointer">
                             <ImageIcon className="w-3 h-3 text-gray-400" />
                             <span className="text-xs text-gray-600">Select Image</span>
                             <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'bg')} />
                         </label>
                         
-                        {/* THE "USE" BUTTON LOGIC */}
                         {tempBgPreview && (
                             <div className="mt-2 p-2 border rounded bg-gray-50">
                                 <p className="text-xs text-gray-500 mb-2">Preview:</p>
@@ -532,12 +576,12 @@ export default function AgentDemoPage(params : { agentId: string }) {
             className={`shadow-2xl border border-gray-200 overflow-hidden transition-all duration-300 origin-bottom-right flex flex-col ${isChatOpen ? 'w-[90vw] sm:w-[380px] h-[600px] max-h-[85vh] opacity-100 scale-100' : 'w-0 h-0 opacity-0 scale-90'}`}
             style={{ 
                 borderRadius: '1.5rem', 
-                backgroundColor: config.widgetBackgroundColor
+                background: config.widgetBackgroundColor // CHANGED: 'background' handles gradients
             }}
         >
             
             {/* 1. Header */}
-            <div className="pt-4 px-4 pb-2 border-b border-gray-100/50" style={{ backgroundColor: config.widgetBackgroundColor }}>
+            <div className="pt-4 px-4 pb-2 border-b border-gray-100/50" style={{ background: config.widgetBackgroundColor }}>
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full overflow-hidden border border-gray-200">
@@ -555,7 +599,7 @@ export default function AgentDemoPage(params : { agentId: string }) {
                     </button>
                 </div>
 
-                {/* Tabs Switcher - Only show if both are allowed */}
+                {/* Tabs Switcher */}
                 {config.interactionMode === 'both' && (
                     <div className="flex bg-gray-100/80 p-1 rounded-xl">
                         <button 
@@ -583,7 +627,7 @@ export default function AgentDemoPage(params : { agentId: string }) {
             </div>
 
             {/* 2. Content Area */}
-            <div className="flex-1 overflow-hidden relative" style={{ backgroundColor: config.messageAreaBackgroundColor }}>
+            <div className="flex-1 overflow-hidden relative" style={{ background: config.messageAreaBackgroundColor }}>
                 
                 {/* --- Tab: Chat Content --- */}
                 {activeTab === 'chat' && (
@@ -601,7 +645,6 @@ export default function AgentDemoPage(params : { agentId: string }) {
                                         color: msg.role === 'user' ? '#ffffff' : '#1f2937'
                                     }}
                                     >
-                                        {/* Name in Chat Blurb (c) */}
                                         <div className="flex justify-between items-baseline gap-4 mb-1 border-b border-white/10 pb-1">
                                             <span className="text-[10px] font-bold opacity-90">
                                                 {msg.role === 'user' ? 'You' : config.botName}
@@ -610,7 +653,6 @@ export default function AgentDemoPage(params : { agentId: string }) {
                                                 {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                                             </span>
                                         </div>
-                                        
                                         <div className="leading-relaxed">
                                             <MarkdownRenderer>{msg.content}</MarkdownRenderer>
                                         </div>
@@ -628,7 +670,7 @@ export default function AgentDemoPage(params : { agentId: string }) {
                         </div>
 
                         {/* Chat Input */}
-                        <div className="p-3 border-t border-gray-100" style={{ backgroundColor: config.widgetBackgroundColor }}>
+                        <div className="p-3 border-t border-gray-100" style={{ background: config.widgetBackgroundColor }}>
                             <div className="flex gap-2">
                                 <input
                                     type="text"

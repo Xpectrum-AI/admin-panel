@@ -29,10 +29,13 @@ interface ConfigState {
   backgroundImage: string;
   botName: string;
   botIconStyle: string;
+  
+  // These strings can now hold "linear-gradient(...)"
   widgetBgColor: string; 
   chatBgColor: string; 
   userBubbleColor: string;
   botBubbleColor: string;
+  botIcon?: string;
   interactionMode: CallOption;
 }
 
@@ -98,7 +101,6 @@ function ClientPageContent() {
         setLoading(true);
 
         // 1. Fetch Agent Basic Info
-        // NOTE: Ensure this matches your actual API route for getting agent details
         const agentRes = await fetch(`/api/agents/info/${agentId}`, {
              method: 'GET',
              headers: {
@@ -115,10 +117,7 @@ function ClientPageContent() {
 
         // 2. Fetch Configuration (Only if configName exists)
         if (configName) {
-            console.log("Fetching config:", configName); // Debug log
-            
-            // NOTE: Ensure this route matches where you created the POST/GET route
-            const configRes = await fetch(`/api/upload/configs/${agentId}?configName=${configName}`);
+            const configRes = await fetch(`/api/upload/configs?configName=${configName}`);
             const configData = await configRes.json();
 
             if (configData.status === 'success' && configData.config) {
@@ -135,14 +134,14 @@ function ClientPageContent() {
                     chatBgColor: dbConfig.chatBgColor || '#f9fafb',
                     userBubbleColor: dbConfig.userBubbleColor || '#16a34a',
                     botBubbleColor: dbConfig.botBubbleColor || '#ffffff',
-                    interactionMode: dbConfig.interactionMode || 'both'
+                    interactionMode: dbConfig.interactionMode || 'both',
+                    botIcon: dbConfig.botIcon || ''
                 });
             } else {
                 console.warn("Config not found in DB, using defaults");
                 useDefaultConfig(agentData.agent_info);
             }
         } else {
-            console.log("No config param, using defaults");
             useDefaultConfig(agentData.agent_info);
         }
 
@@ -164,7 +163,7 @@ function ClientPageContent() {
     };
 
     initPage();
-  }, [agentId, configName]); // Re-run if ID or config param changes
+  }, [agentId, configName]); 
 
   // --- Effects ---
   useEffect(() => {
@@ -251,7 +250,7 @@ function ClientPageContent() {
     <div 
         className="min-h-screen flex flex-col font-sans relative overflow-hidden transition-all duration-500"
         style={{ 
-            backgroundColor: config.backgroundImage ? 'transparent' : '#f9fafb',
+            background: config.backgroundImage ? 'transparent' : '#f9fafb',
             backgroundImage: config.backgroundImage ? `url(${config.backgroundImage})` : 'none',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
@@ -287,6 +286,7 @@ function ClientPageContent() {
         </div>
       </header>
 
+
       {/* --- Integrated Widget --- */}
       <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-4">
         
@@ -295,15 +295,21 @@ function ClientPageContent() {
             className={`shadow-2xl border border-gray-200 overflow-hidden transition-all duration-300 origin-bottom-right flex flex-col ${isChatOpen ? 'w-[90vw] sm:w-[380px] h-[600px] max-h-[85vh] opacity-100 scale-100' : 'w-0 h-0 opacity-0 scale-90'}`}
             style={{ 
                 borderRadius: '1.5rem', 
-                backgroundColor: config.widgetBgColor
+                // UPDATED: Use 'background' to support both hex colors and linear-gradients
+                background: config.widgetBgColor 
             }}
         >
             {/* Widget Header */}
-            <div className="pt-4 px-4 pb-2 border-b border-gray-100/50" style={{ backgroundColor: config.widgetBgColor }}>
+            <div className="pt-4 px-4 pb-2 border-b border-gray-100/50" style={{ background: config.widgetBgColor }}>
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full overflow-hidden border border-gray-200">
-                             <img src={getBotIconUrl(config.botName, config.botIconStyle)} alt="Bot" className="w-full h-full bg-white" />
+                             {/* Widget Header Avatar */}
+                             <img 
+                                src={getBotIconUrl(config.botName, config.botIconStyle)} 
+                                alt="Bot" 
+                                className="w-full h-full bg-white" 
+                             />
                         </div>
                         <div>
                             <h3 className="font-bold text-gray-900 text-sm">{config.botName}</h3>
@@ -345,7 +351,7 @@ function ClientPageContent() {
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 overflow-hidden relative" style={{ backgroundColor: config.chatBgColor }}>
+            <div className="flex-1 overflow-hidden relative" style={{ background: config.chatBgColor }}>
                 
                 {/* Chat Tab */}
                 {activeTab === 'chat' && (
@@ -359,7 +365,8 @@ function ClientPageContent() {
                                         : 'rounded-bl-none border border-gray-200'
                                     }`}
                                     style={{ 
-                                        backgroundColor: msg.role === 'user' ? config.userBubbleColor : config.botBubbleColor,
+                                        // UPDATED: Use 'background' for bubbles too just in case
+                                        background: msg.role === 'user' ? config.userBubbleColor : config.botBubbleColor,
                                         color: msg.role === 'user' ? '#ffffff' : '#1f2937'
                                     }}
                                     >
@@ -379,7 +386,7 @@ function ClientPageContent() {
                             ))}
                             {isChatLoading && (
                                 <div className="flex justify-start">
-                                    <div className="rounded-2xl rounded-bl-none px-4 py-3" style={{ backgroundColor: config.botBubbleColor }}>
+                                    <div className="rounded-2xl rounded-bl-none px-4 py-3" style={{ background: config.botBubbleColor }}>
                                         <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
                                     </div>
                                 </div>
@@ -387,7 +394,8 @@ function ClientPageContent() {
                             <div ref={messagesEndRef} />
                         </div>
 
-                        <div className="p-3 border-t border-gray-100" style={{ backgroundColor: config.widgetBgColor }}>
+                        {/* Chat Input */}
+                        <div className="p-3 border-t border-gray-100" style={{ background: config.widgetBgColor }}>
                             <div className="flex gap-2">
                                 <input
                                     type="text"
