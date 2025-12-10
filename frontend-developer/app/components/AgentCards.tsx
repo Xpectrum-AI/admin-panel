@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Bot, MessageCircle, Edit, BarChart3, ExternalLink, Plus, RefreshCw, QrCode, Trash2, ChevronDown, CheckCircle, Link2, Search, Loader2, X, Code } from 'lucide-react';
+import { Bot, MessageCircle, Edit, BarChart3, ExternalLink, Plus, RefreshCw, QrCode, Trash2, ChevronDown, CheckCircle, Link2, Search, Loader2, X } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { agentConfigService } from '../../service/agentConfigService';
 import { getAgentDisplayName } from '../../lib/utils/agentNameUtils';
@@ -138,48 +138,6 @@ function AgentCards({
   const [showQrModal, setShowQrModal] = useState(false);
   const [qrAgent, setQrAgent] = useState<Agent | null>(null);
 
-  // Public configs modal state
-  const [showPublicConfigsModal, setShowPublicConfigsModal] = useState(false);
-  const [publicConfigs, setPublicConfigs] = useState<string[]>([]);
-  const [isLoadingPublicConfigs, setIsLoadingPublicConfigs] = useState(false);
-  const [publicConfigsError, setPublicConfigsError] = useState<string | null>(null);
-  const [publicConfigsAgent, setPublicConfigsAgent] = useState<Agent | null>(null);
-
-  const fetchPublicConfigs = async (agentId: string) => {
-    setIsLoadingPublicConfigs(true);
-    setPublicConfigsError(null);
-    try {
-      const res = await fetch(`/api/upload/getConfigs/${encodeURIComponent(agentId)}`);
-      const data = await res.json();
-      if (res.ok && data.status === 'success' && data.config && Array.isArray(data.config.configs)) {
-        // route returns { status: 'success', config: { configs: [{ name: '...' }, ...] } }
-        const names = data.config.configs.map((c: any) => c.name).filter(Boolean);
-        setPublicConfigs(names);
-      } else {
-        setPublicConfigs([]);
-        setPublicConfigsError(data.error || 'No public configs found');
-      }
-    } catch (err) {
-      setPublicConfigs([]);
-      setPublicConfigsError('Failed to load public configs');
-    } finally {
-      setIsLoadingPublicConfigs(false);
-    }
-  };
-
-  const openPublicConfigs = (agent: Agent) => {
-    setPublicConfigsAgent(agent);
-    setShowPublicConfigsModal(true);
-    fetchPublicConfigs(agent.id);
-  };
-
-  const closePublicConfigs = () => {
-    setShowPublicConfigsModal(false);
-    setPublicConfigsAgent(null);
-    setPublicConfigs([]);
-    setPublicConfigsError(null);
-  };
-
   // Settings dropdown state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
@@ -194,10 +152,6 @@ function AgentCards({
   const [isAssociating, setIsAssociating] = useState(false);
   const [associateError, setAssociateError] = useState<string | null>(null);
 
-  // Success modal state
-  // const [showSuccessModal, setShowSuccessModal] = useState(false);
-  // const [successMessage, setSuccessMessage] = useState('');
-
   // Function to show the QR code modal - memoized with useCallback
   const showQrCodeModal = useCallback((agent: Agent) => {
     setQrAgent(agent);
@@ -208,7 +162,6 @@ function AgentCards({
   const getAgentUrl = useCallback(async (agent: Agent): Promise<string> => {
     try {
       // For now, we'll use the chatbot page URL with the agent ID
-      // In the future, we can create a session-based URL like in CHAT-APP
       return `${window.location.origin}/chatbot/${agent.id}`;
     } catch (error) {
       return window.location.origin;
@@ -352,7 +305,7 @@ function AgentCards({
           );
           return res as { success: boolean; error?: unknown };
         } catch (e) {
-return { success: false, error: e } as { success: boolean; error?: unknown };
+          return { success: false, error: e } as { success: boolean; error?: unknown };
         }
       })();
 
@@ -376,22 +329,7 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
 
   // Generate avatar color - using website's green theme (same color for all agents) - memoized
   const getAvatarColor = useCallback((name: string) => {
-    // Using the same green color as the website (green-600 to match from-green-600)
     return '#16A34A'; // green-600
-  }, []);
-
-  // Get status badge styling - memoized
-  const getStatusBadge = useCallback((status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-      case 'draft':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
-      case 'inactive':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-    }
   }, []);
 
   // Combined loading state: show loading if either initial load or refresh is in progress - memoized
@@ -418,8 +356,7 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
     );
   }
 
-  // 2. Loading State (show loading spinner when loading AND no agents to display)
-  // OR when we haven't loaded yet (agentsLoaded is false) and have no agents
+  // 2. Loading State
   if ((isLoading && agents.length === 0) || (!agentsLoaded && agents.length === 0)) {
     return (
       <div className="w-full h-full flex flex-col">
@@ -437,8 +374,7 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
     );
   }
 
-  // 3. No Agents Found (only show when loading is complete AND agents array is empty)
-  // This prevents flickering by ensuring we've actually finished loading
+  // 3. No Agents Found
   if (agentsLoaded && !isLoading && agents.length === 0) {
     return (
       <div className="w-full h-full flex flex-col">
@@ -469,7 +405,7 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
     );
   }
 
-  // 4. Normal View (show agents - during refresh, old agents remain visible until new ones load)
+  // 4. Normal View
   return (
     <div className="w-full h-full flex flex-col">
         <div className="flex-1 p-6 overflow-y-auto">
@@ -634,23 +570,13 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
                 {/* Actions */}
                 <div className={`p-5 border-t ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
                   
-                  
-                  {/* Demo Button */}
+                  {/* Configure / Demo Button */}
                   <button
                     onClick={() => window.open(`/demo/${agent.id}`, '_blank')}
                     className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-3 px-4 rounded-lg transition-all duration-200 shadow-sm font-medium text-sm flex items-center justify-center gap-2 mb-3"
                   >
                     <ExternalLink className="w-4 h-4" />
                     Configure
-                  </button>
-
-                  {/* Public Configs Button */}
-                  <button
-                    onClick={() => openPublicConfigs(agent)}
-                    className="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-white py-3 px-4 rounded-lg transition-all duration-200 shadow-sm font-medium text-sm flex items-center justify-center gap-2 mb-3"
-                  >
-                    <Code className="w-4 h-4" />
-                    Public Configs
                   </button>
                   
                   {/* Secondary Actions - Icon Buttons with Hover Labels */}
@@ -738,8 +664,6 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
             </div>
           </div>
         )}
-
-        {/* Success modal removed */}
 
         {/* Associate Agent Modal */}
         {showAssociateModal && (
@@ -1024,53 +948,6 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
             </div>
           </div>
         </div>
-        )}
-
-        {/* Public Configs Modal */}
-        {showPublicConfigsModal && publicConfigsAgent && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center text-black">
-            <div className="absolute inset-0 bg-black/40" onClick={closePublicConfigs} />
-            <div className="relative w-full max-w-lg bg-white rounded-xl shadow-lg p-6 z-10">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Public Configurations for {publicConfigsAgent.name || publicConfigsAgent.id}</h3>
-                <button onClick={closePublicConfigs} className="text-gray-500 hover:text-gray-700">Close</button>
-              </div>
-              {isLoadingPublicConfigs ? (
-                <div className="py-8 text-center">Loading...</div>
-              ) : publicConfigsError ? (
-                <div className="py-4 text-sm text-red-600">{publicConfigsError}</div>
-              ) : publicConfigs.length === 0 ? (
-                <div className="py-4 text-sm text-gray-600">No public configs available.</div>
-              ) : (
-                <ul className="space-y-2">
-                  {publicConfigs.map((name) => (
-                    <li key={name} className="flex items-center justify-between bg-gray-50 p-3 rounded-md">
-                      <span className="text-sm text-gray-900 truncate">{name}</span>
-                      <div className="flex items-center gap-2">
-                        <a
-                          href={`/client/${publicConfigsAgent.id}?config=${encodeURIComponent(name)}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-sm text-white bg-green-600 px-3 py-1.5 rounded-md hover:bg-green-700"
-                        >
-                          Open
-                        </a>
-                        <button
-                          onClick={() => {
-                            const url = `${window.location.origin}/client/${publicConfigsAgent.id}?config=${encodeURIComponent(name)}`;
-                            navigator.clipboard?.writeText(url);
-                          }}
-                          className="text-sm text-gray-700 bg-gray-200 px-3 py-1.5 rounded-md hover:bg-gray-300"
-                        >
-                          Copy
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
         )}
       </div>
   );
