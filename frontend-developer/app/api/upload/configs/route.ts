@@ -1,70 +1,49 @@
 import { DecryptToken, EncryptToken } from '@/app/components/utils/jwt';
 import { NextResponse } from 'next/server';
 
-export async function POST(
-  request: Request,
-) {
+export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const { config } = body;
 
-    const {
-      themeColor,
-      logoImage,
-      backgroundImage,
-      botName,
-      botIconStyle,
-      widgetBackgroundColor,
-      messageAreaBackgroundColor,
-      userBubbleColor,
-      botBubbleColor,
-      interactionMode,
-      botIcon
-    } = body;
+    const payload = {
+      themeColor: config.themeColor,
+      backgroundImage: config.backgroundImage,
+      botName: config.botName,
+      botIconStyle: config.botIconStyle,
+      botIcon: config.botIcon,
+      widgetBackgroundColor: config.widgetBackgroundColor,
+      messageAreaBackgroundColor: config.messageAreaBackgroundColor,
+      userBubbleColor: config.userBubbleColor,
+      botBubbleColor: config.botBubbleColor,
+      userTextColor: config.userTextColor,
+      botTextColor: config.botTextColor,
+      interactionMode: config.interactionMode
+    };
 
-   const payload = {
-        themeColor : themeColor,
-        logoImage : logoImage,
-        backgroundImage : backgroundImage,
-        botName : botName,
-        botIconStyle : botIconStyle,
-        widgetBackgroundColor   : widgetBackgroundColor,
-        messageAreaBackgroundColor  : messageAreaBackgroundColor,
-        userBubbleColor : userBubbleColor,
-        botBubbleColor : botBubbleColor,
-        interactionMode : interactionMode,
-        botIcon : botIcon
-   }
-   const token = EncryptToken(payload)
+    const token = EncryptToken(payload);
 
-    return NextResponse.json({ status: 'success', token : token });
+    return NextResponse.json({ status: 'success', token });
 
-  } catch (error: any) {
-    console.error('Error saving config:', error);
-    if (error.code === 'P2002') {
-      return NextResponse.json(
-        { error: 'A configuration with this name already exists for this agent.' },
-        { status: 409 }
-      );
-    }
+  } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-
-export async function GET(
-  request: Request,
-) {
+export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const configName = searchParams.get('configName');
-    
+
     if (!configName) {
       return NextResponse.json(
-        { error: 'Configuration name required' },
+        { error: 'Configuration token required' },
         { status: 400 }
       );
-    }   
+    }
+
     const decoded = DecryptToken(configName);
+
     if (!decoded) {
       return NextResponse.json(
         { error: 'Invalid configuration token' },
@@ -74,7 +53,6 @@ export async function GET(
 
     return NextResponse.json({ status: 'success', config: decoded });
   } catch (error) {
-    console.error('Error fetching config:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -25,25 +25,26 @@ type CallOption = 'chat_only' | 'call_only' | 'both';
 
 interface ConfigState {
   themeColor: string;
-  logoImage: string;
+  // logoImage removed
   backgroundImage: string;
+  
+  // Bot Identity
   botName: string;
   botIconStyle: string;
+  botIcon: string; // New: Uploaded Icon URL
   
-  // These strings can now hold "linear-gradient(...)"
+  // Widget Styling (Supports gradients)
   widgetBgColor: string; 
   chatBgColor: string; 
   userBubbleColor: string;
   botBubbleColor: string;
-  botIcon?: string;
+  
+  // Text Colors (New)
+  userTextColor: string;
+  botTextColor: string;
+
   interactionMode: CallOption;
 }
-
-// --- Helper: DiceBear URL Generator ---
-const getBotIconUrl = (seed: string, style: string) => {
-  const iconStyle = style || 'bottts';
-  return `https://api.dicebear.com/9.x/${iconStyle}/svg?seed=${encodeURIComponent(seed)}`;
-};
 
 // ============================================================================
 // 1. MAIN CONTENT COMPONENT (Logic lives here)
@@ -52,7 +53,6 @@ function ClientPageContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   
-  // Handle both [id] or [agentId] folder naming conventions safely
   const agentId = (params?.id || params?.agentId) as string;
   const configName = searchParams.get('config');
 
@@ -76,18 +76,31 @@ function ClientPageContent() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // --- Helper: Get Display Icon (Custom vs DiceBear) ---
+  const getDisplayIcon = () => {
+    // If config exists and has a botIcon, use it
+    if (config?.botIcon) return config.botIcon;
+    
+    // Fallback to DiceBear
+    const seed = config?.botName || 'AI Assistant';
+    const style = config?.botIconStyle || 'bottts';
+    return `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}`;
+  };
+
   // --- Helper: Default Config ---
   const useDefaultConfig = (agentInfo: AgentInfo) => {
       setConfig({
         themeColor: '#16a34a',
-        logoImage: '',
         backgroundImage: '',
         botName: agentInfo.name || 'AI Assistant',
         botIconStyle: 'bottts',
+        botIcon: '',
         widgetBgColor: '#ffffff',
         chatBgColor: '#f9fafb',
         userBubbleColor: '#16a34a',
         botBubbleColor: '#ffffff',
+        userTextColor: '#ffffff',
+        botTextColor: '#1f2937',
         interactionMode: 'both'
       });
   };
@@ -115,7 +128,7 @@ function ClientPageContent() {
         }
         setAgent(agentData.agent_info);
 
-        // 2. Fetch Configuration (Only if configName exists)
+
         if (configName) {
             const configRes = await fetch(`/api/upload/configs?configName=${configName}`);
             const configData = await configRes.json();
@@ -126,19 +139,22 @@ function ClientPageContent() {
                 // Map DB Config to State
                 setConfig({
                     themeColor: dbConfig.themeColor || '#16a34a',
-                    logoImage: dbConfig.logoImage || '',
                     backgroundImage: dbConfig.backgroundImage || '',
                     botName: dbConfig.botName || 'AI Assistant',
                     botIconStyle: dbConfig.botIconStyle || 'bottts',
+                    botIcon: dbConfig.botIcon || '', // New field
+                    
                     widgetBgColor: dbConfig.widgetBgColor || '#ffffff',
                     chatBgColor: dbConfig.chatBgColor || '#f9fafb',
                     userBubbleColor: dbConfig.userBubbleColor || '#16a34a',
                     botBubbleColor: dbConfig.botBubbleColor || '#ffffff',
-                    interactionMode: dbConfig.interactionMode || 'both',
-                    botIcon: dbConfig.botIcon || ''
+                    
+                    userTextColor: dbConfig.userTextColor || '#ffffff', // New field
+                    botTextColor: dbConfig.botTextColor || '#1f2937',   // New field
+                    
+                    interactionMode: dbConfig.interactionMode || 'both'
                 });
             } else {
-                console.warn("Config not found in DB, using defaults");
                 useDefaultConfig(agentData.agent_info);
             }
         } else {
@@ -163,7 +179,7 @@ function ClientPageContent() {
     };
 
     initPage();
-  }, [agentId, configName]); 
+  }, [agentId, configName]);
 
   // --- Effects ---
   useEffect(() => {
@@ -243,9 +259,6 @@ function ClientPageContent() {
     </div>
   );
 
-  const isCallAllowed = config.interactionMode === 'call_only' || config.interactionMode === 'both';
-  const isChatAllowed = config.interactionMode === 'chat_only' || config.interactionMode === 'both';
-
   return (
     <div 
         className="min-h-screen flex flex-col font-sans relative overflow-hidden transition-all duration-500"
@@ -261,21 +274,10 @@ function ClientPageContent() {
       {/* Overlay */}
       {config.backgroundImage && <div className="absolute inset-0 bg-black/40 z-0" />}
 
-      {/* --- Header --- */}
+      {/* --- Minimal Header (Just System Online) --- */}
       <header className={`px-6 py-4 flex items-center justify-between sticky top-0 z-20 transition-all duration-300 ${config.backgroundImage ? 'bg-black/20 backdrop-blur-md border-white/10' : 'bg-white/80 backdrop-blur-md border-gray-200'} border-b`}>
         <div className="flex items-center gap-3">
-          {config.logoImage ? (
-             <img src={config.logoImage} alt="Logo" className="h-10 w-auto object-contain" />
-          ) : (
-            <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold" style={{ background: `linear-gradient(135deg, ${config.themeColor}, #000)` }}>
-                    X
-                </div>
-                <h1 className={`font-bold text-xl tracking-tight ${config.backgroundImage ? 'text-white' : 'text-gray-900'}`}>
-                    Xpectrum<span style={{ color: config.themeColor }}>-ai</span>
-                </h1>
-            </div>
-          )}
+           {/* Removed Logo Logic */}
         </div>
         
         <div className="flex items-center gap-2">
@@ -286,16 +288,40 @@ function ClientPageContent() {
         </div>
       </header>
 
+      {/* --- Main Landing Area --- */}
+      <main className="flex-1 w-full max-w-5xl mx-auto p-4 flex flex-col items-center justify-center relative z-10 text-center">
+        {!isChatOpen && (
+             <div className="animate-in fade-in zoom-in duration-500">
+                <div className="w-24 h-24 rounded-full mx-auto mb-6 flex items-center justify-center shadow-xl bg-white overflow-hidden">
+                    {/* Updated to use getDisplayIcon */}
+                    <img src={getDisplayIcon()} alt="Avatar" className="w-full h-full object-cover" />
+                </div>
+                <h2 className={`text-4xl font-bold mb-4 ${config.backgroundImage ? 'text-white' : 'text-gray-900'}`}>
+                    Hello, I'm {config.botName}
+                </h2>
+                <p className={`text-lg max-w-md mx-auto ${config.backgroundImage ? 'text-gray-200' : 'text-gray-600'}`}>
+                    How can I assist you today?
+                </p>
+                <button 
+                    onClick={() => setIsChatOpen(true)}
+                    className="mt-8 px-8 py-3 rounded-full font-semibold text-white shadow-lg transition-transform hover:scale-105"
+                    style={{ backgroundColor: config.themeColor }}
+                >
+                    Start Conversation
+                </button>
+            </div>
+        )}
+      </main>
 
       {/* --- Integrated Widget --- */}
       <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-4">
         
         {/* Widget Container */}
         <div 
-            className={`shadow-2xl border border-gray-200 overflow-hidden transition-all duration-300 origin-bottom-right flex flex-col ${isChatOpen ? 'w-[90vw] sm:w-[380px] h-[600px] max-h-[85vh] opacity-100 scale-100' : 'w-0 h-0 opacity-0 scale-90'}`}
+            className={`shadow-2xl overflow-hidden transition-all duration-300 origin-bottom-right flex flex-col ${isChatOpen ? 'w-[90vw] sm:w-[380px] h-[600px] max-h-[85vh] opacity-100 scale-100' : 'w-0 h-0 opacity-0 scale-90'}`}
             style={{ 
                 borderRadius: '1.5rem', 
-                // UPDATED: Use 'background' to support both hex colors and linear-gradients
+                // Changed to 'background' to support gradients
                 background: config.widgetBgColor 
             }}
         >
@@ -304,12 +330,8 @@ function ClientPageContent() {
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full overflow-hidden border border-gray-200">
-                             {/* Widget Header Avatar */}
-                             <img 
-                                src={getBotIconUrl(config.botName, config.botIconStyle)} 
-                                alt="Bot" 
-                                className="w-full h-full bg-white" 
-                             />
+                             {/* Header Icon */}
+                             <img src={getDisplayIcon()} alt="Bot" className="w-full h-full object-cover bg-white" />
                         </div>
                         <div>
                             <h3 className="font-bold text-gray-900 text-sm">{config.botName}</h3>
@@ -362,16 +384,17 @@ function ClientPageContent() {
                                     <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 shadow-sm text-sm ${
                                         msg.role === 'user' 
                                         ? 'rounded-br-none' 
-                                        : 'rounded-bl-none border border-gray-200'
+                                        : 'rounded-bl-none' // Borders removed
                                     }`}
                                     style={{ 
-                                        // UPDATED: Use 'background' for bubbles too just in case
+                                        // Use background for bubbles
                                         background: msg.role === 'user' ? config.userBubbleColor : config.botBubbleColor,
-                                        color: msg.role === 'user' ? '#ffffff' : '#1f2937'
+                                        // Use custom text colors
+                                        color: msg.role === 'user' ? config.userTextColor : config.botTextColor
                                     }}
                                     >
-                                        <div className="flex justify-between items-baseline gap-4 mb-1 border-b border-white/10 pb-1">
-                                            <span className="text-[10px] font-bold opacity-90">
+                                        <div className="flex justify-between items-baseline gap-4 mb-1 border-b border-black/5 pb-1 opacity-80">
+                                            <span className="text-[10px] font-bold">
                                                 {msg.role === 'user' ? 'You' : config.botName}
                                             </span>
                                             <span className="text-[10px] opacity-70">
@@ -394,7 +417,7 @@ function ClientPageContent() {
                             <div ref={messagesEndRef} />
                         </div>
 
-                        {/* Chat Input */}
+                        {/* Chat Input - Fixed to White BG / Black Text */}
                         <div className="p-3 border-t border-gray-100" style={{ background: config.widgetBgColor }}>
                             <div className="flex gap-2">
                                 <input
@@ -403,7 +426,7 @@ function ClientPageContent() {
                                     onChange={(e) => setInputMessage(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                                     placeholder="Type a message..."
-                                    className="flex-1 px-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:border-transparent text-sm text-black"
+                                    className="flex-1 px-4 py-2 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:border-transparent text-sm bg-white text-black placeholder-gray-400"
                                     style={{ '--tw-ring-color': config.themeColor } as React.CSSProperties}
                                 />
                                 <button 
@@ -435,7 +458,7 @@ function ClientPageContent() {
                                     transform: isVoiceActive ? 'scale(1.1)' : 'scale(1)'
                                 }}
                             >
-                                <img src={getBotIconUrl(config.botName, config.botIconStyle)} alt="Bot" className="w-full h-full" />
+                                <img src={getDisplayIcon()} alt="Bot" className="w-full h-full object-cover" />
                             </div>
                             
                             {isVoiceActive && (
