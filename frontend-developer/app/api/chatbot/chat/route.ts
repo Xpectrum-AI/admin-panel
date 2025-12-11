@@ -135,8 +135,9 @@ const response = await fetch(difyServiceUrl, {
     }
 
     // Handle response based on mode
-    const responseText = await response.text();
-if (responseMode === 'blocking') {
+    if (responseMode === 'blocking') {
+      // For blocking mode, read the entire response as text
+      const responseText = await response.text();
       // Handle blocking mode (for widget preview)
       try {
         // Parse as JSON (blocking mode should return JSON directly)
@@ -214,17 +215,21 @@ if (responseMode === 'blocking') {
       }
     } else {
       // Handle streaming mode - return streaming response to frontend
+      // IMPORTANT: Don't consume response.body before this point!
+      // Check if body exists and is not locked
+      if (!response.body) {
+        return NextResponse.json(
+          { error: 'No response body available for streaming' },
+          { status: 500 }
+        );
+      }
+
       // Create a ReadableStream to forward the streaming response
       const stream = new ReadableStream({
         async start(controller) {
-          const reader = response.body?.getReader();
+          const reader = response.body!.getReader();
           const decoder = new TextDecoder();
           let conversationIdFromStream = conversationId;
-          
-          if (!reader) {
-            controller.close();
-            return;
-          }
 
           try {
             while (true) {

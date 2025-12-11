@@ -627,6 +627,7 @@ Remember: You are the first point of contact for many patients. Your professiona
       const decoder = new TextDecoder();
       let accumulatedText = '';
       let currentConversationId = conversationId;
+      let firstChunkReceived = false;
 
       if (!reader) {
         throw new Error('No response body');
@@ -694,6 +695,12 @@ Remember: You are the first point of contact for many patients. Your professiona
               // Accumulate text and update the message
               if (textChunk) {
                 accumulatedText += textChunk;
+                
+                // Hide "Thinking..." indicator when first chunk arrives
+                if (!firstChunkReceived) {
+                  firstChunkReceived = true;
+                  setIsChatLoading(false);
+                }
                 
                 // Update the bot message in real-time
                 setChatMessages(prev => prev.map(msg => 
@@ -1542,31 +1549,33 @@ Remember: You are the first point of contact for many patients. Your professiona
                   </div>
                 </div>
               ) : (
-                chatMessages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} group`}
-                  >
+                chatMessages
+                  .filter((message) => message.message && message.message.trim() !== '') // Only show messages with content
+                  .map((message) => (
                     <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-xl shadow-sm transition-all duration-200 group-hover:shadow-md ${message.type === 'user'
-                        ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-br-md'
-                        : isDarkMode
-                          ? 'bg-gray-800 text-gray-100 rounded-bl-md border border-gray-700'
-                          : 'bg-gray-50 text-gray-900 rounded-bl-md border border-gray-200'
-                        }`}
+                      key={message.id}
+                      className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} group`}
                     >
-                      <div className={`text-sm leading-relaxed ${message.type === 'user' ? 'text-white' : isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                        <MarkdownRenderer>
-                          {message.message || ''}
-                        </MarkdownRenderer>
+                      <div
+                        className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-xl shadow-sm transition-all duration-200 group-hover:shadow-md ${message.type === 'user'
+                          ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-br-md'
+                          : isDarkMode
+                            ? 'bg-gray-800 text-gray-100 rounded-bl-md border border-gray-700'
+                            : 'bg-gray-50 text-gray-900 rounded-bl-md border border-gray-200'
+                          }`}
+                      >
+                        <div className={`text-sm leading-relaxed ${message.type === 'user' ? 'text-white' : isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+                          <MarkdownRenderer>
+                            {message.message || ''}
+                          </MarkdownRenderer>
+                        </div>
+                        <p className={`text-xs mt-1.5 ${message.type === 'user' ? 'text-green-100' : 'text-gray-500 dark:text-gray-400'
+                          }`}>
+                          {message.timestamp.toLocaleTimeString()}
+                        </p>
                       </div>
-                      <p className={`text-xs mt-1.5 ${message.type === 'user' ? 'text-green-100' : 'text-gray-500 dark:text-gray-400'
-                        }`}>
-                        {message.timestamp.toLocaleTimeString()}
-                      </p>
                     </div>
-                  </div>
-                ))
+                  ))
               )}
               {isChatLoading && (
                 <div className="flex justify-start">
