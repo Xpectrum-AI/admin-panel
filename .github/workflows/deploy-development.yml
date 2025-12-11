@@ -260,6 +260,10 @@ jobs:
           NEXT_PUBLIC_MODEL_GROQ_API_KEY: ${{ secrets.DEV_MODEL_GROQ_API_KEY }}
           NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY: ${{ secrets.DEV_MODEL_ANTHROPIC_API_KEY }}
           NEXT_PUBLIC_DIFY_BASE_URL: ${{ vars.DEV_DIFY_BASE_URL }}
+          NEXT_PUBLIC_DEMO_JWT_SECRET: ${{ secrets.DEV_DEMO_JWT_SECRET }}
+          NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY: ${{ vars.DEV_IMAGEKIT_PUBLIC_KEY }}
+          NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT: ${{ vars.DEV_IMAGEKIT_URL_ENDPOINT }}
+          NEXT_PUBLIC_IMAGEKIT_PRIVATE_KEY: ${{ vars.DEV_IMAGEKIT_PRIVATE_KEY }}
         run: |
           # Use the specific registry name
           REPO="registry.digitalocean.com/xpectrum-main-app-dev/developer-dev"
