@@ -170,7 +170,6 @@ export async function POST(request: NextRequest) {
       system_prompt: `You are a helpful AI assistant.`,
       model_provider: "OpenAI",
       model_name: "GPT-4o",
-      model_api_key: process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '',
       model_live_url: process.env.NEXT_PUBLIC_DIFY_BASE_URL || '',
       config: {
         workspace_id: workspaceId, // Store workspace ID in config

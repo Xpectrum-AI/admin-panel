@@ -141,7 +141,6 @@ class AdminPanelDeploymentStack(Stack):
                 "NEXT_PUBLIC_PROPELAUTH_API_KEY": os.environ.get('PRODUCTION_PROPELAUTH_API_KEY' if environment == 'production' else 'DEV_PROPELAUTH_API_KEY', ''),
                 # Model Configuration API
                 "NEXT_PUBLIC_MODEL_API_BASE_URL": os.environ.get('PRODUCTION_MODEL_API_BASE_URL' if environment == 'production' else 'DEV_MODEL_API_BASE_URL', ''),
-                "NEXT_PUBLIC_MODEL_API_KEY": os.environ.get('PRODUCTION_MODEL_API_KEY' if environment == 'production' else 'DEV_MODEL_API_KEY', ''),
                 # Chatbot API
                 "NEXT_PUBLIC_CHATBOT_API_URL": os.environ.get('PRODUCTION_CHATBOT_API_URL' if environment == 'production' else 'DEV_CHATBOT_API_URL', ''),
                 "NEXT_PUBLIC_CHATBOT_API_KEY": os.environ.get('PRODUCTION_CHATBOT_API_KEY' if environment == 'production' else 'DEV_CHATBOT_API_KEY', ''),
@@ -151,10 +150,6 @@ class AdminPanelDeploymentStack(Stack):
                 "NEXT_PUBLIC_WHISPER_API_KEY": os.environ.get('PRODUCTION_WHISPER_API_KEY' if environment == 'production' else 'DEV_WHISPER_API_KEY', ''),
                 "NEXT_PUBLIC_DEEPGRAM_API_KEY": os.environ.get('PRODUCTION_DEEPGRAM_API_KEY' if environment == 'production' else 'DEV_DEEPGRAM_API_KEY', ''),
                 "NEXT_PUBLIC_CARTESIA_API_KEY": os.environ.get('PRODUCTION_CARTESIA_API_KEY' if environment == 'production' else 'DEV_CARTESIA_API_KEY', ''),
-                # Model Provider API Keys
-                "NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY": os.environ.get('PRODUCTION_MODEL_OPEN_AI_API_KEY' if environment == 'production' else 'DEV_MODEL_OPEN_AI_API_KEY', ''),
-                "NEXT_PUBLIC_MODEL_GROQ_API_KEY": os.environ.get('PRODUCTION_MODEL_GROQ_API_KEY' if environment == 'production' else 'DEV_MODEL_GROQ_API_KEY', ''),
-                "NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY": os.environ.get('PRODUCTION_MODEL_ANTHROPIC_API_KEY' if environment == 'production' else 'DEV_MODEL_ANTHROPIC_API_KEY', ''),
                 "NEXT_PUBLIC_DIFY_BASE_URL": os.environ.get('PRODUCTION_DIFY_BASE_URL' if environment == 'production' else 'DEV_DIFY_BASE_URL', ''),
                 # Voice Provider Voice IDs
                 "NEXT_PUBLIC_CARTESIA_VOICE_ID": os.environ.get('PRODUCTION_CARTESIA_VOICE_ID' if environment == 'production' else 'DEV_CARTESIA_VOICE_ID', ''),

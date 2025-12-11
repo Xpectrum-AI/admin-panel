@@ -266,9 +266,6 @@ jobs:
           NEXT_PUBLIC_DIFY_ADMIN_EMAIL: ${{ vars.REL_DIFY_ADMIN_EMAIL }}
           NEXT_PUBLIC_DIFY_ADMIN_PASSWORD: ${{ secrets.REL_DIFY_ADMIN_PASSWORD }}
           NEXT_PUBLIC_DIFY_WORKSPACE_ID: ${{ vars.REL_DIFY_WORKSPACE_ID }}
-          NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY: ${{ secrets.REL_MODEL_OPEN_AI_API_KEY }}
-          NEXT_PUBLIC_MODEL_GROQ_API_KEY: ${{ secrets.REL_MODEL_GROQ_API_KEY }}
-          NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY: ${{ secrets.REL_MODEL_ANTHROPIC_API_KEY }}
           NEXT_PUBLIC_DIFY_BASE_URL: ${{ vars.REL_DIFY_BASE_URL }}
         run: |
           # Use the specific registry name
@@ -299,9 +296,6 @@ jobs:
             --build-arg NEXT_PUBLIC_DIFY_ADMIN_EMAIL="${NEXT_PUBLIC_DIFY_ADMIN_EMAIL}" \
             --build-arg NEXT_PUBLIC_DIFY_ADMIN_PASSWORD="${NEXT_PUBLIC_DIFY_ADMIN_PASSWORD}" \
             --build-arg NEXT_PUBLIC_DIFY_WORKSPACE_ID="${NEXT_PUBLIC_DIFY_WORKSPACE_ID}" \
-            --build-arg NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY="${NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY}" \
-            --build-arg NEXT_PUBLIC_MODEL_GROQ_API_KEY="${NEXT_PUBLIC_MODEL_GROQ_API_KEY}" \
-            --build-arg NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY="${NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY}" \
             --build-arg NEXT_PUBLIC_DIFY_BASE_URL="${NEXT_PUBLIC_DIFY_BASE_URL}" \
             -t developer-dashboard-release:$IMAGE_TAG .
           
@@ -365,9 +359,6 @@ jobs:
           
           # Developer Dashboard secrets - using REL_* secrets, storing in release: namespace
           pulumi config set release:difyAdminPassword "${{ secrets.REL_DIFY_ADMIN_PASSWORD }}" --secret
-          pulumi config set release:modelOpenAiApiKey "${{ secrets.REL_MODEL_OPEN_AI_API_KEY }}" --secret
-          pulumi config set release:modelGroqApiKey "${{ secrets.REL_MODEL_GROQ_API_KEY }}" --secret
-          pulumi config set release:modelAnthropicApiKey "${{ secrets.REL_MODEL_ANTHROPIC_API_KEY }}" --secret
           pulumi config set release:chatbotApiKey "${{ secrets.REL_CHATBOT_API_KEY }}" --secret
           pulumi config set release:elevenLabsApiKey "${{ secrets.REL_ELEVEN_LABS_API_KEY }}" --secret
           pulumi config set release:openAiApiKey "${{ secrets.REL_OPEN_AI_API_KEY }}" --secret

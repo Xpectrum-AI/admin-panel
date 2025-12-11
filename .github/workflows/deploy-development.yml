@@ -242,7 +242,6 @@ jobs:
           NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.DEV_LIVE_API_KEY }}
           NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY: ${{ secrets.DEV_DEVELOPER_PROPELAUTH_API_KEY }}
           NEXT_PUBLIC_MODEL_API_BASE_URL: ${{ vars.DEV_MODEL_API_BASE_URL }}
-          NEXT_PUBLIC_MODEL_API_KEY: ${{ secrets.DEV_MODEL_API_KEY }}
           NEXT_PUBLIC_CHATBOT_API_URL: ${{ vars.DEV_CHATBOT_API_URL }}
           NEXT_PUBLIC_CHATBOT_API_KEY: ${{ secrets.DEV_CHATBOT_API_KEY }}
           NEXT_PUBLIC_ELEVEN_LABS_API_KEY: ${{ secrets.DEV_ELEVEN_LABS_API_KEY }}
@@ -256,9 +255,6 @@ jobs:
           NEXT_PUBLIC_DIFY_ADMIN_EMAIL: ${{ vars.DEV_DIFY_ADMIN_EMAIL }}
           NEXT_PUBLIC_DIFY_ADMIN_PASSWORD: ${{ secrets.DEV_DIFY_ADMIN_PASSWORD }}
           NEXT_PUBLIC_DIFY_WORKSPACE_ID: ${{ vars.DEV_DIFY_WORKSPACE_ID }}
-          NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY: ${{ secrets.DEV_MODEL_OPEN_AI_API_KEY }}
-          NEXT_PUBLIC_MODEL_GROQ_API_KEY: ${{ secrets.DEV_MODEL_GROQ_API_KEY }}
-          NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY: ${{ secrets.DEV_MODEL_ANTHROPIC_API_KEY }}
           NEXT_PUBLIC_DIFY_BASE_URL: ${{ vars.DEV_DIFY_BASE_URL }}
           NEXT_PUBLIC_DEMO_JWT_SECRET: ${{ secrets.DEV_DEMO_JWT_SECRET }}
           NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY: ${{ vars.DEV_IMAGEKIT_PUBLIC_KEY }}
@@ -280,7 +276,6 @@ jobs:
             --build-arg NEXT_PUBLIC_LIVE_API_KEY="${NEXT_PUBLIC_LIVE_API_KEY}" \
             --build-arg NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY="${NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY}" \
             --build-arg NEXT_PUBLIC_MODEL_API_BASE_URL="${NEXT_PUBLIC_MODEL_API_BASE_URL}" \
-            --build-arg NEXT_PUBLIC_MODEL_API_KEY="${NEXT_PUBLIC_MODEL_API_KEY}" \
             --build-arg NEXT_PUBLIC_CHATBOT_API_URL="${NEXT_PUBLIC_CHATBOT_API_URL}" \
             --build-arg NEXT_PUBLIC_CHATBOT_API_KEY="${NEXT_PUBLIC_CHATBOT_API_KEY}" \
             --build-arg NEXT_PUBLIC_ELEVEN_LABS_API_KEY="${NEXT_PUBLIC_ELEVEN_LABS_API_KEY}" \
@@ -294,9 +289,6 @@ jobs:
             --build-arg NEXT_PUBLIC_DIFY_ADMIN_EMAIL="${NEXT_PUBLIC_DIFY_ADMIN_EMAIL}" \
             --build-arg NEXT_PUBLIC_DIFY_ADMIN_PASSWORD="${NEXT_PUBLIC_DIFY_ADMIN_PASSWORD}" \
             --build-arg NEXT_PUBLIC_DIFY_WORKSPACE_ID="${NEXT_PUBLIC_DIFY_WORKSPACE_ID}" \
-            --build-arg NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY="${NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY}" \
-            --build-arg NEXT_PUBLIC_MODEL_GROQ_API_KEY="${NEXT_PUBLIC_MODEL_GROQ_API_KEY}" \
-            --build-arg NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY="${NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY}" \
             --build-arg NEXT_PUBLIC_DIFY_BASE_URL="${NEXT_PUBLIC_DIFY_BASE_URL}" \
             --build-arg NEXT_PUBLIC_DEMO_JWT_SECRET="${NEXT_PUBLIC_DEMO_JWT_SECRET}" \
             --build-arg NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY="${NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY}" \
@@ -364,9 +356,6 @@ jobs:
           
           # Developer Dashboard secrets - all from GitHub secrets
           pulumi config set dev:difyAdminPassword "${{ secrets.DEV_DIFY_ADMIN_PASSWORD }}" --secret
-          pulumi config set dev:modelOpenAiApiKey "${{ secrets.DEV_MODEL_OPEN_AI_API_KEY }}" --secret
-          pulumi config set dev:modelGroqApiKey "${{ secrets.DEV_MODEL_GROQ_API_KEY }}" --secret
-          pulumi config set dev:modelAnthropicApiKey "${{ secrets.DEV_MODEL_ANTHROPIC_API_KEY }}" --secret
           pulumi config set dev:chatbotApiKey "${{ secrets.DEV_CHATBOT_API_KEY }}" --secret
           pulumi config set dev:elevenLabsApiKey "${{ secrets.DEV_ELEVEN_LABS_API_KEY }}" --secret
           pulumi config set dev:openAiApiKey "${{ secrets.DEV_OPEN_AI_API_KEY }}" --secret

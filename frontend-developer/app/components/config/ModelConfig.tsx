@@ -42,7 +42,6 @@ const ModelConfig = forwardRef<HTMLDivElement, ModelConfigProps>(({ agentName = 
   const [selectedModelProvider, setSelectedModelProvider] = useState('OpenAI');
   const [selectedModel, setSelectedModel] = useState('GPT-4o');
   const [modelLiveUrl, setModelLiveUrl] = useState(process.env.NEXT_PUBLIC_DIFY_BASE_URL || '');
-  const [modelApiKey, setModelApiKey] = useState(process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '');
   const [agentUrl, setAgentUrl] = useState(agentApiUrl || process.env.NEXT_PUBLIC_CHATBOT_API_URL || '');
   const [localAgentApiKey, setLocalAgentApiKey] = useState(agentApiKey || '');
   const [copiedAgentApiKey, setCopiedAgentApiKey] = useState(false);
@@ -112,7 +111,6 @@ Remember: You are the first point of contact for many patients. Your professiona
   // Keep only essential state variables
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [isUsingModelApiKey, setIsUsingModelApiKey] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaveTime, setLastSaveTime] = useState(0);
   const [saveInProgress, setSaveInProgress] = useState(false);
@@ -149,7 +147,6 @@ Remember: You are the first point of contact for many patients. Your professiona
         const config = JSON.parse(savedConfig);
         setSelectedModelProvider(config.selectedModelProvider || 'OpenAI');
         setSelectedModel(config.selectedModel || 'GPT-4o');
-        setModelApiKey(config.modelApiKey || process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '');
         setModelLiveUrl(config.modelLiveUrl || process.env.NEXT_PUBLIC_DIFY_BASE_URL || '');
         // Don't load agentUrl and agentApiKey from localStorage - keep them from existingConfig only
       }
@@ -257,9 +254,6 @@ Remember: You are the first point of contact for many patients. Your professiona
       if (existingConfig.modelLiveUrl) {
         setModelLiveUrl(existingConfig.modelLiveUrl);
       }
-      if (existingConfig.modelApiKey) {
-        setModelApiKey(existingConfig.modelApiKey);
-      }
       if (existingConfig.chatbot_api) {
         setAgentUrl(existingConfig.chatbot_api);
       } else if (existingConfig.agentUrl) {
@@ -273,13 +267,6 @@ Remember: You are the first point of contact for many patients. Your professiona
       if (existingConfig.systemPrompt) {
         setSystemPrompt(existingConfig.systemPrompt);
       }
-
-      // Check if this agent is using a custom model API key
-      const modelKey = existingConfig.modelApiKey || existingConfig.model_api_key;
-      const hasModelApiKey = modelKey &&
-        modelKey !== process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY &&
-        (modelKey.startsWith('sk-') || modelKey.startsWith('gsk_') || modelKey.startsWith('sk-ant-'));
-      setIsUsingModelApiKey(hasModelApiKey);
     } else {
       // Load from localStorage if no existing config
       loadFromStorage();
@@ -349,7 +336,6 @@ setLocalAgentApiKey(agentApiKey);
       const modelConfig = {
         selectedModelProvider,
         selectedModel,
-        modelApiKey,
         modelLiveUrl,
         timestamp: new Date().toISOString()
       };
@@ -361,7 +347,6 @@ setLocalAgentApiKey(agentApiKey);
         onConfigChange({
           selectedModelProvider,
           selectedModel,
-          modelApiKey,
           modelLiveUrl,
           agentUrl,
           agentApiKey: localAgentApiKey,
@@ -379,7 +364,7 @@ setLocalAgentApiKey(agentApiKey);
         clearTimeout(autoSaveTimeoutRef.current);
       }
     };
-  }, [selectedModelProvider, selectedModel, modelApiKey, modelLiveUrl, agentUrl, localAgentApiKey, systemPrompt, saveToStorage, onConfigChange]);
+  }, [selectedModelProvider, selectedModel, modelLiveUrl, agentUrl, localAgentApiKey, systemPrompt, saveToStorage, onConfigChange]);
 
   // Auto-clear success and error messages with longer delays to prevent flickering
   useEffect(() => {
@@ -428,7 +413,6 @@ setLocalAgentApiKey(agentApiKey);
         selectedModelProvider,
         selectedModel,
         modelLiveUrl,
-        modelApiKey,
         agentUrl,
         agentApiKey: localAgentApiKey,
         systemPrompt,
@@ -442,7 +426,7 @@ setLocalAgentApiKey(agentApiKey);
       }
     } catch (error) {
     }
-  }, [selectedModelProvider, selectedModel, modelLiveUrl, modelApiKey, agentUrl, localAgentApiKey, systemPrompt, onConfigChange]);
+  }, [selectedModelProvider, selectedModel, modelLiveUrl, agentUrl, localAgentApiKey, systemPrompt, onConfigChange]);
 
   // Debounced prompt save function
   const debouncedPromptSave = useCallback((promptValue: string) => {
@@ -514,7 +498,6 @@ setLocalAgentApiKey(agentApiKey);
   const debouncedModelSave = useCallback((currentState?: {
     selectedModelProvider?: string;
     selectedModel?: string;
-    modelApiKey?: string;
     modelLiveUrl?: string;
     agentApiKey?: string;
   }) => {
@@ -537,7 +520,6 @@ setLocalAgentApiKey(agentApiKey);
         const stateToUse = currentState || {
           selectedModelProvider,
           selectedModel,
-          modelApiKey,
           modelLiveUrl,
           agentApiKey: localAgentApiKey
         };
@@ -545,7 +527,6 @@ setLocalAgentApiKey(agentApiKey);
         const modelConfig = {
           selectedModelProvider: stateToUse.selectedModelProvider,
           selectedModel: stateToUse.selectedModel,
-          modelApiKey: stateToUse.modelApiKey,
           modelLiveUrl: stateToUse.modelLiveUrl,
           timestamp: new Date().toISOString()
         };
@@ -571,7 +552,6 @@ setLocalAgentApiKey(agentApiKey);
           body: JSON.stringify({
             provider: provider.apiProvider,
             model: apiModel,
-            api_key: stateToUse.modelApiKey,
             chatbot_api_key: chatbotApiKey,
             app_id: appId
           }),
@@ -608,7 +588,7 @@ setLocalAgentApiKey(agentApiKey);
         setSaveInProgress(false);
       }
     }, 2000); // 2 second delay
-  }, [selectedModelProvider, selectedModel, modelApiKey, modelLiveUrl, agentUrl, localAgentApiKey, existingConfig, saveToStorage, saveInProgress, resolveAppId]);
+  }, [selectedModelProvider, selectedModel, modelLiveUrl, agentUrl, localAgentApiKey, existingConfig, saveToStorage, saveInProgress, resolveAppId]);
 
   // fetchCurrentPrompt function removed - no longer needed with auto-save functionality
 
@@ -716,25 +696,6 @@ setLocalAgentApiKey(agentApiKey);
       clearTimeout(modelSaveTimeoutRef.current);
     }
 
-    // Update the model API key based on the selected provider
-    let newApiKey = '';
-    switch (provider) {
-      case 'OpenAI':
-        newApiKey = process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '';
-        break;
-      case 'Groq':
-        newApiKey = process.env.NEXT_PUBLIC_MODEL_GROQ_API_KEY || '';
-        break;
-      case 'Anthropic':
-        newApiKey = process.env.NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY || '';
-        break;
-      case 'DeepSeek':
-        newApiKey = ''; // DeepSeek requires custom API key
-        break;
-      default:
-        newApiKey = ''; // Fallback to empty for custom providers
-    }
-
     // Reset model to first available model for the new provider
     const providerData = modelProviders[provider as keyof typeof modelProviders];
     let defaultModel = '';
@@ -743,14 +704,12 @@ setLocalAgentApiKey(agentApiKey);
     }
     // Update state with new values
     setSelectedModelProvider(provider);
-    setModelApiKey(newApiKey);
     setSelectedModel(defaultModel);
 
     // Create current state object to pass to debounced function
     const currentState = {
       selectedModelProvider: provider,
       selectedModel: defaultModel,
-      modelApiKey: newApiKey,
       modelLiveUrl,
       agentApiKey: localAgentApiKey
     };
@@ -758,8 +717,7 @@ setLocalAgentApiKey(agentApiKey);
     // Save to centralized state
     saveStateToCentralized({
       selectedModelProvider: provider,
-      selectedModel: defaultModel,
-      modelApiKey: newApiKey
+      selectedModel: defaultModel
     });
 
     // Trigger auto-save with current state to avoid stale closure
@@ -897,7 +855,6 @@ setLocalAgentApiKey(agentApiKey);
         body: JSON.stringify({
           provider: apiProvider,
           model: apiModel,
-          api_key: modelApiKey,
           chatbot_api_key: localAgentApiKey,
           app_id: appId, // Pass the app ID
           dataset_configs: {
@@ -963,7 +920,7 @@ setLocalAgentApiKey(agentApiKey);
     } catch (error) {
       return false;
     }
-  }, [selectedModelProvider, selectedModel, modelApiKey, localAgentApiKey, resolveAppId]);
+  }, [selectedModelProvider, selectedModel, localAgentApiKey, resolveAppId]);
 
   // Debounced save function for knowledge base changes
   const debouncedKnowledgeBaseSave = useCallback(
@@ -1218,7 +1175,6 @@ setLocalAgentApiKey(agentApiKey);
                 const currentState = {
                   selectedModelProvider,
                   selectedModel: newModel,
-                  modelApiKey,
                   modelLiveUrl,
                   agentApiKey: localAgentApiKey
                 };
@@ -1239,37 +1195,6 @@ setLocalAgentApiKey(agentApiKey);
                 <option key={model} value={model}>{model}</option>
               ))}
             </select>
-          </div>
-
-          <div>
-            <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Model API Key
-            </label>
-            <div className="relative">
-              <input
-                type={!isEditing || isUsingModelApiKey ? "text" : "password"}
-                value={!isEditing || isUsingModelApiKey ? getApiKeyDisplayValue(modelApiKey) : modelApiKey}
-                onChange={(e) => {
-                  setModelApiKey(e.target.value);
-                  saveStateToCentralized({ modelApiKey: e.target.value });
-                }}
-                disabled={!isEditing || isUsingModelApiKey}
-                placeholder={isUsingModelApiKey ? `Using configured ${selectedModelProvider} API key` : `Enter your ${selectedModelProvider} API key`}
-                className={`w-full p-3 pr-10 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-300 text-sm sm:text-base ${!isEditing || isUsingModelApiKey
-                  ? isDarkMode
-                    ? 'bg-gray-800/30 border-gray-700 text-gray-400 placeholder-gray-500 cursor-not-allowed'
-                    : 'bg-gray-100 border-gray-300 text-gray-500 placeholder-gray-400 cursor-not-allowed'
-                  : isDarkMode
-                    ? 'bg-gray-700/50 border-gray-600 text-gray-200 placeholder-gray-400'
-                    : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-                  }`}
-              />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {isUsingModelApiKey ? '🔄' : '🔒'}
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

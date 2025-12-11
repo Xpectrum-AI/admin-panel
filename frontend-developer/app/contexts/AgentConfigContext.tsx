@@ -11,7 +11,6 @@ export interface ModelConfig {
   selectedModelProvider?: string;
   selectedModel?: string;
   modelLiveUrl?: string;
-  modelApiKey?: string;
   agentApiKey?: string;
   chatbot_api?: string;
   chatbot_key?: string;
@@ -403,10 +402,9 @@ export const AgentConfigProvider: React.FC<AgentConfigProviderProps> = ({ childr
     setConfiguration(prev => {
       const systemPromptValue = agent.systemPrompt || agent.initial_message;
       const newConfig = {
-        model: agent.modelApiKey ? {
+        model: agent.chatbot_key ? {
           provider: agent.provider,
           model: agent.model,
-          api_key: agent.modelApiKey,
           chatbot_api: agent.chatbot_api,
           chatbot_key: agent.chatbot_key,
           systemPrompt: systemPromptValue
