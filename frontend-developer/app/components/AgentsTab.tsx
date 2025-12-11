@@ -593,6 +593,16 @@ Remember: You are the first point of contact for many patients. Your professiona
     setCurrentMessage('');
     setIsChatLoading(true);
 
+    // Create a placeholder bot message that we'll update as stream comes in
+    const botMessageId = (Date.now() + 1).toString();
+    const botMessage = {
+      id: botMessageId,
+      type: 'bot' as const,
+      message: '',
+      timestamp: new Date()
+    };
+    setChatMessages(prev => [...prev, botMessage]);
+
     try {
       const response = await fetch('/api/chatbot/chat', {
         method: 'POST',
@@ -608,33 +618,133 @@ Remember: You are the first point of contact for many patients. Your professiona
         }),
       });
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error('Failed to get response from server');
+      }
 
-      if (response.ok && data.answer) {
-        // Update conversation ID if provided
-        if (data.conversationId) {
-          setConversationId(data.conversationId);
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedText = '';
+      let currentConversationId = conversationId;
+      let firstChunkReceived = false;
+
+      if (!reader) {
+        throw new Error('No response body');
+      }
+
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          break;
         }
 
-        const botMessage = {
-          id: (Date.now() + 1).toString(),
-          type: 'bot' as const,
-          message: data.answer,
-          timestamp: new Date()
-        };
-        setChatMessages(prev => [...prev, botMessage]);
+        // Decode the chunk
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.trim() === '') continue;
+          
+          if (line.startsWith('data: ')) {
+            const jsonStr = line.substring(6).trim();
+            
+            if (jsonStr === '[DONE]') {
+              continue;
+            }
+
+            try {
+              const data = JSON.parse(jsonStr);
+              
+              // Handle different event types
+              if (data.type === 'done') {
+                if (data.conversationId) {
+                  setConversationId(data.conversationId);
+                }
+                continue;
+              }
+              
+              if (data.type === 'error') {
+                throw new Error(data.error || 'Stream error');
+              }
+
+              // Extract text from various event types
+              let textChunk = '';
+              
+              if (data.event === 'message' || data.event === 'agent_message' || data.event === 'message_append') {
+                textChunk = data.answer || data.text || '';
+              } else if (data.event === 'message_replace') {
+                // Replace the entire message
+                accumulatedText = data.answer || '';
+                textChunk = '';
+              } else if (data.answer) {
+                textChunk = data.answer;
+              } else if (data.text) {
+                textChunk = data.text;
+              } else if (!data.event) {
+                // Direct answer without event
+                textChunk = data.answer || data.text || '';
+              }
+
+              // Update conversation ID if provided
+              if (data.conversation_id) {
+                currentConversationId = data.conversation_id;
+              }
+
+              // Accumulate text and update the message
+              if (textChunk) {
+                accumulatedText += textChunk;
+                
+                // Hide "Thinking..." indicator when first chunk arrives
+                if (!firstChunkReceived) {
+                  firstChunkReceived = true;
+                  setIsChatLoading(false);
+                }
+                
+                // Update the bot message in real-time
+                setChatMessages(prev => prev.map(msg => 
+                  msg.id === botMessageId 
+                    ? { ...msg, message: accumulatedText }
+                    : msg
+                ));
+              }
+            } catch (parseError) {
+              // Ignore parse errors for individual lines
+              continue;
+            }
+          }
+        }
+      }
+
+      // Final update with conversation ID
+      if (currentConversationId && currentConversationId !== conversationId) {
+        setConversationId(currentConversationId);
+      }
+
+      // Ensure final message is set
+      if (accumulatedText) {
+        setChatMessages(prev => prev.map(msg => 
+          msg.id === botMessageId 
+            ? { ...msg, message: accumulatedText }
+            : msg
+        ));
       } else {
+        // If no text was accumulated, remove the empty message
+        setChatMessages(prev => prev.filter(msg => msg.id !== botMessageId));
         const errorMessage = {
-          id: (Date.now() + 1).toString(),
+          id: botMessageId,
           type: 'bot' as const,
-          message: data.error || 'Sorry, I encountered an error. Please try again.',
+          message: 'Sorry, I received an empty response. Please try again.',
           timestamp: new Date()
         };
         setChatMessages(prev => [...prev, errorMessage]);
       }
     } catch (error) {
+      // Remove the placeholder message and add error message
+      setChatMessages(prev => prev.filter(msg => msg.id !== botMessageId));
       const errorMessage = {
-        id: (Date.now() + 1).toString(),
+        id: botMessageId,
         type: 'bot' as const,
         message: error instanceof Error ? error.message : 'Sorry, there was an error connecting to the chatbot. Please check your API configuration.',
         timestamp: new Date()
@@ -1439,31 +1549,33 @@ Remember: You are the first point of contact for many patients. Your professiona
                   </div>
                 </div>
               ) : (
-                chatMessages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} group`}
-                  >
+                chatMessages
+                  .filter((message) => message.message && message.message.trim() !== '') // Only show messages with content
+                  .map((message) => (
                     <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-xl shadow-sm transition-all duration-200 group-hover:shadow-md ${message.type === 'user'
-                        ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-br-md'
-                        : isDarkMode
-                          ? 'bg-gray-800 text-gray-100 rounded-bl-md border border-gray-700'
-                          : 'bg-gray-50 text-gray-900 rounded-bl-md border border-gray-200'
-                        }`}
+                      key={message.id}
+                      className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} group`}
                     >
-                      <div className={`text-sm leading-relaxed ${message.type === 'user' ? 'text-white' : isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                        <MarkdownRenderer>
-                          {message.message || ''}
-                        </MarkdownRenderer>
+                      <div
+                        className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-xl shadow-sm transition-all duration-200 group-hover:shadow-md ${message.type === 'user'
+                          ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-br-md'
+                          : isDarkMode
+                            ? 'bg-gray-800 text-gray-100 rounded-bl-md border border-gray-700'
+                            : 'bg-gray-50 text-gray-900 rounded-bl-md border border-gray-200'
+                          }`}
+                      >
+                        <div className={`text-sm leading-relaxed ${message.type === 'user' ? 'text-white' : isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+                          <MarkdownRenderer>
+                            {message.message || ''}
+                          </MarkdownRenderer>
+                        </div>
+                        <p className={`text-xs mt-1.5 ${message.type === 'user' ? 'text-green-100' : 'text-gray-500 dark:text-gray-400'
+                          }`}>
+                          {message.timestamp.toLocaleTimeString()}
+                        </p>
                       </div>
-                      <p className={`text-xs mt-1.5 ${message.type === 'user' ? 'text-green-100' : 'text-gray-500 dark:text-gray-400'
-                        }`}>
-                        {message.timestamp.toLocaleTimeString()}
-                      </p>
                     </div>
-                  </div>
-                ))
+                  ))
               )}
               {isChatLoading && (
                 <div className="flex justify-start">
