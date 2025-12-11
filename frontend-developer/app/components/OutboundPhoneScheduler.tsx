@@ -552,8 +552,8 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
                             </td>
                             <td className="py-3 px-4 text-center">
                               <button
-                                onClick={() => handleDeleteTrunk(trunk.trunk_id || trunk.id)}
-                                disabled={deletingTrunk === (trunk.trunk_id || trunk.id)}
+                                onClick={() => handleDeleteTrunk(trunk.name)}
+                                disabled={deletingTrunk === trunk.name}
                                 className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
                                   isDarkMode
                                     ? 'hover:bg-red-900/30 text-red-400 hover:text-red-300'
@@ -561,7 +561,7 @@ export default function OutboundScheduler({}: OutboundSchedulerProps) {
                                 }`}
                                 title="Delete trunk"
                               >
-                                {deletingTrunk === (trunk.trunk_id || trunk.id) ? (
+                                {deletingTrunk === trunk.name ? (
                                   <Loader2 className="h-4 w-4 animate-spin" />
                                 ) : (
                                   <Trash2 className="h-4 w-4" />

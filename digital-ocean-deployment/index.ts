@@ -54,35 +54,43 @@ function createAdminPanelApp(env: string, adminEnvConfig: pulumi.Config) {
                 envs: [
                     {
                         key: "NODE_ENV",
-                        value: "production"
+                        value: "production",
+                        type: "GENERAL"
                     },
                     {
                         key: "PORT",
-                        value: "3000"
+                        value: "3000",
+                        type: "GENERAL"
                     },
                     {
                         key: "HOSTNAME",
-                        value: "0.0.0.0"
+                        value: "0.0.0.0",
+                        type: "GENERAL"
                     },
                     {
                         key: "NEXT_PUBLIC_PROPELAUTH_URL",
-                        value: adminEnvConfig.require("propelauthUrl")
+                        value: adminEnvConfig.require("propelauthUrl"),
+                        type: "GENERAL"
                     },
                     {
                         key: "NEXT_PUBLIC_PROPELAUTH_API_KEY",
-                        value: adminEnvConfig.requireSecret("propelauthApiKey")
+                        value: adminEnvConfig.requireSecret("propelauthApiKey"),
+                        type: "SECRET"
                     },
                     {
                         key: "NEXT_PUBLIC_LIVE_API_URL",
-                        value: adminEnvConfig.require("liveApiUrl")
+                        value: adminEnvConfig.require("liveApiUrl"),
+                        type: "GENERAL"
                     },
                     {
                         key: "NEXT_PUBLIC_LIVE_API_KEY",
-                        value: adminEnvConfig.requireSecret("liveApiKey")
+                        value: adminEnvConfig.requireSecret("liveApiKey"),
+                        type: "SECRET"
                     },
                     {
                         key: "NEXT_PUBLIC_SUPER_ADMIN_ORG_ID",
-                        value: adminEnvConfig.get("superAdminOrgId") || "c53e8731-2ce7-4484-919c-0aba50c2f46a"
+                        value: adminEnvConfig.get("superAdminOrgId") || "c53e8731-2ce7-4484-919c-0aba50c2f46a",
+                        type: "GENERAL"
                     }
                 ]
             }]
@@ -127,103 +135,128 @@ function createDeveloperDashboardApp(env: string, envConfig: pulumi.Config) {
                 envs: [
                     {
                         key: "NODE_ENV",
-                        value: "production"
+                        value: "production",
+                        type: "GENERAL"
                     },
                     {
                         key: "PORT",
-                        value: "3000"
+                        value: "3000",
+                        type: "GENERAL"
                     },
                     {
                         key: "HOSTNAME",
-                        value: "0.0.0.0"
+                        value: "0.0.0.0",
+                        type: "GENERAL"
                     },
                     {
                         key: "NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL",
-                        value: envConfig.require("propelauthUrl")
+                        value: envConfig.require("propelauthUrl"),
+                        type: "GENERAL"
                     },
                     {
                         key: "NEXT_PUBLIC_API_BASE_URL",
-                        value: envConfig.require("apiBaseUrl")
+                        value: envConfig.require("apiBaseUrl"),
+                        type: "GENERAL"
                     },
                     {
                         key: "NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY",
-                        value: envConfig.requireSecret("propelauthApiKey")
+                        value: envConfig.requireSecret("propelauthApiKey"),
+                        type: "SECRET"
                     },
                     {
                         key: "NEXT_PUBLIC_ENABLE_EMAIL_VERIFICATION",
-                        value: envConfig.get("enableEmailVerification") || "true"
+                        value: envConfig.get("enableEmailVerification") || "true",
+                        type: "GENERAL"
                     },
                     {
                         key: "NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN",
-                        value: envConfig.require("difyConsoleOrigin")
+                        value: envConfig.require("difyConsoleOrigin"),
+                        type: "GENERAL"
                     },
                     {
                         key: "NEXT_PUBLIC_DIFY_ADMIN_EMAIL",
-                        value: envConfig.require("difyAdminEmail")
+                        value: envConfig.require("difyAdminEmail"),
+                        type: "GENERAL"
                     },
                     {
                         key: "NEXT_PUBLIC_DIFY_ADMIN_PASSWORD",
-                        value: envConfig.requireSecret("difyAdminPassword")
+                        value: envConfig.requireSecret("difyAdminPassword"),
+                        type: "SECRET"
                     },
                     {
                         key: "NEXT_PUBLIC_DIFY_WORKSPACE_ID",
-                        value: envConfig.require("difyWorkspaceId")
+                        value: envConfig.require("difyWorkspaceId"),
+                        type: "GENERAL"
                     },
                     {
                         key: "NEXT_PUBLIC_DIFY_BASE_URL",
-                        value: envConfig.require("difyBaseUrl")
+                        value: envConfig.require("difyBaseUrl"),
+                        type: "GENERAL"
                     },
                     {
                         key: "NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY",
-                        value: envConfig.requireSecret("modelOpenAiApiKey")
+                        value: envConfig.requireSecret("modelOpenAiApiKey"),
+                        type: "SECRET"
                     },
                     {
                         key: "NEXT_PUBLIC_MODEL_GROQ_API_KEY",
-                        value: envConfig.requireSecret("modelGroqApiKey")
+                        value: envConfig.requireSecret("modelGroqApiKey"),
+                        type: "SECRET"
                     },
                     {
                         key: "NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY",
-                        value: envConfig.requireSecret("modelAnthropicApiKey")
+                        value: envConfig.requireSecret("modelAnthropicApiKey"),
+                        type: "SECRET"
                     },
                     {
                         key: "NEXT_PUBLIC_CHATBOT_API_URL",
-                        value: envConfig.require("chatbotApiUrl")
+                        value: envConfig.require("chatbotApiUrl"),
+                        type: "GENERAL"
                     },
                     {
                         key: "NEXT_PUBLIC_CHATBOT_API_KEY",
-                        value: envConfig.requireSecret("chatbotApiKey")
+                        value: envConfig.requireSecret("chatbotApiKey"),
+                        type: "SECRET"
                     },
                     {
                         key: "NEXT_PUBLIC_ELEVEN_LABS_API_KEY",
-                        value: envConfig.requireSecret("elevenLabsApiKey")
+                        value: envConfig.requireSecret("elevenLabsApiKey"),
+                        type: "SECRET"
                     },
                     {
                         key: "NEXT_PUBLIC_OPEN_AI_API_KEY",
-                        value: envConfig.requireSecret("openAiApiKey")
+                        value: envConfig.requireSecret("openAiApiKey"),
+                        type: "SECRET"
                     },
                     {
                         key: "NEXT_PUBLIC_WHISPER_API_KEY",
-                        value: envConfig.requireSecret("whisperApiKey")
+                        value: envConfig.requireSecret("whisperApiKey"),
+                        type: "SECRET"
                     },
                     {
                         key: "NEXT_PUBLIC_DEEPGRAM_API_KEY",
-                        value: envConfig.requireSecret("deepgramApiKey")
+                        value: envConfig.requireSecret("deepgramApiKey"),
+                        type: "SECRET"
                     },
                     {
                         key: "NEXT_PUBLIC_CARTESIA_API_KEY",
-                        value: envConfig.requireSecret("cartesiaApiKey")
+                        value: envConfig.requireSecret("cartesiaApiKey"),
+                        type: "SECRET"
                     },
                     {
                         key: "NEXT_PUBLIC_CARTESIA_VOICE_ID",
-                        value: envConfig.require("cartesiaVoiceId")
+                        value: envConfig.require("cartesiaVoiceId"),
+                        type: "GENERAL",
                     },
                     {
                         key: "NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID",
-                        value: envConfig.require("elevenLabsVoiceId")
+                        value: envConfig.require("elevenLabsVoiceId"),
+                        type: "GENERAL",
                     },
                     {
                         key: "NEXT_PUBLIC_LIVE_API_URL",
-                        value: envConfig.require("liveApiUrl")
+                        value: envConfig.require("liveApiUrl"),
+                        type: "GENERAL",
                     },
                     {
                         key: "NEXT_PUBLIC_LIVE_API_KEY",
@@ -243,15 +276,18 @@ function createDeveloperDashboardApp(env: string, envConfig: pulumi.Config) {
                     },
                     {
                         key: "DATABASE_NAME",
-                        value: envConfig.get("databaseName") || "your_database_name"
+                        value: envConfig.get("databaseName") || "your_database_name",
+                        type: "GENERAL",
                     },
                     {
                         key: "NEXT_PUBLIC_APP_NAME",
-                        value: envConfig.get("appName") || "Developer Dashboard"
+                        value: envConfig.get("appName") || "Developer Dashboard",
+                        type: "GENERAL",
                     },
                     {
                         key: "NEXT_PUBLIC_APP_VERSION",
-                        value: envConfig.get("appVersion") || "1.0.0"
+                        value: envConfig.get("appVersion") || "1.0.0",
+                        type: "GENERAL",
                     }
                 ]
             }]
