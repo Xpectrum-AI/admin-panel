@@ -213,157 +213,77 @@ if (responseMode === 'blocking') {
         );
       }
     } else {
-      // Handle streaming mode (for full chatbot page)
-      // Try to parse as JSON first (some streaming responses might be JSON)
-      try {
-        const jsonData = JSON.parse(responseText);
-        if (jsonData.answer) {
-          return NextResponse.json({ 
-            answer: jsonData.answer,
-            conversationId: jsonData.conversation_id || conversationId
-          });
-        }
-      } catch (e) {
-      }
-      
-      // Process as Server-Sent Events
-      const lines = responseText.split('\n');
-      let finalAnswer = '';
-      let accumulatedAnswer = '';
-      let conversationIdFromStream = conversationId;
-      let foundValidData = false;
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (line.trim() === '') continue; // Skip empty lines
-        if (line.startsWith('data: ')) {
-          try {
-            const jsonStr = line.substring(6).trim();
-            if (jsonStr === '[DONE]') {
-              continue;
-            }
-            
-            const data = JSON.parse(jsonStr);
-            foundValidData = true;
-            
-            // Handle different event types - prioritize complete answers
-            if (data.event === 'message_end' && data.answer) {
-              finalAnswer = data.answer;
-              if (data.conversation_id) {
-                conversationIdFromStream = data.conversation_id;
-              }
-              break; // This is the final answer
-            } else if (data.event === 'agent_message' && data.answer) {
-              // Accumulate answer chunks instead of replacing
-              accumulatedAnswer += data.answer;
-              if (data.conversation_id) {
-                conversationIdFromStream = data.conversation_id;
-              }
-            } else if (data.event === 'message' && data.answer) {
-              // Accumulate answer chunks instead of replacing
-              accumulatedAnswer += data.answer;
-              if (data.conversation_id) {
-                conversationIdFromStream = data.conversation_id;
-              }
-            } else if (data.event === 'workflow_finished' && data.data && data.data.answer) {
-              finalAnswer = data.data.answer;
-              if (data.conversation_id) {
-                conversationIdFromStream = data.conversation_id;
-              }
-            } else if (data.event === 'message_replace' && data.answer) {
-              finalAnswer = data.answer;
-              if (data.conversation_id) {
-                conversationIdFromStream = data.conversation_id;
-              }
-            } else if (data.answer && !data.event) {
-              // Direct answer without event
-              finalAnswer = data.answer;
-              if (data.conversation_id) {
-                conversationIdFromStream = data.conversation_id;
-              }
-            } else if (data.answer && data.event !== 'agent_message') {
-              // Accumulate answer chunks (but not for agent_message events, already handled above)
-              accumulatedAnswer += data.answer;
-              if (data.conversation_id) {
-                conversationIdFromStream = data.conversation_id;
-              }
-            } else if (data.text) {
-              accumulatedAnswer += data.text;
-              if (data.conversation_id) {
-                conversationIdFromStream = data.conversation_id;
-              }
-            } else if (data.event === 'message_append' && data.answer) {
-              accumulatedAnswer += data.answer;
-              if (data.conversation_id) {
-                conversationIdFromStream = data.conversation_id;
-              }
-            } else if (data.event === 'agent_thought') {
-              continue;
-            } else if (data.event === 'message_file') {
-              continue;
-            } else {
-            }
-          } catch (parseError) {
-            continue;
+      // Handle streaming mode - return streaming response to frontend
+      // Create a ReadableStream to forward the streaming response
+      const stream = new ReadableStream({
+        async start(controller) {
+          const reader = response.body?.getReader();
+          const decoder = new TextDecoder();
+          let conversationIdFromStream = conversationId;
+          
+          if (!reader) {
+            controller.close();
+            return;
           }
-        } else if (line.startsWith('event: ')) {
-          continue;
-        } else if (line.trim().length > 0) {
-          // Try to parse as direct JSON (non-SSE format)
+
           try {
-            const data = JSON.parse(line);
-            foundValidData = true;
-            
-            if (data.answer) {
-              finalAnswer = data.answer;
-            } else if (data.text) {
-              finalAnswer = data.text;
-            } else if (data.message) {
-              finalAnswer = data.message;
+            while (true) {
+              const { done, value } = await reader.read();
+              
+              if (done) {
+                // Send final message with conversation ID
+                const finalData = JSON.stringify({
+                  type: 'done',
+                  conversationId: conversationIdFromStream
+                });
+                controller.enqueue(new TextEncoder().encode(`data: ${finalData}\n\n`));
+                controller.close();
+                break;
+              }
+
+              // Decode the chunk
+              const chunk = decoder.decode(value, { stream: true });
+              
+              // Forward the chunk as-is to maintain SSE format
+              // The frontend will handle parsing
+              controller.enqueue(new TextEncoder().encode(chunk));
+              
+              // Try to extract conversation ID from chunks
+              const lines = chunk.split('\n');
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  try {
+                    const jsonStr = line.substring(6).trim();
+                    if (jsonStr === '[DONE]') continue;
+                    const data = JSON.parse(jsonStr);
+                    if (data.conversation_id) {
+                      conversationIdFromStream = data.conversation_id;
+                    }
+                  } catch (e) {
+                    // Ignore parse errors
+                  }
+                }
+              }
             }
-            
-            if (data.conversation_id) {
-              conversationIdFromStream = data.conversation_id;
-            }
-          } catch (directParseError) {
-            // Not JSON, might be plain text response
-            if (line.trim().length > 0) {
-              accumulatedAnswer += line.trim() + ' ';
-            }
+          } catch (error) {
+            const errorData = JSON.stringify({
+              type: 'error',
+              error: error instanceof Error ? error.message : 'Stream error'
+            });
+            controller.enqueue(new TextEncoder().encode(`data: ${errorData}\n\n`));
+            controller.close();
           }
         }
-      }
-      const answer = finalAnswer || accumulatedAnswer.trim();
-      if (answer) {
-        return NextResponse.json({ 
-          answer: answer,
-          conversationId: conversationIdFromStream
-        });
-      }
-      
-      // If we have no answer but found valid data, try to extract from raw response
-      if (foundValidData && responseText.trim()) {
-        // Try to find any text that looks like a response
-        const textMatch = responseText.match(/"answer":\s*"([^"]+)"/);
-        if (textMatch) {
-          const extractedAnswer = textMatch[1];
-          return NextResponse.json({ 
-            answer: extractedAnswer,
-            conversationId: conversationIdFromStream
-          });
-        }
-      }
-      
-      // Final fallback - return the raw response for debugging
-      return NextResponse.json(
-        { 
-          error: 'No answer found in streaming response', 
-          rawResponse: responseText.substring(0, 1000),
-          lines: lines.slice(0, 10), // First 10 lines for debugging
-          foundValidData,
-          totalLines: lines.length
+      });
+
+      // Return streaming response with proper headers
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
         },
-        { status: 500 }
-      );
+      });
     }
 
   } catch (error) {
