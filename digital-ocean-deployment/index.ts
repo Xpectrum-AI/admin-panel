@@ -260,8 +260,19 @@ function createDeveloperDashboardApp(env: string, envConfig: pulumi.Config) {
                     },
                     {
                         key: "NEXT_PUBLIC_LIVE_API_KEY",
-                        value: envConfig.requireSecret("liveApiKey"),
-                        type: "SECRET",
+                        value: envConfig.requireSecret("liveApiKey")
+                    },{
+                        key: "NEXT_PUBLIC_DEMO_JWT_SECRET",
+                        value: envConfig.requireSecret("demoJwtSecret")
+                    },{
+                        key: "NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY",
+                        value: envConfig.require("imagekitPublicKey")
+                    },{
+                        key: "NEXT_PUBLIC_IMAGEKIT_PRIVATE_KEY",
+                        value: envConfig.require("imagekitPrivateKey")
+                    },{
+                        key: "NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT",
+                        value: envConfig.require("imagekitUrlEndpoint")
                     },
                     {
                         key: "DATABASE_NAME",
