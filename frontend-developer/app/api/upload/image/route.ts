@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import ImageKit from 'imagekit';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const imagekit = new ImageKit({
   publicKey: process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY as string,
