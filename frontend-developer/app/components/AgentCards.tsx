@@ -152,10 +152,6 @@ function AgentCards({
   const [isAssociating, setIsAssociating] = useState(false);
   const [associateError, setAssociateError] = useState<string | null>(null);
 
-  // Success modal state
-  // const [showSuccessModal, setShowSuccessModal] = useState(false);
-  // const [successMessage, setSuccessMessage] = useState('');
-
   // Function to show the QR code modal - memoized with useCallback
   const showQrCodeModal = useCallback((agent: Agent) => {
     setQrAgent(agent);
@@ -166,7 +162,6 @@ function AgentCards({
   const getAgentUrl = useCallback(async (agent: Agent): Promise<string> => {
     try {
       // For now, we'll use the chatbot page URL with the agent ID
-      // In the future, we can create a session-based URL like in CHAT-APP
       return `${window.location.origin}/chatbot/${agent.id}`;
     } catch (error) {
       return window.location.origin;
@@ -310,7 +305,7 @@ function AgentCards({
           );
           return res as { success: boolean; error?: unknown };
         } catch (e) {
-return { success: false, error: e } as { success: boolean; error?: unknown };
+          return { success: false, error: e } as { success: boolean; error?: unknown };
         }
       })();
 
@@ -334,22 +329,7 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
 
   // Generate avatar color - using website's green theme (same color for all agents) - memoized
   const getAvatarColor = useCallback((name: string) => {
-    // Using the same green color as the website (green-600 to match from-green-600)
     return '#16A34A'; // green-600
-  }, []);
-
-  // Get status badge styling - memoized
-  const getStatusBadge = useCallback((status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-      case 'draft':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
-      case 'inactive':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-    }
   }, []);
 
   // Combined loading state: show loading if either initial load or refresh is in progress - memoized
@@ -376,8 +356,7 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
     );
   }
 
-  // 2. Loading State (show loading spinner when loading AND no agents to display)
-  // OR when we haven't loaded yet (agentsLoaded is false) and have no agents
+  // 2. Loading State
   if ((isLoading && agents.length === 0) || (!agentsLoaded && agents.length === 0)) {
     return (
       <div className="w-full h-full flex flex-col">
@@ -395,8 +374,7 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
     );
   }
 
-  // 3. No Agents Found (only show when loading is complete AND agents array is empty)
-  // This prevents flickering by ensuring we've actually finished loading
+  // 3. No Agents Found
   if (agentsLoaded && !isLoading && agents.length === 0) {
     return (
       <div className="w-full h-full flex flex-col">
@@ -427,7 +405,7 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
     );
   }
 
-  // 4. Normal View (show agents - during refresh, old agents remain visible until new ones load)
+  // 4. Normal View
   return (
     <div className="w-full h-full flex flex-col">
         <div className="flex-1 p-6 overflow-y-auto">
@@ -591,13 +569,14 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
 
                 {/* Actions */}
                 <div className={`p-5 border-t ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-                  {/* Primary Action - Full Width */}
+                  
+                  {/* Configure / Demo Button */}
                   <button
-                    onClick={() => onOpenAgent(agent)}
-                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-3 px-4 rounded-lg transition-all duration-200 shadow-sm font-medium text-sm flex items-center justify-center gap-2 mb-3"
+                    onClick={() => window.open(`/demo/${agent.id}`, '_blank')}
+                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-3 px-4 rounded-lg transition-all duration-200 shadow-sm font-medium text-sm flex items-center justify-center gap-2 mb-3"
                   >
-                    <MessageCircle className="w-4 h-4" />
-                    Open Agent
+                    <ExternalLink className="w-4 h-4" />
+                    Configure
                   </button>
                   
                   {/* Secondary Actions - Icon Buttons with Hover Labels */}
@@ -685,8 +664,6 @@ return { success: false, error: e } as { success: boolean; error?: unknown };
             </div>
           </div>
         )}
-
-        {/* Success modal removed */}
 
         {/* Associate Agent Modal */}
         {showAssociateModal && (
