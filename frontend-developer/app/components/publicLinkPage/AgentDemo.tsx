@@ -59,7 +59,6 @@ interface ConfigState {
 }
 
 // --- Helper: "Toon" (Tuple) Format Converter ---
-// This converts the object to an ordered array to save space in the URL
 const configToTuple = (c: ConfigState) => {
   return [
     c.themeColor,                 // 0
@@ -283,7 +282,8 @@ const LandingView = React.memo(({ config, onStart }: { config: ConfigState, onSt
 LandingView.displayName = 'LandingView';
 
 const ChatWidget = React.memo(({
-  isOpen, onClose, activeTab, onTabChange, config, messages, inputMessage, onInputChange, onSendMessage, isChatLoading, isVoiceActive, onToggleVoice, isMuted, onToggleMute, callDuration, agentId, messagesEndRef, displayIcon
+  isOpen, onClose, activeTab, onTabChange, config, messages, inputMessage, onInputChange, onSendMessage, isChatLoading, isVoiceActive, onToggleVoice, isMuted, onToggleMute, callDuration, agentId, messagesEndRef, displayIcon, 
+  isConnecting // Added prop
 }: any) => {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -392,13 +392,25 @@ const ChatWidget = React.memo(({
                         {isVoiceActive && <div className="absolute inset-0 rounded-full border-2 animate-ping opacity-50" style={{ borderColor: config.themeColor }}></div>}
                     </div>
 
+                    {/* --- MODIFIED TEXT UI --- */}
                     <h3 className={`text-xl font-bold mb-2 ${isVoiceActive ? 'text-white' : 'text-gray-900'}`}>
-                        {isVoiceActive ? 'Call in Progress' : 'Start Voice Call'}
+                        {!isVoiceActive 
+                            ? 'Start Voice Call' 
+                            : isConnecting 
+                                ? 'Connecting...' // 9s delay text
+                                : 'Call in Progress' // Final text
+                        }
                     </h3>
                     <p className={`text-sm mb-8 max-w-[200px] ${isVoiceActive ? 'text-gray-400 font-mono' : 'text-gray-500'}`}>
-                        {isVoiceActive ? formatTime(callDuration) : "Speak naturally with the Agent in real-time."}
+                        {!isVoiceActive 
+                            ? "Speak naturally with the Agent in real-time."
+                            : isConnecting 
+                                ? "Establishing secure connection..." // 9s delay subtext
+                                : formatTime(callDuration) // Final Timer
+                        }
                     </p>
 
+                    {/* --- FUNCTIONAL COMPONENT (Always Active if isVoiceActive is true) --- */}
                     {isVoiceActive && (
                         <div className="hidden">
                             <LiveKitVoiceChat agentName={agentId} isDarkMode={true} startCall={true} endCall={false} isMuted={isMuted} />
@@ -460,7 +472,10 @@ export default function AgentDemoPage(params : { agentId: string }) {
   const [messages, setMessages] = useState<Array<{role: string, content: string, timestamp: Date}>>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
+  
+  // --- VOICE STATES ---
   const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false); // New State
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   
@@ -514,22 +529,10 @@ export default function AgentDemoPage(params : { agentId: string }) {
   const handleGenerateUrl = useCallback(async () => {
     setIsSaving(true);
     try {
-        // COMPRESSION: Convert Object to Tuple Array to shorten URL payload
-        // This is the "toon format" (tuple format) implementation
-        // 1. Convert to Tuple (The "Toon Format" array)
         const compressedTuple = configToTuple(config);
-        
-        // 2. Stringify
         const jsonString = JSON.stringify(compressedTuple);
-        
-        // 3. COMPRESS using LZ-String (instead of btoa)
-        // compressToEncodedURIComponent produces URL-safe characters
         const compressedToken = LZString.compressToEncodedURIComponent(jsonString); 
-        
         const url = `${window.location.origin}/client/${agentId}?s=${compressedToken}`;
-        
-        setGeneratedUrl(url);
-        
         setGeneratedUrl(url);
     } catch (error) {
         alert('An error occurred.');
@@ -561,6 +564,24 @@ export default function AgentDemoPage(params : { agentId: string }) {
       setIsChatLoading(false);
     }
   }, [inputMessage, agent]);
+
+  // --- Voice Handler (New) ---
+  const handleVoiceToggle = useCallback(() => {
+    if (isVoiceActive) {
+      // Stop Call
+      setIsVoiceActive(false);
+      setIsConnecting(false);
+    } else {
+      // Start Call
+      setIsVoiceActive(true);
+      setIsConnecting(true);
+      
+      // 9 Second Visual Delay
+      setTimeout(() => {
+        setIsConnecting(false);
+      }, 9000);
+    }
+  }, [isVoiceActive]);
 
   // --- Effects ---
 
@@ -597,12 +618,16 @@ export default function AgentDemoPage(params : { agentId: string }) {
     if (isChatOpen && activeTab === 'chat') messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isChatOpen, activeTab]);
 
+  // Timer Effect (Modified)
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isVoiceActive) interval = setInterval(() => setCallDuration(prev => prev + 1), 1000);
-    else setCallDuration(0);
+    if (isVoiceActive && !isConnecting) {
+        interval = setInterval(() => setCallDuration(prev => prev + 1), 1000);
+    } else {
+        setCallDuration(0);
+    }
     return () => clearInterval(interval);
-  }, [isVoiceActive]);
+  }, [isVoiceActive, isConnecting]);
 
 
   if (loading) return <div className="h-screen flex items-center justify-center bg-gray-50"><Loader2 className="w-8 h-8 animate-spin text-green-600" /></div>;
@@ -660,13 +685,14 @@ export default function AgentDemoPage(params : { agentId: string }) {
             onSendMessage={handleSendMessage}
             isChatLoading={isChatLoading}
             isVoiceActive={isVoiceActive}
-            onToggleVoice={() => setIsVoiceActive(!isVoiceActive)}
+            onToggleVoice={handleVoiceToggle} // Updated Handler
             isMuted={isMuted}
             onToggleMute={() => setIsMuted(!isMuted)}
             callDuration={callDuration}
             agentId={agentId}
             messagesEndRef={messagesEndRef}
             displayIcon={displayIcon}
+            isConnecting={isConnecting} // Pass new prop
         />
 
         <div className="flex items-center gap-3">

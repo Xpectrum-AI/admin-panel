@@ -54,7 +54,7 @@ const tupleToConfig = (tuple: any[]): ConfigState => {
     botName: tuple[2],
     botIconStyle: tuple[3],
     botIcon: tuple[4],
-    widgetBackgroundColor: tuple[5], // Note: field name unified to match demo
+    widgetBackgroundColor: tuple[5], 
     messageAreaBackgroundColor: tuple[6],
     userBubbleColor: tuple[7],
     botBubbleColor: tuple[8],
@@ -90,11 +90,14 @@ function ClientPageContent() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'chat' | 'voice'>('chat');
 
-  // Chat/Voice States
+  // Chat States
   const [messages, setMessages] = useState<Array<{role: 'user' | 'bot', content: string, timestamp: Date}>>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
+
+  // Voice States
   const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false); // New state for 9s delay
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
 
@@ -203,15 +206,16 @@ function ClientPageContent() {
     }
   }, [messages, isChatOpen, activeTab]);
 
+  // Timer Effect - Only runs if active AND not connecting
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isVoiceActive) {
+    if (isVoiceActive && !isConnecting) {
       interval = setInterval(() => setCallDuration(prev => prev + 1), 1000);
     } else {
       setCallDuration(0);
     }
     return () => clearInterval(interval);
-  }, [isVoiceActive]);
+  }, [isVoiceActive, isConnecting]);
 
   useEffect(() => {
     if (config?.interactionMode === 'chat_only') setActiveTab('chat');
@@ -251,6 +255,26 @@ function ClientPageContent() {
       setMessages(prev => [...prev, { role: 'bot', content: "Network error.", timestamp: new Date() }]);
     } finally {
       setIsChatLoading(false);
+    }
+  };
+
+  // Handle Voice Toggle with 9s visual delay
+  const handleVoiceToggle = () => {
+    if (isVoiceActive) {
+      // End call
+      setIsVoiceActive(false);
+      setIsConnecting(false);
+    } else {
+      // Start call - functional logic happens immediately
+      setIsVoiceActive(true);
+      
+      // Start visual connecting state
+      setIsConnecting(true);
+      
+      // Wait 9 seconds before showing the timer
+      setTimeout(() => {
+        setIsConnecting(false);
+      }, 9000);
     }
   };
 
@@ -476,16 +500,27 @@ function ClientPageContent() {
                             )}
                         </div>
 
+                        {/* Dynamic Title based on state */}
                         <h3 className={`text-xl font-bold mb-2 ${isVoiceActive ? 'text-white' : 'text-gray-900'}`}>
-                            {isVoiceActive ? 'Call in Progress' : 'Start Voice Call'}
+                            {!isVoiceActive 
+                                ? 'Start Voice Call' 
+                                : isConnecting 
+                                    ? 'Connecting...' 
+                                    : 'Call in Progress'
+                            }
                         </h3>
                         
+                        {/* Dynamic Subtext based on state */}
                         <p className={`text-sm mb-8 max-w-[200px] ${isVoiceActive ? 'text-gray-400 font-mono' : 'text-gray-500'}`}>
-                            {isVoiceActive 
-                             ? formatTime(callDuration) 
-                             : "Speak naturally with the AI assistant in real-time."}
+                            {!isVoiceActive 
+                                ? "Speak naturally with the AI assistant in real-time."
+                                : isConnecting 
+                                    ? "Establishing secure connection..."
+                                    : formatTime(callDuration)
+                            }
                         </p>
 
+                        {/* Functional Voice Component - Always rendered when voice is active, even if "connecting" visually */}
                         {isVoiceActive && (
                             <div className="hidden">
                                 <LiveKitVoiceChat
@@ -508,7 +543,7 @@ function ClientPageContent() {
                             </button>
 
                             <button
-                                onClick={() => setIsVoiceActive(!isVoiceActive)}
+                                onClick={handleVoiceToggle}
                                 className={`p-5 rounded-full shadow-xl transition-all transform hover:scale-105 text-white flex items-center justify-center`}
                                 style={{ backgroundColor: isVoiceActive ? '#ef4444' : config.themeColor }}
                             >
@@ -528,7 +563,7 @@ function ClientPageContent() {
                 className="p-4 rounded-full text-white shadow-xl transition-all duration-300 hover:scale-110 flex items-center justify-center animate-in zoom-in"
                 style={{ backgroundColor: config.themeColor }}
             >
-                    <MessageSquare className="w-7 h-7" />
+                <MessageSquare className="w-7 h-7" />
             </button>
         )}
       </div>
