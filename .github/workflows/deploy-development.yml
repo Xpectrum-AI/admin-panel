@@ -298,6 +298,10 @@ jobs:
             --build-arg NEXT_PUBLIC_MODEL_GROQ_API_KEY="${NEXT_PUBLIC_MODEL_GROQ_API_KEY}" \
             --build-arg NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY="${NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY}" \
             --build-arg NEXT_PUBLIC_DIFY_BASE_URL="${NEXT_PUBLIC_DIFY_BASE_URL}" \
+            --build-arg NEXT_PUBLIC_DEMO_JWT_SECRET="${NEXT_PUBLIC_DEMO_JWT_SECRET}" \
+            --build-arg NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY="${NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY}" \
+            --build-arg NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT="${NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT}" \
+            --build-arg NEXT_PUBLIC_IMAGEKIT_PRIVATE_KEY="${NEXT_PUBLIC_IMAGEKIT_PRIVATE_KEY}" \
             -t developer-dashboard-dev:$IMAGE_TAG .
           
           docker tag developer-dashboard-dev:$IMAGE_TAG $REPO:$IMAGE_TAG
@@ -369,6 +373,8 @@ jobs:
           pulumi config set dev:whisperApiKey "${{ secrets.DEV_WHISPER_API_KEY }}" --secret
           pulumi config set dev:deepgramApiKey "${{ secrets.DEV_DEEPGRAM_API_KEY }}" --secret
           pulumi config set dev:cartesiaApiKey "${{ secrets.DEV_CARTESIA_API_KEY }}" --secret
+          pulumi config set dev:demoJwtSecret "${{ secrets.DEV_DEMO_JWT_SECRET }}" --secret
+
           
           # Developer Dashboard config values - all from GitHub vars
           # Note: propelauthUrl already set above (shared with Admin Panel)
@@ -382,6 +388,9 @@ jobs:
           pulumi config set dev:cartesiaVoiceId "${{ vars.DEV_CARTESIA_VOICE_ID }}"
           pulumi config set dev:elevenLabsVoiceId "${{ vars.DEV_ELEVEN_LABS_VOICE_ID }}"
           pulumi config set dev:liveApiUrl "${{ vars.DEV_LIVE_API_URL }}"
+          pulumi config set dev:imagekitUrlEndpoint "${{ vars.DEV_IMAGEKIT_URL_ENDPOINT }}"
+          pulumi config set dev:imagekitPublicKey "${{ vars.DEV_IMAGEKIT_PUBLIC_KEY }}"
+          pulumi config set dev:imagekitPrivateKey "${{ vars.DEV_IMAGEKIT_PRIVATE_KEY }}"
           
           # Set image tags (from generated tags)
           pulumi config set dev:adminImageTag "${{ steps.admin-image-tag.outputs.image_tag }}"
