@@ -19,9 +19,8 @@ pulumi config set release:superAdminOrgId "YOUR_PRODUCTION_SUPER_ADMIN_ORG_ID" -
 
 # Developer Dashboard secrets - using PRODUCTION_* secrets, storing in release: namespace
 pulumi config set release:difyAdminPassword "YOUR_PRODUCTION_DIFY_ADMIN_PASSWORD" --secret
-pulumi config set release:modelOpenAiApiKey "YOUR_PRODUCTION_MODEL_OPEN_AI_API_KEY" --secret
-pulumi config set release:modelGroqApiKey "YOUR_PRODUCTION_MODEL_GROQ_API_KEY" --secret
-pulumi config set release:modelAnthropicApiKey "YOUR_PRODUCTION_MODEL_ANTHROPIC_API_KEY" --secret
+# Model Provider API Keys are now configured in Dify Console at workspace level
+# No longer needed in Pulumi configuration
 pulumi config set release:chatbotApiKey "YOUR_PRODUCTION_CHATBOT_API_KEY" --secret
 pulumi config set release:elevenLabsApiKey "YOUR_PRODUCTION_ELEVEN_LABS_API_KEY" --secret
 pulumi config set release:openAiApiKey "YOUR_PRODUCTION_OPEN_AI_API_KEY" --secret

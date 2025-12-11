@@ -307,9 +307,6 @@ jobs:
           
           # Developer Dashboard secrets - using PRODUCTION_* secrets, storing in prod: namespace
           pulumi config set prod:difyAdminPassword "${{ secrets.PRODUCTION_DIFY_ADMIN_PASSWORD }}" --secret
-          pulumi config set prod:modelOpenAiApiKey "${{ secrets.PRODUCTION_MODEL_OPEN_AI_API_KEY }}" --secret
-          pulumi config set prod:modelGroqApiKey "${{ secrets.PRODUCTION_MODEL_GROQ_API_KEY }}" --secret
-          pulumi config set prod:modelAnthropicApiKey "${{ secrets.PRODUCTION_MODEL_ANTHROPIC_API_KEY }}" --secret
           pulumi config set prod:chatbotApiKey "${{ secrets.PRODUCTION_CHATBOT_API_KEY }}" --secret
           pulumi config set prod:elevenLabsApiKey "${{ secrets.PRODUCTION_ELEVEN_LABS_API_KEY }}" --secret
           pulumi config set prod:openAiApiKey "${{ secrets.PRODUCTION_OPEN_AI_API_KEY }}" --secret

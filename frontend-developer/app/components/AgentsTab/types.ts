@@ -12,7 +12,6 @@ export interface Agent {
   organization_id?: string;
   chatbot_api?: string;
   chatbot_key?: string;
-  modelApiKey?: string;
   systemPrompt?: string;
   tts_config?: any;
   stt_config?: any;

@@ -29,7 +29,6 @@ export async function POST(
       system_prompt,
       model_provider,
       model_name,
-      model_api_key,
       model_live_url
     } = body;
 
@@ -174,7 +173,6 @@ You are Riley, an appointment scheduling voice agent for Wellness Partners, a mu
 Remember: You are the first point of contact for many patients. Your professionalism and helpfulness directly impact their experience with Wellness Partners.`,
       model_provider: model_provider || "OpenAI",
       model_name: model_name || "GPT-4o",
-      model_api_key: model_api_key || process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '',
       model_live_url: model_live_url || process.env.NEXT_PUBLIC_DIFY_BASE_URL || '',
       created_at: Date.now() / 1000,
       updated_at: Date.now() / 1000

@@ -25,26 +25,19 @@ function checkLocalStorageConfigs() {
   });
 }
 
-// Method 2: Check if agent is using dynamic API key
+// Method 2: Check if agent is using dynamic API key (Dify chatbot key)
 function isUsingDynamicApiKey(agentConfig) {
-  const staticApiKey = process.env.NEXT_PUBLIC_MODEL_API_KEY || '';
   const agentApiKey = agentConfig.chatbot_key || '';
   
   return agentApiKey && 
-         agentApiKey !== staticApiKey && 
          agentApiKey.length > 20 &&
          agentApiKey.startsWith('app-');
 }
 
-// Method 3: Compare with environment variable
+// Method 3: Check if agent has a chatbot API key configured
 function compareApiKeys(agentConfig) {
-  const staticApiKey = process.env.NEXT_PUBLIC_MODEL_API_KEY || '';
   const agentApiKey = agentConfig.chatbot_key || '';
-if (agentApiKey && agentApiKey !== staticApiKey) {
-return true;
-  } else {
-return false;
-  }
+  return agentApiKey && agentApiKey.length > 0;
 }
 
 // Method 4: Check agent data structure

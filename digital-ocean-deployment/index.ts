@@ -194,21 +194,6 @@ function createDeveloperDashboardApp(env: string, envConfig: pulumi.Config) {
                         type: "GENERAL"
                     },
                     {
-                        key: "NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY",
-                        value: envConfig.requireSecret("modelOpenAiApiKey"),
-                        type: "SECRET"
-                    },
-                    {
-                        key: "NEXT_PUBLIC_MODEL_GROQ_API_KEY",
-                        value: envConfig.requireSecret("modelGroqApiKey"),
-                        type: "SECRET"
-                    },
-                    {
-                        key: "NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY",
-                        value: envConfig.requireSecret("modelAnthropicApiKey"),
-                        type: "SECRET"
-                    },
-                    {
                         key: "NEXT_PUBLIC_CHATBOT_API_URL",
                         value: envConfig.require("chatbotApiUrl"),
                         type: "GENERAL"

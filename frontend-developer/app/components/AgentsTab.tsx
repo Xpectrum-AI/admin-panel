@@ -304,7 +304,6 @@ Remember: You are the first point of contact for many patients. Your professiona
     let currentSystemPrompt = defaultSystemPrompt;
     let currentModelProvider = 'OpenAI';
     let currentModel = 'GPT-4o';
-    let currentModelApiKey = process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || '';
     let currentChatbotApi = process.env.NEXT_PUBLIC_DIFY_BASE_URL || '';
 
     // Try to get current configuration from ModelConfig component
@@ -315,7 +314,6 @@ Remember: You are the first point of contact for many patients. Your professiona
           currentSystemPrompt = modelConfig.systemPrompt || currentSystemPrompt;
           currentModelProvider = modelConfig.selectedModelProvider || currentModelProvider;
           currentModel = modelConfig.selectedModel || currentModel;
-          currentModelApiKey = modelConfig.modelApiKey || currentModelApiKey;
           currentChatbotApi = modelConfig.modelLiveUrl || currentChatbotApi;
         } else {
         }
@@ -329,7 +327,6 @@ Remember: You are the first point of contact for many patients. Your professiona
         selectedModelProvider: currentModelProvider,
         selectedModel: currentModel,
         modelLiveUrl: currentChatbotApi,
-        modelApiKey: difyApiKey || currentModelApiKey,
         systemPrompt: currentSystemPrompt
       },
       // Voice Configuration
@@ -383,7 +380,6 @@ Remember: You are the first point of contact for many patients. Your professiona
       system_prompt: defaultConfig.modelConfig.systemPrompt,
       model_provider: defaultConfig.modelConfig.selectedModelProvider,
       model_name: defaultConfig.modelConfig.selectedModel,
-      model_api_key: defaultConfig.modelConfig.modelApiKey,
       model_live_url: defaultConfig.modelConfig.modelLiveUrl
     };
     try {
@@ -407,7 +403,6 @@ Remember: You are the first point of contact for many patients. Your professiona
               body: JSON.stringify({
                 provider: 'langgenius/openai/openai',
                 model: currentModel.toLowerCase(),
-                api_key: currentModelApiKey,
                 chatbot_api_key: difyApiKey,
                 app_id: appId || undefined
               })
@@ -471,7 +466,6 @@ Remember: You are the first point of contact for many patients. Your professiona
           // Use Dify configuration if available, otherwise fallback to environment
           chatbot_api: difyConfig?.chatbot_api || currentChatbotApi,
           chatbot_key: difyConfig?.chatbot_key || difyApiKey || undefined,
-          modelApiKey: difyConfig?.chatbot_key || difyApiKey || undefined,
           systemPrompt: currentSystemPrompt, // Set current prompt
           initial_message: defaultConfig.toolsConfig.initialMessage,
           nudge_text: defaultConfig.toolsConfig.nudgeText,
@@ -1022,11 +1016,9 @@ Remember: You are the first point of contact for many patients. Your professiona
         // Use the correct field names that ToolsConfig expects
         provider: agent.provider || 'langgenius/openai/openai',
         model: agent.model || 'gpt-4o',
-        api_key: agent.modelApiKey || agent.chatbot_key || '',
         // Keep the old field names for backward compatibility with ModelConfig
         selectedModelProvider: agent.provider || 'OpenAI',
         selectedModel: agent.model || 'GPT-4o',
-        modelApiKey: agent.modelApiKey || agent.chatbot_key || '',
         modelLiveUrl: agent.chatbot_api || process.env.NEXT_PUBLIC_MODEL_API_BASE_URL || '',
         chatbot_api: agent.chatbot_api || '', // Include chatbot_api for ModelConfig
         chatbot_key: agent.chatbot_key // Include chatbot_key for proper identification

@@ -4,38 +4,20 @@ const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN || '';
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL || '';
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD || '';
 
-// Get the appropriate model API key based on provider
-function getModelApiKey(provider: string): string | null {
-  switch (provider.toLowerCase()) {
-    case 'openai':
-    case 'langgenius/openai/openai':
-      return process.env.NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY || null;
-    case 'groq':
-    case 'langgenius/groq/groq':
-      return process.env.NEXT_PUBLIC_MODEL_GROQ_API_KEY || null;
-    case 'anthropic':
-    case 'langgenius/anthropic/anthropic':
-      return process.env.NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY || null;
-    default:
-      return null;
-  }
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     // Extract required fields
     const provider = body.provider;
     const model = body.model;
-    const apiKey = body.api_key;
     const chatbotApiKey = body.chatbot_api_key;
     const datasetConfigs = body.dataset_configs;
     
-    if (!provider || !model || !apiKey) {
+    if (!provider || !model) {
       return NextResponse.json(
         { 
           success: false, 
-          error: 'Provider, model, and API key are required' 
+          error: 'Provider and model are required' 
         },
         { status: 400 }
       );

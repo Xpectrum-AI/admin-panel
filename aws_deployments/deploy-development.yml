@@ -92,7 +92,6 @@ jobs:
           NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.DEV_LIVE_API_KEY }}
           NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY: ${{ secrets.DEV_DEVELOPER_PROPELAUTH_API_KEY }}
           NEXT_PUBLIC_MODEL_API_BASE_URL: ${{ vars.DEV_MODEL_API_BASE_URL }}
-          NEXT_PUBLIC_MODEL_API_KEY: ${{ secrets.DEV_MODEL_API_KEY }}
           NEXT_PUBLIC_CHATBOT_API_URL: ${{ vars.DEV_CHATBOT_API_URL }}
           NEXT_PUBLIC_CHATBOT_API_KEY: ${{ secrets.DEV_CHATBOT_API_KEY }}
           NEXT_PUBLIC_ELEVEN_LABS_API_KEY: ${{ secrets.DEV_ELEVEN_LABS_API_KEY }}
@@ -107,10 +106,6 @@ jobs:
           NEXT_PUBLIC_DIFY_ADMIN_EMAIL: ${{ vars.DEV_DIFY_ADMIN_EMAIL }}
           NEXT_PUBLIC_DIFY_ADMIN_PASSWORD: ${{ secrets.DEV_DIFY_ADMIN_PASSWORD }}
           NEXT_PUBLIC_DIFY_WORKSPACE_ID: ${{ vars.DEV_DIFY_WORKSPACE_ID }}
-          # Model Provider API Keys
-          NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY: ${{ secrets.DEV_MODEL_OPEN_AI_API_KEY }}
-          NEXT_PUBLIC_MODEL_GROQ_API_KEY: ${{ secrets.DEV_MODEL_GROQ_API_KEY }}
-          NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY: ${{ secrets.DEV_MODEL_ANTHROPIC_API_KEY }}
           NEXT_PUBLIC_DIFY_BASE_URL: ${{ vars.DEV_DIFY_BASE_URL }}
         run: |
           # Set ECR repository URI
@@ -125,7 +120,6 @@ jobs:
             --build-arg NEXT_PUBLIC_LIVE_API_KEY="${NEXT_PUBLIC_LIVE_API_KEY}" \
             --build-arg NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY="${NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY}" \
             --build-arg NEXT_PUBLIC_MODEL_API_BASE_URL="${NEXT_PUBLIC_MODEL_API_BASE_URL}" \
-            --build-arg NEXT_PUBLIC_MODEL_API_KEY="${NEXT_PUBLIC_MODEL_API_KEY}" \
             --build-arg NEXT_PUBLIC_CHATBOT_API_URL="${NEXT_PUBLIC_CHATBOT_API_URL}" \
             --build-arg NEXT_PUBLIC_CHATBOT_API_KEY="${NEXT_PUBLIC_CHATBOT_API_KEY}" \
             --build-arg NEXT_PUBLIC_ELEVEN_LABS_API_KEY="${NEXT_PUBLIC_ELEVEN_LABS_API_KEY}" \
@@ -139,9 +133,6 @@ jobs:
             --build-arg NEXT_PUBLIC_DIFY_ADMIN_EMAIL="${NEXT_PUBLIC_DIFY_ADMIN_EMAIL}" \
             --build-arg NEXT_PUBLIC_DIFY_ADMIN_PASSWORD="${NEXT_PUBLIC_DIFY_ADMIN_PASSWORD}" \
             --build-arg NEXT_PUBLIC_DIFY_WORKSPACE_ID="${NEXT_PUBLIC_DIFY_WORKSPACE_ID}" \
-            --build-arg NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY="${NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY}" \
-            --build-arg NEXT_PUBLIC_MODEL_GROQ_API_KEY="${NEXT_PUBLIC_MODEL_GROQ_API_KEY}" \
-            --build-arg NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY="${NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY}" \
             --build-arg NEXT_PUBLIC_DIFY_BASE_URL="${NEXT_PUBLIC_DIFY_BASE_URL}" \
             -t admin-panel:frontend-developer-development .
           docker tag admin-panel:frontend-developer-development $REPO:frontend-developer-development
@@ -224,7 +215,6 @@ jobs:
           DEV_DEVELOPER_PROPELAUTH_API_KEY: ${{ secrets.DEV_DEVELOPER_PROPELAUTH_API_KEY }}
           # Model Configuration API
           DEV_MODEL_API_BASE_URL: ${{ vars.DEV_MODEL_API_BASE_URL }}
-          DEV_MODEL_API_KEY: ${{ secrets.DEV_MODEL_API_KEY }}
           # Chatbot API
           DEV_CHATBOT_API_URL: ${{ vars.DEV_CHATBOT_API_URL }}
           DEV_CHATBOT_API_KEY: ${{ secrets.DEV_CHATBOT_API_KEY }}
@@ -242,10 +232,6 @@ jobs:
           DEV_DIFY_ADMIN_EMAIL: ${{ vars.DEV_DIFY_ADMIN_EMAIL }}
           DEV_DIFY_ADMIN_PASSWORD: ${{ secrets.DEV_DIFY_ADMIN_PASSWORD }}
           DEV_DIFY_WORKSPACE_ID: ${{ vars.DEV_DIFY_WORKSPACE_ID }}
-          # Model Provider API Keys
-          DEV_MODEL_OPEN_AI_API_KEY: ${{ secrets.DEV_MODEL_OPEN_AI_API_KEY }}
-          DEV_MODEL_GROQ_API_KEY: ${{ secrets.DEV_MODEL_GROQ_API_KEY }}
-          DEV_MODEL_ANTHROPIC_API_KEY: ${{ secrets.DEV_MODEL_ANTHROPIC_API_KEY }}
           DEV_DIFY_BASE_URL: ${{ vars.DEV_DIFY_BASE_URL }}
         run: |
           cd python-cdk-v2

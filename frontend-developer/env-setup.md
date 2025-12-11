@@ -13,10 +13,8 @@ NEXT_PUBLIC_DEVELOPEMNT_PROPELAUTH_API_KEY=your_propelauth_api_key_here
 NEXT_PUBLIC_DIFY_BASE_URL=https://api.dify.ai/v1
 NEXT_PUBLIC_CHATBOT_API_KEY=your_dify_chatbot_api_key_here
 
-# Model Provider API Keys
-NEXT_PUBLIC_MODEL_OPEN_AI_API_KEY=your_openai_api_key_here
-NEXT_PUBLIC_MODEL_GROQ_API_KEY=your_groq_api_key_here
-NEXT_PUBLIC_MODEL_ANTHROPIC_API_KEY=your_anthropic_api_key_here
+# Note: Model Provider API Keys (OpenAI, Groq, Anthropic) are configured in Dify Console
+# at the workspace level, not in environment variables. They are not needed here.
 
 # Other Configuration
 NODE_ENV=development
@@ -44,7 +42,7 @@ NODE_ENV=development
 - `NEXT_PUBLIC_DEVELOPEMNT_PROPELAUTH_API_KEY`: Backup authentication key
 - `NEXT_PUBLIC_CHATBOT_API_KEY`: Required for Dify API calls
 - `NEXT_PUBLIC_DIFY_BASE_URL`: Dify API base URL
-- Model provider keys: For specific AI model integrations
+- Model provider API keys: Configured in Dify Console at workspace level, not needed in environment variables
 
 ## Authentication Flow
 
