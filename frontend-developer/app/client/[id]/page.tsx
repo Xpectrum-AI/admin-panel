@@ -27,26 +27,19 @@ type CallOption = 'chat_only' | 'call_only' | 'both';
 interface ConfigState {
   themeColor: string;
   backgroundImage: string;
-  
-  // Bot Identity
   botName: string;
   botIconStyle: string;
   botIcon: string; 
-  
-  // Widget Styling
   widgetBackgroundColor: string; 
   messageAreaBackgroundColor: string; 
   userBubbleColor: string;
   botBubbleColor: string;
-  
-  // Text Colors
   userTextColor: string;
   botTextColor: string;
-  
   interactionMode: CallOption;
 }
 
-// --- Helper: Tuple Mapper (Matches Demo Page's configToTuple) ---
+// --- Helper: Tuple Mapper ---
 const tupleToConfig = (tuple: any[]): ConfigState => {
   return {
     themeColor: tuple[0],
@@ -71,7 +64,7 @@ const getBotIconUrl = (seed: string, style: string) => {
 };
 
 // ============================================================================
-// 1. MAIN CONTENT COMPONENT (Logic lives here)
+// 1. MAIN CONTENT COMPONENT
 // ============================================================================
 function ClientPageContent() {
   const params = useParams();
@@ -97,13 +90,12 @@ function ClientPageContent() {
 
   // Voice States
   const [isVoiceActive, setIsVoiceActive] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false); // New state for 9s delay
+  const [isConnecting, setIsConnecting] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // --- Helper: Get Display Icon ---
   const getDisplayIcon = () => {
     if (config?.botIcon) return config.botIcon;
     const seed = config?.botName || 'AI Assistant';
@@ -111,7 +103,6 @@ function ClientPageContent() {
     return getBotIconUrl(seed, style);
   };
 
-  // --- Helper: Default Config ---
   const useDefaultConfig = (agentInfo: AgentInfo) => {
       setConfig({
         themeColor: '#16a34a',
@@ -136,8 +127,6 @@ function ClientPageContent() {
 
       try {
         setLoading(true);
-
-        // 1. Fetch Agent Basic Info
         const agentRes = await fetch(`/api/agents/info/${agentId}`, {
              method: 'GET',
              headers: {
@@ -147,39 +136,28 @@ function ClientPageContent() {
         });
         const agentData = await agentRes.json();
 
-        if (agentData.status !== 'success' || !agentData.agent_info) {
-             throw new Error("Agent not found");
-        }
+        if (agentData.status !== 'success' || !agentData.agent_info) throw new Error("Agent not found");
         setAgent(agentData.agent_info);
 
-        // 2. Fetch Configuration (JWT Token from URL)
            if (configName) {
             try {
-                // 1. DECOMPRESS
                 const jsonString = LZString.decompressFromEncodedURIComponent(configName);
-                
                 if (jsonString) {
-                    // 2. Parse JSON
                     const tuple = JSON.parse(jsonString);
-                    
-                    // 3. Map Tuple back to Config Object
                     if (Array.isArray(tuple)) {
                         const mappedConfig = tupleToConfig(tuple);
                         setConfig(mappedConfig);
                     }
                 } else {
-                    console.warn("Decompression failed or returned null");
                     useDefaultConfig(agentData.agent_info);
                 }
             } catch (e) {
-                console.error("Invalid config string", e);
                 useDefaultConfig(agentData.agent_info);
             }
         } else {
             useDefaultConfig(agentData.agent_info);
         }
 
-        // Set Initial Message
         if (agentData.agent_info.initial_message) {
             setMessages([{
               role: 'bot',
@@ -187,15 +165,12 @@ function ClientPageContent() {
               timestamp: new Date()
             }]);
         }
-
       } catch (err) {
-        console.error("Initialization Error:", err);
         setError("Failed to load agent environment.");
       } finally {
         setLoading(false);
       }
     };
-
     initPage();
   }, [agentId, configName]); 
 
@@ -206,7 +181,6 @@ function ClientPageContent() {
     }
   }, [messages, isChatOpen, activeTab]);
 
-  // Timer Effect - Only runs if active AND not connecting
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isVoiceActive && !isConnecting) {
@@ -223,14 +197,19 @@ function ClientPageContent() {
   }, [config?.interactionMode]);
 
 
-  // --- Logic Handlers ---
+  // --- UPDATED LOGIC HANDLER (Streaming Fix) ---
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !agent) return;
 
     const userMsg = inputMessage;
+    
+    // 1. Add User Message
     setMessages(prev => [...prev, { role: 'user', content: userMsg, timestamp: new Date() }]);
     setInputMessage('');
     setIsChatLoading(true);
+
+    // 2. Add empty Bot Message placeholder immediately
+    setMessages(prev => [...prev, { role: 'bot', content: '', timestamp: new Date() }]);
 
     try {
       const response = await fetch('/api/chatbot/chat', {
@@ -240,38 +219,87 @@ function ClientPageContent() {
           difyApiUrl: agent.chatbot_api,
           difyApiKey: agent.chatbot_key,
           message: userMsg,
-          useStreaming: false 
+          useStreaming: true
         }),
       });
 
-      const data = await response.json();
+      if (!response.ok) throw new Error('Network response was not ok');
+      if (!response.body) throw new Error('No response body');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let botResponseAccumulator = '';
       
-      if (data.answer) {
-        setMessages(prev => [...prev, { role: 'bot', content: data.answer, timestamp: new Date() }]);
-      } else {
-         setMessages(prev => [...prev, { role: 'bot', content: "I encountered an error.", timestamp: new Date() }]);
+  
+      let buffer = ''; 
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+
+
+        const lines = buffer.split('\n');
+        
+        
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const jsonStr = line.slice(6).trim();
+            if (!jsonStr || jsonStr === '[DONE]') continue;
+
+            try {
+              const data = JSON.parse(jsonStr);
+
+              if (data.answer) {
+                botResponseAccumulator += data.answer;
+
+                setMessages(prev => {
+                  const newMessages = [...prev];
+                  const lastMsgIndex = newMessages.length - 1;
+                  if (newMessages[lastMsgIndex].role === 'bot') {
+                    newMessages[lastMsgIndex] = {
+                      ...newMessages[lastMsgIndex],
+                      content: botResponseAccumulator
+                    };
+                  }
+                  return newMessages;
+                });
+              }
+            } catch (e) {
+              // This catch block now only catches actual malformed JSON, 
+              // not incomplete streaming chunks (handled by buffer)
+              console.error("Error parsing JSON line", e);
+            }
+          }
+        }
       }
+
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'bot', content: "Network error.", timestamp: new Date() }]);
+      setMessages(prev => {
+        const newMessages = [...prev];
+        const lastMsgIndex = newMessages.length - 1;
+        if (newMessages[lastMsgIndex].role === 'bot') {
+            newMessages[lastMsgIndex].content = "I encountered an issue in connecting. Please try again later.";
+        }
+        return newMessages;
+      });
     } finally {
       setIsChatLoading(false);
     }
   };
 
-  // Handle Voice Toggle with 9s visual delay
   const handleVoiceToggle = () => {
     if (isVoiceActive) {
-      // End call
       setIsVoiceActive(false);
       setIsConnecting(false);
     } else {
-      // Start call - functional logic happens immediately
       setIsVoiceActive(true);
-      
-      // Start visual connecting state
       setIsConnecting(true);
-      
-      // Wait 9 seconds before showing the timer
       setTimeout(() => {
         setIsConnecting(false);
       }, 9000);
@@ -285,18 +313,8 @@ function ClientPageContent() {
   };
 
   // --- Render ---
-
-  if (loading) return (
-    <div className="h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-10 h-10 animate-spin text-gray-400" />
-    </div>
-  );
-
-  if (error || !config || !agent) return (
-    <div className="h-screen flex items-center justify-center text-gray-500 flex-col gap-2">
-        <div className="bg-red-50 text-red-500 p-4 rounded-lg">{error || 'Configuration Failed'}</div>
-    </div>
-  );
+  if (loading) return <div className="h-screen flex items-center justify-center bg-gray-50"><Loader2 className="w-10 h-10 animate-spin text-gray-400" /></div>;
+  if (error || !config || !agent) return <div className="h-screen flex items-center justify-center text-gray-500 flex-col gap-2"><div className="bg-red-50 text-red-500 p-4 rounded-lg">{error || 'Configuration Failed'}</div></div>;
 
   return (
     <div 
@@ -304,32 +322,17 @@ function ClientPageContent() {
         style={{ 
             background: config.backgroundImage ? 'transparent' : '#f9fafb',
             backgroundImage: config.backgroundImage ? `url(${config.backgroundImage})` : 'none',
-            backgroundSize: 'cover',
+            backgroundSize: config.backgroundImage ? '100% 100%' : 'cover', 
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
-            backgroundAttachment: 'fixed'
+            backgroundAttachment: 'scroll'
         }}
     >
-      {/* Overlay */}
-      {config.backgroundImage && <div className="absolute inset-0 bg-black/40 z-0" />}
-
-      {/* --- Minimal Header --- */}
-      <header className={`px-6 py-4 flex items-center justify-between sticky top-0 z-20 transition-all duration-300 ${config.backgroundImage ? 'bg-black/20 backdrop-blur-md border-white/10' : 'bg-white/80 backdrop-blur-md border-gray-200'} border-b`}>
-        <div className="flex items-center gap-3">
-           {/* Removed Logo Logic */}
-        </div>
-        
-        <div className="flex items-center gap-2">
-            <span className={`hidden sm:flex text-xs font-medium items-center gap-1.5 px-3 py-1.5 rounded-full ${config.backgroundImage ? 'bg-white/10 text-white backdrop-blur-md' : 'bg-green-50 text-green-700'}`}>
-                <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: config.themeColor }}/> 
-                System Online
-            </span>
-        </div>
-      </header>
+      {config.backgroundImage && <div className="absolute inset-0 bg-black/10 z-0" />}
 
       {/* --- Main Landing Area --- */}
       <main className="flex-1 w-full max-w-5xl mx-auto p-4 flex flex-col items-center justify-center relative z-10 text-center">
-        {!isChatOpen && (
+        {(!isChatOpen && !config.backgroundImage) && (
              <div className="animate-in fade-in zoom-in duration-500">
                 <div className="w-24 h-24 rounded-full mx-auto mb-6 flex items-center justify-center shadow-xl bg-white border-4 border-white overflow-hidden">
                     <img src={getDisplayIcon()} alt="Avatar" className="w-full h-full object-cover" />
@@ -354,13 +357,9 @@ function ClientPageContent() {
       {/* --- Integrated Widget --- */}
       <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-4">
         
-        {/* Widget Container - No Border */}
         <div 
             className={`shadow-2xl overflow-hidden transition-all duration-300 origin-bottom-right flex flex-col ${isChatOpen ? 'w-[90vw] sm:w-[380px] h-[600px] max-h-[85vh] opacity-100 scale-100' : 'w-0 h-0 opacity-0 scale-90'}`}
-            style={{ 
-                borderRadius: '1.5rem', 
-                background: config.widgetBackgroundColor
-            }}
+            style={{ borderRadius: '1.5rem', background: config.widgetBackgroundColor }}
         >
             {/* Widget Header */}
             <div className="pt-4 px-4 pb-2 border-b border-gray-100/50" style={{ background: config.widgetBackgroundColor }}>
@@ -381,29 +380,12 @@ function ClientPageContent() {
                     </button>
                 </div>
 
-                {/* Tabs */}
                 {config.interactionMode === 'both' && (
                     <div className="flex bg-gray-100/80 p-1 rounded-xl">
-                        <button 
-                            onClick={() => setActiveTab('chat')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${
-                                activeTab === 'chat' 
-                                ? 'bg-white text-gray-900 shadow-sm' 
-                                : 'text-gray-500 hover:text-gray-700'
-                            }`}
-                            style={{ color: activeTab === 'chat' ? config.themeColor : undefined }}
-                        >
+                        <button onClick={() => setActiveTab('chat')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'chat' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`} style={{ color: activeTab === 'chat' ? config.themeColor : undefined }}>
                             <MessageSquare className="w-4 h-4" /> Chat
                         </button>
-                        <button 
-                            onClick={() => setActiveTab('voice')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${
-                                activeTab === 'voice' 
-                                ? 'bg-white text-gray-900 shadow-sm' 
-                                : 'text-gray-500 hover:text-gray-700'
-                            }`}
-                            style={{ color: activeTab === 'voice' ? config.themeColor : undefined }}
-                        >
+                        <button onClick={() => setActiveTab('voice')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'voice' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`} style={{ color: activeTab === 'voice' ? config.themeColor : undefined }}>
                             <Phone className="w-4 h-4" /> Call
                         </button>
                     </div>
@@ -413,7 +395,6 @@ function ClientPageContent() {
             {/* Content Area */}
             <div className="flex-1 overflow-hidden relative" style={{ background: config.messageAreaBackgroundColor }}>
                 
-                {/* Chat Tab */}
                 {activeTab === 'chat' && (
                     <div className="absolute inset-0 flex flex-col animate-in slide-in-from-right-2 duration-300">
                         <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -436,22 +417,22 @@ function ClientPageContent() {
                                             </span>
                                         </div>
                                         <div className="leading-relaxed">
-                                            <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                                            {/* --- FIX: Show Thinking inside the bubble --- */}
+                                            {msg.role === 'bot' && msg.content === '' && isChatLoading ? (
+                                                <span className="flex items-center gap-2 opacity-70 italic animate-pulse">
+                                                    <Loader2 className="w-3 h-3 animate-spin" /> Thinking...
+                                                </span>
+                                            ) : (
+                                                <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
                             ))}
-                            {isChatLoading && (
-                                <div className="flex justify-start">
-                                    <div className="rounded-2xl rounded-bl-none px-4 py-3" style={{ background: config.botBubbleColor }}>
-                                        <Loader2 className="w-4 h-4 animate-spin" style={{ color: config.botTextColor }} />
-                                    </div>
-                                </div>
-                            )}
+                            {/* --- REMOVED: Standalone Loader that was causing layout jump --- */}
                             <div ref={messagesEndRef} />
                         </div>
 
-                        {/* Chat Input - Fixed to White BG / Black Text */}
                         <div className="p-3 border-t border-gray-100" style={{ background: config.widgetBackgroundColor }}>
                             <div className="flex gap-2">
                                 <input
@@ -476,7 +457,6 @@ function ClientPageContent() {
                     </div>
                 )}
 
-                {/* Voice Tab */}
                 {activeTab === 'voice' && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-in slide-in-from-right-2 duration-300"
                          style={{ background: isVoiceActive ? '#111827' : config.messageAreaBackgroundColor }}>
@@ -500,17 +480,10 @@ function ClientPageContent() {
                             )}
                         </div>
 
-                        {/* Dynamic Title based on state */}
                         <h3 className={`text-xl font-bold mb-2 ${isVoiceActive ? 'text-white' : 'text-gray-900'}`}>
-                            {!isVoiceActive 
-                                ? 'Start Voice Call' 
-                                : isConnecting 
-                                    ? 'Connecting...' 
-                                    : 'Call in Progress'
-                            }
+                            {!isVoiceActive ? 'Start Voice Call' : isConnecting ? 'Connecting...' : 'Call in Progress'}
                         </h3>
                         
-                        {/* Dynamic Subtext based on state */}
                         <p className={`text-sm mb-8 max-w-[200px] ${isVoiceActive ? 'text-gray-400 font-mono' : 'text-gray-500'}`}>
                             {!isVoiceActive 
                                 ? "Speak naturally with the AI assistant in real-time."
@@ -520,7 +493,6 @@ function ClientPageContent() {
                             }
                         </p>
 
-                        {/* Functional Voice Component - Always rendered when voice is active, even if "connecting" visually */}
                         {isVoiceActive && (
                             <div className="hidden">
                                 <LiveKitVoiceChat
@@ -556,7 +528,6 @@ function ClientPageContent() {
             </div>
         </div>
 
-        {/* Toggle Button */}
         {!isChatOpen && (
             <button 
                 onClick={() => setIsChatOpen(true)}
@@ -572,9 +543,6 @@ function ClientPageContent() {
   );
 }
 
-// ============================================================================
-// 2. EXPORTED PAGE WRAPPER (Suspense Boundary)
-// ============================================================================
 export default function ClientAgentPage() {
   return (
     <Suspense fallback={

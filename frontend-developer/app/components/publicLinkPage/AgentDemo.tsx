@@ -39,22 +39,15 @@ const DICEBEAR_STYLES = [
 interface ConfigState {
   themeColor: string;
   backgroundImage: string;
-  
-  // Bot Identity
   botName: string;
   botIconStyle: string;
   botIcon: string; 
-  
-  // Widget Styling
   widgetBackgroundColor: string; 
   messageAreaBackgroundColor: string; 
   userBubbleColor: string;
   botBubbleColor: string;
-  
-  // Text Colors
   userTextColor: string;
   botTextColor: string;
-  
   interactionMode: CallOption;
 }
 
@@ -283,7 +276,7 @@ LandingView.displayName = 'LandingView';
 
 const ChatWidget = React.memo(({
   isOpen, onClose, activeTab, onTabChange, config, messages, inputMessage, onInputChange, onSendMessage, isChatLoading, isVoiceActive, onToggleVoice, isMuted, onToggleMute, callDuration, agentId, messagesEndRef, displayIcon, 
-  isConnecting // Added prop
+  isConnecting 
 }: any) => {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -340,20 +333,24 @@ const ChatWidget = React.memo(({
                                     color: msg.role === 'user' ? config.userTextColor : config.botTextColor
                                 }}>
                                     <div className="flex justify-between items-baseline gap-4 mb-1 border-b border-black/5 pb-1 opacity-80">
-                                        <span className="text-[10px] font-bold">{msg.role === 'user' ? 'You' : 'Agent'}</span>
+                                        {/* --- UPDATED: Use dynamic botName instead of hardcoded 'Agent' --- */}
+                                        <span className="text-[10px] font-bold">{msg.role === 'user' ? 'You' : config.botName}</span>
                                         <span className="text-[10px] opacity-70">{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                                     </div>
-                                    <div className="leading-relaxed"><MarkdownRenderer>{msg.content}</MarkdownRenderer></div>
+                                    <div className="leading-relaxed">
+                                        {/* --- ADDED: Thinking... state inside bubble --- */}
+                                        {msg.role === 'bot' && msg.content === '' && isChatLoading ? (
+                                            <span className="flex items-center gap-2 opacity-70 italic animate-pulse">
+                                                <Loader2 className="w-3 h-3 animate-spin" /> Thinking...
+                                            </span>
+                                        ) : (
+                                            <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))}
-                        {isChatLoading && (
-                            <div className="flex justify-start">
-                                <div className="rounded-2xl rounded-bl-none px-4 py-3" style={{ background: config.botBubbleColor }}>
-                                    <Loader2 className="w-4 h-4 animate-spin" style={{ color: config.botTextColor }} />
-                                </div>
-                            </div>
-                        )}
+                        {/* Removed standalone loader */}
                         <div ref={messagesEndRef} />
                     </div>
 
@@ -392,25 +389,23 @@ const ChatWidget = React.memo(({
                         {isVoiceActive && <div className="absolute inset-0 rounded-full border-2 animate-ping opacity-50" style={{ borderColor: config.themeColor }}></div>}
                     </div>
 
-                    {/* --- MODIFIED TEXT UI --- */}
                     <h3 className={`text-xl font-bold mb-2 ${isVoiceActive ? 'text-white' : 'text-gray-900'}`}>
                         {!isVoiceActive 
                             ? 'Start Voice Call' 
                             : isConnecting 
-                                ? 'Connecting...' // 9s delay text
-                                : 'Call in Progress' // Final text
+                                ? 'Connecting...' 
+                                : 'Call in Progress' 
                         }
                     </h3>
                     <p className={`text-sm mb-8 max-w-[200px] ${isVoiceActive ? 'text-gray-400 font-mono' : 'text-gray-500'}`}>
                         {!isVoiceActive 
                             ? "Speak naturally with the Agent in real-time."
                             : isConnecting 
-                                ? "Establishing secure connection..." // 9s delay subtext
-                                : formatTime(callDuration) // Final Timer
+                                ? "Establishing secure connection..."
+                                : formatTime(callDuration)
                         }
                     </p>
 
-                    {/* --- FUNCTIONAL COMPONENT (Always Active if isVoiceActive is true) --- */}
                     {isVoiceActive && (
                         <div className="hidden">
                             <LiveKitVoiceChat agentName={agentId} isDarkMode={true} startCall={true} endCall={false} isMuted={isMuted} />
@@ -475,7 +470,7 @@ export default function AgentDemoPage(params : { agentId: string }) {
   
   // --- VOICE STATES ---
   const [isVoiceActive, setIsVoiceActive] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false); // New State
+  const [isConnecting, setIsConnecting] = useState(false); 
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   
@@ -541,31 +536,93 @@ export default function AgentDemoPage(params : { agentId: string }) {
     }
   }, [config, agentId]);
 
+  // --- UPDATED: Streaming Implementation with Buffer Logic ---
   const handleSendMessage = useCallback(async () => {
     if (!inputMessage.trim() || !agent) return;
+    
     const userMsg = inputMessage;
+    // 1. Add User Message
     setMessages(prev => [...prev, { role: 'user', content: userMsg, timestamp: new Date() }]);
     setInputMessage('');
     setIsChatLoading(true);
+    
+    // 2. Add Placeholder Bot Message
+    setMessages(prev => [...prev, { role: 'bot', content: '', timestamp: new Date() }]);
     
     try {
       const response = await fetch('/api/chatbot/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ difyApiUrl: agent.chatbot_api, difyApiKey: agent.chatbot_key, message: userMsg, useStreaming: true }),
+        body: JSON.stringify({ 
+            difyApiUrl: agent.chatbot_api, 
+            difyApiKey: agent.chatbot_key, 
+            message: userMsg, 
+            useStreaming: true // Enable streaming
+        }),
       });
-      const data = await response.json();
-      if (data.answer) {
-        setMessages(prev => [...prev, { role: 'bot', content: data.answer, timestamp: new Date() }]);
+
+      if (!response.ok) throw new Error('Network response was not ok');
+      if (!response.body) throw new Error('No response body');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let botResponseAccumulator = '';
+      let buffer = ''; 
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+
+        const lines = buffer.split('\n');
+        // Keep the last segment in the buffer as it might be incomplete
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+            if (line.startsWith('data: ')) {
+                const jsonStr = line.slice(6).trim();
+                if (!jsonStr || jsonStr === '[DONE]') continue;
+
+                try {
+                    const data = JSON.parse(jsonStr);
+                    if (data.answer) {
+                        botResponseAccumulator += data.answer;
+                        
+                        setMessages(prev => {
+                            const newMessages = [...prev];
+                            const lastMsgIndex = newMessages.length - 1;
+                            if (newMessages[lastMsgIndex].role === 'bot') {
+                                newMessages[lastMsgIndex] = {
+                                    ...newMessages[lastMsgIndex],
+                                    content: botResponseAccumulator
+                                };
+                            }
+                            return newMessages;
+                        });
+                    }
+                } catch (e) {
+                    console.error("Error parsing JSON line", e);
+                }
+            }
+        }
       }
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'bot', content: "Network error.", timestamp: new Date() }]);
+        setMessages(prev => {
+            const newMessages = [...prev];
+            const lastMsgIndex = newMessages.length - 1;
+            if (newMessages[lastMsgIndex].role === 'bot') {
+                newMessages[lastMsgIndex].content = "We are having trouble connecting.";
+            }
+            return newMessages;
+        });
     } finally {
       setIsChatLoading(false);
     }
   }, [inputMessage, agent]);
 
-  // --- Voice Handler (New) ---
+  // --- Voice Handler ---
   const handleVoiceToggle = useCallback(() => {
     if (isVoiceActive) {
       // Stop Call
@@ -618,7 +675,7 @@ export default function AgentDemoPage(params : { agentId: string }) {
     if (isChatOpen && activeTab === 'chat') messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isChatOpen, activeTab]);
 
-  // Timer Effect (Modified)
+  // Timer Effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isVoiceActive && !isConnecting) {
@@ -638,10 +695,10 @@ export default function AgentDemoPage(params : { agentId: string }) {
         style={{ 
             background: config.backgroundImage ? 'transparent' : '#f9fafb',
             backgroundImage: config.backgroundImage ? `url(${config.backgroundImage})` : 'none',
-            backgroundSize: 'cover',
+            backgroundSize: config.backgroundImage ? '100% 100%' : 'cover', 
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
-            backgroundAttachment: 'fixed'
+            backgroundAttachment: 'scroll'
         }}
     >
       {config.backgroundImage && <div className="absolute inset-0 bg-black/40 z-0" />}
@@ -656,7 +713,7 @@ export default function AgentDemoPage(params : { agentId: string }) {
 
       {/* Landing View */}
       <main className="flex-1 w-full max-w-5xl mx-auto p-4 flex flex-col items-center justify-center relative z-10">
-        {!isChatOpen && <LandingView config={config} onStart={() => setIsChatOpen(true)} />}
+        {(!isChatOpen && !config.backgroundImage) && <LandingView config={config} onStart={() => setIsChatOpen(true)} />}
       </main>
 
       {/* Settings Panel */}
@@ -685,14 +742,14 @@ export default function AgentDemoPage(params : { agentId: string }) {
             onSendMessage={handleSendMessage}
             isChatLoading={isChatLoading}
             isVoiceActive={isVoiceActive}
-            onToggleVoice={handleVoiceToggle} // Updated Handler
+            onToggleVoice={handleVoiceToggle} 
             isMuted={isMuted}
             onToggleMute={() => setIsMuted(!isMuted)}
             callDuration={callDuration}
             agentId={agentId}
             messagesEndRef={messagesEndRef}
             displayIcon={displayIcon}
-            isConnecting={isConnecting} // Pass new prop
+            isConnecting={isConnecting} 
         />
 
         <div className="flex items-center gap-3">
@@ -715,7 +772,8 @@ export default function AgentDemoPage(params : { agentId: string }) {
                 <h3 className="text-lg font-bold mb-2 text-black">Use this Image?</h3>
                 <p className="text-sm text-gray-600 mb-4">{tempPreview.type === 'bg' ? 'Set as page background?' : 'Set as agent icon?'}</p>
                 <div className="w-full h-32 rounded-lg border overflow-hidden mb-6 relative bg-gray-100 flex items-center justify-center">
-                    <img src={tempPreview.url} className={tempPreview.type === 'icon' ? "w-24 h-24 rounded-full object-cover" : "w-full h-full object-cover"} alt="preview" />
+                    {/* Updated to contain to match previous fix */}
+                    <img src={tempPreview.url} className={tempPreview.type === 'icon' ? "w-24 h-24 rounded-full object-cover" : "w-full h-full object-contain"} alt="preview" />
                 </div>
                 <div className="flex gap-3">
                     <button onClick={() => setTempPreview(null)} className="flex-1 py-2.5 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium text-sm text-black">Cancel</button>
