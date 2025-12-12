@@ -284,7 +284,7 @@ function ClientPageContent() {
         const newMessages = [...prev];
         const lastMsgIndex = newMessages.length - 1;
         if (newMessages[lastMsgIndex].role === 'bot') {
-            newMessages[lastMsgIndex].content = "I encountered an issue connecting to the server.";
+            newMessages[lastMsgIndex].content = "I encountered an issue in connecting. Please try again later.";
         }
         return newMessages;
       });
