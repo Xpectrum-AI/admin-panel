@@ -552,7 +552,7 @@ export default function AgentDemoPage(params : { agentId: string }) {
       const response = await fetch('/api/chatbot/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ difyApiUrl: agent.chatbot_api, difyApiKey: agent.chatbot_key, message: userMsg, useStreaming: true }),
+        body: JSON.stringify({ difyApiUrl: agent.chatbot_api, difyApiKey: agent.chatbot_key, message: userMsg, useStreaming: false}),
       });
       const data = await response.json();
       if (data.answer) {
@@ -638,13 +638,13 @@ export default function AgentDemoPage(params : { agentId: string }) {
         style={{ 
             background: config.backgroundImage ? 'transparent' : '#f9fafb',
             backgroundImage: config.backgroundImage ? `url(${config.backgroundImage})` : 'none',
-            backgroundSize: 'cover',
+            backgroundSize: config.backgroundImage ? '100% 100%' : 'cover', 
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
-            backgroundAttachment: 'fixed'
+            backgroundAttachment: 'scroll'
         }}
     >
-      {config.backgroundImage && <div className="absolute inset-0 bg-black/40 z-0" />}
+      {config.backgroundImage && <div className="absolute inset-0 bg-black/10 z-0" />}
 
       {/* Share Button */}
       <div className="fixed top-6 right-6 z-30">
@@ -656,7 +656,7 @@ export default function AgentDemoPage(params : { agentId: string }) {
 
       {/* Landing View */}
       <main className="flex-1 w-full max-w-5xl mx-auto p-4 flex flex-col items-center justify-center relative z-10">
-        {!isChatOpen && <LandingView config={config} onStart={() => setIsChatOpen(true)} />}
+        {(!isChatOpen && !config.backgroundImage)  && <LandingView config={config} onStart={() => setIsChatOpen(true)} />}
       </main>
 
       {/* Settings Panel */}

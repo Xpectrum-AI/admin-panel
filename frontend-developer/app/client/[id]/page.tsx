@@ -304,32 +304,19 @@ function ClientPageContent() {
         style={{ 
             background: config.backgroundImage ? 'transparent' : '#f9fafb',
             backgroundImage: config.backgroundImage ? `url(${config.backgroundImage})` : 'none',
-            backgroundSize: 'cover',
+            backgroundSize: config.backgroundImage ? '100% 100%' : 'cover', 
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
-            backgroundAttachment: 'fixed'
+            backgroundAttachment: 'scroll'
         }}
     >
       {/* Overlay */}
-      {config.backgroundImage && <div className="absolute inset-0 bg-black/40 z-0" />}
+      {config.backgroundImage && <div className="absolute inset-0 bg-black/10 z-0" />}
 
-      {/* --- Minimal Header --- */}
-      <header className={`px-6 py-4 flex items-center justify-between sticky top-0 z-20 transition-all duration-300 ${config.backgroundImage ? 'bg-black/20 backdrop-blur-md border-white/10' : 'bg-white/80 backdrop-blur-md border-gray-200'} border-b`}>
-        <div className="flex items-center gap-3">
-           {/* Removed Logo Logic */}
-        </div>
-        
-        <div className="flex items-center gap-2">
-            <span className={`hidden sm:flex text-xs font-medium items-center gap-1.5 px-3 py-1.5 rounded-full ${config.backgroundImage ? 'bg-white/10 text-white backdrop-blur-md' : 'bg-green-50 text-green-700'}`}>
-                <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: config.themeColor }}/> 
-                System Online
-            </span>
-        </div>
-      </header>
 
       {/* --- Main Landing Area --- */}
       <main className="flex-1 w-full max-w-5xl mx-auto p-4 flex flex-col items-center justify-center relative z-10 text-center">
-        {!isChatOpen && (
+        {(!isChatOpen && !config.backgroundImage) && (
              <div className="animate-in fade-in zoom-in duration-500">
                 <div className="w-24 h-24 rounded-full mx-auto mb-6 flex items-center justify-center shadow-xl bg-white border-4 border-white overflow-hidden">
                     <img src={getDisplayIcon()} alt="Avatar" className="w-full h-full object-cover" />
