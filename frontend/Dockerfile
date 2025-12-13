@@ -2,23 +2,28 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Accept build arguments - Only non-sensitive build-time variables
+# Accept build arguments - Build-time variables required for client-side code
 # Note: NEXT_PUBLIC_* variables are embedded in client bundle at build time
-# Secrets (API keys, passwords) are injected at runtime only
+# Client-side secrets (API keys used in browser) must be available at build time
+# Server-side secrets (passwords, private keys) are injected at runtime only
 ARG NEXT_PUBLIC_LIVE_API_URL
 ARG NEXT_PUBLIC_PROPELAUTH_URL
 ARG NEXT_PUBLIC_SUPER_ADMIN_ORG_ID
 ARG NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN
 ARG NEXT_PUBLIC_DIFY_ADMIN_EMAIL
 ARG NEXT_PUBLIC_DIFY_WORKSPACE_ID
+# Client-side secrets (required at build time for client bundle)
+ARG NEXT_PUBLIC_LIVE_API_KEY
 
-# Set environment variables for build (non-sensitive only)
+# Set environment variables for build
 ENV NEXT_PUBLIC_LIVE_API_URL=$NEXT_PUBLIC_LIVE_API_URL
 ENV NEXT_PUBLIC_PROPELAUTH_URL=$NEXT_PUBLIC_PROPELAUTH_URL
 ENV NEXT_PUBLIC_SUPER_ADMIN_ORG_ID=$NEXT_PUBLIC_SUPER_ADMIN_ORG_ID
 ENV NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN=$NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN
 ENV NEXT_PUBLIC_DIFY_ADMIN_EMAIL=$NEXT_PUBLIC_DIFY_ADMIN_EMAIL
 ENV NEXT_PUBLIC_DIFY_WORKSPACE_ID=$NEXT_PUBLIC_DIFY_WORKSPACE_ID
+# Client-side secrets (embedded in client bundle)
+ENV NEXT_PUBLIC_LIVE_API_KEY=$NEXT_PUBLIC_LIVE_API_KEY
 
 
 

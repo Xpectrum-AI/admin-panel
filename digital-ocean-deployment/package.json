@@ -6,7 +6,10 @@
         "typescript": "^5.0.0"
     },
     "dependencies": {
-        "@pulumi/digitalocean": "^4.54.0",
-        "@pulumi/pulumi": "^3.113.0"
+        "@pulumi/digitalocean": "^4.55.0",
+        "@pulumi/pulumi": "^3.212.0"
+    },
+    "overrides": {
+        "js-yaml": ">=3.14.2"
     }
 }
