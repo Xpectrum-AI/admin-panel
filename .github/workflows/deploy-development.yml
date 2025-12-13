@@ -256,6 +256,7 @@ jobs:
           NEXT_PUBLIC_DIFY_BASE_URL: ${{ vars.DEV_DIFY_BASE_URL }}
           NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY: ${{ vars.DEV_IMAGEKIT_PUBLIC_KEY }}
           NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT: ${{ vars.DEV_IMAGEKIT_URL_ENDPOINT }}
+          NEXT_PUBLIC_IMAGEKIT_PRIVATE_KEY: ${{ vars.DEV_IMAGEKIT_PRIVATE_KEY }}
           # Client-side secrets (required at build time for client bundle)
           NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.DEV_LIVE_API_KEY }}
           NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY: ${{ secrets.DEV_DEVELOPER_PROPELAUTH_API_KEY }}
@@ -292,6 +293,7 @@ jobs:
             --build-arg NEXT_PUBLIC_CHATBOT_API_KEY="${NEXT_PUBLIC_CHATBOT_API_KEY}" \
             --build-arg NEXT_PUBLIC_CARTESIA_API_KEY="${NEXT_PUBLIC_CARTESIA_API_KEY}" \
             --build-arg NEXT_PUBLIC_DEMO_JWT_SECRET="${NEXT_PUBLIC_DEMO_JWT_SECRET}" \
+            --build-arg NEXT_PUBLIC_IMAGEKIT_PRIVATE_KEY="${NEXT_PUBLIC_IMAGEKIT_PRIVATE_KEY}" \
             -t developer-dashboard-dev:$IMAGE_TAG .
           
           docker tag developer-dashboard-dev:$IMAGE_TAG $REPO:$IMAGE_TAG
@@ -377,7 +379,7 @@ jobs:
           pulumi config set dev:liveApiUrl "${{ vars.DEV_LIVE_API_URL }}"
           pulumi config set dev:imagekitUrlEndpoint "${{ vars.DEV_IMAGEKIT_URL_ENDPOINT }}"
           pulumi config set dev:imagekitPublicKey "${{ vars.DEV_IMAGEKIT_PUBLIC_KEY }}"
-          pulumi config set dev:imagekitPrivateKey "${{ secrets.DEV_IMAGEKIT_PRIVATE_KEY }}" --secret
+          pulumi config set dev:imagekitPrivateKey "${{ vars.DEV_IMAGEKIT_PRIVATE_KEY }}"
           
           # Set image tags (from generated tags)
           pulumi config set dev:adminImageTag "${{ steps.admin-image-tag.outputs.image_tag }}"
