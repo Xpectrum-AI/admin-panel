@@ -6,13 +6,16 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        # Non-sensitive build-time variables only
+        # Build-time variables required for client-side code
+        # Note: Client-side secrets (NEXT_PUBLIC_* API keys) must be available at build time
         - NEXT_PUBLIC_LIVE_API_URL=${NEXT_PUBLIC_LIVE_API_URL}
         - NEXT_PUBLIC_PROPELAUTH_URL=${NEXT_PUBLIC_PROPELAUTH_URL}
         - NEXT_PUBLIC_SUPER_ADMIN_ORG_ID=${NEXT_PUBLIC_SUPER_ADMIN_ORG_ID}
         - NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN=${NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN}
         - NEXT_PUBLIC_DIFY_ADMIN_EMAIL=${NEXT_PUBLIC_DIFY_ADMIN_EMAIL}
         - NEXT_PUBLIC_DIFY_WORKSPACE_ID=${NEXT_PUBLIC_DIFY_WORKSPACE_ID}
+        # Client-side secrets (required at build time for client bundle)
+        - NEXT_PUBLIC_LIVE_API_KEY=${NEXT_PUBLIC_LIVE_API_KEY}
     ports:
       - "3000:3000"
     environment:
@@ -60,7 +63,8 @@ services:
       context: ./frontend-developer
       dockerfile: Dockerfile
       args:
-        # Non-sensitive build-time variables only
+        # Build-time variables required for client-side code
+        # Note: Client-side secrets (NEXT_PUBLIC_* API keys) must be available at build time
         - NEXT_PUBLIC_LIVE_API_URL=${NEXT_PUBLIC_LIVE_API_URL}
         - NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL=${NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL}
         - NEXT_PUBLIC_SUPER_ADMIN_ORG_ID=${NEXT_PUBLIC_SUPER_ADMIN_ORG_ID}
@@ -74,6 +78,12 @@ services:
         - NEXT_PUBLIC_DIFY_BASE_URL=${NEXT_PUBLIC_DIFY_BASE_URL}
         - NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY=${NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY}
         - NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT=${NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT}
+        # Client-side secrets (required at build time for client bundle)
+        - NEXT_PUBLIC_LIVE_API_KEY=${NEXT_PUBLIC_LIVE_API_KEY}
+        - NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY=${NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY}
+        - NEXT_PUBLIC_CHATBOT_API_KEY=${NEXT_PUBLIC_CHATBOT_API_KEY}
+        - NEXT_PUBLIC_CARTESIA_API_KEY=${NEXT_PUBLIC_CARTESIA_API_KEY}
+        - NEXT_PUBLIC_DEMO_JWT_SECRET=${NEXT_PUBLIC_DEMO_JWT_SECRET}
     ports:
       - "3001:3000"
     environment:

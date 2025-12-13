@@ -203,24 +203,29 @@ jobs:
 
       - name: Build and push Main Frontend image to DOCR
         env:
-          # Non-sensitive build-time variables only (secrets injected at runtime)
+          # Build-time variables required for client-side code
+          # Note: Client-side secrets (NEXT_PUBLIC_* API keys) must be available at build time
+          # Server-side secrets (passwords, private keys) are injected at runtime only
           NEXT_PUBLIC_LIVE_API_URL: ${{ vars.DEV_LIVE_API_URL }}
           NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.DEV_PROPELAUTH_URL }}
           NEXT_PUBLIC_SUPER_ADMIN_ORG_ID: ${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}
+          # Client-side secrets (required at build time for client bundle)
+          NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.DEV_LIVE_API_KEY }}
         run: |
           # Use the specific registry name
           REPO="registry.digitalocean.com/xpectrum-main-app-dev/admin-dev"
           IMAGE_TAG="${{ steps.admin-image-tag.outputs.image_tag }}"
           
           echo "Building and pushing Admin Panel image with tag: $IMAGE_TAG"
-          echo "Note: Secrets are injected at runtime via Digital Ocean App Platform"
+          echo "Note: Client-side secrets are embedded in build, server-side secrets injected at runtime"
 
-          # Build, tag, and push main frontend with non-sensitive build-time variables only
+          # Build, tag, and push main frontend with build-time variables
           cd frontend
           docker build \
             --build-arg NEXT_PUBLIC_LIVE_API_URL="${NEXT_PUBLIC_LIVE_API_URL}" \
             --build-arg NEXT_PUBLIC_PROPELAUTH_URL="${NEXT_PUBLIC_PROPELAUTH_URL}" \
             --build-arg NEXT_PUBLIC_SUPER_ADMIN_ORG_ID="${NEXT_PUBLIC_SUPER_ADMIN_ORG_ID}" \
+            --build-arg NEXT_PUBLIC_LIVE_API_KEY="${NEXT_PUBLIC_LIVE_API_KEY}" \
             -t admin-panel-dev:$IMAGE_TAG .
           
           docker tag admin-panel-dev:$IMAGE_TAG $REPO:$IMAGE_TAG
@@ -235,7 +240,9 @@ jobs:
 
       - name: Build and push Developer Frontend image to DOCR
         env:
-          # Non-sensitive build-time variables only (secrets injected at runtime)
+          # Build-time variables required for client-side code
+          # Note: Client-side secrets (NEXT_PUBLIC_* API keys) must be available at build time
+          # Server-side secrets (passwords, private keys) are injected at runtime only
           NEXT_PUBLIC_LIVE_API_URL: ${{ vars.DEV_LIVE_API_URL }}
           NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL: ${{ vars.DEV_DEVELOPER_PROPELAUTH_URL }}
           NEXT_PUBLIC_SUPER_ADMIN_ORG_ID: ${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}
@@ -249,15 +256,21 @@ jobs:
           NEXT_PUBLIC_DIFY_BASE_URL: ${{ vars.DEV_DIFY_BASE_URL }}
           NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY: ${{ vars.DEV_IMAGEKIT_PUBLIC_KEY }}
           NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT: ${{ vars.DEV_IMAGEKIT_URL_ENDPOINT }}
+          # Client-side secrets (required at build time for client bundle)
+          NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.DEV_LIVE_API_KEY }}
+          NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY: ${{ secrets.DEV_DEVELOPER_PROPELAUTH_API_KEY }}
+          NEXT_PUBLIC_CHATBOT_API_KEY: ${{ secrets.DEV_CHATBOT_API_KEY }}
+          NEXT_PUBLIC_CARTESIA_API_KEY: ${{ secrets.DEV_CARTESIA_API_KEY }}
+          NEXT_PUBLIC_DEMO_JWT_SECRET: ${{ secrets.DEV_DEMO_JWT_SECRET }}
         run: |
           # Use the specific registry name
           REPO="registry.digitalocean.com/xpectrum-main-app-dev/developer-dev"
           IMAGE_TAG="${{ steps.developer-image-tag.outputs.image_tag }}"
           
           echo "Building and pushing Developer Dashboard image with tag: $IMAGE_TAG"
-          echo "Note: Secrets are injected at runtime via Digital Ocean App Platform"
+          echo "Note: Client-side secrets are embedded in build, server-side secrets injected at runtime"
 
-          # Build, tag, and push developer frontend with non-sensitive build-time variables only
+          # Build, tag, and push developer frontend with build-time variables
           cd frontend-developer
           docker build \
             --no-cache \
@@ -274,6 +287,11 @@ jobs:
             --build-arg NEXT_PUBLIC_DIFY_BASE_URL="${NEXT_PUBLIC_DIFY_BASE_URL}" \
             --build-arg NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY="${NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY}" \
             --build-arg NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT="${NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT}" \
+            --build-arg NEXT_PUBLIC_LIVE_API_KEY="${NEXT_PUBLIC_LIVE_API_KEY}" \
+            --build-arg NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY="${NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY}" \
+            --build-arg NEXT_PUBLIC_CHATBOT_API_KEY="${NEXT_PUBLIC_CHATBOT_API_KEY}" \
+            --build-arg NEXT_PUBLIC_CARTESIA_API_KEY="${NEXT_PUBLIC_CARTESIA_API_KEY}" \
+            --build-arg NEXT_PUBLIC_DEMO_JWT_SECRET="${NEXT_PUBLIC_DEMO_JWT_SECRET}" \
             -t developer-dashboard-dev:$IMAGE_TAG .
           
           docker tag developer-dashboard-dev:$IMAGE_TAG $REPO:$IMAGE_TAG
