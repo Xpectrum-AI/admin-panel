@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN || '';
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL || '';
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD || '';
-const WORKSPACE_FROM_ENV = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID || '';
-
 type WorkspaceSummary = { id?: string; tenant_id?: string; name?: string };
 
-if (!CONSOLE_ORIGIN || !ADMIN_EMAIL || !ADMIN_PASSWORD) {
-  throw new Error('Missing required Dify environment variables.');
+function getDifyEnvVars() {
+  const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN || '';
+  const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL || '';
+  const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD || '';
+  const WORKSPACE_FROM_ENV = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID || '';
+
+  if (!CONSOLE_ORIGIN || !ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    throw new Error('Missing required Dify environment variables.');
+  }
+
+  return { CONSOLE_ORIGIN, ADMIN_EMAIL, ADMIN_PASSWORD, WORKSPACE_FROM_ENV };
 }
 
 async function fetchWithTimeout(
@@ -32,7 +36,7 @@ async function fetchWithTimeout(
   }
 }
 
-async function getAuthToken() {
+async function getAuthToken(CONSOLE_ORIGIN: string, ADMIN_EMAIL: string, ADMIN_PASSWORD: string) {
   const loginResponse = await fetchWithTimeout(
     `${CONSOLE_ORIGIN}/console/api/login`,
     {
@@ -52,7 +56,7 @@ async function getAuthToken() {
   return loginData.data?.access_token || loginData.access_token || loginData.data?.token;
 }
 
-async function getAllWorkspaces(token: string): Promise<WorkspaceSummary[]> {
+async function getAllWorkspaces(token: string, CONSOLE_ORIGIN: string): Promise<WorkspaceSummary[]> {
   try {
     const response = await fetchWithTimeout(
       `${CONSOLE_ORIGIN}/console/api/workspaces`,
@@ -111,7 +115,7 @@ const keyMatches = (keyValues: string[], searchKey: string): boolean => {
   return keyValues.some((k) => k === trimmedSearch || k.trim() === trimmedSearch);
 };
 
-async function switchWorkspace(token: string, workspaceId: string) {
+async function switchWorkspace(token: string, workspaceId: string, CONSOLE_ORIGIN: string) {
   try {
     const response = await fetchWithTimeout(
       `${CONSOLE_ORIGIN}/console/api/workspaces/switch`,
@@ -141,10 +145,11 @@ async function switchWorkspace(token: string, workspaceId: string) {
 async function findAppInWorkspace(
   token: string,
   workspaceId: string,
-  apiKey: string
+  apiKey: string,
+  CONSOLE_ORIGIN: string
 ): Promise<{ appId: string; appName?: string } | null> {
   try {
-    await switchWorkspace(token, workspaceId);
+    await switchWorkspace(token, workspaceId, CONSOLE_ORIGIN);
 
     const response = await fetchWithTimeout(
       `${CONSOLE_ORIGIN}/console/api/apps?page=1&limit=100`,
@@ -270,6 +275,8 @@ async function findAppUserId(
 
 export async function POST(request: NextRequest) {
   try {
+    const { CONSOLE_ORIGIN, ADMIN_EMAIL, ADMIN_PASSWORD, WORKSPACE_FROM_ENV } = getDifyEnvVars();
+    
     const body = await request.json();
     const { apiKey } = body;
 
@@ -278,7 +285,7 @@ export async function POST(request: NextRequest) {
     }
 
     const trimmedApiKey = apiKey.trim();
-    const token = await getAuthToken();
+    const token = await getAuthToken(CONSOLE_ORIGIN, ADMIN_EMAIL, ADMIN_PASSWORD);
 
     console.log(`[All Conversations] Searching for API key: ${trimmedApiKey.substring(0, 16)}...`);
 
@@ -292,14 +299,14 @@ export async function POST(request: NextRequest) {
       );
       searchedWorkspaceIds.add(WORKSPACE_FROM_ENV);
       searchedWorkspaces++;
-      const result = await findAppInWorkspace(token, WORKSPACE_FROM_ENV, trimmedApiKey);
+      const result = await findAppInWorkspace(token, WORKSPACE_FROM_ENV, trimmedApiKey, CONSOLE_ORIGIN);
       if (result) {
         foundApp = { ...result, workspace: WORKSPACE_FROM_ENV };
       }
     }
 
     if (!foundApp) {
-      const workspaces = await getAllWorkspaces(token);
+      const workspaces = await getAllWorkspaces(token, CONSOLE_ORIGIN);
       const otherWorkspaces = workspaces.filter((ws) => {
         const wsId = ws.id || ws.tenant_id;
         return wsId && !searchedWorkspaceIds.has(wsId);
@@ -317,7 +324,7 @@ export async function POST(request: NextRequest) {
         );
         searchedWorkspaceIds.add(wsId);
         searchedWorkspaces++;
-        const result = await findAppInWorkspace(token, wsId, trimmedApiKey);
+        const result = await findAppInWorkspace(token, wsId, trimmedApiKey, CONSOLE_ORIGIN);
         if (result) {
           foundApp = { ...result, workspace: wsId };
           break;
@@ -336,7 +343,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { appId, workspace } = foundApp;
-    await switchWorkspace(token, workspace);
+    await switchWorkspace(token, workspace, CONSOLE_ORIGIN);
     // Try multiple possible Console API endpoints
     let conversationsResponse;
     let conversationsData;

@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateApiKey } from '@/lib/middleware/auth';
 
-const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN || '';
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL || '';
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD || '';
+function getDifyEnvVars() {
+  const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN || '';
+  const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL || '';
+  const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD || '';
 
-if (!CONSOLE_ORIGIN || !ADMIN_EMAIL || !ADMIN_PASSWORD) {
-  throw new Error('Missing required Dify environment variables');
+  if (!CONSOLE_ORIGIN || !ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    throw new Error('Missing required Dify environment variables');
+  }
+
+  return { CONSOLE_ORIGIN, ADMIN_EMAIL, ADMIN_PASSWORD };
 }
 
 type WorkspaceSummary = { id?: string; tenant_id?: string; name?: string };
 
-async function getAuthToken() {
+async function getAuthToken(CONSOLE_ORIGIN: string, ADMIN_EMAIL: string, ADMIN_PASSWORD: string) {
   const loginResponse = await fetch(`${CONSOLE_ORIGIN}/console/api/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -26,7 +30,7 @@ async function getAuthToken() {
   return loginData.data?.access_token || loginData.access_token || loginData.data?.token;
 }
 
-async function getAllWorkspaces(token: string): Promise<WorkspaceSummary[]> {
+async function getAllWorkspaces(token: string, CONSOLE_ORIGIN: string): Promise<WorkspaceSummary[]> {
   try {
     const response = await fetch(`${CONSOLE_ORIGIN}/console/api/workspaces`, {
       headers: {
@@ -48,7 +52,7 @@ async function getAllWorkspaces(token: string): Promise<WorkspaceSummary[]> {
   }
 }
 
-async function switchWorkspace(token: string, workspaceId: string) {
+async function switchWorkspace(token: string, workspaceId: string, CONSOLE_ORIGIN: string) {
   try {
     const response = await fetch(`${CONSOLE_ORIGIN}/console/api/workspaces/switch`, {
       method: 'POST',
@@ -70,10 +74,11 @@ async function switchWorkspace(token: string, workspaceId: string) {
 async function getAppsInWorkspace(
   token: string,
   workspaceId: string,
+  CONSOLE_ORIGIN: string,
   workspaceName?: string
 ): Promise<Array<{ appId: string; appName: string; workspaceId: string; workspaceName?: string }>> {
   try {
-    await switchWorkspace(token, workspaceId);
+    await switchWorkspace(token, workspaceId, CONSOLE_ORIGIN);
 
     const apps: Array<{ appId: string; appName: string; workspaceId: string; workspaceName?: string }> = [];
     let page = 1;
@@ -129,8 +134,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const token = await getAuthToken();
-    const workspaces = await getAllWorkspaces(token);
+    const { CONSOLE_ORIGIN, ADMIN_EMAIL, ADMIN_PASSWORD } = getDifyEnvVars();
+    const token = await getAuthToken(CONSOLE_ORIGIN, ADMIN_EMAIL, ADMIN_PASSWORD);
+    const workspaces = await getAllWorkspaces(token, CONSOLE_ORIGIN);
 
     if (workspaces.length === 0) {
       return NextResponse.json({
@@ -153,7 +159,7 @@ export async function GET(request: NextRequest) {
       const workspaceId = workspace.id || workspace.tenant_id;
       if (!workspaceId) continue;
 
-      const apps = await getAppsInWorkspace(token, workspaceId, workspace.name);
+      const apps = await getAppsInWorkspace(token, workspaceId, CONSOLE_ORIGIN, workspace.name);
       allApps.push(...apps);
     }
 

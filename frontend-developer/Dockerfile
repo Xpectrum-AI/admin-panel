@@ -2,59 +2,39 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Accept build arguments
+# Accept build arguments - Only non-sensitive build-time variables
+# Note: NEXT_PUBLIC_* variables are embedded in client bundle at build time
+# Secrets (API keys, passwords, private keys) are injected at runtime only
 ARG NEXT_PUBLIC_LIVE_API_URL
 ARG NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL
-ARG NEXT_PUBLIC_LIVE_API_KEY
-ARG NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY
 ARG NEXT_PUBLIC_SUPER_ADMIN_ORG_ID
 ARG NEXT_PUBLIC_MODEL_API_BASE_URL
 ARG NEXT_PUBLIC_CHATBOT_API_URL
-ARG NEXT_PUBLIC_CHATBOT_API_KEY
-ARG NEXT_PUBLIC_ELEVEN_LABS_API_KEY
-ARG NEXT_PUBLIC_OPEN_AI_API_KEY
-ARG NEXT_PUBLIC_WHISPER_API_KEY
-ARG NEXT_PUBLIC_DEEPGRAM_API_KEY
-ARG NEXT_PUBLIC_CARTESIA_API_KEY
 ARG NEXT_PUBLIC_CARTESIA_VOICE_ID
 ARG NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID
 ARG NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN
 ARG NEXT_PUBLIC_DIFY_ADMIN_EMAIL
-ARG NEXT_PUBLIC_DIFY_ADMIN_PASSWORD
 ARG NEXT_PUBLIC_DIFY_WORKSPACE_ID
 ARG NEXT_PUBLIC_DIFY_BASE_URL
-ARG GOOGLE_TRANSLATE_API_KEY
-ARG NEXT_PUBLIC_DEMO_JWT_SECRET
 ARG NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY
 ARG NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT
-ARG NEXT_PUBLIC_IMAGEKIT_PRIVATE_KEY
 
-# Set environment variables for build
+# Set environment variables for build (non-sensitive only)
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_LIVE_API_URL=$NEXT_PUBLIC_LIVE_API_URL
 ENV NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL=$NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL
-ENV NEXT_PUBLIC_LIVE_API_KEY=$NEXT_PUBLIC_LIVE_API_KEY
-ENV NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY=$NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY
 ENV NEXT_PUBLIC_SUPER_ADMIN_ORG_ID=$NEXT_PUBLIC_SUPER_ADMIN_ORG_ID
 ENV NEXT_PUBLIC_MODEL_API_BASE_URL=$NEXT_PUBLIC_MODEL_API_BASE_URL
 ENV NEXT_PUBLIC_CHATBOT_API_URL=$NEXT_PUBLIC_CHATBOT_API_URL
-ENV NEXT_PUBLIC_CHATBOT_API_KEY=$NEXT_PUBLIC_CHATBOT_API_KEY
-ENV NEXT_PUBLIC_ELEVEN_LABS_API_KEY=$NEXT_PUBLIC_ELEVEN_LABS_API_KEY
-ENV NEXT_PUBLIC_OPEN_AI_API_KEY=$NEXT_PUBLIC_OPEN_AI_API_KEY
-ENV NEXT_PUBLIC_WHISPER_API_KEY=$NEXT_PUBLIC_WHISPER_API_KEY
-ENV NEXT_PUBLIC_DEEPGRAM_API_KEY=$NEXT_PUBLIC_DEEPGRAM_API_KEY
-ENV NEXT_PUBLIC_CARTESIA_API_KEY=$NEXT_PUBLIC_CARTESIA_API_KEY
 ENV NEXT_PUBLIC_CARTESIA_VOICE_ID=$NEXT_PUBLIC_CARTESIA_VOICE_ID
 ENV NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID=$NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID
 ENV NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN=$NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN
 ENV NEXT_PUBLIC_DIFY_ADMIN_EMAIL=$NEXT_PUBLIC_DIFY_ADMIN_EMAIL
-ENV NEXT_PUBLIC_DIFY_ADMIN_PASSWORD=$NEXT_PUBLIC_DIFY_ADMIN_PASSWORD
 ENV NEXT_PUBLIC_DIFY_WORKSPACE_ID=$NEXT_PUBLIC_DIFY_WORKSPACE_ID
 ENV NEXT_PUBLIC_DIFY_BASE_URL=$NEXT_PUBLIC_DIFY_BASE_URL
-ENV NEXT_PUBLIC_DEMO_JWT_SECRET=$NEXT_PUBLIC_DEMO_JWT_SECRET
 ENV NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY=$NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY
 ENV NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT=$NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT
-ENV NEXT_PUBLIC_IMAGEKIT_PRIVATE_KEY=$NEXT_PUBLIC_IMAGEKIT_PRIVATE_KEY
+
 
 # Set npm registry and configure DNS
 RUN npm config set registry https://registry.npmjs.org/ && \
@@ -65,7 +45,7 @@ RUN npm config set registry https://registry.npmjs.org/ && \
 COPY package*.json ./
 
 # Install dependencies with aggressive cleanup
-RUN npm ci --prefer-offline --no-audit --production=false && \
+RUN npm ci --prefer-offline --production=false && \
     npm cache clean --force && \
     rm -rf /root/.npm
 
@@ -97,8 +77,8 @@ RUN apk add --no-cache \
 
 ENV NODE_ENV=production
 
-# Set Google Translate API key (server-side only, not exposed to client)
-ENV GOOGLE_TRANSLATE_API_KEY=
+# Secrets are injected at runtime via environment variables (not in image layers)
+# GOOGLE_TRANSLATE_API_KEY will be set at container startup
 
 # Copy only necessary files from builder
 COPY --from=builder /app/next.config.ts ./
@@ -107,8 +87,14 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/scripts ./scripts
 
-# Make scripts executable
-RUN chmod +x scripts/*.sh scripts/*.ps1
+# Create a non-root user and set ownership
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs && \
+    chown -R nextjs:nodejs /app && \
+    chmod +x scripts/*.sh scripts/*.ps1
+
+# Switch to non-root user
+USER nextjs
 
 # Environment variables will be set by CDK at runtime
 # Remove hardcoded env file copy
@@ -117,5 +103,9 @@ EXPOSE 3000
 
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
+
+# Add health check (uses PORT environment variable, defaults to 3000)
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD node -e "const port = process.env.PORT || 3000; require('http').get('http://localhost:' + port + '/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
 CMD ["node", "server.js"] 
