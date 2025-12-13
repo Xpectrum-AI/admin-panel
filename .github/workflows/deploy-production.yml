@@ -326,6 +326,10 @@ jobs:
           pulumi config set prod:cartesiaVoiceId "${{ vars.PRODUCTION_CARTESIA_VOICE_ID }}"
           pulumi config set prod:elevenLabsVoiceId "${{ vars.PRODUCTION_ELEVEN_LABS_VOICE_ID }}"
           pulumi config set prod:liveApiUrl "${{ vars.PRODUCTION_LIVE_API_URL }}"
+          pulumi config set prod:imagekitPublicKey "${{ vars.PRODUCTION_IMAGEKIT_PUBLIC_KEY }}"
+          pulumi config set prod:imagekitUrlEndpoint "${{ vars.PRODUCTION_IMAGEKIT_URL_ENDPOINT }}"
+          pulumi config set prod:imagekitPrivateKey "${{ secrets.PRODUCTION_IMAGEKIT_PRIVATE_KEY }}" --secret
+          pulumi config set prod:demoJwtSecret "${{ secrets.PRODUCTION_DEMO_JWT_SECRET }}" --secret
           
           # Set image tags (from generated production tags)
           pulumi config set prod:adminImageTag "${{ steps.admin-prod-tag.outputs.production_tag }}"

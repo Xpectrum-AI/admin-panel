@@ -2,27 +2,25 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Accept build arguments
+# Accept build arguments - Only non-sensitive build-time variables
+# Note: NEXT_PUBLIC_* variables are embedded in client bundle at build time
+# Secrets (API keys, passwords) are injected at runtime only
 ARG NEXT_PUBLIC_LIVE_API_URL
 ARG NEXT_PUBLIC_PROPELAUTH_URL
-ARG NEXT_PUBLIC_LIVE_API_KEY
-ARG NEXT_PUBLIC_PROPELAUTH_API_KEY
 ARG NEXT_PUBLIC_SUPER_ADMIN_ORG_ID
 ARG NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN
 ARG NEXT_PUBLIC_DIFY_ADMIN_EMAIL
-ARG NEXT_PUBLIC_DIFY_ADMIN_PASSWORD
 ARG NEXT_PUBLIC_DIFY_WORKSPACE_ID
 
-# Set environment variables for build
+# Set environment variables for build (non-sensitive only)
 ENV NEXT_PUBLIC_LIVE_API_URL=$NEXT_PUBLIC_LIVE_API_URL
 ENV NEXT_PUBLIC_PROPELAUTH_URL=$NEXT_PUBLIC_PROPELAUTH_URL
-ENV NEXT_PUBLIC_LIVE_API_KEY=$NEXT_PUBLIC_LIVE_API_KEY
-ENV NEXT_PUBLIC_PROPELAUTH_API_KEY=$NEXT_PUBLIC_PROPELAUTH_API_KEY
 ENV NEXT_PUBLIC_SUPER_ADMIN_ORG_ID=$NEXT_PUBLIC_SUPER_ADMIN_ORG_ID
 ENV NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN=$NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN
 ENV NEXT_PUBLIC_DIFY_ADMIN_EMAIL=$NEXT_PUBLIC_DIFY_ADMIN_EMAIL
-ENV NEXT_PUBLIC_DIFY_ADMIN_PASSWORD=$NEXT_PUBLIC_DIFY_ADMIN_PASSWORD
 ENV NEXT_PUBLIC_DIFY_WORKSPACE_ID=$NEXT_PUBLIC_DIFY_WORKSPACE_ID
+
+
 
 # Set npm registry and configure DNS
 RUN npm config set registry https://registry.npmjs.org/ && \
@@ -33,7 +31,7 @@ RUN npm config set registry https://registry.npmjs.org/ && \
 COPY package*.json ./
 
 # Install dependencies with aggressive cleanup
-RUN npm ci --prefer-offline --no-audit --production=false && \
+RUN npm ci --prefer-offline --production=false && \
     npm cache clean --force && \
     rm -rf /root/.npm
 
@@ -64,6 +62,14 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
+# Create a non-root user and set ownership
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs && \
+    chown -R nextjs:nodejs /app
+
+# Switch to non-root user
+USER nextjs
+
 # Environment variables will be set by CDK at runtime
 # Remove hardcoded env file copy
 
@@ -71,5 +77,10 @@ EXPOSE 3000
 
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
+
+# Add health check (uses PORT environment variable, defaults to 3000)
+# Note: Using Node.js to read PORT env var since curl is not installed in this image
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD node -e "const port = process.env.PORT || 3000; require('http').get('http://localhost:' + port + '/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
 CMD ["node", "server.js"] 

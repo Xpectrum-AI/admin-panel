@@ -1,21 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateApiKey } from '@/lib/middleware/auth';
 
-const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN || '';
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL || '';
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD || '';
-const BACKEND_URL = process.env.NEXT_PUBLIC_LIVE_API_URL || '';
-const BACKEND_API_KEY = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
+function getDifyEnvVars() {
+  const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN || '';
+  const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL || '';
+  const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD || '';
+  const BACKEND_URL = process.env.NEXT_PUBLIC_LIVE_API_URL || '';
+  const BACKEND_API_KEY = process.env.NEXT_PUBLIC_LIVE_API_KEY || '';
 
-if (!CONSOLE_ORIGIN || !ADMIN_EMAIL || !ADMIN_PASSWORD) {
-  throw new Error('Missing required Dify environment variables');
+  if (!CONSOLE_ORIGIN || !ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    throw new Error('Missing required Dify environment variables');
+  }
+
+  if (!BACKEND_URL || !BACKEND_API_KEY) {
+    throw new Error('Missing required backend API configuration');
+  }
+
+  return { CONSOLE_ORIGIN, ADMIN_EMAIL, ADMIN_PASSWORD, BACKEND_URL, BACKEND_API_KEY };
 }
 
-if (!BACKEND_URL || !BACKEND_API_KEY) {
-  throw new Error('Missing required backend API configuration');
-}
-
-async function getAuthToken() {
+async function getAuthToken(CONSOLE_ORIGIN: string, ADMIN_EMAIL: string, ADMIN_PASSWORD: string) {
   const loginResponse = await fetch(`${CONSOLE_ORIGIN}/console/api/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -30,7 +34,7 @@ async function getAuthToken() {
   return loginData.data?.access_token || loginData.access_token || loginData.data?.token;
 }
 
-async function switchWorkspace(token: string, workspaceId: string) {
+async function switchWorkspace(token: string, workspaceId: string, CONSOLE_ORIGIN: string) {
   try {
     const response = await fetch(`${CONSOLE_ORIGIN}/console/api/workspaces/switch`, {
       method: 'POST',
@@ -49,9 +53,9 @@ async function switchWorkspace(token: string, workspaceId: string) {
   }
 }
 
-async function getAppDetails(token: string, workspaceId: string, appId: string) {
+async function getAppDetails(token: string, workspaceId: string, appId: string, CONSOLE_ORIGIN: string) {
   try {
-    await switchWorkspace(token, workspaceId);
+    await switchWorkspace(token, workspaceId, CONSOLE_ORIGIN);
 
     // Get app details
     const appResponse = await fetch(`${CONSOLE_ORIGIN}/console/api/apps/${appId}`, {
@@ -114,6 +118,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { CONSOLE_ORIGIN, ADMIN_EMAIL, ADMIN_PASSWORD, BACKEND_URL, BACKEND_API_KEY } = getDifyEnvVars();
+
     const body = await request.json();
     const { appId, appName, workspaceId, organizationId } = body;
 
@@ -125,8 +131,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Get auth token and fetch app details from Dify
-    const token = await getAuthToken();
-    const appDetails = await getAppDetails(token, workspaceId, appId);
+    const token = await getAuthToken(CONSOLE_ORIGIN, ADMIN_EMAIL, ADMIN_PASSWORD);
+    const appDetails = await getAppDetails(token, workspaceId, appId, CONSOLE_ORIGIN);
 
     // Use app name as agent_prefix (clean it to be a valid identifier)
     // If appName is not provided, fall back to appId

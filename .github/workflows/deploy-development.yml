@@ -203,10 +203,9 @@ jobs:
 
       - name: Build and push Main Frontend image to DOCR
         env:
+          # Non-sensitive build-time variables only (secrets injected at runtime)
           NEXT_PUBLIC_LIVE_API_URL: ${{ vars.DEV_LIVE_API_URL }}
           NEXT_PUBLIC_PROPELAUTH_URL: ${{ vars.DEV_PROPELAUTH_URL }}
-          NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.DEV_LIVE_API_KEY }}
-          NEXT_PUBLIC_PROPELAUTH_API_KEY: ${{ secrets.DEV_PROPELAUTH_API_KEY }}
           NEXT_PUBLIC_SUPER_ADMIN_ORG_ID: ${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}
         run: |
           # Use the specific registry name
@@ -214,14 +213,13 @@ jobs:
           IMAGE_TAG="${{ steps.admin-image-tag.outputs.image_tag }}"
           
           echo "Building and pushing Admin Panel image with tag: $IMAGE_TAG"
+          echo "Note: Secrets are injected at runtime via Digital Ocean App Platform"
 
-          # Build, tag, and push main frontend with environment variables
+          # Build, tag, and push main frontend with non-sensitive build-time variables only
           cd frontend
           docker build \
             --build-arg NEXT_PUBLIC_LIVE_API_URL="${NEXT_PUBLIC_LIVE_API_URL}" \
             --build-arg NEXT_PUBLIC_PROPELAUTH_URL="${NEXT_PUBLIC_PROPELAUTH_URL}" \
-            --build-arg NEXT_PUBLIC_LIVE_API_KEY="${NEXT_PUBLIC_LIVE_API_KEY}" \
-            --build-arg NEXT_PUBLIC_PROPELAUTH_API_KEY="${NEXT_PUBLIC_PROPELAUTH_API_KEY}" \
             --build-arg NEXT_PUBLIC_SUPER_ADMIN_ORG_ID="${NEXT_PUBLIC_SUPER_ADMIN_ORG_ID}" \
             -t admin-panel-dev:$IMAGE_TAG .
           
@@ -237,63 +235,45 @@ jobs:
 
       - name: Build and push Developer Frontend image to DOCR
         env:
+          # Non-sensitive build-time variables only (secrets injected at runtime)
           NEXT_PUBLIC_LIVE_API_URL: ${{ vars.DEV_LIVE_API_URL }}
           NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL: ${{ vars.DEV_DEVELOPER_PROPELAUTH_URL }}
-          NEXT_PUBLIC_LIVE_API_KEY: ${{ secrets.DEV_LIVE_API_KEY }}
-          NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY: ${{ secrets.DEV_DEVELOPER_PROPELAUTH_API_KEY }}
+          NEXT_PUBLIC_SUPER_ADMIN_ORG_ID: ${{ secrets.DEV_SUPER_ADMIN_ORG_ID }}
           NEXT_PUBLIC_MODEL_API_BASE_URL: ${{ vars.DEV_MODEL_API_BASE_URL }}
           NEXT_PUBLIC_CHATBOT_API_URL: ${{ vars.DEV_CHATBOT_API_URL }}
-          NEXT_PUBLIC_CHATBOT_API_KEY: ${{ secrets.DEV_CHATBOT_API_KEY }}
-          NEXT_PUBLIC_ELEVEN_LABS_API_KEY: ${{ secrets.DEV_ELEVEN_LABS_API_KEY }}
-          NEXT_PUBLIC_OPEN_AI_API_KEY: ${{ secrets.DEV_OPEN_AI_API_KEY }}
-          NEXT_PUBLIC_WHISPER_API_KEY: ${{ secrets.DEV_WHISPER_API_KEY }}
-          NEXT_PUBLIC_DEEPGRAM_API_KEY: ${{ secrets.DEV_DEEPGRAM_API_KEY }}
-          NEXT_PUBLIC_CARTESIA_API_KEY: ${{ secrets.DEV_CARTESIA_API_KEY }}
           NEXT_PUBLIC_CARTESIA_VOICE_ID: ${{ vars.DEV_CARTESIA_VOICE_ID }}
           NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID: ${{ vars.DEV_ELEVEN_LABS_VOICE_ID }}
           NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN: ${{ vars.DEV_DIFY_CONSOLE_ORIGIN }}
           NEXT_PUBLIC_DIFY_ADMIN_EMAIL: ${{ vars.DEV_DIFY_ADMIN_EMAIL }}
-          NEXT_PUBLIC_DIFY_ADMIN_PASSWORD: ${{ secrets.DEV_DIFY_ADMIN_PASSWORD }}
           NEXT_PUBLIC_DIFY_WORKSPACE_ID: ${{ vars.DEV_DIFY_WORKSPACE_ID }}
           NEXT_PUBLIC_DIFY_BASE_URL: ${{ vars.DEV_DIFY_BASE_URL }}
-          NEXT_PUBLIC_DEMO_JWT_SECRET: ${{ secrets.DEV_DEMO_JWT_SECRET }}
           NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY: ${{ vars.DEV_IMAGEKIT_PUBLIC_KEY }}
           NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT: ${{ vars.DEV_IMAGEKIT_URL_ENDPOINT }}
-          NEXT_PUBLIC_IMAGEKIT_PRIVATE_KEY: ${{ vars.DEV_IMAGEKIT_PRIVATE_KEY }}
         run: |
           # Use the specific registry name
           REPO="registry.digitalocean.com/xpectrum-main-app-dev/developer-dev"
           IMAGE_TAG="${{ steps.developer-image-tag.outputs.image_tag }}"
           
           echo "Building and pushing Developer Dashboard image with tag: $IMAGE_TAG"
+          echo "Note: Secrets are injected at runtime via Digital Ocean App Platform"
 
-          # Build, tag, and push developer frontend with environment variables
+          # Build, tag, and push developer frontend with non-sensitive build-time variables only
           cd frontend-developer
           docker build \
             --no-cache \
             --build-arg NEXT_PUBLIC_LIVE_API_URL="${NEXT_PUBLIC_LIVE_API_URL}" \
             --build-arg NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL="${NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL}" \
-            --build-arg NEXT_PUBLIC_LIVE_API_KEY="${NEXT_PUBLIC_LIVE_API_KEY}" \
-            --build-arg NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY="${NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY}" \
+            --build-arg NEXT_PUBLIC_SUPER_ADMIN_ORG_ID="${NEXT_PUBLIC_SUPER_ADMIN_ORG_ID}" \
             --build-arg NEXT_PUBLIC_MODEL_API_BASE_URL="${NEXT_PUBLIC_MODEL_API_BASE_URL}" \
             --build-arg NEXT_PUBLIC_CHATBOT_API_URL="${NEXT_PUBLIC_CHATBOT_API_URL}" \
-            --build-arg NEXT_PUBLIC_CHATBOT_API_KEY="${NEXT_PUBLIC_CHATBOT_API_KEY}" \
-            --build-arg NEXT_PUBLIC_ELEVEN_LABS_API_KEY="${NEXT_PUBLIC_ELEVEN_LABS_API_KEY}" \
-            --build-arg NEXT_PUBLIC_OPEN_AI_API_KEY="${NEXT_PUBLIC_OPEN_AI_API_KEY}" \
-            --build-arg NEXT_PUBLIC_WHISPER_API_KEY="${NEXT_PUBLIC_WHISPER_API_KEY}" \
-            --build-arg NEXT_PUBLIC_DEEPGRAM_API_KEY="${NEXT_PUBLIC_DEEPGRAM_API_KEY}" \
-            --build-arg NEXT_PUBLIC_CARTESIA_API_KEY="${NEXT_PUBLIC_CARTESIA_API_KEY}" \
             --build-arg NEXT_PUBLIC_CARTESIA_VOICE_ID="${NEXT_PUBLIC_CARTESIA_VOICE_ID}" \
             --build-arg NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID="${NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID}" \
             --build-arg NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN="${NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN}" \
             --build-arg NEXT_PUBLIC_DIFY_ADMIN_EMAIL="${NEXT_PUBLIC_DIFY_ADMIN_EMAIL}" \
-            --build-arg NEXT_PUBLIC_DIFY_ADMIN_PASSWORD="${NEXT_PUBLIC_DIFY_ADMIN_PASSWORD}" \
             --build-arg NEXT_PUBLIC_DIFY_WORKSPACE_ID="${NEXT_PUBLIC_DIFY_WORKSPACE_ID}" \
             --build-arg NEXT_PUBLIC_DIFY_BASE_URL="${NEXT_PUBLIC_DIFY_BASE_URL}" \
-            --build-arg NEXT_PUBLIC_DEMO_JWT_SECRET="${NEXT_PUBLIC_DEMO_JWT_SECRET}" \
             --build-arg NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY="${NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY}" \
             --build-arg NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT="${NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT}" \
-            --build-arg NEXT_PUBLIC_IMAGEKIT_PRIVATE_KEY="${NEXT_PUBLIC_IMAGEKIT_PRIVATE_KEY}" \
             -t developer-dashboard-dev:$IMAGE_TAG .
           
           docker tag developer-dashboard-dev:$IMAGE_TAG $REPO:$IMAGE_TAG
@@ -379,7 +359,7 @@ jobs:
           pulumi config set dev:liveApiUrl "${{ vars.DEV_LIVE_API_URL }}"
           pulumi config set dev:imagekitUrlEndpoint "${{ vars.DEV_IMAGEKIT_URL_ENDPOINT }}"
           pulumi config set dev:imagekitPublicKey "${{ vars.DEV_IMAGEKIT_PUBLIC_KEY }}"
-          pulumi config set dev:imagekitPrivateKey "${{ vars.DEV_IMAGEKIT_PRIVATE_KEY }}"
+          pulumi config set dev:imagekitPrivateKey "${{ secrets.DEV_IMAGEKIT_PRIVATE_KEY }}" --secret
           
           # Set image tags (from generated tags)
           pulumi config set dev:adminImageTag "${{ steps.admin-image-tag.outputs.image_tag }}"

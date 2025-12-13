@@ -4,53 +4,128 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
+        # Non-sensitive build-time variables only
         - NEXT_PUBLIC_LIVE_API_URL=${NEXT_PUBLIC_LIVE_API_URL}
-        - NEXT_PUBLIC_LIVE_API_KEY=${NEXT_PUBLIC_LIVE_API_KEY}
         - NEXT_PUBLIC_PROPELAUTH_URL=${NEXT_PUBLIC_PROPELAUTH_URL}
-        - NEXT_PUBLIC_PROPELAUTH_API_KEY=${NEXT_PUBLIC_PROPELAUTH_API_KEY}
         - NEXT_PUBLIC_SUPER_ADMIN_ORG_ID=${NEXT_PUBLIC_SUPER_ADMIN_ORG_ID}
         - NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN=${NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN}
         - NEXT_PUBLIC_DIFY_ADMIN_EMAIL=${NEXT_PUBLIC_DIFY_ADMIN_EMAIL}
-        - NEXT_PUBLIC_DIFY_ADMIN_PASSWORD=${NEXT_PUBLIC_DIFY_ADMIN_PASSWORD}
         - NEXT_PUBLIC_DIFY_WORKSPACE_ID=${NEXT_PUBLIC_DIFY_WORKSPACE_ID}
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=development
+      # Non-sensitive variables (also in build args for client bundle)
       - NEXT_PUBLIC_LIVE_API_URL=${NEXT_PUBLIC_LIVE_API_URL}
-      - NEXT_PUBLIC_LIVE_API_KEY=${NEXT_PUBLIC_LIVE_API_KEY}
       - NEXT_PUBLIC_PROPELAUTH_URL=${NEXT_PUBLIC_PROPELAUTH_URL}
-      - NEXT_PUBLIC_PROPELAUTH_API_KEY=${NEXT_PUBLIC_PROPELAUTH_API_KEY}
       - NEXT_PUBLIC_SUPER_ADMIN_ORG_ID=${NEXT_PUBLIC_SUPER_ADMIN_ORG_ID}
       - NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN=${NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN}
       - NEXT_PUBLIC_DIFY_ADMIN_EMAIL=${NEXT_PUBLIC_DIFY_ADMIN_EMAIL}
-      - NEXT_PUBLIC_DIFY_ADMIN_PASSWORD=${NEXT_PUBLIC_DIFY_ADMIN_PASSWORD}
       - NEXT_PUBLIC_DIFY_WORKSPACE_ID=${NEXT_PUBLIC_DIFY_WORKSPACE_ID}
+      # Secrets injected at runtime (not in image layers)
+      - NEXT_PUBLIC_LIVE_API_KEY=${NEXT_PUBLIC_LIVE_API_KEY}
+      - NEXT_PUBLIC_PROPELAUTH_API_KEY=${NEXT_PUBLIC_PROPELAUTH_API_KEY}
+      - NEXT_PUBLIC_DIFY_ADMIN_PASSWORD=${NEXT_PUBLIC_DIFY_ADMIN_PASSWORD}
     restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    # Read-only filesystem for security (prevents file writes to root filesystem)
+    read_only: true
+    # Writable /tmp as tmpfs (in-memory, auto-cleaned, required for agent creation scripts)
+    # Security flags: noexec (prevent execution), nosuid (prevent setuid), nodev (prevent device files)
+    tmpfs:
+      - /tmp:size=100M,mode=1777,noexec,nosuid,nodev
+    # Drop all capabilities for extra hardening
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend-developer:
     build:
       context: ./frontend-developer
       dockerfile: Dockerfile
       args:
+        # Non-sensitive build-time variables only
         - NEXT_PUBLIC_LIVE_API_URL=${NEXT_PUBLIC_LIVE_API_URL}
-        - NEXT_PUBLIC_LIVE_API_KEY=${NEXT_PUBLIC_LIVE_API_KEY}
         - NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL=${NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL}
-        - NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY=${NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY}
+        - NEXT_PUBLIC_SUPER_ADMIN_ORG_ID=${NEXT_PUBLIC_SUPER_ADMIN_ORG_ID}
+        - NEXT_PUBLIC_MODEL_API_BASE_URL=${NEXT_PUBLIC_MODEL_API_BASE_URL}
+        - NEXT_PUBLIC_CHATBOT_API_URL=${NEXT_PUBLIC_CHATBOT_API_URL}
+        - NEXT_PUBLIC_CARTESIA_VOICE_ID=${NEXT_PUBLIC_CARTESIA_VOICE_ID}
+        - NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID=${NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID}
         - NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN=${NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN}
         - NEXT_PUBLIC_DIFY_ADMIN_EMAIL=${NEXT_PUBLIC_DIFY_ADMIN_EMAIL}
-        - NEXT_PUBLIC_DIFY_ADMIN_PASSWORD=${NEXT_PUBLIC_DIFY_ADMIN_PASSWORD}
         - NEXT_PUBLIC_DIFY_WORKSPACE_ID=${NEXT_PUBLIC_DIFY_WORKSPACE_ID}
+        - NEXT_PUBLIC_DIFY_BASE_URL=${NEXT_PUBLIC_DIFY_BASE_URL}
+        - NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY=${NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY}
+        - NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT=${NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT}
     ports:
       - "3001:3000"
     environment:
       - NODE_ENV=development
+      # Non-sensitive variables (also in build args for client bundle)
       - NEXT_PUBLIC_LIVE_API_URL=${NEXT_PUBLIC_LIVE_API_URL}
-      - NEXT_PUBLIC_LIVE_API_KEY=${NEXT_PUBLIC_LIVE_API_KEY}
       - NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL=${NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_URL}
-      - NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY=${NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY}
+      - NEXT_PUBLIC_SUPER_ADMIN_ORG_ID=${NEXT_PUBLIC_SUPER_ADMIN_ORG_ID}
+      - NEXT_PUBLIC_MODEL_API_BASE_URL=${NEXT_PUBLIC_MODEL_API_BASE_URL}
+      - NEXT_PUBLIC_CHATBOT_API_URL=${NEXT_PUBLIC_CHATBOT_API_URL}
+      - NEXT_PUBLIC_CARTESIA_VOICE_ID=${NEXT_PUBLIC_CARTESIA_VOICE_ID}
+      - NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID=${NEXT_PUBLIC_ELEVEN_LABS_VOICE_ID}
       - NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN=${NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN}
       - NEXT_PUBLIC_DIFY_ADMIN_EMAIL=${NEXT_PUBLIC_DIFY_ADMIN_EMAIL}
-      - NEXT_PUBLIC_DIFY_ADMIN_PASSWORD=${NEXT_PUBLIC_DIFY_ADMIN_PASSWORD}
       - NEXT_PUBLIC_DIFY_WORKSPACE_ID=${NEXT_PUBLIC_DIFY_WORKSPACE_ID}
-    restart: unless-stopped 
+      - NEXT_PUBLIC_DIFY_BASE_URL=${NEXT_PUBLIC_DIFY_BASE_URL}
+      - NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY=${NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY}
+      - NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT=${NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT}
+      # Secrets injected at runtime (not in image layers)
+      - NEXT_PUBLIC_LIVE_API_KEY=${NEXT_PUBLIC_LIVE_API_KEY}
+      - NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY=${NEXT_PUBLIC_DEVELOPMENT_PROPELAUTH_API_KEY}
+      - NEXT_PUBLIC_CHATBOT_API_KEY=${NEXT_PUBLIC_CHATBOT_API_KEY}
+      - NEXT_PUBLIC_ELEVEN_LABS_API_KEY=${NEXT_PUBLIC_ELEVEN_LABS_API_KEY}
+      - NEXT_PUBLIC_OPEN_AI_API_KEY=${NEXT_PUBLIC_OPEN_AI_API_KEY}
+      - NEXT_PUBLIC_WHISPER_API_KEY=${NEXT_PUBLIC_WHISPER_API_KEY}
+      - NEXT_PUBLIC_DEEPGRAM_API_KEY=${NEXT_PUBLIC_DEEPGRAM_API_KEY}
+      - NEXT_PUBLIC_CARTESIA_API_KEY=${NEXT_PUBLIC_CARTESIA_API_KEY}
+      - NEXT_PUBLIC_DIFY_ADMIN_PASSWORD=${NEXT_PUBLIC_DIFY_ADMIN_PASSWORD}
+      - NEXT_PUBLIC_DEMO_JWT_SECRET=${NEXT_PUBLIC_DEMO_JWT_SECRET}
+      - NEXT_PUBLIC_IMAGEKIT_PRIVATE_KEY=${NEXT_PUBLIC_IMAGEKIT_PRIVATE_KEY}
+      - GOOGLE_TRANSLATE_API_KEY=${GOOGLE_TRANSLATE_API_KEY}
+    restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    # Read-only filesystem for security (prevents file writes to root filesystem)
+    read_only: true
+    # Writable /tmp as tmpfs (in-memory, auto-cleaned, required for agent creation scripts)
+    # Security flags: noexec (prevent execution), nosuid (prevent setuid), nodev (prevent device files)
+    tmpfs:
+      - /tmp:size=100M,mode=1777,noexec,nosuid,nodev
+    # Drop all capabilities for extra hardening
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

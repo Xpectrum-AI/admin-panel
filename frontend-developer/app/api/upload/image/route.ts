@@ -4,14 +4,26 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const imagekit = new ImageKit({
-  publicKey: process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY as string,
-  privateKey: process.env.NEXT_PUBLIC_IMAGEKIT_PRIVATE_KEY as string,
-  urlEndpoint: process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT as string,
-});
+function getImageKitInstance() {
+  const publicKey = process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY;
+  const privateKey = process.env.NEXT_PUBLIC_IMAGEKIT_PRIVATE_KEY;
+  const urlEndpoint = process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT;
+
+  if (!publicKey || !privateKey || !urlEndpoint) {
+    throw new Error('Missing required ImageKit environment variables (NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY, NEXT_PUBLIC_IMAGEKIT_PRIVATE_KEY, NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT)');
+  }
+
+  return new ImageKit({
+    publicKey,
+    privateKey,
+    urlEndpoint,
+  });
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const imagekit = getImageKitInstance();
+    
     const formData = await request.formData();
     const file = formData.get('image') as File;
     const folder = (formData.get('folder') as string) || '/posts';

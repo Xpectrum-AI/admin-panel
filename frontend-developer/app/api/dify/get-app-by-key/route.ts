@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN || '';
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL || '';
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD || '';
-const WORKSPACE_FROM_ENV = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID || '';
-
 type WorkspaceSummary = { id?: string; tenant_id?: string; name?: string };
 
-if (!CONSOLE_ORIGIN || !ADMIN_EMAIL || !ADMIN_PASSWORD) {
-  throw new Error('Missing required Dify environment variables (CONSOLE_ORIGIN, ADMIN_EMAIL, ADMIN_PASSWORD)');
+function getDifyEnvVars() {
+  const CONSOLE_ORIGIN = process.env.NEXT_PUBLIC_DIFY_CONSOLE_ORIGIN || '';
+  const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DIFY_ADMIN_EMAIL || '';
+  const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DIFY_ADMIN_PASSWORD || '';
+  const WORKSPACE_FROM_ENV = process.env.NEXT_PUBLIC_DIFY_WORKSPACE_ID || '';
+
+  if (!CONSOLE_ORIGIN || !ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    throw new Error('Missing required Dify environment variables (CONSOLE_ORIGIN, ADMIN_EMAIL, ADMIN_PASSWORD)');
+  }
+
+  return { CONSOLE_ORIGIN, ADMIN_EMAIL, ADMIN_PASSWORD, WORKSPACE_FROM_ENV };
 }
 
 // Helper to create fetch with timeout
@@ -36,7 +40,7 @@ async function fetchWithTimeout(
   }
 }
 
-async function getAuthToken() {
+async function getAuthToken(CONSOLE_ORIGIN: string, ADMIN_EMAIL: string, ADMIN_PASSWORD: string) {
   const loginResponse = await fetchWithTimeout(
     `${CONSOLE_ORIGIN}/console/api/login`,
     {
@@ -55,7 +59,7 @@ async function getAuthToken() {
   return loginData.data?.access_token || loginData.access_token || loginData.data?.token;
 }
 
-async function getAllWorkspaces(token: string): Promise<WorkspaceSummary[]> {
+async function getAllWorkspaces(token: string, CONSOLE_ORIGIN: string): Promise<WorkspaceSummary[]> {
   try {
     const response = await fetchWithTimeout(
       `${CONSOLE_ORIGIN}/console/api/workspaces`,
@@ -115,7 +119,7 @@ const keyMatches = (keyValues: string[], searchKey: string): boolean => {
   return keyValues.some((k) => k === trimmedSearch || k.trim() === trimmedSearch);
 };
 
-async function switchWorkspace(token: string, workspaceId: string) {
+async function switchWorkspace(token: string, workspaceId: string, CONSOLE_ORIGIN: string) {
   const response = await fetchWithTimeout(
     `${CONSOLE_ORIGIN}/console/api/workspaces/switch`,
     {
@@ -141,7 +145,8 @@ async function switchWorkspace(token: string, workspaceId: string) {
 async function searchAppInWorkspace(
   workspaceId: string,
   apiKey: string,
-  token: string
+  token: string,
+  CONSOLE_ORIGIN: string
 ): Promise<
   | {
       success: true;
@@ -153,7 +158,7 @@ async function searchAppInWorkspace(
   | null
 > {
   try {
-    await switchWorkspace(token, workspaceId);
+    await switchWorkspace(token, workspaceId, CONSOLE_ORIGIN);
 
     let page = 1;
     const limit = 100;
@@ -280,6 +285,8 @@ async function searchAppInWorkspace(
 
 export async function POST(request: NextRequest) {
   try {
+    const { CONSOLE_ORIGIN, ADMIN_EMAIL, ADMIN_PASSWORD, WORKSPACE_FROM_ENV } = getDifyEnvVars();
+    
     const body = await request.json();
     const { apiKey, workspaceId, searchMode = 'all' } = body;
 
@@ -288,7 +295,7 @@ export async function POST(request: NextRequest) {
     }
 
     const trimmedApiKey = apiKey.trim();
-    const token = await getAuthToken();
+    const token = await getAuthToken(CONSOLE_ORIGIN, ADMIN_EMAIL, ADMIN_PASSWORD);
 
     console.log(`[Get App By Key] Starting search with API key: ${trimmedApiKey.substring(0, 16)}...`);
     console.log(`[Get App By Key] Search mode: ${searchMode}`);
@@ -296,7 +303,7 @@ export async function POST(request: NextRequest) {
 
     if (WORKSPACE_FROM_ENV && (searchMode === 'all' || !workspaceId)) {
       console.log(`[Get App By Key] Searching environment workspace first: ${WORKSPACE_FROM_ENV.substring(0, 8)}...`);
-      const match = await searchAppInWorkspace(WORKSPACE_FROM_ENV, trimmedApiKey, token);
+      const match = await searchAppInWorkspace(WORKSPACE_FROM_ENV, trimmedApiKey, token, CONSOLE_ORIGIN);
       if (match) {
         console.log(`[Get App By Key] ✓ Found in environment workspace!`);
         return NextResponse.json({
@@ -314,7 +321,7 @@ export async function POST(request: NextRequest) {
 
     if (workspaceId && workspaceId !== WORKSPACE_FROM_ENV && searchMode !== 'all') {
       console.log(`[Get App By Key] Searching requested workspace: ${workspaceId}`);
-      const match = await searchAppInWorkspace(workspaceId, trimmedApiKey, token);
+      const match = await searchAppInWorkspace(workspaceId, trimmedApiKey, token, CONSOLE_ORIGIN);
       if (match) {
         return NextResponse.json({
           success: true,
@@ -328,7 +335,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`[Get App By Key] Fetching all workspaces...`);
-    const workspaces = await getAllWorkspaces(token);
+    const workspaces = await getAllWorkspaces(token, CONSOLE_ORIGIN);
     if (workspaces.length === 0) {
       return NextResponse.json(
         { error: 'No workspaces found or unable to fetch workspaces' },
@@ -357,7 +364,7 @@ export async function POST(request: NextRequest) {
             return null;
           }
           console.log(`[Get App By Key] Searching workspace ${wsId.substring(0, 8)}... (${ws.name || 'Unnamed'})`);
-          const result = await searchAppInWorkspace(wsId, trimmedApiKey, token);
+          const result = await searchAppInWorkspace(wsId, trimmedApiKey, token, CONSOLE_ORIGIN);
           return result;
         })
       );
